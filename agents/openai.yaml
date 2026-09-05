@@ -1,0 +1,6 @@
+interface:
+  display_name: "Luna Output Delegation"
+  short_description: "开发任务的会话级分工、Luna 委派与非 Luna 验收"
+
+policy:
+  allow_implicit_invocation: true
