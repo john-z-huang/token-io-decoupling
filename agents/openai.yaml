@@ -1,6 +1,6 @@
 interface:
-  display_name: "Luna Output Delegation"
-  short_description: "开发任务的会话级分工、Luna 委派与非 Luna 验收"
+  display_name: "Token I/O Decoupling"
+  short_description: "将输入侧高价值推理与输出侧高体量执行解耦，并以 Luna 作为当前输出侧 Agent"
 
 policy:
   allow_implicit_invocation: true
