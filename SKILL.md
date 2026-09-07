@@ -1,6 +1,6 @@
 ---
 name: token-io-decoupling
-description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高价值推理与 Primary 输出 Agent 的双角色流程；Computer Use、视频、大量图片/截图和视觉设计场景使用独立 Multimodal Flow，由 Decision Agent 与 Primary Observation Agent 隔离高体量视觉/时序 Input Token，并按需 handoff 到输出或 Coding 流程。"
+description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高价值推理与 Primary 输出 Agent 的双角色流程；Browser Use、Computer Use、浏览器/桌面 GUI 连续操作、视频、大量图片/截图和视觉设计场景使用独立 Multimodal Flow，由 Decision Agent 与 Primary Observation Agent 隔离高体量视觉/时序 Input Token，并按需 handoff 到输出或 Coding 流程。"
 ---
 
 # Token I/O Decoupling
