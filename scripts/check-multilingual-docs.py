@@ -10,6 +10,7 @@ from pathlib import Path, PurePosixPath
 ROOT = Path(__file__).resolve().parents[1]
 ZH_SUFFIX = "_zh_cn.md"
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 
 PAIR_ROOTS = [Path("README.md"), Path("SKILL.md"), Path("AGENTS.md"), Path("MULTI_LINGUAL.md")]
 
@@ -58,8 +59,9 @@ def main() -> int:
         if not file_path.exists():
             continue
         text = file_path.read_text(encoding="utf-8")
+        text_without_code = FENCED_CODE_RE.sub("", text)
         source_is_zh = rel.name.endswith(ZH_SUFFIX)
-        for raw_target in LINK_RE.findall(text):
+        for raw_target in LINK_RE.findall(text_without_code):
             target = normalize_target(rel, raw_target)
             if target is None:
                 continue
