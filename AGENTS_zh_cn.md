@@ -10,6 +10,7 @@
 - 简体中文示例：`README_zh_cn.md`、`SKILL_zh_cn.md`、`references/coding-flow_zh_cn.md`。
 - `AGENTS.md` 是仓库指令入口；`AGENTS_zh_cn.md` 是它的简体中文语义镜像。
 - 配置、代码、生成文件和非 Markdown 资源默认不要求语言镜像，除非任务明确提出该要求。
+- `agents/openai.yaml` 是明确例外：面向用户的描述文本必须在同一个标量值中同时包含英文和简体中文，英文在前、中文在后，并使用 ` | ` 分隔。
 
 ## 成对维护要求
 
@@ -39,6 +40,16 @@
 ```
 
 具体相对路径可根据目录调整。该跨语言例外不能用于运行时依赖引用。
+
+## `agents/openai.yaml` 双语文本
+
+对于 `agents/openai.yaml` 中面向用户的描述文本：
+
+- 保留单个 YAML 字段，不创建语言专用 YAML 文件。
+- 英文在前，简体中文在后。
+- 两种语言之间必须使用准确的 ` | ` 分隔。
+- 两侧语义保持一致。
+- 示例：`"English description | 中文描述"`。
 
 ## 新增文档时
 
@@ -71,4 +82,5 @@ python3 scripts/check-multilingual-docs.py
 - `SKILL.md` 只加载英文 reference。
 - `SKILL_zh_cn.md` 只加载简体中文 reference。
 - 语义变更已同步到两种语言。
+- `agents/openai.yaml` 的描述文本保持 `English | 中文` 形式。
 - `python3 scripts/check-multilingual-docs.py` 校验通过。
