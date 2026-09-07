@@ -52,7 +52,7 @@ Flow 中的 Decision、Input-side Reasoning、Primary Observation、Primary Outp
 推荐形式：
 
 ```text
-Dispatch → Luna | Task: 修复认证中间件刷新逻辑；Scope: auth/*；Constraints: 保持 API 兼容；Runtime: max
+Dispatch → Luna | Task: 修复认证中间件刷新逻辑；Scope: auth/*；Constraints: 保持 API 兼容；Runtime: xhigh
 ```
 
 ```text

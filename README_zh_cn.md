@@ -82,8 +82,8 @@ Token I/O Decoupling
 - Coding 输入侧推理：当前高级父模型；
 - Coding Primary Output：`gpt-5.6-luna`，实质性物化任务使用 `reasoning_effort=max`；
 - Multimodal Decision Agent：当前高级父模型；
-- Multimodal Primary Observation Agent：`gpt-5.6-luna`，实质性高体量视觉/时序分析使用 `reasoning_effort=max`；
-- Multimodal Optional Primary Output Agent：`gpt-5.6-luna`，实质性长输出使用 `reasoning_effort=max`。
+- Multimodal Primary Observation Agent：`gpt-5.6-luna`，实质性高体量视觉/时序分析使用 `reasoning_effort=xhigh`；
+- Multimodal Optional Primary Output Agent：`gpt-5.6-luna`，实质性长输出使用 `reasoning_effort=xhigh`。
 
 Observation 与 Output 是不同职责和不同 Session Affinity。即使当前 Profile 使用同一种模型，也不默认共享它们的高体量上下文。
 
