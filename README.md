@@ -104,7 +104,3 @@ English is the default public-facing documentation. Simplified Chinese mirrors u
 - `agents/openai.yaml`: OpenAI Agent Skill display and implicit-invocation configuration; its public-facing text is English.
 
 The Skill loads references lazily by scenario. Ordinary Coding does not load Multimodal Flow, and pure multimodal analysis does not preload Coding Flow.
-
-## Development workflow
-
-Project changes follow `dev-workflow-standards`: use a compliant working branch, link an open Issue, merge through a Pull Request, and avoid Code Agent signatures or generated-by declarations.
