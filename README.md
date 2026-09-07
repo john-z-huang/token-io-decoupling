@@ -10,6 +10,7 @@
 - 复用 Primary 输出侧 Agent，减少重复项目探索，并尽量维持缓存友好的稳定上下文前缀。
 - 通过“完整相关上下文 + 简短 Semantic Contract”降低父 Agent 为重新描述既有背景而产生大量输出的需要。
 - 采用事件驱动汇报、Evidence-on-Demand 和分层验收，避免把输出侧工作日志重新灌回输入侧上下文。
+- 在每次派发前显示受严格长度约束的 Dispatch Preview，让父会话能够看出 Output Agent 收到的任务，同时避免复制长 prompt 或完整上下文。
 
 ## 当前 OpenAI Profile
 
@@ -35,6 +36,10 @@
 ### Semantic Contract
 
 输入侧 Agent 负责目标、约束、架构决策和验收标准；复杂任务把宿主可安全共享的完整相关上下文交给输出侧 Agent，同时用简短 Contract 固化最终有效决定。后续变化优先使用增量 amendment。
+
+### Dispatch Preview
+
+Input Agent 在每次实际向 Output Agent 派发新任务或增量指令前，先在父会话显示一条极简摘要。默认 1–3 行、目标约 80 tokens 以内，明显接近 120 tokens 时继续压缩；只保留任务、必要范围、关键约束和必要运行参数，不复制完整 Semantic Contract、完整上下文或实际长 prompt。复用 Primary Agent 时只显示本次新增 delta。
 
 ### 两级规划
 
