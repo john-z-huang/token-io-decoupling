@@ -1,133 +1,135 @@
 ---
 name: token-io-decoupling
-description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高价值推理与 Primary 输出双角色职责，并在当前 Code Agent 已是 Luna 时默认单 Session 自执行；Browser Use、Computer Use、浏览器/桌面 GUI 连续操作、视频、大量图片/截图和视觉设计场景使用独立 Multimodal Flow，由 Decision Agent 与 Primary Observation Agent 隔离高体量视觉/时序 Input Token；开放式绘画、图像编辑与视觉创作采用 Decision-led Visual Authoring，并按需 handoff 到输出或 Coding 流程。"
+description: "High-volume Agent Token I/O decoupling. Coding keeps high-value input-side reasoning separate from Primary Output responsibilities, while defaulting to single-session self-execution when the current Code Agent is already Luna. Browser Use, Computer Use, continuous browser/desktop GUI workflows, video, large image/screenshot sets, and visual design use an independent Multimodal Flow that isolates high-volume visual/temporal input between a Decision Agent and a Primary Observation Agent. Open-ended drawing, image editing, and visual creation use Decision-led Visual Authoring and hand off to output or Coding only when needed."
 ---
 
 # Token I/O Decoupling
 
-本 Skill 定义两套按场景选择的 Agent 调度流程，用于把高价值语义决策与高体量原始状态消费、输出物化分离。Coding 与 Multimodal 的执行架构差异较大，因此只共享少量调度协议，不强行使用统一角色拓扑。
+[English](SKILL.md) | [简体中文](SKILL_zh_cn.md)
 
-本 Skill 提供调度约定，不能绕过更高优先级的权限、用户授权、产品限制或安全规则，也不把价格、缓存命中或额度节省表述为未经实测的事实。
+This Skill defines two scenario-specific Agent orchestration flows that separate high-value semantic decisions from high-volume raw-state consumption and output materialization. Coding and Multimodal have materially different execution architectures, so they share only a small set of orchestration protocols instead of forcing one universal role topology.
 
-## 核心原则
+This Skill defines orchestration conventions only. It cannot bypass higher-priority permissions, user authorization, product limitations, or safety rules, and it must not present unmeasured claims about price, cache hits, or quota savings as facts.
 
-1. **先选 Flow，再加载细则**：不要启动时无条件加载所有 reference。
-2. **Coding 保持简单**：普通 Coding 保持“输入侧推理 → Primary 输出”的双角色职责；角色分离不等于 Agent / Session 分离。当前 Code Agent 已明确是 Luna 时默认在当前 Session 内同时承担两类职责，不为保持双角色形式创建额外 Luna。
-3. **Multimodal 隔离高体量 Observation**：Computer Use、视频、大量图片/截图、视觉设计等任务由 Primary Observation Agent 消费视觉/时序世界状态，Decision Agent 只接收压缩 Digest；开放式视觉创作另遵循 Decision-led Visual Authoring 的精选证据回路。
-4. **混合任务使用窄 Handoff**：视觉分析与 Coding 之间只传递稳定目标、必要变更、约束、证据引用和验收标准，不跨 Flow 倾倒完整原始状态。
-5. **角色按职责映射到模型与 Session**：角色首先表示职责和上下文边界，不要求一对一对应独立 Agent 实例。只有模型分层、独立上下文 ownership、并行、独立验证或容量管理存在实际收益时才分离 Session；Multimodal 中 Observation 与 Output 即使都使用 Luna，也可因高体量上下文 ownership 不同而保持独立。
+## Core principles
+
+1. **Choose the Flow first, then load its details**: do not load every reference unconditionally at startup.
+2. **Keep Coding simple**: ordinary Coding keeps the logical two-role model “input-side reasoning → Primary Output.” Role separation does not imply Agent or Session separation. When the current Code Agent is explicitly `gpt-5.6-luna`, the current Session performs both roles by default and must not create another Luna merely to preserve the two-role shape.
+3. **Isolate high-volume Multimodal Observation**: Computer Use, video, large image/screenshot sets, visual design, and similar tasks are routed so the Primary Observation Agent consumes visual/temporal world state while the Decision Agent receives compressed Digests. Open-ended visual creation additionally follows the curated-evidence loop of Decision-led Visual Authoring.
+4. **Use narrow Handoffs for mixed tasks**: visual analysis and Coding exchange only stable goals, required changes, constraints, evidence references, and acceptance criteria. Do not dump full raw state across Flows.
+5. **Map roles to models and Sessions by responsibility**: a role represents responsibility and context ownership first; it does not require a one-to-one Agent instance. Split Sessions only when model tiering, independent context ownership, real parallelism, fresh verification, capacity management, or another concrete isolation benefit exists. In Multimodal Flow, Observation and Output may remain separate even when both use Luna because they own different high-volume contexts.
 
 ## Scenario Routing
 
 ### Coding Flow
 
-以下任务默认进入 Coding Flow：
+Route the following tasks to Coding Flow by default:
 
-- repo / project exploration；
-- implementation、refactor、bug fix、debugging；
-- 代码、配置或开发文档物化；
-- build、test、lint、formatter、type check、diff / log 分析；
-- 其他以项目文本状态和大体量输出为主要 Token 压力的开发任务。
+- repository or project exploration;
+- implementation, refactoring, bug fixing, debugging;
+- materializing code, configuration, or developer documentation;
+- build, test, lint, formatting, type checking, diff/log analysis;
+- other development tasks where project text state and large output are the primary Token pressure.
 
-选择后加载：
+After selecting Coding Flow, load:
 
 1. [`references/shared-protocols.md`](references/shared-protocols.md)
 2. [`references/coding-flow.md`](references/coding-flow.md)
 
-普通 Coding 任务不得仅因为本 Skill 支持 Multimodal Flow 而加载 `multimodal-flow.md` 或创建 Primary Observation Agent。
+Ordinary Coding must not load `multimodal-flow.md` or create a Primary Observation Agent merely because this Skill also supports Multimodal Flow.
 
 ### Multimodal Flow
 
-以下任务默认进入 Multimodal Flow：
+Route the following tasks to Multimodal Flow by default:
 
-- Computer Use、浏览器/桌面 GUI 的连续 observe/act 工作流；
-- 大量图片、截图、设计 reference 或 rendered UI 分析；
-- 视频、大量视频帧或其他时序视觉输入；
-- UI / visual design 对比与验收；
-- 高体量 OCR、DOM、accessibility tree 或其他世界状态主要通过视觉/界面 Observation 获得的任务。
+- Computer Use and continuous browser/desktop GUI observe/act workflows;
+- large image, screenshot, design-reference, or rendered-UI analysis;
+- video, large frame sets, or other temporal visual input;
+- UI / visual design comparison and verification;
+- tasks where high-volume OCR, DOM, accessibility tree, or other world state is primarily obtained through visual/interface Observation.
 
-选择后加载：
+After selecting Multimodal Flow, load:
 
 1. [`references/shared-protocols.md`](references/shared-protocols.md)
 2. [`references/multimodal-flow.md`](references/multimodal-flow.md)
 
-进入 Multimodal Flow 后先区分两种工作模式：
+Then distinguish two working modes:
 
-- **Routine Interaction**：浏览、控件定位、表单填写、普通页面检查，以及目标和视觉结果已经明确的有界编辑。沿用 Primary Observation Agent 自主维持的低开销 observe/act 闭环。
-- **Creative Visual Authoring**：绘画、插画、图像编辑、合成、排版、视觉设计、画布创作、风格化或任何需要决定构图、视觉层级、色彩/光线、材质或整体观感的开放式工作。必须使用 Decision-led Visual Authoring，让 Decision Agent 在关键视觉里程碑亲自审看精选证据并批准下一阶段。Creative 模式的主要视觉设计 ownership 属于 Decision Agent：构图、视觉层级、风格、色彩关系、整体观感及跨阶段方向选择不得下放给 Observation Agent；Observation Agent 只负责局部机械视觉判断与已批准方案的物化。
+- **Routine Interaction**: browsing, control localization, form filling, normal page inspection, and bounded edits whose intended visual result is already clear. Keep the low-overhead observe/act loop inside the Primary Observation Agent.
+- **Creative Visual Authoring**: drawing, illustration, image editing, compositing, layout, visual design, canvas creation, stylization, or any open-ended work that requires decisions about composition, visual hierarchy, color/light, material, or overall visual quality. Use Decision-led Visual Authoring. The Decision Agent owns the primary visual design direction: composition, hierarchy, style, color relationships, overall look, and cross-stage direction changes must not be delegated to the Observation Agent. The Observation Agent performs local mechanical visual judgments and materializes approved direction.
 
-如果任务从 Routine Interaction 演变为需要改变核心构图、风格或视觉层级的开放式创作，应立即切换到 Creative Visual Authoring；不能继续让 Observation Agent 独立完成后续创作。Creative 模式的完整回路、精选证据边界和宿主能力阻塞规则见 `multimodal-flow.md`。
+If a Routine Interaction task evolves into open-ended changes to core composition, style, or visual hierarchy, switch immediately to Creative Visual Authoring. Do not allow the Observation Agent to continue the creative work independently. See `multimodal-flow.md` for the full loop, curated-evidence boundary, and host capability-block rules.
 
-不要为了形式统一同时加载 Coding Flow。只有任务真实进入代码/repo 物化阶段时，才按 Multimodal → Coding 窄 Handoff 再加载 Coding Flow。
+Do not load Coding Flow merely for architectural symmetry. Load Coding Flow only when the task actually enters a code/repository materialization stage via a narrow Multimodal → Coding handoff.
 
-### 小型视觉输入例外
+### Small visual-input exception
 
-单张简单图片、少量严格有界截图或其他明显不会产生高体量 Observation 的输入，不必机械创建 Primary Observation Agent。是否使用 Multimodal Flow 取决于潜在原始输入体积、时序/交互状态复杂度与决策密度，而不是“任务里是否出现图片”这一单一条件；但这项输入规模例外不把开放式视觉创作降级为 Routine Interaction，创作仍须遵循 Creative Visual Authoring 回路。
+A single simple image, a few strictly bounded screenshots, or another clearly small Observation does not require mechanical creation of a Primary Observation Agent. Decide based on potential raw-input volume, temporal/interaction complexity, and decision density rather than the mere presence of images. This size exception does not downgrade open-ended visual creation to Routine Interaction; creative work still follows Creative Visual Authoring.
 
-### 混合任务与 Flow Handoff
+### Mixed tasks and Flow Handoff
 
-不要在混合任务开始时预加载两套完整 Flow。按当前阶段的主要 Token 压力选择 Flow，并在职责真正变化时 handoff。
+Do not preload both complete Flows at the start of a mixed task. Select the Flow whose Token pressure dominates the current stage and hand off only when responsibilities truly change.
 
-典型视觉设计驱动 Coding：
+Typical design-driven Coding:
 
 ```text
 Multimodal Flow
-→ Primary Observation Agent 分析 reference / current UI
+→ Primary Observation Agent analyzes reference / current UI
 → Visual / State Digest
-→ Decision Agent 确认需要修改的语义目标
+→ Decision Agent confirms semantic changes
 → narrow Handoff Contract
 → Coding Flow
-→ Primary Output Role 实现与机械验证
-→ 必要时回到原 Multimodal Flow 做视觉验收
+→ Primary Output Role implements and mechanically verifies
+→ return to the original Multimodal Flow for visual verification when needed
 ```
 
-典型普通 Coding 后追加 UI 验证：
+Typical ordinary Coding followed by UI verification:
 
 ```text
 Coding Flow
 → implementation / tests
-→ 需要高体量视觉验收时再加载 Multimodal Flow
+→ load Multimodal Flow only when high-volume visual verification becomes necessary
 → visual verification
 ```
 
-Handoff 的字段和禁止携带的原始状态以 `multimodal-flow.md` 为准。
+The Handoff fields and prohibited raw-state payloads are defined in `multimodal-flow.md`.
 
-## Reference 加载规则
+## Reference loading rules
 
-- 只加载当前场景需要的 Flow 文档和共享协议。
-- 如果当前会话已加载且相关规则仍然有效，不重复读取同一 reference。
-- 从一个 Flow 切换到另一个 Flow 时，只新增目标 Flow 所需 reference，不重新加载无变化的共享协议。
-- 主 `SKILL.md` 是路由和 Profile 入口，不替代 Flow 细则；实际执行前必须加载所选 Flow 的 reference。
-- 当正确性需要跨 Flow 信息时使用窄 Handoff 或 Evidence-on-Demand，不通过一次性加载所有 reference 和原始状态来规避上下文边界。
+- Load only the Flow documents and shared protocols required for the current scenario.
+- If a relevant reference is already loaded and its rules remain valid, do not read it again.
+- When switching Flows, load only the newly required Flow reference; do not reload unchanged shared protocols.
+- The main `SKILL.md` is the routing and Profile entry point, not a replacement for Flow details. Load the selected Flow reference before substantive execution.
+- When correctness requires cross-Flow information, use a narrow Handoff or Evidence-on-Demand instead of loading all references and raw state at once.
 
-## 当前 OpenAI Profile
+## Current OpenAI Profile
 
-模型绑定属于当前运行 Profile，不是 Token I/O Decoupling 架构本身。未来模型变化应优先调整本节，而不是改写 Flow 的角色边界。
+Model bindings are part of the current runtime Profile, not the Token I/O Decoupling architecture itself. Future model changes should update this section before changing Flow responsibility boundaries.
 
 ### Coding Flow
 
-启动 Coding Flow 时先确认当前 Code Agent 的模型身份，再映射职责到 Session：
+At Coding Flow startup, first confirm the current Code Agent model identity and then map responsibilities to Sessions:
 
-- **当前 Agent 已明确是 `gpt-5.6-luna`**：进入 **Single-Agent Luna Mode**。当前 Session 同时承担 Input-side Reasoning Role 与 Primary Output Role，直接完成项目探索、实现、调试、机械验证和输出；不得仅为了双角色拓扑再创建或要求存在额外 Luna Primary Output Agent。
-- **当前 Agent 不能明确确认自己是 `gpt-5.6-luna`**：按输入侧推理角色约束自身行为，并使用独立 `gpt-5.6-luna` 承担 Primary Output Role，保持正常双 Session Coding Flow。
-- 实现、长输出和其他实质性物化任务要求承担 Primary Output Role 的 Luna 显式使用 `reasoning_effort=xhigh`；Single-Agent Luna Mode 同样适用。
-- Single-Agent Luna Mode 只有在 fresh verification、真正并行、当前上下文明显失效/膨胀，或存在明确独立隔离收益时才允许创建额外 Agent。项目探索、实现、测试、长输出或“任务复杂”本身不是例外理由。
+- **Current Agent is explicitly `gpt-5.6-luna`**: enter **Single-Agent Luna Mode**. The current Session performs both the Input-side Reasoning Role and Primary Output Role, including project exploration, implementation, debugging, mechanical verification, and output. Do not create or require another Luna Primary Output Agent merely to preserve a two-role topology.
+- **Current Agent cannot explicitly confirm it is `gpt-5.6-luna`**: constrain the current Agent as the input-side reasoning role and use an independent `gpt-5.6-luna` for the Primary Output Role, preserving the normal two-Session Coding Flow.
+- Substantive implementation, long output, and other materialization work require the Luna performing the Primary Output Role to use `reasoning_effort=xhigh`; this also applies in Single-Agent Luna Mode.
+- Single-Agent Luna Mode may create another Agent only for fresh verification, real parallelism, clearly degraded/overgrown current context, or another explicit isolation benefit. Project exploration, implementation, testing, long output, or generic task complexity are not exceptions.
 
 ### Multimodal Flow
 
-- Decision Agent：当前高级父模型。
-- Primary Observation Agent：`gpt-5.6-luna`；承担大规模图片、视频帧、Computer Use Observation 或其他实质性高体量分析时显式使用 `reasoning_effort=xhigh`。
-- Optional Primary Output Agent：`gpt-5.6-luna`；长输出和其他实质性物化任务显式使用 `reasoning_effort=xhigh`。
-- Observation Agent 与 Output Agent 是不同职责和不同 Session Affinity；即使当前 Profile 使用同一种模型，也不得因此把两者的高体量上下文默认合并。Single-Agent Luna Mode 只改变 Coding Flow 的默认角色映射，不削弱 Multimodal Flow 的独立 Observation ownership。
+- Decision Agent: the current advanced parent model.
+- Primary Observation Agent: `gpt-5.6-luna`; substantive large image/video/Computer Use Observation analysis uses `reasoning_effort=xhigh`.
+- Optional Primary Output Agent: `gpt-5.6-luna`; substantive long output uses `reasoning_effort=xhigh`.
+- Observation and Output are different responsibilities with different Session Affinity. Even if the current Profile binds both to Luna, do not merge their high-volume contexts by default. Single-Agent Luna Mode changes only the default Coding role mapping and does not weaken Multimodal Observation ownership.
 
-### Profile 约束
+### Profile constraints
 
-- 不得把要求使用 Luna 的角色静默替换为其他模型。
-- 若需要独立 Luna 角色但无法确认 `gpt-5.6-luna` 身份、无法显式选择该模型，或复杂 Observation / 物化任务无法满足要求的 `reasoning_effort=xhigh`，停止对应实质性工作并简短报告阻塞。
-- 纯只读、严格有界的诊断或观察，在能够确认 Luna 身份但宿主无法设置 reasoning effort 时可以继续；不得因此把复杂高体量工作回退给高级父模型。
+- Do not silently replace a role that requires Luna with another model.
+- If an independent Luna role is required but `gpt-5.6-luna` identity cannot be confirmed, the model cannot be selected explicitly, or substantive Observation/materialization cannot satisfy `reasoning_effort=xhigh`, stop that substantive work and briefly report the block.
+- Purely read-only, strictly bounded diagnosis or observation may continue when Luna identity is confirmed but the host cannot set reasoning effort. Do not use that exception to move complex high-volume work back to the advanced parent model.
 
-## 加载边界
+## Loading boundary
 
-本 Skill 默认允许自动发现；普通 Skill 的 `description` 只影响隐式匹配，不能保证每次启动完整加载。若要保证特定宿主每次运行都遵循核心分工，应把必要不变量放入该宿主的持久指令机制，例如 Codex 的全局 `~/.codex/AGENTS.md`，或由宿主注入 system/developer instructions。
+This Skill may be automatically discovered, but a normal Skill `description` only influences implicit matching and cannot guarantee that the complete Skill is loaded on every host startup. If a host must always obey specific invariants, put those invariants in that host's persistent instruction mechanism—for example, Codex global `~/.codex/AGENTS.md` or host-injected system/developer instructions.
 
-`references/` 中的 Flow 文档采用按需加载，禁止因为“可能以后会用到”而在任务开始时全部读取。
+References under `references/` are loaded on demand. Do not read all of them at task startup merely because they might become useful later.

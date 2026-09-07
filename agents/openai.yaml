@@ -1,6 +1,6 @@
 interface:
   display_name: "Token I/O Decoupling"
-  short_description: "按场景解耦高价值决策、高体量视觉输入与输出物化，覆盖 Coding 和 Multimodal Flow"
+  short_description: "Scenario-aware separation of high-value decisions, high-volume visual input, and output materialization across Coding and Multimodal Flows"
 
 policy:
   allow_implicit_invocation: true

@@ -1,94 +1,94 @@
-# 共享调度协议
+# Shared Orchestration Protocols
 
-本文件只定义 Coding Flow 与 Multimodal Flow 共同遵守的协议。场景角色、上下文防火墙、执行循环和验收边界由各自 Flow 文档定义；不要为了“统一架构”把某一 Flow 的专属角色或原始状态复制到另一 Flow。
+This file defines only the protocols shared by Coding Flow and Multimodal Flow. Scenario-specific roles, context firewalls, execution loops, and acceptance boundaries are defined by the individual Flow documents. Do not copy a Flow-specific role or raw state into another Flow merely to produce a “unified architecture.”
 
-## Semantic Contract 基线
+## Semantic Contract baseline
 
-Decision / Input-side Reasoning Agent 负责固化高价值决策信息。Contract 只包含执行方安全工作所需的最小稳定语义：
+The Decision / Input-side Reasoning Agent is responsible for stabilizing high-value decision information. A Contract contains only the minimum stable semantics required for safe execution:
 
-- `Goal`：最终目标；
-- `Constraints`：不能破坏的业务、兼容性、安全或用户边界；
-- `Decisions`：已批准的架构与关键取舍；
-- `Acceptance`：验收标准。
+- `Goal`: the final objective;
+- `Constraints`: business, compatibility, safety, or user boundaries that must not be broken;
+- `Decisions`: approved architecture and key trade-offs;
+- `Acceptance`: acceptance criteria.
 
-Semantic Contract 是决策锚点，不是完整上下文或原始 Observation 的替代品。宿主能够安全共享的相关上下文可直接提供给对应 Primary Agent；后续默认只发送新增目标、决策变化和必要约束，不周期性重写完整背景。
+A Semantic Contract is a decision anchor, not a replacement for complete context or raw Observation. Relevant context that the host can safely share may be provided directly to the corresponding Primary Agent. Subsequent communication should normally contain only new goals, decision changes, and necessary constraints rather than periodically rewriting the full background.
 
-Contract 更新优先使用 amendment。只有历史修订已冲突到无法判断当前有效状态时，才发送一次明确的 authoritative decision snapshot；必要时重建对应 Primary Agent。
+Prefer amendments when updating a Contract. Send one explicit authoritative decision snapshot only when historical revisions conflict so badly that the currently effective state cannot be determined; rebuild the corresponding Primary Agent when necessary.
 
-若安全执行所需上下文既不在当前 Primary Agent 中、宿主又无法共享，而短 Contract 也不足以弥补，则停止并报告上下文阻塞；不要由高价值决策 Agent 用长篇输出重新编码整段历史来绕过限制。
+If context required for safe execution is neither present in the current Primary Agent nor shareable by the host, and a short Contract cannot compensate for it, stop and report a context block. Do not make the high-value decision Agent re-encode the entire history as long output to work around the limitation.
 
-## Role 与 Session 映射
+## Role and Session mapping
 
-Flow 中的 Decision、Input-side Reasoning、Primary Observation、Primary Output 等名称首先表示职责和上下文 ownership，不要求每个角色都映射为独立 Agent / Session。
+Decision, Input-side Reasoning, Primary Observation, Primary Output, and similar names represent responsibility and context ownership first. They do not require every role to map to a separate Agent or Session.
 
-创建额外 Session 必须有独立结构性收益，例如模型能力分层、不同高体量上下文 ownership、真正并行、fresh verification、上下文容量管理或明确隔离需求。不得仅为了角色命名、流程拓扑、长输出、普通项目探索、实现、测试或笼统的“任务复杂”而进行 same-model delegation。
+Creating another Session requires an independent structural benefit, such as model capability tiering, distinct high-volume context ownership, real parallelism, fresh verification, context-capacity management, or an explicit isolation requirement. Do not perform same-model delegation merely because of role names, workflow topology, long output, ordinary project exploration, implementation, testing, or generic “task complexity.”
 
-当当前 Agent 已经满足目标角色的模型与运行参数要求，且不存在上述独立收益时，默认复用当前 Session。Coding Flow 中当前 Agent 已明确为 `gpt-5.6-luna` 时的具体 Single-Agent Luna Mode 以 `coding-flow.md` 为准。
+When the current Agent already satisfies the target role's model and runtime requirements and no independent benefit exists, reuse the current Session by default. For Coding Flow, the concrete Single-Agent Luna Mode used when the current Agent is explicitly `gpt-5.6-luna` is defined in [`coding-flow.md`](coding-flow.md).
 
-这条规则不意味着所有同模型角色都必须合并。Multimodal Flow 中 Primary Observation 与 Optional Primary Output 即使使用同一模型，也可因视觉/时序原始状态与输出物化上下文具有不同 ownership 而保持独立 Session。
+This rule does not mean every same-model role must be merged. In Multimodal Flow, Primary Observation and Optional Primary Output may remain separate Sessions even when both use the same model because visual/temporal raw state and output materialization have different context ownership.
 
 ## Dispatch Preview
 
-每次实际创建子 Agent 或向既有独立 Primary Agent 发送新的执行指令前，父会话必须先显示一条极简 `Dispatch` 预览，使用户能够知道本次具体派发了什么。它只是即将派发指令的可见摘要，不是完整子 Agent prompt，也不得暴露不可见内部推理。
+Before actually creating a child Agent or sending a new execution instruction to an existing independent Primary Agent, the parent conversation must first display an extremely short `Dispatch` preview so the user can see what is being delegated. It is a visible summary of the instruction about to be sent, not the complete child-Agent prompt, and it must not expose hidden reasoning.
 
-当前 Session 在同一 Agent 内切换逻辑职责、执行自己的探索/实现/验证或维护 Semantic Contract 不属于 Dispatch。尤其在 Coding Flow 的 Single-Agent Luna Mode 中，不得为了满足 Dispatch Preview 规则打印 `Dispatch → Luna`、构造 self-prompt 或创建无必要子 Agent。
+Switching logical roles within the current Session, performing the current Agent's own exploration/implementation/verification, or maintaining a Semantic Contract is not a Dispatch. In particular, Single-Agent Luna Mode must not print a fake `Dispatch → Luna`, construct a self-prompt, or create an unnecessary child Agent just to satisfy this rule.
 
-预览只保留足以识别本次任务的最小信息：
+Keep only the minimum information needed to identify the delegated task:
 
-- `Task`：一句话说明目标或增量目标；
-- `Scope`：仅在必要时列出关键路径、模块、视觉集合或处理范围；
-- `Constraints`：仅保留会直接改变执行方式的关键约束；
-- `Runtime`：仅在本次需要显式模型、reasoning effort 等参数时简写。
+- `Task`: one sentence describing the objective or incremental objective;
+- `Scope`: only when necessary, list key paths, modules, visual collections, or processing range;
+- `Constraints`: only constraints that directly change how execution must proceed;
+- `Runtime`: only when explicit model, reasoning effort, or similar parameters matter for this dispatch.
 
-默认输出 **1–3 行**，以 **约 80 tokens 以内**为目标；如果明显接近或超过 **约 120 tokens**，必须继续压缩后再派发。不要为了格式机械补齐没有内容的字段，也不要输出完整验收清单、完整 Contract 或解释性长文。
+Default to **1–3 lines** and target **about 80 tokens or less**. If it is clearly approaching or exceeding **about 120 tokens**, compress it before dispatching. Do not mechanically fill empty fields, and do not print the full acceptance checklist, full Contract, or explanatory prose.
 
-复用独立 Primary Agent 时只显示本次新增 delta，不重复此前已经可见的派发内容。若宿主已在同一父会话中自动、清晰地显示等价任务摘要，可不重复打印；仅显示“已创建 Agent”“正在工作”等无任务语义的信息不算等价。
+When reusing an independent Primary Agent, preview only the new delta; do not repeat information already visible from earlier dispatches. If the host already clearly displays an equivalent task summary in the same parent conversation, do not duplicate it. A message such as “Agent created” or “working” without task semantics is not equivalent.
 
-场景特例：
+Scenario-specific restrictions:
 
-- Coding Flow：禁止在 Dispatch Preview 中展开逐文件、逐行、逐命令执行计划。
-- Multimodal Flow：禁止枚举大批图片/帧、复制 OCR/DOM、输出 click sequence、屏幕坐标、完整视觉历史或逐帧计划。
+- Coding Flow: do not expand the Dispatch Preview into a file-by-file, line-by-line, or command-by-command execution plan.
+- Multimodal Flow: do not enumerate large image/frame sets, copy OCR/DOM, output click sequences or screen coordinates, or replay full visual history.
 
-推荐形式：
+Recommended forms:
 
 ```text
-Dispatch → Luna | Task: 修复认证中间件刷新逻辑；Scope: auth/*；Constraints: 保持 API 兼容；Runtime: xhigh
+Dispatch → Luna | Task: fix authentication middleware refresh logic; Scope: auth/*; Constraints: preserve API compatibility; Runtime: xhigh
 ```
 
 ```text
-Dispatch → Observation | Task: 对比 checkout 设计稿与当前 UI；Scope: checkout；Constraints: 先粗筛再定向检查
+Dispatch → Observation | Task: compare checkout reference with current UI; Scope: checkout; Constraints: screen broadly before focused inspection
 ```
 
-## 事件驱动进度反馈
+## Event-driven progress reporting
 
-独立 Primary Agent 不持续发送工作日志。普通文件读取、grep、截图变化、滚动、局部分析、编译错误修复、下一条命令等低决策密度步骤留在自身上下文。
+An independent Primary Agent does not continuously stream work logs. Low-decision-density steps such as ordinary file reads, grep results, screenshot changes, scrolling, local analysis, compile-error fixes, and the next command remain in that Agent's own context.
 
-只在以下事件主动向父 Agent 发送极简消息：
+Send an extremely short message to the parent Agent only when one of these events occurs:
 
-- 关键里程碑发生，例如实现完成、视觉筛选完成、开始验证；
-- 出现需要高价值语义、架构或风险决策的问题；
-- 发生阻塞、重大偏差或已批准 Contract 无法继续满足。
+- a material milestone, such as implementation complete, visual screening complete, or verification starting;
+- a problem requiring high-value semantic, architectural, or risk judgment;
+- a block, major deviation, or inability to continue satisfying the approved Contract.
 
-消息只包含父 Agent 下一步判断所需内容，可使用 `Status`、`Issue`、`Need` 等有意义字段；没有内容的字段不要机械补齐。不要附完整日志、diff、截图序列、OCR 全文或其他高体量原始状态。
+Include only what the parent Agent needs for the next decision. Meaningful fields such as `Status`, `Issue`, and `Need` may be used; omit fields with no information. Do not attach full logs, diffs, screenshot sequences, OCR text, or other high-volume raw state.
 
-任务完成时只返回压缩交付摘要：主要结果、机械/视觉验证结论、仍需关注的风险或边界变化。
+At task completion, return only a compressed delivery summary: primary result, mechanical/visual verification conclusion, and remaining risks or boundary changes.
 
-Single-Agent 模式没有独立父子 Session，不要求模拟上述 Agent-to-parent 进度消息；当前 Agent 按宿主正常交互规则向用户报告必要进度即可。
+Single-Agent mode has no independent parent/child Session and does not simulate Agent-to-parent progress messages. The current Agent reports necessary progress to the user using the host's normal interaction rules.
 
 ## Evidence-on-Demand
 
-高价值决策 Agent 默认不重新读取完整原始证据。需要确认某项结论时，向持有原始状态的独立 Primary Agent 提出定向问题，由后者返回最小必要证据、相关路径、图片/帧引用或小段事实。
+A high-value decision Agent does not re-read complete raw evidence by default. When it must verify a conclusion, ask the independent Primary Agent that owns the raw state a targeted question. That Agent returns only the minimum necessary evidence, relevant paths, image/frame references, or small factual excerpts.
 
-如果高价值决策职责与 Primary 职责位于同一 Session，则直接定向检查当前上下文或工具状态，不为了 Evidence-on-Demand 创建 self-handoff。只有高风险任务或确有独立审查价值时，才创建 fresh verifier；不能把独立验证变成所有任务的固定开销。
+If the high-value decision responsibility and Primary responsibility are in the same Session, inspect the current context or tool state directly rather than creating a self-handoff for Evidence-on-Demand. Create a fresh verifier only for high-risk work or when independent review has concrete value; independent verification is not a fixed cost for every task.
 
 ## Cache-Aware Context Stability
 
-同一工作流优先保持 `stable prefix + small delta`：稳定已有会话、项目历史、视觉状态所有权和已批准决策，只在尾部追加新的目标、amendment 或验证要求。不要为了“同步状态”周期性重新总结整个任务，也不要反复生成高度重叠的 Contract 全文。
+Within one workflow, prefer `stable prefix + small delta`: preserve stable sessions, project history, visual-state ownership, and approved decisions, then append only new goals, amendments, or verification requirements. Do not periodically resummarize the entire task merely to “synchronize state,” and do not repeatedly regenerate highly overlapping complete Contracts.
 
-缓存友好性只是组织上下文的设计目标；实际缓存键、命中条件和额度折算由宿主决定，不得把缓存收益描述为保证结果。若稳定历史已妨碍正确理解当前状态，应优先正确性，执行一次状态压缩或重建 Agent。
+Cache friendliness is a context-organization goal only. Actual cache keys, hit conditions, and quota accounting are host-defined and must not be presented as guaranteed benefits. If stable history begins to impair correct understanding, prioritize correctness and perform one state compression or Agent rebuild.
 
-## 委派边界
+## Delegation boundary
 
-任何 Primary Observation Agent 或独立 Primary Output Agent 都不得递归委派。需要额外 Agent、独立 verifier 或跨 Flow handoff 时，由当前父级高价值决策 Agent 统一调度；Single-Agent 模式需要触发例外 Agent 时，也由当前 Agent 直接创建，不先构造虚拟 Primary 层级。
+A Primary Observation Agent or independent Primary Output Agent must not recursively delegate. Additional Agents, fresh verifiers, and cross-Flow handoffs are orchestrated by the current parent high-value decision Agent. When Single-Agent mode needs an exception Agent, the current Agent creates it directly rather than constructing a virtual Primary hierarchy first.
 
-本 Skill 不能绕过更高优先级的权限、用户授权、产品限制或安全规则。角色分工、Semantic Contract 或已建立 Session Affinity 都不构成额外授权。
+This Skill cannot bypass higher-priority permissions, user authorization, product restrictions, or safety rules. Role division, a Semantic Contract, or established Session Affinity does not constitute additional authorization.
