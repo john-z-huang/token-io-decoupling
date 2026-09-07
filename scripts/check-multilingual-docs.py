@@ -12,6 +12,7 @@ ZH_SUFFIX = "_zh_cn.md"
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 PAIR_ROOTS = [Path("README.md"), Path("SKILL.md"), Path("AGENTS.md")]
+REQUIRED_RULE_FILE = Path("MULTI_LINGUAL.md")
 
 
 def zh_peer(path: PurePosixPath) -> PurePosixPath:
@@ -31,6 +32,9 @@ def normalize_target(source: PurePosixPath, raw: str) -> PurePosixPath | None:
 
 def main() -> int:
     errors: list[str] = []
+
+    if not (ROOT / REQUIRED_RULE_FILE).exists():
+        errors.append(f"missing multilingual rule file: {REQUIRED_RULE_FILE}")
 
     english_docs = [PurePosixPath(p.as_posix()) for p in PAIR_ROOTS]
     english_docs += [PurePosixPath(p.relative_to(ROOT).as_posix()) for p in sorted((ROOT / "references").glob("*.md")) if not p.name.endswith(ZH_SUFFIX)]
@@ -63,9 +67,11 @@ def main() -> int:
             if target is None:
                 continue
             target_is_zh = target.name.endswith(ZH_SUFFIX)
-            # Cross-language links are allowed only as explicit switches to the counterpart file.
             counterpart = en_peer(rel) if source_is_zh else zh_peer(rel)
             if source_is_zh != target_is_zh and target != counterpart:
+                # Repository instruction mirrors deliberately share one rules source.
+                if target == PurePosixPath("MULTI_LINGUAL.md"):
+                    continue
                 errors.append(f"cross-language Markdown link: {rel} -> {raw_target}")
 
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
