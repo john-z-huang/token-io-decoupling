@@ -1,159 +1,123 @@
 ---
 name: token-io-decoupling
-description: "开发任务（Codex 或其他支持 Agent Skills 的 code agent；项目探索、规划、实现、长输出、修复、验证）：将输入侧高价值理解与推理和输出侧高体量执行与物化解耦，遵循上下文隔离、Primary 输出 Agent、语义契约、缓存友好增量通信与分层验收流程。"
+description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高价值推理与 Primary 输出 Agent 的双角色流程；Computer Use、视频、大量图片/截图和视觉设计场景使用独立 Multimodal Flow，由 Decision Agent 与 Primary Observation Agent 隔离高体量视觉/时序 Input Token，并按需 handoff 到输出或 Coding 流程。"
 ---
 
 # Token I/O Decoupling
 
-本技能定义一套 Agent 调度架构：把传统单模型同时承担的输入侧理解/推理与输出侧执行/物化拆开，让不同模型分别处理更适合其能力与成本结构的 Token。它提供调度约定，不能绕过更高优先级的权限、用户授权、产品限制或安全规则，也不把价格、缓存命中或额度节省表述为未经实测的事实。
+本 Skill 定义两套按场景选择的 Agent 调度流程，用于把高价值语义决策与高体量原始状态消费、输出物化分离。Coding 与 Multimodal 的执行架构差异较大，因此只共享少量调度协议，不强行使用统一角色拓扑。
 
-## 架构角色
+本 Skill 提供调度约定，不能绕过更高优先级的权限、用户授权、产品限制或安全规则，也不把价格、缓存命中或额度节省表述为未经实测的事实。
 
-### 输入侧推理 Agent
+## 核心原则
 
-负责高信息密度工作：理解用户意图与业务语义、做架构和风险判断、形成或修订 Semantic Contract、处理重大决策升级、执行语义验收，并向用户解释必要的推理级决策。
+1. **先选 Flow，再加载细则**：不要启动时无条件加载所有 reference。
+2. **Coding 保持简单**：普通 Coding 继续使用成熟的“输入侧推理 Agent → Primary 输出 Agent”双角色流程，不创建 Observation Agent。
+3. **Multimodal 隔离高体量 Observation**：Computer Use、视频、大量图片/截图、视觉设计等任务由 Primary Observation Agent 消费视觉/时序世界状态，Decision Agent 只接收压缩 Digest。
+4. **混合任务使用窄 Handoff**：视觉分析与 Coding 之间只传递稳定目标、必要变更、约束、证据引用和验收标准，不跨 Flow 倾倒完整原始状态。
+5. **角色按职责而非模型命名**：当前 Profile 可以让 Observation 与 Output 角色都使用 Luna，但两者的 Session、上下文所有权和职责边界仍保持独立。
 
-输入侧 Agent 不应承担主要用于展开既有决策的大体量输出，也不应默认摄入高体量、低决策密度的项目原始状态。
+## Scenario Routing
 
-### 输出侧执行 Agent
+### Coding Flow
 
-负责高体量项目探索、原始工具输出处理、语义压缩、局部执行计划、代码/文档/配置物化、编译测试、调试修复和机械验证。输出侧 Agent 对项目原始信息采用渐进式读取，优先先看摘要、统计和相关路径，再按需展开具体文件、diff 或日志。
+以下任务默认进入 Coding Flow：
 
-输出侧 Agent 不得递归委派；需要额外 Agent 时由输入侧父 Agent 统一调度。
+- repo / project exploration；
+- implementation、refactor、bug fix、debugging；
+- 代码、配置或开发文档物化；
+- build、test、lint、formatter、type check、diff / log 分析；
+- 其他以项目文本状态和大体量输出为主要 Token 压力的开发任务。
+
+选择后加载：
+
+1. [`references/shared-protocols.md`](references/shared-protocols.md)
+2. [`references/coding-flow.md`](references/coding-flow.md)
+
+普通 Coding 任务不得仅因为本 Skill 支持 Multimodal Flow 而加载 `multimodal-flow.md` 或创建 Primary Observation Agent。
+
+### Multimodal Flow
+
+以下任务默认进入 Multimodal Flow：
+
+- Computer Use、浏览器/桌面 GUI 的连续 observe/act 工作流；
+- 大量图片、截图、设计 reference 或 rendered UI 分析；
+- 视频、大量视频帧或其他时序视觉输入；
+- UI / visual design 对比与验收；
+- 高体量 OCR、DOM、accessibility tree 或其他世界状态主要通过视觉/界面 Observation 获得的任务。
+
+选择后加载：
+
+1. [`references/shared-protocols.md`](references/shared-protocols.md)
+2. [`references/multimodal-flow.md`](references/multimodal-flow.md)
+
+不要为了形式统一同时加载 Coding Flow。只有任务真实进入代码/repo 物化阶段时，才按 Multimodal → Coding 窄 Handoff 再加载 Coding Flow。
+
+### 小型视觉输入例外
+
+单张简单图片、少量严格有界截图或其他明显不会产生高体量 Observation 的输入，不必机械创建 Primary Observation Agent。是否使用 Multimodal Flow 取决于潜在原始输入体积、时序/交互状态复杂度与决策密度，而不是“任务里是否出现图片”这一单一条件。
+
+### 混合任务与 Flow Handoff
+
+不要在混合任务开始时预加载两套完整 Flow。按当前阶段的主要 Token 压力选择 Flow，并在职责真正变化时 handoff。
+
+典型视觉设计驱动 Coding：
+
+```text
+Multimodal Flow
+→ Primary Observation Agent 分析 reference / current UI
+→ Visual / State Digest
+→ Decision Agent 确认需要修改的语义目标
+→ narrow Handoff Contract
+→ Coding Flow
+→ Primary Output Agent 实现与机械验证
+→ 必要时回到原 Multimodal Flow 做视觉验收
+```
+
+典型普通 Coding 后追加 UI 验证：
+
+```text
+Coding Flow
+→ implementation / tests
+→ 需要高体量视觉验收时再加载 Multimodal Flow
+→ visual verification
+```
+
+Handoff 的字段和禁止携带的原始状态以 `multimodal-flow.md` 为准。
+
+## Reference 加载规则
+
+- 只加载当前场景需要的 Flow 文档和共享协议。
+- 如果当前会话已加载且相关规则仍然有效，不重复读取同一 reference。
+- 从一个 Flow 切换到另一个 Flow 时，只新增目标 Flow 所需 reference，不重新加载无变化的共享协议。
+- 主 `SKILL.md` 是路由和 Profile 入口，不替代 Flow 细则；实际执行前必须加载所选 Flow 的 reference。
+- 当正确性需要跨 Flow 信息时使用窄 Handoff 或 Evidence-on-Demand，不通过一次性加载所有 reference 和原始状态来规避上下文边界。
 
 ## 当前 OpenAI Profile
 
-- 输入侧：当前高级父模型；当前模型不能明确确认是 `gpt-5.6-luna` 时，按输入侧角色约束自身行为。
-- 输出侧：`gpt-5.6-luna`，执行实现、长输出和其他实质性物化任务时显式指定 `reasoning_effort=xhigh`。
-- 不得把输出侧模型静默替换为其他模型。若无法确认 `gpt-5.6-luna` 身份、无法显式选择该模型，或复杂物化任务无法满足 `reasoning_effort=xhigh`，停止相应实质性工作并简短报告阻塞。
-- 纯只读诊断在能够确认 Luna 身份但宿主无法设置 reasoning effort 时可继续；不得因此把实现任务留给输入侧模型。
+模型绑定属于当前运行 Profile，不是 Token I/O Decoupling 架构本身。未来模型变化应优先调整本节，而不是改写 Flow 的角色边界。
 
-这里的模型绑定属于当前运行 Profile，不是 Token I/O Decoupling 架构本身。未来模型变化应优先调整 Profile，而不是改写角色边界。
+### Coding Flow
 
-## Context Firewall
+- 输入侧推理 Agent：当前高级父模型；当前模型不能明确确认自己是 `gpt-5.6-luna` 时，按输入侧角色约束自身行为。
+- Primary 输出 Agent：`gpt-5.6-luna`。
+- 实现、长输出和其他实质性物化任务显式使用 `reasoning_effort=xhigh`。
 
-输入侧 Agent 不直接执行可能把大量项目原始状态带入自身上下文的开放式检查。`git diff`、大型 `git status`/日志、`find`、`rg`、文件树、构建/测试输出及同类高体量检查默认交给输出侧 Agent，由其读取、筛选并返回决策所需的事实。
+### Multimodal Flow
 
-只有输出严格有界、明显很小且不会形成项目状态倾倒的元数据查询可由输入侧直接执行，例如 `pwd`、`git branch --show-current`、单个文件存在性检查等。判断依据是潜在原始输出体积，而不是命令名称本身。
+- Decision Agent：当前高级父模型。
+- Primary Observation Agent：`gpt-5.6-luna`；承担大规模图片、视频帧、Computer Use Observation 或其他实质性高体量分析时显式使用 `reasoning_effort=xhigh`。
+- Optional Primary Output Agent：`gpt-5.6-luna`；长输出和其他实质性物化任务显式使用 `reasoning_effort=xhigh`。
+- Observation Agent 与 Output Agent 是不同职责和不同 Session Affinity；即使当前 Profile 使用同一种模型，也不得因此把两者的高体量上下文默认合并。
 
-输出侧 Agent 返回诊断时默认进行语义压缩，不回传完整命令输出。只报告父 Agent 做下一步判断所需的事实、异常、相关路径和必要的小段证据；需要更多证据时再按父 Agent 的定向问题展开。
+### Profile 约束
 
-## Primary 输出 Agent 与 Session Affinity
-
-同一连续项目工作流默认维持一个 Primary 输出侧 Agent；在当前 Profile 中即 Primary Luna。后续项目探索、实现、诊断、测试、修复和局部执行优先复用该 Agent，不为每个简单检查机械地创建新 Agent。
-
-复用的目的包括保留项目工作上下文、减少重复探索，并提高稳定 prompt prefix 的复用机会。不得宣称同一 Agent 必然命中 prompt cache，也不得宣称新 Agent 必然无法命中缓存。
-
-只有存在明确理由时才新建输出侧 Agent，例如：
-
-- 需要不受实现历史影响的独立验证；
-- Primary Agent 的上下文明显失效、冲突严重或膨胀到不再适合继续工作；
-- 需要真正并行，且各任务互不依赖、不会争用相同写入目标；
-- 当前任务与 Primary Agent 已有上下文无关，隔离收益明确高于复用收益。
-
-Primary Agent 应保持 sticky but not immortal：优先复用，但允许在正确性、上下文容量或隔离需求要求时重建。
-
-## 上下文共享与 Semantic Contract
-
-### 简单、自包含任务
-
-使用精简提示：只给目标、必要约束、相关路径和需要返回的事实。能由输出侧 Agent 自行读取的文件或项目状态，不由输入侧 Agent 大段复制到提示词中。
-
-### 复杂、强上下文任务
-
-当任务明显依赖大量会话、业务或项目背景时，优先把宿主能够安全共享的完整相关上下文交给 Primary 输出侧 Agent，并额外提供一个简短的 Semantic Contract。这样避免输入侧 Agent 为重新描述已经存在的背景信息而产生大量输出，同时用 Contract 固化最终有效决策。
-
-Semantic Contract 只包含高价值决策信息，例如：
-
-- Goal：最终目标；
-- Constraints：不能破坏的业务、兼容性或安全边界；
-- Decisions：已批准的架构与关键取舍；
-- Acceptance：验收标准。
-
-Semantic Contract 是决策锚点，不是完整上下文的替代品。宿主共享的“完整上下文”仅指可提供给子 Agent 的会话内容，不包含不可见的内部推理。
-
-Primary Agent 建立后，后续默认只发送增量目标、决策变化和必要约束，不反复重写完整背景或 Contract。Contract 更新优先采用 amendment；当历史修订已经冲突到难以判断当前有效状态时，可发送一次明确的 authoritative decision snapshot，必要时重建 Primary Agent。
-
-若复杂任务所需上下文既不在 Primary Agent 中、宿主又无法共享，而短 Semantic Contract 也不足以安全执行，则停止并报告上下文阻塞；不要由输入侧 Agent 用长篇输出重新编码整段历史来绕过限制。
-
-## 派发指令可见性（Dispatch Preview）
-
-输入侧 Agent 每次实际向输出侧 Agent 创建任务或发送新的执行指令前，必须先在自己的用户可见会话中打印一条极简 `Dispatch` 预览，让用户能够知道本次具体让输出侧 Agent 做什么。该预览是即将派发指令的可见摘要，不是完整子 Agent prompt，也不得暴露不可见内部推理。
-
-预览只保留本次派发中足以识别任务的最小信息：
-
-- `Task`：一句话说明本次目标或增量目标；
-- `Scope`：仅在有必要时列出关键路径、模块或处理范围；
-- `Constraints`：仅保留会直接改变执行方式的关键约束；
-- `Runtime`：仅在本次需要显式模型或 reasoning effort 等参数时简写。
-
-默认输出 **1–3 行**，以 **约 80 tokens 以内**为目标；如果预览明显接近或超过 **约 120 tokens**，必须继续压缩后再派发。不要为了格式机械补齐没有内容的字段，也不要输出文件级执行计划、完整验收清单或解释性长文。
-
-复杂任务中，即使实际子 Agent 收到宿主共享的完整相关上下文或完整 Semantic Contract，Dispatch Preview 也只打印当前任务摘要与本次 amendment；禁止复制完整上下文、完整 Contract、历史决策快照或实际长 prompt。复用 Primary 输出 Agent 时只显示本次新增 delta，不重复此前已经可见的派发内容。
-
-推荐形式：
-
-```text
-Dispatch → Luna | Task: 修复认证中间件的刷新逻辑；Scope: auth/*；Constraints: 保持现有 API 兼容；Runtime: xhigh
-```
-
-若宿主已经在同一父会话中自动、清晰地显示了等价的派发摘要，可以不重复打印；但仅显示“已创建 Agent”“正在工作”等不包含任务语义的信息不算等价。
-
-## 两级规划与执行
-
-输入侧 Agent 负责语义级规划：目标、约束、架构决策、风险和验收标准。需要项目事实才能决策时，先让输出侧 Agent 探索项目并返回压缩事实，再由输入侧 Agent 做高价值判断。
-
-输出侧 Agent 在收到 Semantic Contract 后自行完成执行级规划，包括读取哪些文件、具体修改顺序、局部实现选择、编译测试和修复步骤。输入侧 Agent 不预先展开文件级、行级或命令级长计划。
-
-输出侧 Agent 可以决定“怎么执行”，但发现会改变已批准目标、架构、约束或验收标准的新事实时，必须暂停相关方向并把事实、影响和需要的决策极简升级给输入侧 Agent。输入侧更新 Contract 后，再由同一个 Primary Agent 继续。
-
-并行只用于互不依赖且不会争用相同写入目标的任务；存在依赖、共享文件或前后结果关系时顺序执行。
-
-## 事件驱动进度反馈
-
-Primary 输出侧 Agent 不持续发送工作日志。普通文件读取、grep、编译错误修复、局部实现步骤和下一条命令留在其自身上下文。
-
-只在以下事件主动向输入侧父 Agent 发送极简消息：
-
-- 关键里程碑发生，例如实现完成、开始验证；
-- 出现需要输入侧 Agent 做语义或架构决策的问题；
-- 发生阻塞、重大偏差或已批准 Contract 无法继续满足。
-
-消息只包含父 Agent 下一步判断所需内容，可使用 `Status`、`Issue`、`Need` 中有意义的字段；没有内容的字段不要机械补齐。不要重复已有上下文，也不要附完整日志、diff 或其他原始工具输出。
-
-任务完成时输出侧 Agent 提供压缩交付摘要：主要变更、机械验证结果、仍需关注的风险或边界变化。
-
-## Verification Boundary
-
-输出侧 Agent 负责机械验证和高体量证据处理，包括构建、测试、lint、formatter、类型检查、diff 检查、意外文件修改检查以及相关原始日志分析。它只向输入侧 Agent 返回压缩后的验证结论。
-
-输入侧 Agent 负责语义验收：用户目标是否满足、Semantic Contract 是否落实、业务/兼容性约束是否被破坏、输出侧报告的风险是否可接受。输入侧 Agent 不默认重新读取完整 diff、测试日志或大型文件来重复机械验证。
-
-需要确认某项结论时采用 Evidence-on-Demand：输入侧 Agent 提出具体问题，由输出侧 Agent 返回最小必要证据、相关路径和小段事实。只有高风险任务或确有独立审查价值时，才创建 fresh 输出侧 verifier；不能把独立验证变成所有任务的固定开销。
-
-验证失败时优先让同一个 Primary 输出侧 Agent 修复并重新机械验证；重大语义偏差再升级给输入侧 Agent。
-
-## 输入侧输出纪律
-
-输入侧 Agent 的输出以高信息密度为目标，只输出完成高级决策、Semantic Contract、决策升级、语义验收和必要用户交互所需的内容。
-
-凡文本主要是在展开已经确定的信息，而不是产生新的高价值决策，应交给输出侧 Agent，例如：
-
-- 大段代码、完整文件或详细逐文件实现步骤；
-- 长篇 README、设计文档、报告或说明；
-- 大量项目现状复述、完整 diff/测试报告；
-- 可以由输出侧 Agent 直接物化的长最终答复。
-
-输入侧 Agent 可以直接解释自己做出的关键决策；如果用户要求把这些决策展开成完整长文、代码或其他大体量产物，再交给输出侧 Agent。
-
-当最终答复本身很长且宿主不能直接复用输出侧结果时，优先让输出侧 Agent 把完整内容写入用户指定的文件或工作区，输入侧 Agent 只返回极简摘要和位置，不重新生成长文。
-
-## Cache-Aware Context Stability
-
-同一工作流优先保持 `stable prefix + small delta`：稳定已有会话、项目历史和已批准决策，只在尾部追加新的目标、amendment 或验证要求。不要为了“同步状态”周期性重新总结整个任务，也不要反复生成高度重叠的 Contract 全文。
-
-缓存友好性只是组织上下文的设计目标；实际缓存键、命中条件和额度折算由宿主决定，不得把缓存收益描述为保证结果。若稳定历史已经妨碍正确理解当前状态，应优先正确性，执行一次状态压缩或重建 Agent。
+- 不得把要求使用 Luna 的角色静默替换为其他模型。
+- 若无法确认 `gpt-5.6-luna` 身份、无法显式选择该模型，或复杂 Observation / 物化任务无法满足要求的 `reasoning_effort=xhigh`，停止对应实质性工作并简短报告阻塞。
+- 纯只读、严格有界的诊断或观察，在能够确认 Luna 身份但宿主无法设置 reasoning effort 时可以继续；不得因此把复杂高体量工作回退给高级父模型。
 
 ## 加载边界
 
 本 Skill 默认允许自动发现；普通 Skill 的 `description` 只影响隐式匹配，不能保证每次启动完整加载。若要保证特定宿主每次运行都遵循核心分工，应把必要不变量放入该宿主的持久指令机制，例如 Codex 的全局 `~/.codex/AGENTS.md`，或由宿主注入 system/developer instructions。
+
+`references/` 中的 Flow 文档采用按需加载，禁止因为“可能以后会用到”而在任务开始时全部读取。
