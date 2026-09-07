@@ -1,112 +1,112 @@
 # Multimodal Flow
 
-本 Flow 用于 Computer Use、连续 GUI Observation、大量图片/截图、视频或大量视频帧、视觉设计分析、reference design 对比、高体量 OCR / DOM / accessibility state，以及其他以大量视觉或时序世界状态为主要 Input Token 来源的任务。
+This Flow covers Computer Use, continuous GUI Observation, large image/screenshot collections, video or large frame sets, visual-design analysis, reference-design comparison, high-volume OCR / DOM / accessibility state, and other tasks where visual or temporal world state dominates Input Token volume.
 
-本 Flow 与 Coding Flow 独立。不要为了统一角色模型而把 Observation Agent 引入普通 Coding 任务，也不要把高体量视觉历史直接交给 Coding Flow。
+This Flow is independent from Coding Flow. Do not introduce an Observation Agent into ordinary Coding merely to unify role models, and do not pass high-volume visual history directly into Coding Flow.
 
-所有角色同时遵循 [`shared-protocols.md`](shared-protocols.md)。
+All roles also follow [`shared-protocols.md`](shared-protocols.md).
 
-## 架构角色
+## Architecture roles
 
 ### Decision Agent
 
-负责高价值语义与风险判断：理解用户视觉/交互目标、定义业务与安全约束、决定分析重点、形成或修订 Semantic Contract、处理语义歧义与 Semantic Checkpoint、接收压缩后的视觉结论，并执行最终语义验收。在 Creative Visual Authoring 中，它还必须先制定 Creative Brief/Visual Plan，并在每个 material visual milestone 亲自查看精选视觉证据、做视觉批评、发出 amendment 和下一阶段批准。
+Owns high-value semantic and risk judgment: understanding the user's visual or interaction goal, defining business and safety constraints, choosing analysis focus, creating or amending the Semantic Contract, resolving semantic ambiguity and Semantic Checkpoints, receiving compressed visual conclusions, and performing final semantic acceptance. In Creative Visual Authoring it must also define the Creative Brief/Visual Plan, personally inspect curated visual evidence at each material visual milestone, critique the result, issue amendments, and approve the next stage.
 
-Creative Visual Authoring 的主要视觉设计 ownership 属于 Decision Agent。构图、视觉层级、风格、色彩关系、整体观感，以及跨阶段的创意方向选择都属于其高价值判断职责；这些职责不能因为 Observation Agent 持有连续画布状态或 GUI 上下文而隐式下放。Decision Agent 不是只做最终审批，而是实际承担阶段性的设计分析与方向修订。
+The Decision Agent owns the primary visual-design direction in Creative Visual Authoring. Composition, visual hierarchy, style, color relationships, overall visual quality, and cross-stage creative direction are high-value responsibilities and must not be implicitly delegated merely because the Observation Agent owns the continuous canvas or GUI context. The Decision Agent is not a final-only approver; it performs active design analysis and direction revision throughout the work.
 
-Decision Agent 不默认持续查看大量截图、逐帧分析视频、摄入 OCR/DOM 全文，也不参与 Routine Interaction 的每一步普通导航和视觉定位。Creative 模式的精选 checkpoint 是 Observation Firewall 的窄例外，不改变这一边界。
+The Decision Agent does not continuously inspect large screenshot sets, analyze every video frame, ingest full OCR/DOM dumps, or participate in every routine navigation step. Curated Creative checkpoints are a narrow exception to the Observation Firewall and do not remove this boundary.
 
 ### Primary Observation Agent
 
-负责高 Input Token 密度的世界状态消费与压缩，包括但不限于：
+Owns consumption and compression of high-Input-Token world state, including:
 
-- screenshots、image collections、design references、rendered UI；
-- video frames、关键帧和时序片段；
-- Computer Use observations；
-- OCR、DOM、accessibility tree 或其他高体量视觉/界面状态。
+- screenshots, image collections, design references, rendered UI;
+- video frames, key frames, and temporal segments;
+- Computer Use observations;
+- OCR, DOM, accessibility tree, and other high-volume visual/interface state.
 
-它负责筛选、去重、聚类、视觉理解、时序定位、局部 OCR、差异分析、focused inspection、证据选择和 ephemeral world-state tracking。
+It performs screening, deduplication, grouping, visual understanding, temporal localization, local OCR, difference analysis, focused inspection, evidence selection, and ephemeral world-state tracking.
 
-Primary Observation Agent 的默认输出不是长报告，而是低 Token、高信息密度的 Visual / State Digest。它可以在 Semantic Contract 授权范围内执行维持 Routine Interaction 的 Computer Use observe/act 闭环所需的普通低风险操作。在 Creative 模式中，它另外负责按已批准的 pass contract 执行一次 bounded visual pass、截取精选 checkpoint 证据，并暂停等待 Decision Agent 的批评和批准。
+Its default output is not a long report but a low-Token, high-information-density Visual / State Digest. Within an approved Semantic Contract it may autonomously perform ordinary low-risk actions required for Routine Interaction observe/act loops. In Creative mode it executes one approved bounded visual pass, captures curated checkpoint evidence, and pauses for Decision critique and approval.
 
-Creative 模式下，Primary Observation Agent 可以做完成当前 pass 所需的局部机械视觉判断，例如控件定位、边缘/对齐检查、局部遮挡或明确条件验证，但不得成为主要视觉设计决策者。它不得自行决定新的核心构图、视觉层级、风格、色彩关系或跨阶段创意方向，也不得以“当前画布状态只有自己最清楚”为理由替代 Decision Agent 的设计分析。
+In Creative mode it may make local mechanical visual judgments needed to complete the current pass—for example control localization, edge/alignment checks, local occlusion checks, or verification of explicit conditions—but it must not become the primary visual designer. It may not independently redefine core composition, hierarchy, style, color relationships, or cross-stage creative direction, and it may not replace Decision analysis merely because it knows the current canvas state best.
 
 ### Optional Primary Output Agent
 
-只有 Multimodal 任务在视觉/时序分析之后仍需要大量非 Coding 物化时才创建，例如长报告、大体量结构化内容或其他长输出。
+Create this role only when a Multimodal task still requires substantial non-Coding materialization after visual/temporal analysis, such as a long report or large structured artifact.
 
-它只接收 Decision Agent 的 Semantic Contract、Observation Agent 的压缩 Digest 和必要的 Evidence-on-Demand 证据，不默认接收完整视觉历史。
+It receives only the Decision Agent's Semantic Contract, the Observation Agent's compressed Digest, and necessary Evidence-on-Demand. It does not receive the full visual history by default.
 
-如果后续工作属于 repo 修改、代码实现、调试或构建测试，则不要在 Multimodal Flow 内复制 Coding 执行规则；改用本文件定义的窄 Handoff 进入 [`coding-flow.md`](coding-flow.md)。
+If subsequent work is repository modification, code implementation, debugging, build, or test work, do not duplicate Coding execution rules here. Use the narrow handoff defined below and enter [`coding-flow.md`](coding-flow.md).
 
 ## Observation Firewall
 
-以下原始状态默认只由 Primary Observation Agent 摄入，不持续进入 Decision Agent：
+The following raw state is normally ingested only by the Primary Observation Agent and does not continuously flow into the Decision Agent:
 
-- 连续全屏截图和页面滚动过程中产生的截图；
-- Computer Use observation history；
-- 大批原始图片、设计 reference 或渲染结果；
-- 全量视频帧或大规模时序切片；
-- OCR 全文；
-- DOM dump、accessibility tree、UI state dump；
-- 为定位控件或验证视觉变化产生的重复中间证据。
+- continuous full-screen screenshots and screenshots generated while scrolling;
+- Computer Use observation history;
+- large raw image sets, design references, or rendered results;
+- full video-frame sets or large temporal slices;
+- full OCR text;
+- DOM dumps, accessibility trees, UI-state dumps;
+- repeated intermediate evidence generated for control localization or visual-change verification.
 
-Primary Observation Agent 只向 Decision Agent 返回做下一步高价值判断所需的状态、发现、风险、证据引用和待决问题。Decision Agent 需要确认具体视觉事实时，按 Evidence-on-Demand 请求最小必要证据，不重新摄入整个视觉集合。
+The Primary Observation Agent returns only the state, findings, risks, evidence references, and open questions required for the next high-value decision. When the Decision Agent must confirm a specific visual fact, use Evidence-on-Demand for the minimum necessary evidence rather than re-ingesting the entire visual collection.
 
-判断依据是潜在原始 Observation 体积与决策密度，而不是输入介质名称本身。单张简单图片或严格有界的小型视觉状态若不会形成上下文倾倒，可由 Decision Agent 直接查看；不要为了形式统一机械创建 Observation Agent。但这项输入规模例外只影响 reference 的摄入方式，不会把开放式视觉创作降级为 Routine Interaction。
+Use potential raw Observation volume and decision density as the criterion, not the media type alone. A single simple image or strictly bounded small visual state may be inspected directly by the Decision Agent when it will not produce a context dump. Do not create an Observation Agent mechanically. This input-size exception affects only how references are consumed; it does not downgrade open-ended visual creation to Routine Interaction.
 
-## 工作模式：Routine Interaction 与 Creative Visual Authoring
+## Working modes: Routine Interaction and Creative Visual Authoring
 
-### 模式选择
+### Mode selection
 
-先判断任务的视觉决策密度和结果开放程度，而不是只看使用了什么应用：
+Choose by visual decision density and result openness rather than by the application being used:
 
-- **Routine Interaction** 适用于浏览、页面/控件定位、滚动、表单填写、菜单操作、普通画笔参数调整，以及按明确既定方案执行的有界编辑。结果主要由用户或 Contract 预先决定时，Observation Agent 可自行维持连续 observe/act。
-- **Creative Visual Authoring** 适用于绘画、插画、图像编辑、合成、排版、视觉设计、画布创作、风格化，以及需要决定或迭代构图、视觉层级、色彩/光线、材质、留白或整体观感的任务。只要下一步可能改变核心视觉意图，就使用 Creative 模式。
+- **Routine Interaction**: browsing, page/control localization, scrolling, form filling, menu operations, ordinary brush-parameter adjustment, and bounded edits performed from an already-clear plan. When the intended result is largely predetermined by the user or Contract, the Observation Agent may maintain the continuous observe/act loop itself.
+- **Creative Visual Authoring**: drawing, illustration, image editing, compositing, layout, visual design, canvas creation, stylization, and work that requires deciding or iterating composition, hierarchy, color/light, material, whitespace, or overall visual quality. If the next step may change the core visual intent, use Creative mode.
 
-任务可以从 Routine Interaction 切换到 Creative Visual Authoring，但切换后必须先形成 Creative Brief/Visual Plan；不得以“已经打开了工具”或“只差一些细节”为理由跳过。反之，Creative 模式中的普通工具定位、菜单、滚动和画笔参数仍可留在 Observation Agent 内部，不需要逐动作升级。
+A task may switch from Routine Interaction to Creative Visual Authoring. After switching, create the Creative Brief/Visual Plan before continuing; “the tool is already open” or “only details remain” is not a reason to skip it. Conversely, ordinary tool localization, menu use, scrolling, and brush parameter changes inside Creative mode may remain within the Observation Agent and do not require per-action escalation.
 
-### Decision-led Visual Authoring 回路
+### Decision-led Visual Authoring loop
 
-Creative 模式不是逐点击遥控，也不是由 Observation Agent 先独立完成设计、Decision Agent 再被动审批。它由 Decision Agent 持有主要视觉设计方向、Observation Agent 物化一个有限视觉阶段，再由 Decision Agent 依据精选证据继续做设计分析并作出下一项高层决定：
+Creative mode is neither click-by-click remote control nor “Observation designs everything, Decision approves at the end.” The Decision Agent owns the main visual direction; the Observation Agent materializes one bounded visual stage; then the Decision Agent uses curated evidence to perform design analysis and choose the next high-level direction.
 
-1. **建立 Brief/Plan**：Decision Agent 直接检查少量关键 reference，或先接收 Observation Agent 的筛选摘要；然后形成短的 `Creative Brief/Visual Plan`。至少固定最终目标、构图/布局、焦点与视觉层级、色彩/光线或视觉语言、阶段顺序、预期 checkpoint 数量（默认 3–6 个，可按复杂度自适应）和验收条件。该计划是 Semantic Contract 的视觉扩展，不是完整图片或连续 Observation 历史。
-2. **派发一个 bounded visual pass**：每次只批准一个有限阶段，例如结构 block-in、色彩/明暗建立、材质/细节、最终统一与输出准备。pass contract 要写清本阶段允许改变的区域/属性、不可改变的核心构图或风格、完成条件，以及到达哪个 checkpoint 后必须暂停。
-3. **返回精选 checkpoint**：到达 material visual milestone 时，Observation Agent 必须暂停并返回少量最能判断方向的当前画布 screenshot/crop（必要时附 reference 对照）和极简状态。默认里程碑包括结构/构图、色彩/光照、细节/材质和最终检查；可根据任务合并、拆分或增减，但不能让一个未审看的长 pass 跨越多个 material milestone。
-4. **Decision 亲自审看与修订**：Decision Agent 必须亲自查看这些精选图像证据，主动执行当前阶段所需的设计分析，判断构图、层级、色彩/光线、风格一致性和整体观感是否仍符合 Brief；不能只依据 Observation Agent 的文字结论，也不能只对 Observation Agent 已经做出的设计判断进行形式化确认。它随后发送简短 amendment，明确 `Keep`、`Change`、`Next pass`、更新后的验收条件和 `Approved to continue`；若方向偏差明显，应在当前 checkpoint 明确重新定向并暂停，而不是让 Observation Agent 自行决定如何补救。
-5. **无批准不越界**：Observation Agent 只能在收到当前 checkpoint 的批准或 amendment 后进入下一阶段。它不得跨越尚未批准的 material milestone，也不得自行改变核心构图、风格、视觉层级或把局部修补扩展成新的创意方向。普通机械操作仍由它自行完成。
+1. **Create the Brief/Plan**: the Decision Agent directly inspects a small set of key references or first receives an Observation screening summary, then creates a short `Creative Brief/Visual Plan`. At minimum, stabilize the final goal, composition/layout, focal point and hierarchy, color/light or visual language, stage order, expected checkpoint count (default 3–6, adaptive to complexity), and acceptance conditions. The plan is a visual extension of the Semantic Contract, not a replacement for images or a replay of Observation history.
+2. **Dispatch one bounded visual pass**: approve only one limited stage at a time—for example structural block-in, color/value establishment, material/detail, or final unification/output preparation. The pass contract states what regions or properties may change, what core composition/style must remain stable, completion conditions, and which checkpoint requires a pause.
+3. **Return a curated checkpoint**: at a material visual milestone, the Observation Agent must pause and return a small number of current-canvas screenshots/crops that best support directional judgment, with reference comparison when needed and an extremely short status. Default milestones include structure/composition, color/lighting, detail/material, and final review. Milestones may be merged or split by task complexity, but one unreviewed pass must not cross several material milestones.
+4. **Decision personally reviews and amends**: the Decision Agent must inspect the curated visual evidence itself and actively analyze composition, hierarchy, color/light, style consistency, and overall quality against the Brief. It must not rely only on the Observation Agent's text conclusion or merely formalize design choices already made by Observation. Then issue a short amendment containing `Keep`, `Change`, `Next pass`, updated acceptance conditions, and `Approved to continue`. If direction is substantially wrong, redirect at the current checkpoint and pause rather than allowing Observation to invent its own recovery direction.
+5. **No crossing unapproved milestones**: the Observation Agent may enter the next stage only after receiving approval or an amendment for the current checkpoint. It may not cross an unapproved material milestone, redefine core composition/style/hierarchy, or expand a local fix into a new creative direction. Ordinary mechanical operations remain autonomous.
 
-精选 checkpoint 是 Observation Firewall 的窄例外：只传递筛选后的 screenshot/crop、必要的 reference 对照和极简状态，不传递连续截图、点击/坐标序列、完整 GUI 历史、全量图层状态或重复中间证据。精选证据不等于把 Observation 上下文倾倒给 Decision Agent。
+Curated checkpoints are a narrow exception to the Observation Firewall. Pass only selected screenshots/crops, necessary reference comparison, and minimal status. Do not pass continuous screenshots, click/coordinate sequences, complete GUI history, full layer state, or repeated intermediate evidence.
 
-如果宿主不能把精选 screenshot/crop 或等价的可视化证据实际提供给 Decision Agent，开放式 Creative Visual Authoring 必须停止并报告能力阻塞；不得退回 Routine Interaction，让 Observation Agent 在没有 Decision 审查的情况下独立完成创作。若只是 Routine Interaction，则仍可使用普通 observe/act 闭环。
+If the host cannot actually provide curated screenshots/crops or equivalent visual evidence to the Decision Agent, open-ended Creative Visual Authoring must stop and report a capability block. Do not fall back to Routine Interaction and let the Observation Agent independently finish the creative work. Routine Interaction may continue normally when Creative review is not required.
 
-推荐的最小消息形态如下，字段可按信息价值省略：
+Recommended minimum message form:
 
 ```text
-Creative Plan: 目标；构图/层级；色彩/光线；阶段；checkpoint=4；验收
-Pass 1: 只建立主体轮廓与大形；保持视角和焦点不变；到结构 checkpoint 暂停
-Checkpoint: 结构已完成；Evidence: 当前画布精选截图 + 必要局部 crop
-Decision amendment: Keep 主体位置；Change 背景留白；Next pass 建立冷暖光；Approved to continue
+Creative Plan: goal; composition/hierarchy; color/light; stages; checkpoint=4; acceptance
+Pass 1: establish silhouette and large shapes only; preserve viewpoint and focal point; pause at structure checkpoint
+Checkpoint: structure complete; Evidence: curated current-canvas screenshot + necessary crop
+Decision amendment: Keep subject placement; Change background whitespace; Next pass establish warm/cool lighting; Approved to continue
 ```
 
 ## Visual Progressive Disclosure
 
-大量图片/截图默认采用渐进式读取，而不是一开始对所有输入做最高细节分析：
+For large image/screenshot collections, increase analysis density progressively instead of starting with maximum-detail inspection of every input:
 
-1. `Inventory`：确认数量、文件名/标识、尺寸、格式、时间顺序或其他低成本元数据；
-2. `Screening`：用足够完成粗筛的最低合理细节判断相关性；
-3. `Dedup / Group`：去除明显重复内容，并按场景、状态或视觉相似性分组；
-4. `Candidate Selection`：挑出真正需要深入判断的候选图片；
-5. `Focused Inspection`：只对候选输入提高细节；
-6. `Local Evidence`：必要时使用 crop、局部放大、OCR 或其他定向方法获取最小证据。
+1. `Inventory`: count, file names/IDs, dimensions, formats, ordering, or other low-cost metadata;
+2. `Screening`: use the lowest reasonable detail sufficient for coarse relevance filtering;
+3. `Dedup / Group`: remove obvious duplicates and group by scene, state, or visual similarity;
+4. `Candidate Selection`: choose the inputs that actually require deeper judgment;
+5. `Focused Inspection`: increase detail only for candidates;
+6. `Local Evidence`: use crops, zoom, OCR, or other targeted methods only where needed.
 
-具体缩略图、detail 级别、聚类算法或图像工具由 Primary Observation Agent 根据宿主能力决定，本 Skill 不固定实现方式。
+Thumbnail strategy, detail level, clustering method, and image tools are chosen by the Primary Observation Agent according to host capability. This Skill does not prescribe a particular implementation.
 
-禁止为了“完整分析”默认把整个大型图片集逐张高细节复述给 Decision Agent。
+Do not high-detail summarize an entire large image set to the Decision Agent merely for “complete analysis.”
 
 ## Video / Temporal Progressive Disclosure
 
-视频和大规模时序视觉输入默认采用类似的渐进式策略：
+Use the same principle for video and large temporal visual streams:
 
 ```text
 video / frame stream
@@ -118,32 +118,32 @@ video / frame stream
 → Temporal Digest
 ```
 
-Primary Observation Agent 应先定位可能相关的时间段和关键变化，再对候选片段提高分析密度；除非任务本身要求逐帧检查且确有必要，不默认让每一帧进入高细节推理。
+Locate potentially relevant time ranges and key changes first, then increase analysis density for candidate segments. Do not send every frame through high-detail reasoning unless the task genuinely requires frame-by-frame inspection.
 
-本 Skill 不规定固定帧率、采样间隔或场景分割算法。正确性需要更密集检查时优先提高局部相关时间段的分析密度，而不是无条件提升整个视频的帧消费量。
+This Skill does not prescribe a fixed frame rate, sampling interval, or segmentation algorithm. When correctness requires denser analysis, increase density around relevant local time ranges before increasing frame consumption for the entire video.
 
-## Session Affinity 与 Ephemeral State Ownership
+## Session Affinity and Ephemeral State Ownership
 
-同一连续 Multimodal 工作流默认维持一个 Primary Observation Agent。其 Session Affinity 用于保留视觉/时序工作上下文、已筛选候选、页面导航历史以及当前 ephemeral world state，减少重复 Observation 和重复定位。
+A continuous Multimodal workflow maintains one Primary Observation Agent by default. Its Session Affinity preserves visual/temporal working context, screened candidates, navigation history, and current ephemeral world state, reducing repeated Observation and relocation.
 
-以下信息默认视为 ephemeral execution state，由 Primary Observation Agent 在自身上下文中维护：
+The following is ephemeral execution state and normally remains only in the Primary Observation Agent:
 
-- 屏幕坐标；
-- 当前滚动位置；
-- 动态页面布局；
-- 弹窗、控件或临时 UI 状态；
-- 当前窗口/页面/视频位置；
-- 只对最新 Observation 有效的视觉定位信息。
+- screen coordinates;
+- current scroll position;
+- dynamic page layout;
+- popup, control, or temporary UI state;
+- current window/page/video position;
+- visual localization valid only for the latest Observation.
 
-这些状态不得作为长期 Semantic Contract 的核心内容，也不应周期性同步给 Decision Agent。
+Do not make this state a core long-lived Semantic Contract or periodically synchronize it to the Decision Agent.
 
-Decision Agent 描述语义目标，例如“打开账户安全设置并检查双重验证状态”；Primary Observation Agent 根据最新 Observation 自行决定当前页面中的具体坐标、控件定位和普通导航步骤。
+The Decision Agent states semantic goals, such as “open account security settings and inspect two-factor authentication status.” The Primary Observation Agent uses the latest Observation to choose concrete coordinates, controls, and ordinary navigation steps.
 
-Primary Observation Agent 同样 sticky but not immortal。上下文明显失效、视觉历史冲突严重、任务需要真正独立验证或隔离收益明确时，可以重建。
+The Primary Observation Agent is sticky but not immortal. Rebuild it when context is clearly stale, visual history is severely contradictory, truly independent verification is required, or isolation benefits are concrete.
 
-## Computer Use Observe / Act Loop（Routine Interaction）
+## Computer Use Observe / Act Loop (Routine Interaction)
 
-Routine Interaction 的普通执行闭环由 Primary Observation Agent 自己维持：
+Routine Interaction keeps its ordinary execution loop inside the Primary Observation Agent:
 
 ```text
 observe
@@ -153,96 +153,96 @@ observe
 → observe
 ```
 
-在已批准 Semantic Contract 范围内，滚动、普通导航、打开无副作用页面、定位控件、填写尚未提交的字段等低风险动作不需要逐步回到 Decision Agent。普通截图变化、元素定位和下一步执行计划留在 Observation Agent 自身上下文。若这些动作服务于 Creative Visual Authoring，它们仍可留在 Observation Agent 内部，但不得替代 Creative checkpoint 回路。
+Within an approved Semantic Contract, scrolling, ordinary navigation, opening no-side-effect pages, locating controls, and filling not-yet-submitted fields do not require step-by-step return to the Decision Agent. Screenshot changes, element localization, and the next execution step remain inside Observation context. When these actions serve Creative Visual Authoring, they may still stay local, but they do not replace Creative checkpoints.
 
-不要把 Routine 闭环机械拆成：
+Do not mechanically decompose Routine work into:
 
 ```text
 Observation Agent → Decision Agent → Output Agent → Observation Agent
 ```
 
-否则会导致状态同步成本、视觉信息丢失和过期状态风险。Creative 模式采用上一节的 bounded visual pass → curated checkpoint → Decision critique/amendment 回路，不把每个 click 都升级。
+That pattern creates synchronization cost, visual information loss, and stale-state risk. Creative mode instead uses bounded visual pass → curated checkpoint → Decision critique/amendment without escalating every click.
 
-Primary Observation Agent 每次执行动作前仍须遵守宿主工具自身的确认、权限和安全要求；本 Skill 不覆盖这些更高优先级边界。
+Every action still follows the host tool's own confirmation, permission, and safety requirements; this Skill does not override them.
 
 ## Semantic Checkpoints
 
-Routine Computer Use 的升级边界按语义副作用判断，而不是按动作是否只是一次 click/type 判断。Creative 模式另有 material visual milestone：即使没有外部副作用，达到该里程碑也必须返回精选证据并等待 Decision Agent 的视觉批评和批准。
+Escalate Routine Computer Use based on semantic side effects, not whether the action is technically only one click or keystroke. Creative mode additionally has material visual milestones that require curated evidence and Decision review even when no external side effect exists.
 
-典型 Semantic Checkpoint 包括但不限于：
+Typical Semantic Checkpoints include:
 
-- 发送外部消息或邮件；
-- 提交、发布或公开内容；
-- 支付、购买、转账或其他资金动作；
-- 删除、合并、批准或其他难以撤销的操作；
-- 权限、访问控制或账户安全设置变更；
-- 创建或修改真实外部资源；
-- 用户明确要求在执行前确认的动作。
+- sending external messages or email;
+- submitting, publishing, or making content public;
+- payment, purchase, transfer, or other financial actions;
+- deletion, merge, approval, or other hard-to-reverse actions;
+- permission, access-control, or account-security changes;
+- creating or modifying real external resources;
+- actions the user explicitly requested to confirm before execution.
 
-若 Semantic Contract 已明确授权该具体副作用，且宿主工具不要求额外确认，Primary Observation Agent 可继续；否则必须在动作前暂停，把当前状态、预期影响和需要的决定极简升级给 Decision Agent。
+If the Semantic Contract explicitly authorizes the specific side effect and the host tool requires no additional confirmation, the Primary Observation Agent may proceed. Otherwise pause before the action and escalate only the current state, expected effect, and decision needed.
 
-不要因为“操作很简单”跳过语义边界，也不要因为存在 Semantic Checkpoint 规则而对每个普通导航动作请求批准。
+Do not skip a semantic boundary because the interaction is mechanically simple, and do not request approval for every ordinary navigation action merely because Semantic Checkpoints exist.
 
 ## Visual / State Digest
 
-Primary Observation Agent 的返回默认使用弹性、高密度摘要。可使用以下字段，但只写有信息价值的字段：
+The Primary Observation Agent returns an elastic, high-density summary. Use only fields that add information:
 
-- `State`：当前页面、视觉集合或时序分析进度；
-- `Findings`：对下一步决策有意义的发现；
-- `Evidence`：必要的图片、帧、时间段或局部证据引用；
-- `Issue`：异常、冲突或风险；
-- `Need`：需要 Decision Agent 做出的决定。
+- `State`: current page, visual collection, or temporal-analysis progress;
+- `Findings`: discoveries relevant to the next decision;
+- `Evidence`: necessary image/frame/time-range/local evidence references;
+- `Issue`: anomaly, conflict, or risk;
+- `Need`: decision required from the Decision Agent.
 
-示例：
+Examples:
 
 ```text
-State: 已筛查 184 张截图
-Findings: 7 张相关，其中 4 张出现同一登录跳转错误
+State: screened 184 screenshots
+Findings: 7 relevant; 4 show the same login redirect error
 Evidence: IMG_034, IMG_039, IMG_042, IMG_087
-Issue: 错误仅发生于 OAuth redirect 后
+Issue: error occurs only after OAuth redirect
 ```
 
 ```text
-State: 已进入支付确认页
-Finding: 地址和支付信息均已完成
-Issue: 下一动作将提交真实订单
-Need: 是否提交
+State: reached payment confirmation page
+Finding: address and payment information are complete
+Issue: next action will submit a real order
+Need: whether to submit
 ```
 
-禁止逐图片、逐帧、逐截图或逐操作复述整个观察历史。若父 Agent 只需要一个二元结论或少量事实，Digest 应进一步压缩。
+Do not narrate the full observation history image by image, frame by frame, screenshot by screenshot, or action by action. Compress further when the parent only needs a binary conclusion or a few facts.
 
-Creative checkpoint 的 Digest 可以额外包含精选 screenshot/crop，但仍应保持极简：说明当前 pass 和 milestone、一个方向性状态、少量 `Evidence` 引用及等待 Decision 的 `Need`。不得用长文字描述来替代宿主无法提供的实际视觉证据。
+A Creative checkpoint Digest may additionally include curated screenshots/crops while remaining minimal: current pass and milestone, one directional status, a few `Evidence` references, and the `Need` for Decision review. Long prose is not a substitute when the host cannot provide actual visual evidence.
 
 ## Multimodal Verification Boundary
 
-Primary Observation Agent 负责高体量视觉/时序机械验证，例如：
+The Primary Observation Agent owns high-volume visual/temporal mechanical verification, including:
 
-- 页面是否到达目标状态；
-- 目标控件是否出现、消失或进入预期状态；
-- UI 是否存在明显布局破坏或与 reference 的关键差异；
-- 图片处理结果是否满足明确视觉条件；
-- 目标视频事件是否实际出现，以及相关时间段；
-- Computer Use 操作后的最终状态是否符合 Contract 中可机械确认的要求。
+- whether the page reached the target state;
+- whether a target control appeared, disappeared, or entered the expected state;
+- whether the UI has obvious layout breakage or key differences from a reference;
+- whether image-processing output satisfies explicit visual conditions;
+- whether a target video event occurred and where;
+- whether final Computer Use state satisfies mechanically checkable Contract conditions.
 
-Decision Agent 负责语义验收：视觉结果是否真正满足用户目标、业务或风险约束是否被破坏、剩余偏差是否可接受。在 Creative 模式中，Decision Agent 还负责每个 material visual milestone 的视觉验收、设计分析和方向修订；Primary Observation Agent 的“已完成”文字或设计建议不能代替其对精选证据的亲自审看与独立判断。
+The Decision Agent owns semantic acceptance: whether the visual result truly satisfies the user goal, business/risk constraints remain intact, and remaining deviation is acceptable. In Creative mode it also owns visual acceptance, design analysis, and direction revision at each material milestone; the Observation Agent's “done” statement or design suggestion does not replace direct inspection and independent Decision judgment.
 
-Decision Agent 不默认重新读取全部截图、设计稿或视频帧进行二次视觉检查。需要确认具体结论时使用 Evidence-on-Demand；高风险或独立审查价值明确时才创建 fresh verifier。
+The Decision Agent does not reread all screenshots, references, or video frames by default. Use Evidence-on-Demand for specific conclusions and a fresh verifier only when high risk or independent-review value justifies it.
 
-## Multimodal → Coding 窄 Handoff
+## Multimodal → Coding narrow Handoff
 
-当 Multimodal 分析结果需要代码、repo、配置修改或 Coding 验证时，结束当前视觉分析阶段，由 Decision Agent 形成窄 Handoff Contract，再进入 Coding Flow。
+When Multimodal analysis requires code, repository, configuration changes, or Coding verification, end the current visual-analysis stage. The Decision Agent creates a narrow Handoff Contract and then enters Coding Flow.
 
-Handoff 只包含：
+The Handoff contains only:
 
-- `Goal`：需要通过 Coding 完成的目标；
-- `Required changes`：已确认需要物化的变化；
-- `Constraints`：兼容性、业务、安全或不得破坏的边界；
-- `Evidence`：必要的设计 frame、截图、时间段等引用，不复制完整视觉内容；
-- `Acceptance`：Coding 完成后需要满足的视觉/业务验收标准。
+- `Goal`: what Coding must accomplish;
+- `Required changes`: confirmed changes to materialize;
+- `Constraints`: compatibility, business, safety, or do-not-break boundaries;
+- `Evidence`: references to necessary design frames, screenshots, or time ranges without copying the full visual content;
+- `Acceptance`: visual/business acceptance conditions after Coding completes.
 
-禁止在 Handoff 中传递完整图片集、全量视频帧、Computer Use Observation history、OCR 全文或 Primary Observation Agent 的完整分析历史。
+Do not include complete image sets, all video frames, Computer Use observation history, full OCR text, or the Primary Observation Agent's full analysis history.
 
-典型设计场景：
+Typical design workflow:
 
 ```text
 Multimodal Flow
@@ -256,10 +256,10 @@ Multimodal Flow
 → semantic acceptance
 ```
 
-Coding 完成后若需要视觉验收，优先复用原 Primary Observation Agent；不要让 Coding Primary Output Agent 为验证视觉结果重新摄入整套原始 reference。
+If visual verification is needed after Coding, reuse the original Primary Observation Agent rather than making the Coding Primary Output role re-ingest the full visual reference set.
 
-## Multimodal 内的 Optional Output Agent
+## Optional Output Agent inside Multimodal Flow
 
-若任务不涉及 Coding，但需要把已经确定的视觉/时序结论展开成长报告、大体量文档或其他长产物，可由 Decision Agent 创建 Optional Primary Output Agent。
+If the task does not involve Coding but requires expanding already-determined visual/temporal conclusions into a long report, large document, or other large artifact, the Decision Agent may create an Optional Primary Output Agent.
 
-该 Agent 只负责物化，不接管 Primary Observation Agent 的世界状态，也不重新分析整个视觉输入。它发现 Digest 或 Contract 不足以安全生成产物时，应请求 Decision Agent 定向补充，而不是自行要求全量视觉历史。
+That Agent materializes output only. It does not take ownership of world state or reanalyze the complete visual input. If the Digest or Contract is insufficient for safe materialization, it asks the Decision Agent for targeted supplementation rather than requesting the full visual history.
