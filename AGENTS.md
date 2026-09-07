@@ -69,7 +69,7 @@ Before completing a documentation change, run:
 python3 scripts/check-multilingual-docs.py
 ```
 
-A change is not complete while this validator reports an error. If the validator and these rules disagree, fix the validator and documentation together rather than bypassing the check.
+A change is not complete while this validator reports an error. The repository CI also runs this validator for relevant pull requests and pushes to `main`. If the validator and these rules disagree, fix the validator and documentation together rather than bypassing the check.
 
 ## Pull-request review checklist
 
