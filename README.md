@@ -80,7 +80,7 @@ For tasks such as “modify the frontend from this design,” first complete vis
 The current deployment strategy is:
 
 - Coding input-side reasoning: the current advanced parent model;
-- Coding Primary Output: `gpt-5.6-luna`, with `reasoning_effort=xhigh` for substantive materialization;
+- Coding Primary Output: `gpt-5.6-luna`, with `reasoning_effort=max` for substantive materialization;
 - Multimodal Decision Agent: the current advanced parent model;
 - Multimodal Primary Observation Agent: `gpt-5.6-luna`, with `reasoning_effort=xhigh` for substantive high-volume visual/temporal analysis;
 - Multimodal Optional Primary Output Agent: `gpt-5.6-luna`, with `reasoning_effort=xhigh` for substantive long output.

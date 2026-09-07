@@ -80,7 +80,7 @@ Token I/O Decoupling
 当前具体运行策略为：
 
 - Coding 输入侧推理：当前高级父模型；
-- Coding Primary Output：`gpt-5.6-luna`，实质性物化任务使用 `reasoning_effort=xhigh`；
+- Coding Primary Output：`gpt-5.6-luna`，实质性物化任务使用 `reasoning_effort=max`；
 - Multimodal Decision Agent：当前高级父模型；
 - Multimodal Primary Observation Agent：`gpt-5.6-luna`，实质性高体量视觉/时序分析使用 `reasoning_effort=xhigh`；
 - Multimodal Optional Primary Output Agent：`gpt-5.6-luna`，实质性长输出使用 `reasoning_effort=xhigh`。

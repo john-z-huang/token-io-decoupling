@@ -112,7 +112,7 @@ At Coding Flow startup, first confirm the current Code Agent model identity and 
 
 - **Current Agent is explicitly `gpt-5.6-luna`**: enter **Single-Agent Luna Mode**. The current Session performs both the Input-side Reasoning Role and Primary Output Role, including project exploration, implementation, debugging, mechanical verification, and output. Do not create or require another Luna Primary Output Agent merely to preserve a two-role topology.
 - **Current Agent cannot explicitly confirm it is `gpt-5.6-luna`**: constrain the current Agent as the input-side reasoning role and use an independent `gpt-5.6-luna` for the Primary Output Role, preserving the normal two-Session Coding Flow.
-- Substantive implementation, long output, and other materialization work require the Luna performing the Primary Output Role to use `reasoning_effort=xhigh`; this also applies in Single-Agent Luna Mode.
+- In the normal two-Session Coding Flow, substantive implementation, long output, and other materialization work require the Luna performing the Primary Output Role to use `reasoning_effort=max`. Single-Agent Luna Mode keeps its materialization at `reasoning_effort=xhigh`.
 - Single-Agent Luna Mode may create another Agent only for fresh verification, real parallelism, clearly degraded/overgrown current context, or another explicit isolation benefit. Project exploration, implementation, testing, long output, or generic task complexity are not exceptions.
 
 ### Multimodal Flow

@@ -112,7 +112,7 @@ Handoff 的字段和禁止携带的原始状态以 `multimodal-flow_zh_cn.md` �
 
 - **当前 Agent 已明确是 `gpt-5.6-luna`**：进入 **Single-Agent Luna Mode**。当前 Session 同时承担 Input-side Reasoning Role 与 Primary Output Role，直接完成项目探索、实现、调试、机械验证和输出；不得仅为了双角色拓扑再创建或要求存在额外 Luna Primary Output Agent。
 - **当前 Agent 不能明确确认自己是 `gpt-5.6-luna`**：按输入侧推理角色约束自身行为，并使用独立 `gpt-5.6-luna` 承担 Primary Output Role，保持正常双 Session Coding Flow。
-- 实现、长输出和其他实质性物化任务要求承担 Primary Output Role 的 Luna 显式使用 `reasoning_effort=xhigh`；Single-Agent Luna Mode 同样适用。
+- 在正常双 Session Coding Flow 中，实现、长输出和其他实质性物化任务要求承担 Primary Output Role 的 Luna 显式使用 `reasoning_effort=max`；Single-Agent Luna Mode 的物化工作保持 `reasoning_effort=xhigh`。
 - Single-Agent Luna Mode 只有在 fresh verification、真正并行、当前上下文明显失效/膨胀，或存在明确独立隔离收益时才允许创建额外 Agent。项目探索、实现、测试、长输出或“任务复杂”本身不是例外理由。
 
 ### Multimodal Flow
