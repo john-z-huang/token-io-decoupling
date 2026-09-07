@@ -1,62 +1,84 @@
 # Token I/O Decoupling
 
-`token-io-decoupling` 是一个面向支持 Agent Skills 的开发型 code agent 的调度 Skill。它把传统单模型同时承担的“输入侧理解/推理”和“输出侧执行/物化”拆成两个角色，使高价值语义推理与高体量项目读写可以由不同模型承担。
+`token-io-decoupling` 是一个面向支持 Agent Skills 的 Agent 调度 Skill。它根据任务场景把高价值语义决策、高体量原始状态消费与大体量输出物化拆开处理，避免高级父模型被低决策密度的项目状态或视觉世界状态持续占用上下文。
+
+当前 Skill 不使用一套统一的三 Agent 架构，而是提供两条独立流程：
+
+- **Coding Flow**：保持成熟的双角色路径，由输入侧推理 Agent 负责高价值判断，Primary 输出 Agent 负责 repo exploration、代码/文档/配置物化、测试修复和机械验证。
+- **Multimodal Flow**：用于 Computer Use、视频、大量图片/截图和视觉设计，由 Decision Agent 负责高价值判断，Primary Observation Agent 负责高体量视觉/时序 Input Token；只有确实需要长输出时才创建 Optional Primary Output Agent，需要修改代码时通过窄 Handoff 进入 Coding Flow。
 
 ## 设计目标
 
-- 让输入侧 Agent 聚焦用户意图、业务语义、架构决策、Semantic Contract 与语义验收。
-- 让输出侧 Agent 处理高体量项目探索、原始工具输出、代码/文档/配置物化、调试修复和机械验证。
-- 避免大型 diff、测试日志、文件树等低决策密度原始内容直接污染高级父模型上下文。
-- 复用 Primary 输出侧 Agent，减少重复项目探索，并尽量维持缓存友好的稳定上下文前缀。
-- 通过“完整相关上下文 + 简短 Semantic Contract”降低父 Agent 为重新描述既有背景而产生大量输出的需要。
-- 采用事件驱动汇报、Evidence-on-Demand 和分层验收，避免把输出侧工作日志重新灌回输入侧上下文。
-- 在每次派发前显示受严格长度约束的 Dispatch Preview，让父会话能够看出 Output Agent 收到的任务，同时避免复制长 prompt 或完整上下文。
+- 普通 Coding 任务不因支持多模态而增加 Observation Agent 或额外调度层。
+- 大型 diff、测试日志、文件树等项目原始状态继续由 Coding Primary Output Agent 消费并压缩。
+- 连续截图、图片集合、视频帧、Computer Use Observation、OCR / DOM / accessibility state 等高体量多模态输入由 Primary Observation Agent 消费并压缩。
+- Computer Use 的普通 observe/act 循环保持在 Observation Agent 的同一 Session 内，避免逐步跨 Agent 同步临时 GUI 状态。
+- 大量图片与视频采用渐进式筛选，只对候选区域、图片、帧或时间段提高分析密度。
+- 通过 Semantic Checkpoint 区分普通 GUI 操作与发送、提交、支付、删除、权限变更等高影响动作。
+- 设计分析与 Coding 之间只传递窄 Handoff Contract，不把完整设计图、截图历史或 OCR 全文重新灌入 Coding Agent。
+- 继续使用 Dispatch Preview、事件驱动汇报、Evidence-on-Demand 和缓存友好的增量通信控制父会话 Token 规模。
+
+## 场景路由
+
+```text
+Token I/O Decoupling
+        │
+        ├── Coding Flow
+        │     Input-side Reasoning Agent
+        │               ↓
+        │     Primary Output Agent
+        │
+        └── Multimodal Flow
+              Decision Agent
+                   ↓
+          Primary Observation Agent
+                   ↓
+           Visual / State Digest
+                   ↓
+              Decision Agent
+                   ↓
+          optional Output / Coding Handoff
+```
+
+### Coding Flow
+
+适用于 repo exploration、implementation、refactor、debugging、build/test/lint、代码/配置/开发文档物化等任务。
+
+核心机制包括：Context Firewall、Primary Output Agent Session Affinity、Semantic Contract、两级规划、Coding Verification Boundary 与输入侧输出纪律。
+
+### Multimodal Flow
+
+适用于 Computer Use、连续 GUI Observation、大量图片/截图、视频或大量帧、视觉设计 reference 对比和其他高体量视觉世界状态。
+
+核心机制包括：Observation Firewall、Visual / Temporal Progressive Disclosure、Ephemeral State Ownership、Computer Use Observe/Act Loop、Semantic Checkpoint、Visual / State Digest 与 Multimodal Verification。
+
+### 混合任务
+
+例如“根据设计稿修改前端”时，先在 Multimodal Flow 中完成视觉分析，再把稳定目标、Required changes、Constraints、Evidence 引用和 Acceptance 压缩成窄 Handoff Contract，随后进入 Coding Flow。实现后若需要视觉验收，再复用原 Primary Observation Agent。
 
 ## 当前 OpenAI Profile
 
 当前具体运行策略为：
 
-- 输入侧：当前高级父模型，典型为 GPT-5.6 Sol；
-- 输出侧：`gpt-5.6-luna`；
-- 实现、长输出和其他实质性物化任务使用 `reasoning_effort=xhigh`；
-- Luna 不递归委派；模型身份或必要参数不可满足时不静默 fallback。
+- Coding 输入侧推理 Agent：当前高级父模型；
+- Coding Primary Output Agent：`gpt-5.6-luna`，实质性物化任务使用 `reasoning_effort=xhigh`；
+- Multimodal Decision Agent：当前高级父模型；
+- Multimodal Primary Observation Agent：`gpt-5.6-luna`，实质性高体量视觉/时序分析使用 `reasoning_effort=xhigh`；
+- Multimodal Optional Primary Output Agent：`gpt-5.6-luna`，实质性长输出使用 `reasoning_effort=xhigh`。
 
-该 Profile 是当前部署策略，不是架构本身。未来模型变化时，应优先调整 Profile，而保持 Input-side / Output-side 的职责边界稳定。
+Observation 与 Output 是不同职责和不同 Session Affinity。即使当前 Profile 使用同一种模型，也不默认共享它们的高体量上下文。
 
-## 核心机制
-
-### Context Firewall
-
-可能产生大量项目原始状态的命令和工具输出默认由输出侧 Agent 摄入并压缩；输入侧 Agent只接收做决策所需的事实。严格有界的小型元数据查询可以直接执行。
-
-### Primary Output Agent
-
-同一连续工作流优先维持一个 Primary Luna，后续探索、实现、测试和修复默认复用。只有独立验证、上下文失效/膨胀、必要并行或明确隔离收益时才新建 Agent。
-
-### Semantic Contract
-
-输入侧 Agent 负责目标、约束、架构决策和验收标准；复杂任务把宿主可安全共享的完整相关上下文交给输出侧 Agent，同时用简短 Contract 固化最终有效决定。后续变化优先使用增量 amendment。
-
-### Dispatch Preview
-
-Input Agent 在每次实际向 Output Agent 派发新任务或增量指令前，先在父会话显示一条极简摘要。默认 1–3 行、目标约 80 tokens 以内，明显接近 120 tokens 时继续压缩；只保留任务、必要范围、关键约束和必要运行参数，不复制完整 Semantic Contract、完整上下文或实际长 prompt。复用 Primary Agent 时只显示本次新增 delta。
-
-### 两级规划
-
-输入侧做语义级规划与重大决策；输出侧根据项目实际状态自行完成执行级规划、实现、调试和修复。会改变已批准目标、架构、约束或验收标准的新事实必须升级回输入侧。
-
-### Verification Boundary
-
-输出侧做构建、测试、lint、diff、日志等机械验证并压缩结论；输入侧做语义验收。需要进一步确认时采用 Evidence-on-Demand，而不是默认重新读取全部原始证据。
-
-### Cache-Aware Context Stability
-
-优先采用 `stable prefix + small delta`：复用 Primary Agent、只追加新目标和决策变化，不反复重写已有背景。缓存是否实际命中由宿主实现决定，本 Skill 不把缓存收益作为保证。
+该 Profile 是当前部署策略，不是架构本身。未来模型变化时，应优先调整模型绑定，而保持 Flow 的职责边界稳定。
 
 ## 文件
 
-- `SKILL.md`：完整运行规则。
+- `SKILL.md`：轻量入口，负责核心原则、场景路由、按需加载、混合任务 Handoff 和当前 OpenAI Profile。
+- `references/shared-protocols.md`：两套 Flow 共享的 Semantic Contract 基线、Dispatch Preview、事件驱动反馈、Evidence-on-Demand、缓存稳定性与委派边界。
+- `references/coding-flow.md`：Coding 双角色流程的完整运行规则。
+- `references/multimodal-flow.md`：Computer Use、视频、图片和视觉设计场景的完整运行规则。
 - `agents/openai.yaml`：OpenAI Agent Skill 展示与隐式调用配置。
+
+Skill 按场景延迟加载 reference；普通 Coding 不读取 Multimodal Flow，纯多模态分析也不预加载 Coding Flow。
 
 ## 开发流程
 
