@@ -112,20 +112,20 @@ At Coding Flow startup, first confirm the current Code Agent model identity and 
 
 - **Current Agent is explicitly `gpt-5.6-luna`**: enter **Single-Agent Luna Mode**. The current Session performs both the Input-side Reasoning Role and Primary Output Role, including project exploration, implementation, debugging, mechanical verification, and output. Do not create or require another Luna Primary Output Agent merely to preserve a two-role topology.
 - **Current Agent cannot explicitly confirm it is `gpt-5.6-luna`**: constrain the current Agent as the input-side reasoning role and use an independent `gpt-5.6-luna` for the Primary Output Role, preserving the normal two-Session Coding Flow.
-- Substantive implementation, long output, and other materialization work require the Luna performing the Primary Output Role to use `reasoning_effort=xhigh`; this also applies in Single-Agent Luna Mode.
+- Substantive implementation, long output, and other materialization work require the Luna performing the Primary Output Role to use `reasoning_effort=max`; this also applies in Single-Agent Luna Mode.
 - Single-Agent Luna Mode may create another Agent only for fresh verification, real parallelism, clearly degraded/overgrown current context, or another explicit isolation benefit. Project exploration, implementation, testing, long output, or generic task complexity are not exceptions.
 
 ### Multimodal Flow
 
 - Decision Agent: the current advanced parent model.
-- Primary Observation Agent: `gpt-5.6-luna`; substantive large image/video/Computer Use Observation analysis uses `reasoning_effort=xhigh`.
-- Optional Primary Output Agent: `gpt-5.6-luna`; substantive long output uses `reasoning_effort=xhigh`.
+- Primary Observation Agent: `gpt-5.6-luna`; substantive large image/video/Computer Use Observation analysis uses `reasoning_effort=max`.
+- Optional Primary Output Agent: `gpt-5.6-luna`; substantive long output uses `reasoning_effort=max`.
 - Observation and Output are different responsibilities with different Session Affinity. Even if the current Profile binds both to Luna, do not merge their high-volume contexts by default. Single-Agent Luna Mode changes only the default Coding role mapping and does not weaken Multimodal Observation ownership.
 
 ### Profile constraints
 
 - Do not silently replace a role that requires Luna with another model.
-- If an independent Luna role is required but `gpt-5.6-luna` identity cannot be confirmed, the model cannot be selected explicitly, or substantive Observation/materialization cannot satisfy `reasoning_effort=xhigh`, stop that substantive work and briefly report the block.
+- If an independent Luna role is required but `gpt-5.6-luna` identity cannot be confirmed, the model cannot be selected explicitly, or substantive Observation/materialization cannot satisfy `reasoning_effort=max`, stop that substantive work and briefly report the block.
 - Purely read-only, strictly bounded diagnosis or observation may continue when Luna identity is confirmed but the host cannot set reasoning effort. Do not use that exception to move complex high-volume work back to the advanced parent model.
 
 ## Loading boundary

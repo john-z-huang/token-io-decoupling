@@ -112,20 +112,20 @@ Handoff 的字段和禁止携带的原始状态以 `multimodal-flow_zh_cn.md` �
 
 - **当前 Agent 已明确是 `gpt-5.6-luna`**：进入 **Single-Agent Luna Mode**。当前 Session 同时承担 Input-side Reasoning Role 与 Primary Output Role，直接完成项目探索、实现、调试、机械验证和输出；不得仅为了双角色拓扑再创建或要求存在额外 Luna Primary Output Agent。
 - **当前 Agent 不能明确确认自己是 `gpt-5.6-luna`**：按输入侧推理角色约束自身行为，并使用独立 `gpt-5.6-luna` 承担 Primary Output Role，保持正常双 Session Coding Flow。
-- 实现、长输出和其他实质性物化任务要求承担 Primary Output Role 的 Luna 显式使用 `reasoning_effort=xhigh`；Single-Agent Luna Mode 同样适用。
+- 实现、长输出和其他实质性物化任务要求承担 Primary Output Role 的 Luna 显式使用 `reasoning_effort=max`；Single-Agent Luna Mode 同样适用。
 - Single-Agent Luna Mode 只有在 fresh verification、真正并行、当前上下文明显失效/膨胀，或存在明确独立隔离收益时才允许创建额外 Agent。项目探索、实现、测试、长输出或“任务复杂”本身不是例外理由。
 
 ### Multimodal Flow
 
 - Decision Agent：当前高级父模型。
-- Primary Observation Agent：`gpt-5.6-luna`；承担大规模图片、视频帧、Computer Use Observation 或其他实质性高体量分析时显式使用 `reasoning_effort=xhigh`。
-- Optional Primary Output Agent：`gpt-5.6-luna`；长输出和其他实质性物化任务显式使用 `reasoning_effort=xhigh`。
+- Primary Observation Agent：`gpt-5.6-luna`；承担大规模图片、视频帧、Computer Use Observation 或其他实质性高体量分析时显式使用 `reasoning_effort=max`。
+- Optional Primary Output Agent：`gpt-5.6-luna`；长输出和其他实质性物化任务显式使用 `reasoning_effort=max`。
 - Observation Agent 与 Output Agent 是不同职责和不同 Session Affinity；即使当前 Profile 使用同一种模型，也不得因此把两者的高体量上下文默认合并。Single-Agent Luna Mode 只改变 Coding Flow 的默认角色映射，不削弱 Multimodal Flow 的独立 Observation ownership。
 
 ### Profile 约束
 
 - 不得把要求使用 Luna 的角色静默替换为其他模型。
-- 若需要独立 Luna 角色但无法确认 `gpt-5.6-luna` 身份、无法显式选择该模型，或复杂 Observation / 物化任务无法满足要求的 `reasoning_effort=xhigh`，停止对应实质性工作并简短报告阻塞。
+- 若需要独立 Luna 角色但无法确认 `gpt-5.6-luna` 身份、无法显式选择该模型，或复杂 Observation / 物化任务无法满足要求的 `reasoning_effort=max`，停止对应实质性工作并简短报告阻塞。
 - 纯只读、严格有界的诊断或观察，在能够确认 Luna 身份但宿主无法设置 reasoning effort 时可以继续；不得因此把复杂高体量工作回退给高级父模型。
 
 ## 加载边界

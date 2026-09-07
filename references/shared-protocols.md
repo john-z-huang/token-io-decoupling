@@ -52,7 +52,7 @@ Scenario-specific restrictions:
 Recommended forms:
 
 ```text
-Dispatch → Luna | Task: fix authentication middleware refresh logic; Scope: auth/*; Constraints: preserve API compatibility; Runtime: xhigh
+Dispatch → Luna | Task: fix authentication middleware refresh logic; Scope: auth/*; Constraints: preserve API compatibility; Runtime: max
 ```
 
 ```text
