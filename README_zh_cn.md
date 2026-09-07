@@ -104,7 +104,3 @@ Observation 与 Output 是不同职责和不同 Session Affinity。即使当前 
 - `agents/openai.yaml`：OpenAI Agent Skill 展示与隐式调用配置，对外说明使用英文。
 
 Skill 按场景延迟加载 reference；普通 Coding 不读取 Multimodal Flow，纯多模态分析也不预加载 Coding Flow。
-
-## 开发流程
-
-本项目的修改遵循 `dev-workflow-standards`：使用合规工作分支、关联开放 Issue、通过 Pull Request 合并，并避免任何 Code Agent 署名或生成声明。
