@@ -1,0 +1,27 @@
+name: Multilingual Docs
+
+on:
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "agents/openai.yaml"
+      - "scripts/check-multilingual-docs.py"
+      - ".github/workflows/multilingual-docs.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.md"
+      - "agents/openai.yaml"
+      - "scripts/check-multilingual-docs.py"
+      - ".github/workflows/multilingual-docs.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate multilingual documentation
+        run: python3 scripts/check-multilingual-docs.py
