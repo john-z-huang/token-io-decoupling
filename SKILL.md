@@ -54,7 +54,7 @@ description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高
 进入 Multimodal Flow 后先区分两种工作模式：
 
 - **Routine Interaction**：浏览、控件定位、表单填写、普通页面检查，以及目标和视觉结果已经明确的有界编辑。沿用 Primary Observation Agent 自主维持的低开销 observe/act 闭环。
-- **Creative Visual Authoring**：绘画、插画、图像编辑、合成、排版、视觉设计、画布创作、风格化或任何需要决定构图、视觉层级、色彩/光线、材质或整体观感的开放式工作。必须使用 Decision-led Visual Authoring，让 Decision Agent 在关键视觉里程碑亲自审看精选证据并批准下一阶段。
+- **Creative Visual Authoring**：绘画、插画、图像编辑、合成、排版、视觉设计、画布创作、风格化或任何需要决定构图、视觉层级、色彩/光线、材质或整体观感的开放式工作。必须使用 Decision-led Visual Authoring，让 Decision Agent 在关键视觉里程碑亲自审看精选证据并批准下一阶段。Creative 模式的主要视觉设计 ownership 属于 Decision Agent：构图、视觉层级、风格、色彩关系、整体观感及跨阶段方向选择不得下放给 Observation Agent；Observation Agent 只负责局部机械视觉判断与已批准方案的物化。
 
 如果任务从 Routine Interaction 演变为需要改变核心构图、风格或视觉层级的开放式创作，应立即切换到 Creative Visual Authoring；不能继续让 Observation Agent 独立完成后续创作。Creative 模式的完整回路、精选证据边界和宿主能力阻塞规则见 `multimodal-flow.md`。
 
