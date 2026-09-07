@@ -69,9 +69,6 @@ def main() -> int:
             target_is_zh = target.name.endswith(ZH_SUFFIX)
             counterpart = en_peer(rel) if source_is_zh else zh_peer(rel)
             if source_is_zh != target_is_zh and target != counterpart:
-                # Repository instruction mirrors deliberately share one rules source.
-                if target == PurePosixPath("MULTI_LINGUAL.md"):
-                    continue
                 errors.append(f"cross-language Markdown link: {rel} -> {raw_target}")
 
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
