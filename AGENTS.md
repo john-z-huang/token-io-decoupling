@@ -10,6 +10,7 @@ These rules apply to every Agent or contributor that creates, edits, renames, mo
 - Simplified Chinese examples: `README_zh_cn.md`, `SKILL_zh_cn.md`, `references/coding-flow_zh_cn.md`.
 - `AGENTS.md` is the repository instruction entry point. `AGENTS_zh_cn.md` is its Simplified Chinese semantic mirror.
 - Configuration, code, generated files, and non-Markdown assets do not require language mirrors unless a task explicitly adds such a requirement.
+- `agents/openai.yaml` is a deliberate exception: user-facing description text must contain both English and Simplified Chinese in the same scalar value, separated by ` | `, with English first.
 
 ## Pairing requirements
 
@@ -39,6 +40,16 @@ For a bilingual document pair intended for direct human reading, keep a visible 
 ```
 
 The exact relative path may differ by directory. Do not use this exception for runtime dependency links.
+
+## `agents/openai.yaml` bilingual text
+
+For user-facing descriptive text in `agents/openai.yaml`:
+
+- Keep one YAML field rather than creating language-specific YAML files.
+- Put English first and Simplified Chinese second.
+- Separate the two descriptions with exactly ` | `.
+- Keep both sides semantically equivalent.
+- Example: `"English description | 中文描述"`.
 
 ## Adding a new documentation file
 
@@ -71,4 +82,5 @@ For every change that touches bilingual documentation, verify that:
 - `SKILL.md` loads only English references.
 - `SKILL_zh_cn.md` loads only Simplified Chinese references.
 - Semantic changes are synchronized across the pair.
+- `agents/openai.yaml` keeps bilingual descriptive text in the form `English | 中文`.
 - `python3 scripts/check-multilingual-docs.py` passes.
