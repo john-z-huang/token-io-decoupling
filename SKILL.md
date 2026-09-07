@@ -1,6 +1,6 @@
 ---
 name: token-io-decoupling
-description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高价值推理与 Primary 输出 Agent 的双角色流程；Browser Use、Computer Use、浏览器/桌面 GUI 连续操作、视频、大量图片/截图和视觉设计场景使用独立 Multimodal Flow，由 Decision Agent 与 Primary Observation Agent 隔离高体量视觉/时序 Input Token，并按需 handoff 到输出或 Coding 流程。"
+description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高价值推理与 Primary 输出 Agent 的双角色流程；Browser Use、Computer Use、浏览器/桌面 GUI 连续操作、视频、大量图片/截图和视觉设计场景使用独立 Multimodal Flow，由 Decision Agent 与 Primary Observation Agent 隔离高体量视觉/时序 Input Token；开放式绘画、图像编辑与视觉创作采用 Decision-led Visual Authoring，并按需 handoff 到输出或 Coding 流程。"
 ---
 
 # Token I/O Decoupling
@@ -13,7 +13,7 @@ description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高
 
 1. **先选 Flow，再加载细则**：不要启动时无条件加载所有 reference。
 2. **Coding 保持简单**：普通 Coding 继续使用成熟的“输入侧推理 Agent → Primary 输出 Agent”双角色流程，不创建 Observation Agent。
-3. **Multimodal 隔离高体量 Observation**：Computer Use、视频、大量图片/截图、视觉设计等任务由 Primary Observation Agent 消费视觉/时序世界状态，Decision Agent 只接收压缩 Digest。
+3. **Multimodal 隔离高体量 Observation**：Computer Use、视频、大量图片/截图、视觉设计等任务由 Primary Observation Agent 消费视觉/时序世界状态，Decision Agent 只接收压缩 Digest；开放式视觉创作另遵循 Decision-led Visual Authoring 的精选证据回路。
 4. **混合任务使用窄 Handoff**：视觉分析与 Coding 之间只传递稳定目标、必要变更、约束、证据引用和验收标准，不跨 Flow 倾倒完整原始状态。
 5. **角色按职责而非模型命名**：当前 Profile 可以让 Observation 与 Output 角色都使用 Luna，但两者的 Session、上下文所有权和职责边界仍保持独立。
 
@@ -51,11 +51,18 @@ description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高
 1. [`references/shared-protocols.md`](references/shared-protocols.md)
 2. [`references/multimodal-flow.md`](references/multimodal-flow.md)
 
+进入 Multimodal Flow 后先区分两种工作模式：
+
+- **Routine Interaction**：浏览、控件定位、表单填写、普通页面检查，以及目标和视觉结果已经明确的有界编辑。沿用 Primary Observation Agent 自主维持的低开销 observe/act 闭环。
+- **Creative Visual Authoring**：绘画、插画、图像编辑、合成、排版、视觉设计、画布创作、风格化或任何需要决定构图、视觉层级、色彩/光线、材质或整体观感的开放式工作。必须使用 Decision-led Visual Authoring，让 Decision Agent 在关键视觉里程碑亲自审看精选证据并批准下一阶段。Creative 模式的主要视觉设计 ownership 属于 Decision Agent：构图、视觉层级、风格、色彩关系、整体观感及跨阶段方向选择不得下放给 Observation Agent；Observation Agent 只负责局部机械视觉判断与已批准方案的物化。
+
+如果任务从 Routine Interaction 演变为需要改变核心构图、风格或视觉层级的开放式创作，应立即切换到 Creative Visual Authoring；不能继续让 Observation Agent 独立完成后续创作。Creative 模式的完整回路、精选证据边界和宿主能力阻塞规则见 `multimodal-flow.md`。
+
 不要为了形式统一同时加载 Coding Flow。只有任务真实进入代码/repo 物化阶段时，才按 Multimodal → Coding 窄 Handoff 再加载 Coding Flow。
 
 ### 小型视觉输入例外
 
-单张简单图片、少量严格有界截图或其他明显不会产生高体量 Observation 的输入，不必机械创建 Primary Observation Agent。是否使用 Multimodal Flow 取决于潜在原始输入体积、时序/交互状态复杂度与决策密度，而不是“任务里是否出现图片”这一单一条件。
+单张简单图片、少量严格有界截图或其他明显不会产生高体量 Observation 的输入，不必机械创建 Primary Observation Agent。是否使用 Multimodal Flow 取决于潜在原始输入体积、时序/交互状态复杂度与决策密度，而不是“任务里是否出现图片”这一单一条件；但这项输入规模例外不把开放式视觉创作降级为 Routine Interaction，创作仍须遵循 Creative Visual Authoring 回路。
 
 ### 混合任务与 Flow Handoff
 

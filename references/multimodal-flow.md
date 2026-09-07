@@ -10,9 +10,11 @@
 
 ### Decision Agent
 
-负责高价值语义与风险判断：理解用户视觉/交互目标、定义业务与安全约束、决定分析重点、形成或修订 Semantic Contract、处理语义歧义与 Semantic Checkpoint、接收压缩后的视觉结论，并执行最终语义验收。
+负责高价值语义与风险判断：理解用户视觉/交互目标、定义业务与安全约束、决定分析重点、形成或修订 Semantic Contract、处理语义歧义与 Semantic Checkpoint、接收压缩后的视觉结论，并执行最终语义验收。在 Creative Visual Authoring 中，它还必须先制定 Creative Brief/Visual Plan，并在每个 material visual milestone 亲自查看精选视觉证据、做视觉批评、发出 amendment 和下一阶段批准。
 
-Decision Agent 不默认持续查看大量截图、逐帧分析视频、摄入 OCR/DOM 全文，也不参与 Computer Use 的每一步普通导航和视觉定位。
+Creative Visual Authoring 的主要视觉设计 ownership 属于 Decision Agent。构图、视觉层级、风格、色彩关系、整体观感，以及跨阶段的创意方向选择都属于其高价值判断职责；这些职责不能因为 Observation Agent 持有连续画布状态或 GUI 上下文而隐式下放。Decision Agent 不是只做最终审批，而是实际承担阶段性的设计分析与方向修订。
+
+Decision Agent 不默认持续查看大量截图、逐帧分析视频、摄入 OCR/DOM 全文，也不参与 Routine Interaction 的每一步普通导航和视觉定位。Creative 模式的精选 checkpoint 是 Observation Firewall 的窄例外，不改变这一边界。
 
 ### Primary Observation Agent
 
@@ -25,7 +27,9 @@ Decision Agent 不默认持续查看大量截图、逐帧分析视频、摄入 O
 
 它负责筛选、去重、聚类、视觉理解、时序定位、局部 OCR、差异分析、focused inspection、证据选择和 ephemeral world-state tracking。
 
-Primary Observation Agent 的默认输出不是长报告，而是低 Token、高信息密度的 Visual / State Digest。它可以在 Semantic Contract 授权范围内执行维持 Computer Use observe/act 闭环所需的普通低风险操作。
+Primary Observation Agent 的默认输出不是长报告，而是低 Token、高信息密度的 Visual / State Digest。它可以在 Semantic Contract 授权范围内执行维持 Routine Interaction 的 Computer Use observe/act 闭环所需的普通低风险操作。在 Creative 模式中，它另外负责按已批准的 pass contract 执行一次 bounded visual pass、截取精选 checkpoint 证据，并暂停等待 Decision Agent 的批评和批准。
+
+Creative 模式下，Primary Observation Agent 可以做完成当前 pass 所需的局部机械视觉判断，例如控件定位、边缘/对齐检查、局部遮挡或明确条件验证，但不得成为主要视觉设计决策者。它不得自行决定新的核心构图、视觉层级、风格、色彩关系或跨阶段创意方向，也不得以“当前画布状态只有自己最清楚”为理由替代 Decision Agent 的设计分析。
 
 ### Optional Primary Output Agent
 
@@ -49,7 +53,41 @@ Primary Observation Agent 的默认输出不是长报告，而是低 Token、高
 
 Primary Observation Agent 只向 Decision Agent 返回做下一步高价值判断所需的状态、发现、风险、证据引用和待决问题。Decision Agent 需要确认具体视觉事实时，按 Evidence-on-Demand 请求最小必要证据，不重新摄入整个视觉集合。
 
-判断依据是潜在原始 Observation 体积与决策密度，而不是输入介质名称本身。单张简单图片或严格有界的小型视觉状态若不会形成上下文倾倒，可由 Decision Agent 直接查看；不要为了形式统一机械创建 Observation Agent。
+判断依据是潜在原始 Observation 体积与决策密度，而不是输入介质名称本身。单张简单图片或严格有界的小型视觉状态若不会形成上下文倾倒，可由 Decision Agent 直接查看；不要为了形式统一机械创建 Observation Agent。但这项输入规模例外只影响 reference 的摄入方式，不会把开放式视觉创作降级为 Routine Interaction。
+
+## 工作模式：Routine Interaction 与 Creative Visual Authoring
+
+### 模式选择
+
+先判断任务的视觉决策密度和结果开放程度，而不是只看使用了什么应用：
+
+- **Routine Interaction** 适用于浏览、页面/控件定位、滚动、表单填写、菜单操作、普通画笔参数调整，以及按明确既定方案执行的有界编辑。结果主要由用户或 Contract 预先决定时，Observation Agent 可自行维持连续 observe/act。
+- **Creative Visual Authoring** 适用于绘画、插画、图像编辑、合成、排版、视觉设计、画布创作、风格化，以及需要决定或迭代构图、视觉层级、色彩/光线、材质、留白或整体观感的任务。只要下一步可能改变核心视觉意图，就使用 Creative 模式。
+
+任务可以从 Routine Interaction 切换到 Creative Visual Authoring，但切换后必须先形成 Creative Brief/Visual Plan；不得以“已经打开了工具”或“只差一些细节”为理由跳过。反之，Creative 模式中的普通工具定位、菜单、滚动和画笔参数仍可留在 Observation Agent 内部，不需要逐动作升级。
+
+### Decision-led Visual Authoring 回路
+
+Creative 模式不是逐点击遥控，也不是由 Observation Agent 先独立完成设计、Decision Agent 再被动审批。它由 Decision Agent 持有主要视觉设计方向、Observation Agent 物化一个有限视觉阶段，再由 Decision Agent 依据精选证据继续做设计分析并作出下一项高层决定：
+
+1. **建立 Brief/Plan**：Decision Agent 直接检查少量关键 reference，或先接收 Observation Agent 的筛选摘要；然后形成短的 `Creative Brief/Visual Plan`。至少固定最终目标、构图/布局、焦点与视觉层级、色彩/光线或视觉语言、阶段顺序、预期 checkpoint 数量（默认 3–6 个，可按复杂度自适应）和验收条件。该计划是 Semantic Contract 的视觉扩展，不是完整图片或连续 Observation 历史。
+2. **派发一个 bounded visual pass**：每次只批准一个有限阶段，例如结构 block-in、色彩/明暗建立、材质/细节、最终统一与输出准备。pass contract 要写清本阶段允许改变的区域/属性、不可改变的核心构图或风格、完成条件，以及到达哪个 checkpoint 后必须暂停。
+3. **返回精选 checkpoint**：到达 material visual milestone 时，Observation Agent 必须暂停并返回少量最能判断方向的当前画布 screenshot/crop（必要时附 reference 对照）和极简状态。默认里程碑包括结构/构图、色彩/光照、细节/材质和最终检查；可根据任务合并、拆分或增减，但不能让一个未审看的长 pass 跨越多个 material milestone。
+4. **Decision 亲自审看与修订**：Decision Agent 必须亲自查看这些精选图像证据，主动执行当前阶段所需的设计分析，判断构图、层级、色彩/光线、风格一致性和整体观感是否仍符合 Brief；不能只依据 Observation Agent 的文字结论，也不能只对 Observation Agent 已经做出的设计判断进行形式化确认。它随后发送简短 amendment，明确 `Keep`、`Change`、`Next pass`、更新后的验收条件和 `Approved to continue`；若方向偏差明显，应在当前 checkpoint 明确重新定向并暂停，而不是让 Observation Agent 自行决定如何补救。
+5. **无批准不越界**：Observation Agent 只能在收到当前 checkpoint 的批准或 amendment 后进入下一阶段。它不得跨越尚未批准的 material milestone，也不得自行改变核心构图、风格、视觉层级或把局部修补扩展成新的创意方向。普通机械操作仍由它自行完成。
+
+精选 checkpoint 是 Observation Firewall 的窄例外：只传递筛选后的 screenshot/crop、必要的 reference 对照和极简状态，不传递连续截图、点击/坐标序列、完整 GUI 历史、全量图层状态或重复中间证据。精选证据不等于把 Observation 上下文倾倒给 Decision Agent。
+
+如果宿主不能把精选 screenshot/crop 或等价的可视化证据实际提供给 Decision Agent，开放式 Creative Visual Authoring 必须停止并报告能力阻塞；不得退回 Routine Interaction，让 Observation Agent 在没有 Decision 审查的情况下独立完成创作。若只是 Routine Interaction，则仍可使用普通 observe/act 闭环。
+
+推荐的最小消息形态如下，字段可按信息价值省略：
+
+```text
+Creative Plan: 目标；构图/层级；色彩/光线；阶段；checkpoint=4；验收
+Pass 1: 只建立主体轮廓与大形；保持视角和焦点不变；到结构 checkpoint 暂停
+Checkpoint: 结构已完成；Evidence: 当前画布精选截图 + 必要局部 crop
+Decision amendment: Keep 主体位置；Change 背景留白；Next pass 建立冷暖光；Approved to continue
+```
 
 ## Visual Progressive Disclosure
 
@@ -103,9 +141,9 @@ Decision Agent 描述语义目标，例如“打开账户安全设置并检查�
 
 Primary Observation Agent 同样 sticky but not immortal。上下文明显失效、视觉历史冲突严重、任务需要真正独立验证或隔离收益明确时，可以重建。
 
-## Computer Use Observe / Act Loop
+## Computer Use Observe / Act Loop（Routine Interaction）
 
-Computer Use 的普通执行闭环由 Primary Observation Agent 自己维持：
+Routine Interaction 的普通执行闭环由 Primary Observation Agent 自己维持：
 
 ```text
 observe
@@ -115,21 +153,21 @@ observe
 → observe
 ```
 
-在已批准 Semantic Contract 范围内，滚动、普通导航、打开无副作用页面、定位控件、填写尚未提交的字段等低风险动作不需要逐步回到 Decision Agent。普通截图变化、元素定位和下一步执行计划留在 Observation Agent 自身上下文。
+在已批准 Semantic Contract 范围内，滚动、普通导航、打开无副作用页面、定位控件、填写尚未提交的字段等低风险动作不需要逐步回到 Decision Agent。普通截图变化、元素定位和下一步执行计划留在 Observation Agent 自身上下文。若这些动作服务于 Creative Visual Authoring，它们仍可留在 Observation Agent 内部，但不得替代 Creative checkpoint 回路。
 
-不要把闭环机械拆成：
+不要把 Routine 闭环机械拆成：
 
 ```text
 Observation Agent → Decision Agent → Output Agent → Observation Agent
 ```
 
-否则会导致状态同步成本、视觉信息丢失和过期状态风险。
+否则会导致状态同步成本、视觉信息丢失和过期状态风险。Creative 模式采用上一节的 bounded visual pass → curated checkpoint → Decision critique/amendment 回路，不把每个 click 都升级。
 
 Primary Observation Agent 每次执行动作前仍须遵守宿主工具自身的确认、权限和安全要求；本 Skill 不覆盖这些更高优先级边界。
 
 ## Semantic Checkpoints
 
-Computer Use 的升级边界按语义副作用判断，而不是按动作是否只是一次 click/type 判断。
+Routine Computer Use 的升级边界按语义副作用判断，而不是按动作是否只是一次 click/type 判断。Creative 模式另有 material visual milestone：即使没有外部副作用，达到该里程碑也必须返回精选证据并等待 Decision Agent 的视觉批评和批准。
 
 典型 Semantic Checkpoint 包括但不限于：
 
@@ -173,6 +211,8 @@ Need: 是否提交
 
 禁止逐图片、逐帧、逐截图或逐操作复述整个观察历史。若父 Agent 只需要一个二元结论或少量事实，Digest 应进一步压缩。
 
+Creative checkpoint 的 Digest 可以额外包含精选 screenshot/crop，但仍应保持极简：说明当前 pass 和 milestone、一个方向性状态、少量 `Evidence` 引用及等待 Decision 的 `Need`。不得用长文字描述来替代宿主无法提供的实际视觉证据。
+
 ## Multimodal Verification Boundary
 
 Primary Observation Agent 负责高体量视觉/时序机械验证，例如：
@@ -184,7 +224,7 @@ Primary Observation Agent 负责高体量视觉/时序机械验证，例如：
 - 目标视频事件是否实际出现，以及相关时间段；
 - Computer Use 操作后的最终状态是否符合 Contract 中可机械确认的要求。
 
-Decision Agent 负责语义验收：视觉结果是否真正满足用户目标、业务或风险约束是否被破坏、剩余偏差是否可接受。
+Decision Agent 负责语义验收：视觉结果是否真正满足用户目标、业务或风险约束是否被破坏、剩余偏差是否可接受。在 Creative 模式中，Decision Agent 还负责每个 material visual milestone 的视觉验收、设计分析和方向修订；Primary Observation Agent 的“已完成”文字或设计建议不能代替其对精选证据的亲自审看与独立判断。
 
 Decision Agent 不默认重新读取全部截图、设计稿或视频帧进行二次视觉检查。需要确认具体结论时使用 Evidence-on-Demand；高风险或独立审查价值明确时才创建 fresh verifier。
 
