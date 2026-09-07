@@ -1,6 +1,6 @@
 ---
 name: token-io-decoupling
-description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高价值推理与 Primary 输出 Agent 的双角色流程；Browser Use、Computer Use、浏览器/桌面 GUI 连续操作、视频、大量图片/截图和视觉设计场景使用独立 Multimodal Flow，由 Decision Agent 与 Primary Observation Agent 隔离高体量视觉/时序 Input Token；开放式绘画、图像编辑与视觉创作采用 Decision-led Visual Authoring，并按需 handoff 到输出或 Coding 流程。"
+description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高价值推理与 Primary 输出双角色职责，并在当前 Code Agent 已是 Luna 时默认单 Session 自执行；Browser Use、Computer Use、浏览器/桌面 GUI 连续操作、视频、大量图片/截图和视觉设计场景使用独立 Multimodal Flow，由 Decision Agent 与 Primary Observation Agent 隔离高体量视觉/时序 Input Token；开放式绘画、图像编辑与视觉创作采用 Decision-led Visual Authoring，并按需 handoff 到输出或 Coding 流程。"
 ---
 
 # Token I/O Decoupling
@@ -12,10 +12,10 @@ description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高
 ## 核心原则
 
 1. **先选 Flow，再加载细则**：不要启动时无条件加载所有 reference。
-2. **Coding 保持简单**：普通 Coding 继续使用成熟的“输入侧推理 Agent → Primary 输出 Agent”双角色流程，不创建 Observation Agent。
+2. **Coding 保持简单**：普通 Coding 保持“输入侧推理 → Primary 输出”的双角色职责；角色分离不等于 Agent / Session 分离。当前 Code Agent 已明确是 Luna 时默认在当前 Session 内同时承担两类职责，不为保持双角色形式创建额外 Luna。
 3. **Multimodal 隔离高体量 Observation**：Computer Use、视频、大量图片/截图、视觉设计等任务由 Primary Observation Agent 消费视觉/时序世界状态，Decision Agent 只接收压缩 Digest；开放式视觉创作另遵循 Decision-led Visual Authoring 的精选证据回路。
 4. **混合任务使用窄 Handoff**：视觉分析与 Coding 之间只传递稳定目标、必要变更、约束、证据引用和验收标准，不跨 Flow 倾倒完整原始状态。
-5. **角色按职责而非模型命名**：当前 Profile 可以让 Observation 与 Output 角色都使用 Luna，但两者的 Session、上下文所有权和职责边界仍保持独立。
+5. **角色按职责映射到模型与 Session**：角色首先表示职责和上下文边界，不要求一对一对应独立 Agent 实例。只有模型分层、独立上下文 ownership、并行、独立验证或容量管理存在实际收益时才分离 Session；Multimodal 中 Observation 与 Output 即使都使用 Luna，也可因高体量上下文 ownership 不同而保持独立。
 
 ## Scenario Routing
 
@@ -77,7 +77,7 @@ Multimodal Flow
 → Decision Agent 确认需要修改的语义目标
 → narrow Handoff Contract
 → Coding Flow
-→ Primary Output Agent 实现与机械验证
+→ Primary Output Role 实现与机械验证
 → 必要时回到原 Multimodal Flow 做视觉验收
 ```
 
@@ -106,21 +106,24 @@ Handoff 的字段和禁止携带的原始状态以 `multimodal-flow.md` 为准�
 
 ### Coding Flow
 
-- 输入侧推理 Agent：当前高级父模型；当前模型不能明确确认自己是 `gpt-5.6-luna` 时，按输入侧角色约束自身行为。
-- Primary 输出 Agent：`gpt-5.6-luna`。
-- 实现、长输出和其他实质性物化任务显式使用 `reasoning_effort=xhigh`。
+启动 Coding Flow 时先确认当前 Code Agent 的模型身份，再映射职责到 Session：
+
+- **当前 Agent 已明确是 `gpt-5.6-luna`**：进入 **Single-Agent Luna Mode**。当前 Session 同时承担 Input-side Reasoning Role 与 Primary Output Role，直接完成项目探索、实现、调试、机械验证和输出；不得仅为了双角色拓扑再创建或要求存在额外 Luna Primary Output Agent。
+- **当前 Agent 不能明确确认自己是 `gpt-5.6-luna`**：按输入侧推理角色约束自身行为，并使用独立 `gpt-5.6-luna` 承担 Primary Output Role，保持正常双 Session Coding Flow。
+- 实现、长输出和其他实质性物化任务要求承担 Primary Output Role 的 Luna 显式使用 `reasoning_effort=xhigh`；Single-Agent Luna Mode 同样适用。
+- Single-Agent Luna Mode 只有在 fresh verification、真正并行、当前上下文明显失效/膨胀，或存在明确独立隔离收益时才允许创建额外 Agent。项目探索、实现、测试、长输出或“任务复杂”本身不是例外理由。
 
 ### Multimodal Flow
 
 - Decision Agent：当前高级父模型。
 - Primary Observation Agent：`gpt-5.6-luna`；承担大规模图片、视频帧、Computer Use Observation 或其他实质性高体量分析时显式使用 `reasoning_effort=xhigh`。
 - Optional Primary Output Agent：`gpt-5.6-luna`；长输出和其他实质性物化任务显式使用 `reasoning_effort=xhigh`。
-- Observation Agent 与 Output Agent 是不同职责和不同 Session Affinity；即使当前 Profile 使用同一种模型，也不得因此把两者的高体量上下文默认合并。
+- Observation Agent 与 Output Agent 是不同职责和不同 Session Affinity；即使当前 Profile 使用同一种模型，也不得因此把两者的高体量上下文默认合并。Single-Agent Luna Mode 只改变 Coding Flow 的默认角色映射，不削弱 Multimodal Flow 的独立 Observation ownership。
 
 ### Profile 约束
 
 - 不得把要求使用 Luna 的角色静默替换为其他模型。
-- 若无法确认 `gpt-5.6-luna` 身份、无法显式选择该模型，或复杂 Observation / 物化任务无法满足要求的 `reasoning_effort=xhigh`，停止对应实质性工作并简短报告阻塞。
+- 若需要独立 Luna 角色但无法确认 `gpt-5.6-luna` 身份、无法显式选择该模型，或复杂 Observation / 物化任务无法满足要求的 `reasoning_effort=xhigh`，停止对应实质性工作并简短报告阻塞。
 - 纯只读、严格有界的诊断或观察，在能够确认 Luna 身份但宿主无法设置 reasoning effort 时可以继续；不得因此把复杂高体量工作回退给高级父模型。
 
 ## 加载边界
