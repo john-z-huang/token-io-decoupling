@@ -83,6 +83,34 @@ Single-Agent Luna Mode 在同一 Session 内按上述职责顺序工作，不制
 
 并行只用于互不依赖且不会争用相同写入目标的任务；存在依赖、共享文件或前后结果关系时顺序执行。
 
+## 有界 Coding 阶段与 Decision Checkpoint
+
+正常双 Session Coding 不得把“事件驱动进度反馈”理解成：复杂实现只派发一次，然后让独立 Primary Output Agent 一路跨过所有实质决策边界直到最终结束。对于存在明显语义不确定性的工作，输入侧 Agent 应在执行前或执行过程中划分少量 **有界 Coding 阶段**，并明确哪些阶段边界属于 **阻塞式 Decision Checkpoint**。
+
+阻塞式 checkpoint 应选择性使用。适合设置在下一阶段确实依赖高价值判断的地方，例如：
+
+- 项目探索发现多个相互竞争的架构方案或 API 边界选择；
+- 实现将跨越多个模块、公共接口、schema、migration、兼容性边界或安全敏感行为；
+- 调试进入重大分叉，不同修复方案具有不同产品或架构后果；
+- 一个实现阶段已经完成，而下一阶段会显著扩大范围或做出难以回滚的修改；
+- 机械验证暴露失败或回归，其可接受修复方式需要改变 Semantic Contract。
+
+到达阻塞式 Decision Checkpoint 后，独立 Primary Output Agent 必须在进入下一实质阶段前**暂停**，只返回压缩 checkpoint 信息。可按需使用 `Status`、`Findings`、`Changed`、`Verification`、`Issue`、`Need` 等字段；无内容字段不机械补齐，也不得附完整 diff 或日志。输入侧 Agent 随后审查该 checkpoint，必要时通过 Evidence-on-Demand 获取最小证据，修订 Contract 或阶段指令，并明确放行下一有界阶段。
+
+不得为低决策密度机械步骤创建阻塞式 checkpoint。普通文件读取、已批准设计内的局部代码修改、formatter/lint 修复、直接的测试修复、重复 compile/test 循环及其他执行细节继续留在 Primary Execution Session 中。“实现完成”或“开始验证”只有在预先声明为 blocking checkpoint，或新事实确实触发语义升级时，才必须暂停等待父级分析；否则它们可以只是普通事件驱动进度消息。
+
+简单、局部、低风险任务仍允许一次 Dispatch 后完成实现与验证直至结束。Coding checkpoint 的目标是防止长时间无监督的语义漂移，而不是强制父子 Agent 高频 ping-pong，也不是复制 Multimodal Routine Interaction 明确避免的逐步遥控模式。
+
+Single-Agent Luna Mode 只把相同的有界阶段纪律作为内部推理边界，不模拟发送给自己的 checkpoint 消息：到达已声明边界或出现重大新事实时，当前 Session 重新评估当前有效 Semantic Contract，完成必要高价值判断后再继续。
+
+独立 Primary Output Agent 的推荐形式：
+
+```text
+Stage 1: 检查当前 auth/session 架构并找出最窄兼容修复；在需要修改 public API 或 persistence schema 前暂停
+Checkpoint: Findings: refresh state 同时存在于 middleware 与 storage；Issue: 有两种可行 ownership；Need: 实现前选择 middleware-owned 或 storage-owned
+Amendment: 保持 public API 稳定；选择 storage-owned state；批准 Stage 2：实现并运行定向测试，只有当验证要求修改 Contract 时再次暂停
+```
+
 ## Coding Verification Boundary
 
 Primary Output 职责负责机械验证和高体量证据处理，包括构建、测试、lint、formatter、类型检查、diff 检查、意外文件修改检查以及相关原始日志分析。
