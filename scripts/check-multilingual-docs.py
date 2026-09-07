@@ -11,8 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ZH_SUFFIX = "_zh_cn.md"
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
-PAIR_ROOTS = [Path("README.md"), Path("SKILL.md"), Path("AGENTS.md")]
-REQUIRED_RULE_FILE = Path("MULTI_LINGUAL.md")
+PAIR_ROOTS = [Path("README.md"), Path("SKILL.md"), Path("AGENTS.md"), Path("MULTI_LINGUAL.md")]
 
 
 def zh_peer(path: PurePosixPath) -> PurePosixPath:
@@ -33,9 +32,6 @@ def normalize_target(source: PurePosixPath, raw: str) -> PurePosixPath | None:
 def main() -> int:
     errors: list[str] = []
 
-    if not (ROOT / REQUIRED_RULE_FILE).exists():
-        errors.append(f"missing multilingual rule file: {REQUIRED_RULE_FILE}")
-
     english_docs = [PurePosixPath(p.as_posix()) for p in PAIR_ROOTS]
     english_docs += [PurePosixPath(p.relative_to(ROOT).as_posix()) for p in sorted((ROOT / "references").glob("*.md")) if not p.name.endswith(ZH_SUFFIX)]
 
@@ -47,10 +43,11 @@ def main() -> int:
         if not (ROOT / chinese).exists():
             errors.append(f"missing Chinese mirror: {chinese} for {english}")
 
+    paired_root_zh = {zh_peer(PurePosixPath(p.as_posix())).name for p in PAIR_ROOTS}
     for chinese_path in [p for p in ROOT.rglob(f"*{ZH_SUFFIX}") if ".git" not in p.parts]:
         chinese = PurePosixPath(chinese_path.relative_to(ROOT).as_posix())
         english = en_peer(chinese)
-        if chinese.parent == PurePosixPath("references") or chinese.name in {"README_zh_cn.md", "SKILL_zh_cn.md", "AGENTS_zh_cn.md"}:
+        if chinese.parent == PurePosixPath("references") or chinese.name in paired_root_zh:
             if not (ROOT / english).exists():
                 errors.append(f"missing English canonical file: {english} for {chinese}")
 
@@ -70,6 +67,14 @@ def main() -> int:
             counterpart = en_peer(rel) if source_is_zh else zh_peer(rel)
             if source_is_zh != target_is_zh and target != counterpart:
                 errors.append(f"cross-language Markdown link: {rel} -> {raw_target}")
+
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    if "MULTI_LINGUAL.md" not in agents or "MULTI_LINGUAL_zh_cn.md" in agents:
+        errors.append("AGENTS.md must reference only MULTI_LINGUAL.md")
+
+    agents_zh = (ROOT / "AGENTS_zh_cn.md").read_text(encoding="utf-8")
+    if "MULTI_LINGUAL_zh_cn.md" not in agents_zh:
+        errors.append("AGENTS_zh_cn.md must reference MULTI_LINGUAL_zh_cn.md")
 
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     if "references/" in skill and re.search(r"references/[^)\s`]*_zh_cn\.md", skill):
