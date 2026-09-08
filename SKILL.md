@@ -133,3 +133,5 @@ At Coding Flow startup, first confirm the current Code Agent model identity and 
 This Skill may be automatically discovered, but a normal Skill `description` only influences implicit matching and cannot guarantee that the complete Skill is loaded on every host startup. If a host must always obey specific invariants, put those invariants in that host's persistent instruction mechanism—for example, Codex global `~/.codex/AGENTS.md` or host-injected system/developer instructions.
 
 References under `references/` are loaded on demand. Do not read all of them at task startup merely because they might become useful later.
+
+For Coding Flow deployment, bootstrap, Session restart, validation, and adoption guidance, see [`BEST_PRACTICES.md`](BEST_PRACTICES.md). This guide does not replace the normative Flow, role, or Profile rules in this Skill and its selected references; Multimodal Flow uses its own routed references.
