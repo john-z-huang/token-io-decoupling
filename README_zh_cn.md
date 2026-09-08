@@ -80,7 +80,11 @@ Token I/O Decoupling
 当前具体运行策略为：
 
 - Coding 输入侧推理：当前高级父模型；
-- Coding Primary Output：`gpt-5.6-luna`，实质性物化任务使用 `reasoning_effort=max`；
+- Coding Single-Agent Luna Mode：当前 `gpt-5.6-luna` Session 同时承担两类 Coding 职责，常规保持 `reasoning_effort=xhigh`；
+- 正常双 Session Coding 的 Primary Output：`gpt-5.6-luna`，一般需求实现、非平凡调试/重构和复杂验证或测试代码默认使用 `reasoning_effort=xhigh`；
+- Coding 辅助 Worker：开发文档、代码注释、简单单元测试、低风险机械修改及类似有界辅助工作通常使用 `reasoning_effort=high`；
+- 宿主支持的 `medium` 或更低 Coding Worker：仅用于严格有界、低风险、易机械验证的任务，例如运行已经选定的检查、收集元数据、精确提取/替换或按模板格式整理；低于 medium 的档位原则上只做只读或确定性变换；
+- Coding `reasoning_effort=max`：仅用于某个具体任务已经让现有 high/xhigh Worker 反复失败或明确阻塞后的定向升级；条件允许时原 Worker 先物化文件化 handoff 上下文，阻塞解除后后续工作恢复正常档位；
 - Multimodal Decision Agent：当前高级父模型；
 - Multimodal Primary Observation Agent：`gpt-5.6-luna`，实质性高体量视觉/时序分析使用 `reasoning_effort=xhigh`；
 - Multimodal Optional Primary Output Agent：`gpt-5.6-luna`，实质性长输出使用 `reasoning_effort=xhigh`。
