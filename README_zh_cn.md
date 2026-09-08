@@ -97,6 +97,8 @@ Observation 与 Output 是不同职责和不同 Session Affinity。即使当前 
 - `README_zh_cn.md`：简体中文项目说明。
 - `SKILL.md`：英文 canonical Skill 入口；标准 Skill 宿主仍应加载该文件。
 - `SKILL_zh_cn.md`：用于阅读和维护的简体中文语义镜像。
+- `BEST_PRACTICES.md`：可选、非规范性的英文 Coding Flow 安装与使用指南。
+- [`BEST_PRACTICES_zh_cn.md`](BEST_PRACTICES_zh_cn.md)：可选、非规范性的 Coding Flow 最佳实践简体中文镜像。
 - `references/shared-protocols.md`：英文共享协议。
 - `references/coding-flow.md`：英文 Coding Flow 规则。
 - `references/multimodal-flow.md`：英文 Multimodal Flow 规则。

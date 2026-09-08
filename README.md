@@ -97,6 +97,8 @@ English is the default public-facing documentation. Simplified Chinese mirrors u
 - `README_zh_cn.md`: Simplified Chinese project overview.
 - `SKILL.md`: canonical executable Skill entry in English. Standard Skill hosts should continue to load this file.
 - `SKILL_zh_cn.md`: Simplified Chinese semantic mirror for review and maintenance.
+- [`BEST_PRACTICES.md`](BEST_PRACTICES.md): optional, non-normative English Coding Flow setup and usage guide.
+- `BEST_PRACTICES_zh_cn.md`: optional, non-normative Simplified Chinese mirror of the Coding Flow guide.
 - `references/shared-protocols.md`: English shared protocols.
 - `references/coding-flow.md`: English Coding Flow rules.
 - `references/multimodal-flow.md`: English Multimodal Flow rules.

@@ -133,3 +133,5 @@ Handoff 的字段和禁止携带的原始状态以 `multimodal-flow_zh_cn.md` �
 本 Skill 默认允许自动发现；普通 Skill 的 `description` 只影响隐式匹配，不能保证每次启动完整加载。若要保证特定宿主每次运行都遵循核心分工，应把必要不变量放入该宿主的持久指令机制，例如 Codex 的全局 `~/.codex/AGENTS.md`，或由宿主注入 system/developer instructions。
 
 `references/` 中的 Flow 文档采用按需加载，禁止因为“可能以后会用到”而在任务开始时全部读取。
+
+关于 Coding Flow 的部署、bootstrap、Session 重启、验证和采用建议，请参阅 [`BEST_PRACTICES_zh_cn.md`](BEST_PRACTICES_zh_cn.md)。该指南不替代本 Skill 及所选 reference 中的规范性 Flow、角色或 Profile 规则；Multimodal Flow 应按路由加载其自身的 reference。

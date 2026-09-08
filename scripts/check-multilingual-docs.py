@@ -12,7 +12,13 @@ ZH_SUFFIX = "_zh_cn.md"
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 
-PAIR_ROOTS = [Path("README.md"), Path("SKILL.md"), Path("AGENTS.md"), Path("MULTI_LINGUAL.md")]
+PAIR_ROOTS = [
+    Path("README.md"),
+    Path("SKILL.md"),
+    Path("AGENTS.md"),
+    Path("MULTI_LINGUAL.md"),
+    Path("BEST_PRACTICES.md"),
+]
 
 
 def zh_peer(path: PurePosixPath) -> PurePosixPath:
