@@ -80,7 +80,11 @@ For tasks such as “modify the frontend from this design,” first complete vis
 The current deployment strategy is:
 
 - Coding input-side reasoning: the current advanced parent model;
-- Coding Primary Output: `gpt-5.6-luna`, with `reasoning_effort=max` for substantive materialization;
+- Coding Single-Agent Luna Mode: the current `gpt-5.6-luna` session performs both Coding roles and normally stays at `reasoning_effort=xhigh`;
+- Coding Primary Output in normal two-Session mode: `gpt-5.6-luna`, defaulting to `reasoning_effort=xhigh` for general implementation, non-trivial debugging/refactoring, and complex verification or test code;
+- Coding auxiliary Workers: normally `reasoning_effort=high` for developer documentation, comments, simple unit tests, low-risk mechanical edits, and similarly bounded support work;
+- Host-supported `medium` or lower Coding Workers: only for strictly bounded, low-risk, mechanically verifiable tasks such as running already-selected checks, collecting metadata, exact extraction/replacement, or template-driven formatting; below-medium tiers should normally be read-only or deterministic;
+- Coding `reasoning_effort=max`: reserved for a narrowly scoped task that has repeatedly blocked an existing high/xhigh Worker; the predecessor should materialize reusable file-backed handoff context first when possible, and follow-on work returns to normal tiers after the blocker is resolved;
 - Multimodal Decision Agent: the current advanced parent model;
 - Multimodal Primary Observation Agent: `gpt-5.6-luna`, with `reasoning_effort=xhigh` for substantive high-volume visual/temporal analysis;
 - Multimodal Optional Primary Output Agent: `gpt-5.6-luna`, with `reasoning_effort=xhigh` for substantive long output.
