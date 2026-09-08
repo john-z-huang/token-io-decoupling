@@ -14,7 +14,7 @@ This Skill defines orchestration conventions only. It cannot bypass higher-prior
 ## Core principles
 
 1. **Choose the Flow first, then load its details**: do not load every reference unconditionally at startup.
-2. **Keep Coding simple**: ordinary Coding keeps the logical two-role model “input-side reasoning → Primary Output.” Role separation does not imply Agent or Session separation. When the current Code Agent is explicitly `gpt-5.6-luna`, the current Session performs both roles by default and must not create another Luna merely to preserve the two-role shape.
+2. **Keep Coding routing thin**: ordinary Coding still uses the logical “input-side reasoning → Primary Output” responsibility split, but concrete Session topology, model/effort policy, context exchange, checkpoints, verification, and output rules are owned by the selected Coding modules rather than duplicated in `SKILL.md`.
 3. **Isolate high-volume Multimodal Observation**: Computer Use, video, large image/screenshot sets, visual design, and similar tasks are routed so the Primary Observation Agent consumes visual/temporal world state while the Decision Agent receives compressed Digests. Open-ended visual creation additionally follows the curated-evidence loop of Decision-led Visual Authoring.
 4. **Use narrow Handoffs for mixed tasks**: visual analysis and Coding exchange only stable goals, required changes, constraints, evidence references, and acceptance criteria. Do not dump full raw state across Flows.
 5. **Map roles to models and Sessions by responsibility**: a role represents responsibility and context ownership first; it does not require a one-to-one Agent instance. Split Sessions only when model tiering, independent context ownership, real parallelism, fresh verification, capacity management, or another concrete isolation benefit exists. In Multimodal Flow, Observation and Output may remain separate even when both use Luna because they own different high-volume contexts.
@@ -35,6 +35,8 @@ After selecting Coding Flow, load:
 
 1. [`references/shared-protocols.md`](references/shared-protocols.md)
 2. [`references/coding-flow.md`](references/coding-flow.md)
+
+Then follow the module-loading table in `coding-flow.md`. Do not preload every file under `references/coding/`; load the Coding modules required by the current responsibility and stage.
 
 Ordinary Coding must not load `multimodal-flow.md` or create a Primary Observation Agent merely because this Skill also supports Multimodal Flow.
 
@@ -99,24 +101,17 @@ The Handoff fields and prohibited raw-state payloads are defined in `multimodal-
 - Load only the Flow documents and shared protocols required for the current scenario.
 - If a relevant reference is already loaded and its rules remain valid, do not read it again.
 - When switching Flows, load only the newly required Flow reference; do not reload unchanged shared protocols.
-- The main `SKILL.md` is the routing and Profile entry point, not a replacement for Flow details. Load the selected Flow reference before substantive execution.
+- The main `SKILL.md` is the routing and cross-Flow Profile entry point, not a replacement for Flow details. Load the selected Flow reference before substantive execution.
+- Coding-specific modules are loaded through `references/coding-flow.md`; do not duplicate their normative content in this file.
 - When correctness requires cross-Flow information, use a narrow Handoff or Evidence-on-Demand instead of loading all references and raw state at once.
 
 ## Current OpenAI Profile
 
-Model bindings are part of the current runtime Profile, not the Token I/O Decoupling architecture itself. Future model changes should update this section before changing Flow responsibility boundaries.
+Model bindings are part of the current runtime Profile, not the Token I/O Decoupling architecture itself. Future model changes should update the owning Profile module before changing Flow responsibility boundaries.
 
 ### Coding Flow
 
-At Coding Flow startup, first confirm the current Code Agent model identity and then map responsibilities to Sessions:
-
-- **Current Agent is explicitly `gpt-5.6-luna`**: enter **Single-Agent Luna Mode**. The current Session performs both the Input-side Reasoning Role and Primary Output Role, including project exploration, implementation, debugging, mechanical verification, and output. Do not create or require another Luna Primary Output Agent merely to preserve a two-role topology. Because this Session also owns high-value reasoning, keep its normal materialization at `reasoning_effort=xhigh`.
-- **Current Agent cannot explicitly confirm it is `gpt-5.6-luna`**: constrain the current Agent as the input-side reasoning role and use an independent `gpt-5.6-luna` for the Primary Output Role, preserving the normal two-Session Coding Flow.
-- In normal two-Session Coding, the independent Primary Output Luna defaults to `reasoning_effort=xhigh`. Use `xhigh` for general feature implementation, non-trivial refactoring or debugging, complex test/verification code, and other work where substantial implementation judgment is expected. Output length or project size alone does not justify increasing effort.
-- Prefer `reasoning_effort=high` for bounded auxiliary materialization whose main work is developer documentation, code comments, simple unit tests, low-risk mechanical edits, or similarly constrained support work. Additional auxiliary Coding Workers should default to `high` unless their concrete task meets the `xhigh` criteria.
-- Use `reasoning_effort=medium` or a lower host-supported tier only when the host explicitly exposes that tier and the task is strictly bounded, low semantic risk, and easy to verify mechanically. Suitable examples include running already-selected tests/formatters/linters and compressing results, collecting file/path metadata, exact search or extraction, literal replacements, template-driven formatting, or generated-table updates. Tiers below `medium` should normally be read-only or deterministic transformations. Do not assign Semantic Contract ownership, architecture/product decisions, cross-module implementation, complex debugging, complex test design, or public API/schema/permission changes to these lightweight Workers.
-- `reasoning_effort=max` is an exception escalation, not a default Worker setting. Use it only for a specific task that an existing `high`/`xhigh` Worker has repeatedly failed, oscillated on, or become clearly blocked by. The parent creates a new, narrowly scoped max Worker; when possible, the predecessor first writes reusable context/handoff documents in the primary worktree as defined by `references/coding-flow.md`, and the max Worker reads those documents instead of restarting project exploration from zero. After the blocker is resolved, follow-on work returns to the normal `xhigh`/`high` tiers rather than keeping max for unrelated tasks.
-- Single-Agent Luna Mode may create another Agent only for fresh verification, real parallelism, clearly degraded/overgrown current context, explicit isolation benefit, or targeted `max` escalation for a specific repeatedly blocked task. Project exploration, implementation, testing, long output, or generic task complexity are not exceptions.
+Coding model bindings, Session mapping, reasoning-effort tiers, and targeted escalation are defined in [`references/coding/profile.md`](references/coding/profile.md). After selecting Coding Flow, load them through the Coding module-loading rules instead of duplicating those details here.
 
 ### Multimodal Flow
 

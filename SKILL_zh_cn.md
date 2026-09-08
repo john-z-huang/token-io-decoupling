@@ -14,7 +14,7 @@ description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高
 ## 核心原则
 
 1. **先选 Flow，再加载细则**：不要启动时无条件加载所有 reference。
-2. **Coding 保持简单**：普通 Coding 保持“输入侧推理 → Primary 输出”的双角色职责；角色分离不等于 Agent / Session 分离。当前 Code Agent 已明确是 Luna 时默认在当前 Session 内同时承担两类职责，不为保持双角色形式创建额外 Luna。
+2. **Coding 路由保持轻量**：普通 Coding 仍使用“输入侧推理 → Primary 输出”的逻辑职责分工，但具体 Session 拓扑、模型/强度策略、上下文交换、checkpoint、验证和输出规则由所选 Coding 模块独立负责，不在 `SKILL_zh_cn.md` 中重复。
 3. **Multimodal 隔离高体量 Observation**：Computer Use、视频、大量图片/截图、视觉设计等任务由 Primary Observation Agent 消费视觉/时序世界状态，Decision Agent 只接收压缩 Digest；开放式视觉创作另遵循 Decision-led Visual Authoring 的精选证据回路。
 4. **混合任务使用窄 Handoff**：视觉分析与 Coding 之间只传递稳定目标、必要变更、约束、证据引用和验收标准，不跨 Flow 倾倒完整原始状态。
 5. **角色按职责映射到模型与 Session**：角色首先表示职责和上下文边界，不要求一对一对应独立 Agent 实例。只有模型分层、独立上下文 ownership、并行、独立验证或容量管理存在实际收益时才分离 Session；Multimodal 中 Observation 与 Output 即使都使用 Luna，也可因高体量上下文 ownership 不同而保持独立。
@@ -35,6 +35,8 @@ description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高
 
 1. [`references/shared-protocols_zh_cn.md`](references/shared-protocols_zh_cn.md)
 2. [`references/coding-flow_zh_cn.md`](references/coding-flow_zh_cn.md)
+
+随后按 `coding-flow_zh_cn.md` 中的模块加载表继续；不要预加载 `references/coding/` 下全部文件，只加载当前职责和阶段需要的 Coding 模块。
 
 普通 Coding 任务不得仅因为本 Skill 支持 Multimodal Flow 而加载 `multimodal-flow_zh_cn.md` 或创建 Primary Observation Agent。
 
@@ -99,24 +101,17 @@ Handoff 的字段和禁止携带的原始状态以 `multimodal-flow_zh_cn.md` �
 - 只加载当前场景需要的 Flow 文档和共享协议。
 - 如果当前会话已加载且相关规则仍然有效，不重复读取同一 reference。
 - 从一个 Flow 切换到另一个 Flow 时，只新增目标 Flow 所需 reference，不重新加载无变化的共享协议。
-- 主 `SKILL_zh_cn.md` 是中文路由和 Profile 镜像，不替代 Flow 细则；实际执行前必须加载所选 Flow 的中文 reference。
+- 主 `SKILL_zh_cn.md` 是中文路由和跨 Flow Profile 入口，不替代 Flow 细则；实际执行前必须加载所选 Flow 的中文 reference。
+- Coding 专属模块通过 `references/coding-flow_zh_cn.md` 加载，不得在本文件重复其规范性内容。
 - 当正确性需要跨 Flow 信息时使用窄 Handoff 或 Evidence-on-Demand，不通过一次性加载所有 reference 和原始状态来规避上下文边界。
 
 ## 当前 OpenAI Profile
 
-模型绑定属于当前运行 Profile，不是 Token I/O Decoupling 架构本身。未来模型变化应优先调整本节，而不是改写 Flow 的角色边界。
+模型绑定属于当前运行 Profile，不是 Token I/O Decoupling 架构本身。未来模型变化应优先修改负责该规则的 Profile 模块，而不是改写 Flow 的角色边界。
 
 ### Coding Flow
 
-启动 Coding Flow 时先确认当前 Code Agent 的模型身份，再映射职责到 Session：
-
-- **当前 Agent 已明确是 `gpt-5.6-luna`**：进入 **Single-Agent Luna Mode**。当前 Session 同时承担 Input-side Reasoning Role 与 Primary Output Role，直接完成项目探索、实现、调试、机械验证和输出；不得仅为了双角色拓扑再创建或要求存在额外 Luna Primary Output Agent。由于该 Session 同时承担高价值推理职责，其常规物化工作保持 `reasoning_effort=xhigh`。
-- **当前 Agent 不能明确确认自己是 `gpt-5.6-luna`**：按输入侧推理角色约束自身行为，并使用独立 `gpt-5.6-luna` 承担 Primary Output Role，保持正常双 Session Coding Flow。
-- 正常双 Session Coding 中，独立 Primary Output Luna 默认使用 `reasoning_effort=xhigh`。一般需求开发、非平凡重构或调试、复杂测试/验证代码，以及其他需要较多实现判断的工作使用 `xhigh`；输出很长或项目规模很大本身不能作为继续提高强度的理由。
-- 对主要工作是开发文档编写/修改、代码注释、简单单元测试、低风险机械性修改或其他有界辅助物化的任务，优先使用 `reasoning_effort=high`。额外的辅助性 Coding Worker 默认使用 `high`，除非其具体任务明确符合 `xhigh` 条件。
-- 只有宿主明确支持对应档位，并且任务严格有界、语义风险低且容易机械验证时，才使用 `reasoning_effort=medium` 或更低强度。适合的例子包括：运行已经选定的 test/formatter/lint 并压缩结果、收集文件/路径元数据、精确搜索或提取、字面量替换、按明确模板做格式整理或更新生成表格。低于 `medium` 的档位原则上只用于只读工作或确定性的机械变换。不得把 Semantic Contract ownership、架构/产品判断、跨模块实现、复杂调试、复杂测试设计、公共 API/schema/权限变更交给这些轻量 Worker。
-- `reasoning_effort=max` 是异常升级手段，不是普通 Worker 默认配置。只有某个具体事项已经由现有 `high`/`xhigh` Worker 反复失败、来回振荡或出现明确阻塞时，才使用 max。父 Agent 为该事项创建新的、范围严格收窄的 max Worker；条件允许时，原 Worker 先按照 `references/coding-flow_zh_cn.md` 定义的文件化 Context Exchange 机制，在 primary worktree 中写好可复用上下文与 handoff 文档，新 max Worker 读取这些内容后接手，而不是从零重新探索项目。阻塞解除后，后续无关工作恢复正常 `xhigh`/`high` 档位，不让 max 继续成为默认值。
-- Single-Agent Luna Mode 只有在 fresh verification、真正并行、当前上下文明显失效/膨胀、存在明确独立隔离收益，或某个具体任务反复阻塞而需要定向 `max` 升级时才允许创建额外 Agent。项目探索、实现、测试、长输出或笼统的“任务复杂”本身不是例外理由。
+Coding 的模型绑定、Session 映射、reasoning-effort 分级和定向升级规则定义在 [`references/coding/profile_zh_cn.md`](references/coding/profile_zh_cn.md)。选择 Coding Flow 后应按 Coding 模块加载规则读取该文件，不在这里重复这些细节。
 
 ### Multimodal Flow
 

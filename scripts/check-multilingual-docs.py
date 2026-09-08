@@ -40,7 +40,11 @@ def main() -> int:
     errors: list[str] = []
 
     english_docs = [PurePosixPath(p.as_posix()) for p in PAIR_ROOTS]
-    english_docs += [PurePosixPath(p.relative_to(ROOT).as_posix()) for p in sorted((ROOT / "references").glob("*.md")) if not p.name.endswith(ZH_SUFFIX)]
+    english_docs += [
+        PurePosixPath(p.relative_to(ROOT).as_posix())
+        for p in sorted((ROOT / "references").rglob("*.md"))
+        if not p.name.endswith(ZH_SUFFIX)
+    ]
 
     bilingual_english = [p for p in english_docs if (ROOT / p).exists()]
     bilingual_set = set(bilingual_english)
@@ -54,7 +58,8 @@ def main() -> int:
     for chinese_path in [p for p in ROOT.rglob(f"*{ZH_SUFFIX}") if ".git" not in p.parts]:
         chinese = PurePosixPath(chinese_path.relative_to(ROOT).as_posix())
         english = en_peer(chinese)
-        if chinese.parent == PurePosixPath("references") or chinese.name in paired_root_zh:
+        is_reference = bool(chinese.parts) and chinese.parts[0] == "references"
+        if is_reference or chinese.name in paired_root_zh:
             if not (ROOT / english).exists():
                 errors.append(f"missing English canonical file: {english} for {chinese}")
 

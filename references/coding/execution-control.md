@@ -1,0 +1,66 @@
+# Coding Execution Control
+
+This module owns Coding Flow planning responsibility, bounded implementation stages, blocking Decision Checkpoints, mechanical verification boundaries, and input-side output discipline.
+
+Role and Session semantics come from [`session-model.md`](session-model.md). Semantic Contract and Evidence-on-Demand primitives come from [`../shared-protocols.md`](../shared-protocols.md).
+
+## Two-level planning and execution
+
+The input-side responsibility owns semantic-level planning: goals, constraints, architecture decisions, risks, and acceptance criteria. The Primary Output responsibility owns execution-level planning: which files to inspect, modification order, local implementation choices, compile/test strategy, and fixing steps.
+
+When normal two-Session mode needs project facts before a decision, first ask the Primary Output Agent to explore and return compressed facts, then make the high-value decision on the input side. If the output side discovers facts that would change an approved goal, architecture, constraint, or acceptance criterion, pause that direction and escalate briefly.
+
+Single-Agent Luna Mode follows the same responsibility order in one Session without creating role-to-role messages; when major new facts appear, amend the currently effective Contract directly and continue.
+
+Parallelism is reserved for independent work that will not contend for the same write targets. Tasks with dependencies, shared files, or ordered result relationships are executed sequentially. When multiple independent Agents need reusable state, use [`context-exchange.md`](context-exchange.md) rather than parent-generated long summaries.
+
+## Bounded Coding stages and Decision Checkpoints
+
+Normal two-Session Coding must not interpret “event-driven reporting” as permission to dispatch a complex implementation once and let the independent Primary Output Agent cross every substantive decision boundary until final completion. For work with meaningful semantic uncertainty, the input-side Agent defines a small number of **bounded Coding stages** and identifies which stage boundaries are **blocking Decision Checkpoints** before or during execution.
+
+Use blocking checkpoints selectively. They are appropriate when the next stage depends on high-value judgment, for example:
+
+- repository exploration reveals competing architecture or API-boundary choices;
+- implementation crosses modules, public interfaces, schemas, migrations, compatibility boundaries, or security-sensitive behavior;
+- debugging reaches a material fork where different fixes have different product or architectural consequences;
+- an implementation stage completes and the next stage would substantially expand scope or make a difficult-to-reverse change;
+- mechanical verification exposes a failure or regression whose acceptable resolution requires changing the Semantic Contract.
+
+At a blocking Decision Checkpoint, the independent Primary Output Agent must **pause before entering the next substantive stage** and return only a compressed checkpoint message. Include the minimum useful fields, such as `Status`, `Findings`, `Changed`, `Verification`, `Issue`, and `Need`; omit empty fields and do not attach full diffs or logs. The input-side Agent then reviews the checkpoint, requests Evidence-on-Demand if necessary, amends the Contract or stage instruction, and explicitly releases the next bounded stage.
+
+Do not create blocking checkpoints for low-decision-density mechanics. Ordinary file reads, local code edits within an approved design, formatter/lint fixes, straightforward test repairs, repeated compile/test cycles, and other execution details remain inside the Primary Execution Session. “Implementation complete” or “verification starting” is only a mandatory pause when it was declared a blocking checkpoint or when newly discovered facts create a real semantic escalation; otherwise it may remain an ordinary event-driven progress report.
+
+Simple, local, low-risk tasks may still use one Dispatch and run through implementation plus verification to completion. The purpose of Coding checkpoints is to prevent long unsupervised semantic drift, not to force parent/child ping-pong or reproduce the click-by-click behavior intentionally avoided by Multimodal Routine Interaction.
+
+Single-Agent Luna Mode uses the same bounded-stage discipline only as an internal reasoning boundary. It does not simulate checkpoint messages to itself: at a declared boundary or major new fact, the current Session re-evaluates the effective Semantic Contract, makes the necessary high-value decision, and then continues.
+
+Recommended form for an independent Primary Output Agent:
+
+```text
+Stage 1: inspect current auth/session architecture and identify the narrowest compatible fix; checkpoint before changing public API or persistence schema
+Checkpoint: Findings: refresh state is duplicated across middleware and storage; Issue: two viable ownership models; Need: choose middleware-owned vs storage-owned state before implementation
+Amendment: keep public API stable; choose storage-owned state; Stage 2 approved: implement and run focused tests, then pause only if verification requires a Contract change
+```
+
+## Coding Verification Boundary
+
+The Primary Output responsibility owns mechanical verification and high-volume evidence processing, including builds, tests, lint, formatting, type checks, diff review, accidental-file-change checks, and analysis of associated raw logs.
+
+The input-side responsibility owns semantic acceptance: whether the user's goal is satisfied, the Semantic Contract is implemented, business/compatibility constraints remain intact, and risks reported by mechanical verification are acceptable.
+
+In normal two-Session mode, the Primary Output Agent returns compressed verification conclusions only; the input-side Agent does not reread complete diffs, test logs, or large files by default. In Single-Agent Luna Mode, the current Session performs mechanical verification and then semantic acceptance directly. Do not create another Agent merely to preserve the verification boundary; use a fresh verifier only when independent review has concrete value.
+
+## Input-side output discipline
+
+In normal two-Session mode, input-side output should maximize information density and contain only what is required for advanced decisions, Semantic Contract updates, decision escalations, semantic acceptance, and necessary user interaction.
+
+Text that primarily expands already-determined information rather than producing new high-value decisions should be materialized by the Primary Output Agent, for example:
+
+- large code blocks, complete files, or detailed file-by-file implementation steps;
+- long README content, design documents, reports, or explanations;
+- extensive restatement of project state, complete diffs, or complete test reports;
+- long final responses that the output side can materialize directly.
+
+In Single-Agent Luna Mode, the current Agent already performs the Primary Output Role, so it directly completes this materialization and must not delegate long output to another Luna merely to obey this section.
+
+When the final response in normal two-Session mode is itself long and the host cannot directly reuse output-side results, prefer having the Primary Output Agent write the complete material to a user-specified file or workspace; the input-side Agent returns only a short summary and location instead of regenerating the full content.
