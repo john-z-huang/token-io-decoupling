@@ -30,7 +30,22 @@ Single-Agent Luna Mode 继续使用 Semantic Contract 作为逻辑决策锚点�
 - Worker **绝对禁止**在其他 Worker 的子目录、Context Exchange Root 根目录或任何其他不属于自己的位置写入、重命名、移动或删除文件。即使共享文件系统让这些目录在技术上可见，也不能跨越这个写入边界。
 - Worker 默认也不得浏览或读取其他 Worker 的子目录。只有父 Agent 因具体 handoff、验证、升级或依赖关系而**明确指定需要读取的文档或路径**时，才允许该 Worker 选择性读取对应材料；只能读取父 Agent 点名的内容，不得自行递归扫描或扩展读取其他目录。
 - Worker 被替换或 reasoning-effort 升级时，接手 Agent 必须获得新的 Context ID，并由父 Agent 为其创建新的专属子目录。前任目录对接手 Agent 保持只读，而且只有父 Agent 明确指定的前任文档才可读取；接手 Agent 永远不得写入前任目录。
-- Context Exchange Root 只属于运行时协调状态。不得暂存或提交，不得把它当作产品产物；工作流结束后默认删除，只有用户明确要求保留时才继续保存。如果宿主无法提供所需的共享文件系统访问和 ownership 隔离，则回退到精简的父 Agent 中转式 handoff，不能假装共享路径存在。
+- Context Exchange Root 只属于运行时协调状态。不得暂存或提交，不得把它当作产品产物；工作流结束后默认删除，只有用户明确要求保留时才继续保存。
+
+### 文件系统 capability 兜底
+
+上述 ownership 规则应尽量由宿主的文件系统权限或沙箱能力做代码层兜底，而不是只依赖 Worker 理解并遵守自然语言指令。
+
+- `git worktree` 用于提供独立工作副本、分支和清晰的物理目录边界，但 **worktree 本身不是文件写权限机制**。`git worktree lock`、sparse-checkout、`.gitignore`、`skip-worktree` 等 Git 功能也不得被当成跨 Worker 写入隔离手段。
+- 当宿主支持 per-Agent sandbox、container/mount namespace、路径 allowlist 或等价 filesystem capability 时，父 Agent 应在 Worker 开始执行前配置最小权限集合：
+  - **RW**：该 Worker 自己的代码 worktree，以及 `<root>/<worker-context-id>/` 专属 context 子目录；
+  - **RO**：父 Agent 为当前具体 handoff 明确授权的其他 Worker 单个文档或严格有界路径；
+  - **DENY / 不暴露**：`<root>/INDEX.md`、其他 Worker 的其余目录，以及任何未明确授权的 Context Exchange 路径。
+- 上述 capability 是宿主/进程级约束，不只是 Dispatch 文本中的建议。Worker 即使因语义漂移尝试越界写入，文件系统层也应拒绝该操作。
+- 如果多个 Worker 实际共享同一个 OS 用户身份，单纯依赖 `chmod` 或普通 Unix owner/group 权限通常不能可靠地区分 Worker 身份。需要真正的 per-Worker sandbox、独立容器/挂载命名空间、路径 capability 或等价机制才能形成强制边界。
+- 跨 Worker 共享优先使用**原文档的定向只读 capability**。父 Agent 只传递文档路径与授权范围，不读取正文、不复制正文到 prompt，也不为纯传输目的重新总结内容。
+- 如果宿主不能把另一个 Worker 目录中的指定文件以只读方式安全暴露给接收 Worker，但父 Agent 仍能执行文件系统工具操作，则父 Agent 可以把被点名的原文档**机械复制**到接收 Worker 自己目录下的 `imports/<source-context-id>/`。复制必须由文件系统/工具完成，不经过 LLM 重新生成正文。复制件只是一次性输入快照，即使接收 Worker 修改它，也不能影响来源 Worker 的原始文档或更新其状态。
+- 只有在宿主既无法提供安全的定向只读访问，也无法进行这种文件系统级复制时，才退化为精简的父 Agent 中转式 handoff。此时仍应只传递完成当前决策所需的稳定事实，不得把完整 context 文档重新编码成长篇父 Agent 输出。
 
 ### 有界文档集合
 
@@ -44,10 +59,12 @@ Context 文档可以记录稳定调查结论、相关路径或 symbol、执行�
 
 只在实质里程碑、阻塞式 Decision Checkpoint，以及 Agent 退出或被替换前更新可复用上下文；不要在每个命令或 tool call 后写一条记录。
 
-父 Agent 使用根 `INDEX.md` 跟踪“哪个 Worker 对应哪个专属子目录”，并决定其他 Worker 是否需要接收其中的某些上下文。其他 Agent 需要复用前序工作时，父 Agent 应优先传递准确路径，而不是重新生成背景说明。窄 Dispatch 可使用 `Context: <Worker 本地 INDEX 路径>; Read: <specific document paths>` 之类的形式。接收 Agent 只能读取父 Agent 已授权的 Worker 本地索引和被明确点名的文档，以及当前任务直接需要的项目文件；不得自行发现、遍历或递归加载其他 Worker 目录。
+父 Agent 使用根 `INDEX.md` 跟踪“哪个 Worker 对应哪个专属子目录”，并决定其他 Worker 是否需要接收其中的某些上下文。其他 Agent 需要复用前序工作时，父 Agent 应优先授予被点名原文档的只读 capability，并只在 Dispatch 中传递准确路径与权限边界，例如 `Own Context RW: <path>; Read-only Context: <specific paths>`。接收 Agent 只能读取父 Agent 已授权的 Worker 本地索引和被明确点名的文档，以及当前任务直接需要的项目文件；不得自行发现、遍历或递归加载其他 Worker 目录。
 
-只有在需要整合多个上下文、做高价值判断或发布权威 Semantic Contract amendment 时，父 Agent 才应重新综合成新的文字摘要。共享目录是降低输出 Token 的传输层，不是绕过 Context Firewall 或预加载无关状态的理由。
+如果宿主无法提供定向只读 capability，则按上一节的降级顺序使用工具级机械复制，再在必要时使用精简父级 handoff。父 Agent 不得为了跨 Worker 传输而先读取完整文档，再用 LLM 把同样内容重新生成给接收 Worker。
+
+只有在需要整合多个上下文、做高价值判断或发布权威 Semantic Contract amendment 时，父 Agent 才应重新综合成新的文字摘要。共享目录与 capability 是降低输出 Token 的传输层，不是绕过 Context Firewall 或预加载无关状态的理由。
 
 `Goal`、`Constraints`、`Decisions` 与 `Acceptance` 仍以 Semantic Contract 为权威来源。Worker context 文档不得静默覆盖 Contract；如果 Worker 的新发现意味着 Contract 需要变化，必须先走既有 Decision Checkpoint 与 amendment 路径，再跨越该执行边界。
 
-当 Worker 需要替换或进行 reasoning-effort 升级时，原 Worker 应在条件允许时刷新自己目录里的 Worker 本地 `INDEX.md`，并生成或更新 `handoff.md`，记录已完成状态、失败方案与证据、当前修改与验证状态、剩余 blocker 以及下一步最有价值的动作。父 Agent 随后更新根 `INDEX.md`，为接手 Agent 创建新的 Context ID 和专属子目录，并明确指定允许接手 Agent 只读的前任文档，使其可以接力而不是从零重新探索项目。如果前任已经不可用，父 Agent 只根据当前已有事实写最小恢复说明，不把完整历史重新编码成长篇中转文本。
+当 Worker 需要替换或进行 reasoning-effort 升级时，原 Worker 应在条件允许时刷新自己目录里的 Worker 本地 `INDEX.md`，并生成或更新 `handoff.md`，记录已完成状态、失败方案与证据、当前修改与验证状态、剩余 blocker 以及下一步最有价值的动作。父 Agent 随后更新根 `INDEX.md`，为接手 Agent 创建新的 Context ID 和专属子目录，并优先通过宿主 capability 把被明确指定的前任文档只读暴露给接手 Agent；如果无法安全只读暴露，则机械复制这些文档到接手 Agent 的 `imports/` 后再派发。接手 Agent 不从零重新探索项目，也永远不得写入前任目录。如果前任已经不可用，父 Agent 只根据当前已有事实写最小恢复说明，不把完整历史重新编码成长篇中转文本。
