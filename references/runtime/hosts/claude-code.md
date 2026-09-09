@@ -12,11 +12,18 @@ When Claude Code exposes the active model, effort, provider, organization restri
 
 ## Skill installation and persistent bootstrap
 
-Claude Code supports Agent Skills directly:
+For personal installation, keep a single canonical copy of this Skill at `~/.agents/skills/token-io-decoupling/`. Do not maintain a second Claude-specific copy merely because Claude Code's native personal discovery directory is `~/.claude/skills/`.
 
-- personal Skill: `~/.claude/skills/token-io-decoupling/SKILL.md`;
-- project Skill: `.claude/skills/token-io-decoupling/SKILL.md`;
-- a symlinked Skill directory is also supported by Claude Code for personal/project Skill locations.
+Claude Code supports symlinked Skill directories, so the recommended local mapping is:
+
+```bash
+mkdir -p ~/.claude/skills
+ln -s ~/.agents/skills/token-io-decoupling ~/.claude/skills/token-io-decoupling
+```
+
+The resulting Claude Code discovery entry remains `~/.claude/skills/token-io-decoupling/SKILL.md`, but `~/.agents/skills/token-io-decoupling/` is the source of truth. If the link already exists, update or repair the link rather than copying the Skill tree into both locations.
+
+Project-scoped Skills remain native project assets under `.claude/skills/<skill-name>/SKILL.md`; they are intentionally not redirected to the personal shared directory because their repository/version-control scope is different.
 
 Use the normal `SKILL.md` entry. Do not create a Claude-specific duplicate of the Core instructions.
 
@@ -24,7 +31,7 @@ When this Skill must be loaded reliably at the start of local Claude Code Coding
 
 Claude Code reads `CLAUDE.md`, not `AGENTS.md`, as its native persistent instruction file. A project may import an existing `AGENTS.md` from `CLAUDE.md` when both products need the same project rules, but do not duplicate the complete Token I/O Decoupling policy in both files.
 
-Cloud Claude Code sessions do not read a machine's personal `~/.claude/skills/`; use a project Skill committed under `.claude/skills/`, a supported synced skill, or another deployment mechanism that the cloud session actually loads.
+Cloud Claude Code sessions do not read a machine's personal `~/.claude/skills/` or the local shared `~/.agents/skills/`; use a project Skill committed under `.claude/skills/`, a supported synced skill, or another deployment mechanism that the cloud session actually loads.
 
 ## Independent execution mapping
 
@@ -103,13 +110,14 @@ If a subagent needs the full Token I/O Decoupling Skill to execute its role reli
 
 After installing or changing the Skill or Claude Code runtime configuration, validate a new Coding session with a small non-destructive task:
 
-1. confirm the Skill is discoverable and Coding Flow loads the Runtime Registry;
-2. confirm this Host Adapter is selected because the actual Host is Claude Code;
-3. confirm the active Model Profile requests the intended Sonnet or Haiku runtime for each task class;
-4. when substantive two-Session mode is selected, confirm the Primary Output subagent actually runs on the Profile-bound Sonnet model/effort rather than a substituted runtime;
-5. when a Haiku-tier auxiliary is selected, confirm its actual model is the Profile-bound Haiku runtime and that no unsupported Sonnet-style effort assumption was applied;
-6. confirm related follow-up work resumes the same Primary Execution subagent when Session Affinity applies;
-7. confirm Coding Core documents remain vendor-neutral.
+1. confirm the shared source exists at `~/.agents/skills/token-io-decoupling/` and Claude Code discovers the symlinked personal entry when personal installation is used;
+2. confirm the Skill is discoverable and Coding Flow loads the Runtime Registry;
+3. confirm this Host Adapter is selected because the actual Host is Claude Code;
+4. confirm the active Model Profile requests the intended Sonnet or Haiku runtime for each task class;
+5. when substantive two-Session mode is selected, confirm the Primary Output subagent actually runs on the Profile-bound Sonnet model/effort rather than a substituted runtime;
+6. when a Haiku-tier auxiliary is selected, confirm its actual model is the Profile-bound Haiku runtime and that no unsupported Sonnet-style effort assumption was applied;
+7. confirm related follow-up work resumes the same Primary Execution subagent when Session Affinity applies;
+8. confirm Coding Core documents remain vendor-neutral.
 
 If the environment cannot perform one of these checks, report the unverified capability instead of presenting the deployment as fully smoke-tested.
 
