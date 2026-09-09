@@ -67,7 +67,7 @@ Coding Flow 保留本项目已反复迭代的架构，同时把具体 Runtime �
 
 ## 已登记 Coding 部署
 
-Runtime 注册表目前包含两组彼此独立的 Host/Profile 组合。
+Runtime 注册表目前包含三组彼此独立的 Host/Profile 组合。
 
 ### Codex + OpenAI
 
@@ -109,13 +109,31 @@ Claude Code 原生支持标准 Agent Skills。典型本地安装位置：
 
 如果需要持久启动提示，只在 `~/.claude/CLAUDE.md` 或项目 `CLAUDE.md` 中保留简短 bootstrap 并指向本 Skill；不要把完整 Skill policy 复制进去。Claude Code cloud session 不读取本机 `~/.claude/skills/`，因此应使用 cloud session 实际会加载的项目/synced 部署方式。
 
+### Qwen Code + Alibaba Qwen
+
+- Host Adapter：[`references/runtime/hosts/qwen-code_zh_cn.md`](references/runtime/hosts/qwen-code_zh_cn.md)
+- Model Profile：[`references/runtime/profiles/alibaba-qwen_zh_cn.md`](references/runtime/profiles/alibaba-qwen_zh_cn.md)
+- 状态：已经按当前 Qwen Code 与 Alibaba Cloud Model Studio 官方 capability 完成映射；这套部署尚未完成真实 Qwen Code CLI 的 Max-parent/Flash-subagent smoke test。
+
+Alibaba Qwen Coding Profile 有意采用成本非对称组合：
+
+- **Input-side Reasoning** 绑定 `qwen3.8-max`。
+- **Primary Output** 绑定 `qwen3.8-flash`，并继续作为仓库探索、实现、调试、build/test loop 和机械验证的 sticky execution owner。
+- 正常双 Session 模式使用 Max 父 Session + 可持续复用的 regular Flash subagent。当前 Session 本身明确为 `qwen3.8-flash` 时，通用 Runtime 可以使用 Single-Session Coding Mode，而不是只为了保持形式上的 Max/Flash 拓扑再创建一个 Flash Agent。
+
+Qwen3.8 在本部署中当前有三个实际有效原生 reasoning 档位：`low`、`medium`、`xhigh`。Profile 在 Max 父级处理实质语义决策时使用 `xhigh`；普通 Flash Primary Output 默认使用 `medium`；只有某个有界 Flash stage 确实需要更强局部实现判断时才升到 `xhigh`；`low` 仅用于严格机械工作。通用的 `high`/`max` 请求会映射为 Qwen3.8 `xhigh`，不把它们当成额外有效档位。
+
+Qwen Code regular subagent 具有独立 context、显式模型选择、通过 `list_agents` + `send_message` 的后台 continuation，并可通过 `working_dir` 绑定已有 git worktree。不过模型选择和 effort 是两个不同控制面：subagent 定义可以直接绑定 Flash，而 effective effort 可能依赖 Session/provider 配置。因此 Host Adapter 把准确模型绑定作为硬约束；Qwen Code 无法确认某个 per-subagent effort 档位时，不会假装该档位已经生效。
+
+Qwen Code 支持 `~/.qwen/skills/` 下的个人 Skills、`.qwen/skills/` 下的项目 Skills，以及通过 `QWEN.md` 加载持久指令；它也会读取已有 `AGENTS.md`。持久 bootstrap 应只指向本 Skill，而不是复制完整 Coding Flow。
+
 ## Multimodal Flow
 
 Multimodal Flow 继续独立于 Coding。它负责 Primary Observation、Observation Firewall、Routine Interaction、Creative Visual Authoring、视觉/时序渐进式读取、精选视觉 checkpoint、Computer Use observe/act 行为、Semantic Checkpoint、视觉验证，以及窄 Multimodal → Coding handoff。
 
 这些详细规则不再在根 `SKILL_zh_cn.md` 或本概览中重复。完整规则见 [`references/multimodal-flow_zh_cn.md`](references/multimodal-flow_zh_cn.md)；当前 OpenAI 部署绑定单独保存在 [`references/multimodal-openai-profile_zh_cn.md`](references/multimodal-openai-profile_zh_cn.md)。
 
-上面的 Claude Code/Anthropic Runtime **只适用于 Coding Flow**，不构成 Claude Code Multimodal 支持声明。
+上面的 Claude Code/Anthropic 与 Qwen Code/Alibaba Qwen Runtime **只适用于 Coding Flow**，不构成对应 Multimodal 支持声明。
 
 ## 场景路由
 
@@ -139,8 +157,10 @@ Multimodal Flow 继续独立于 Coding。它负责 Primary Observation、Observa
 - `references/runtime/index_zh_cn.md`：具体 Coding 部署注册表。
 - `references/runtime/hosts/codex_zh_cn.md`：Codex Host Adapter。
 - `references/runtime/hosts/claude-code_zh_cn.md`：Claude Code Host Adapter。
+- `references/runtime/hosts/qwen-code_zh_cn.md`：Qwen Code Host Adapter。
 - `references/runtime/profiles/openai_zh_cn.md`：OpenAI Coding Model Profile。
 - `references/runtime/profiles/anthropic_zh_cn.md`：Claude Code 已登记部署使用的 Anthropic Coding Model Profile。
+- `references/runtime/profiles/alibaba-qwen_zh_cn.md`：Qwen Code 已登记部署使用的 Alibaba Qwen Coding Model Profile。
 - `references/multimodal-flow_zh_cn.md`：完整 Multimodal 行为。
 - `references/multimodal-openai-profile_zh_cn.md`：保留的当前 Multimodal OpenAI 部署绑定。
 - [`BEST_PRACTICES_zh_cn.md`](BEST_PRACTICES_zh_cn.md)：可选的 Codex/OpenAI Coding 部署安装与使用指南。

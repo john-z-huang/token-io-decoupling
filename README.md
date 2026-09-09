@@ -67,7 +67,7 @@ The Coding Flow keeps the architecture that has been iterated in this project wh
 
 ## Registered Coding deployments
 
-The Runtime Registry currently contains two independent Host/Profile pairs.
+The Runtime Registry currently contains three independent Host/Profile pairs.
 
 ### Codex + OpenAI
 
@@ -109,13 +109,31 @@ Claude Code supports standard Agent Skills directly. Typical local installation 
 
 For persistent local startup guidance, keep only a short bootstrap in `~/.claude/CLAUDE.md` or project `CLAUDE.md` and point it to the Skill; do not duplicate the full Skill policy there. Claude Code cloud sessions do not read the machine's personal `~/.claude/skills/`, so use a project/synced deployment that the cloud session actually loads.
 
+### Qwen Code + Alibaba Qwen
+
+- Host Adapter: [`references/runtime/hosts/qwen-code.md`](references/runtime/hosts/qwen-code.md)
+- Model Profile: [`references/runtime/profiles/alibaba-qwen.md`](references/runtime/profiles/alibaba-qwen.md)
+- Status: integration mapped against current Qwen Code and Alibaba Cloud Model Studio capabilities; a live Qwen Code CLI Max-parent/Flash-subagent smoke test has not yet been run for this deployment.
+
+The Alibaba Qwen Coding Profile is intentionally cost-asymmetric:
+
+- **Input-side Reasoning** binds to `qwen3.8-max`.
+- **Primary Output** binds to `qwen3.8-flash` and remains the sticky execution owner for repository exploration, implementation, debugging, build/test loops, and mechanical verification.
+- Normal two-Session mode uses a Max parent plus a resumable regular Flash subagent. If the current Session is itself explicitly `qwen3.8-flash`, the generic Runtime may use Single-Session Coding Mode rather than creating another Flash agent only to preserve the nominal topology.
+
+Qwen3.8 currently has three effective native reasoning tiers for this deployment: `low`, `medium`, and `xhigh`. The Profile uses `xhigh` on the Max parent for substantive semantic decisions, defaults ordinary Flash Primary Output to `medium`, raises a bounded Flash stage to `xhigh` only when it genuinely needs stronger local implementation judgment, and reserves `low` for strictly mechanical work. Generic `high`/`max` requests map to Qwen3.8 `xhigh`; they are not treated as separate effective tiers.
+
+Qwen Code regular subagents have independent context, explicit model selection, background continuation through `list_agents` + `send_message`, and can bind to an existing git worktree through `working_dir`. Model selection and effort are separate controls, however: the subagent definition can bind Flash directly, while effective effort may depend on Session/provider configuration. The Host Adapter therefore requires the actual model binding to remain authoritative and does not pretend a per-subagent effort tier was applied when Qwen Code cannot confirm it.
+
+Qwen Code supports personal Skills under `~/.qwen/skills/`, project Skills under `.qwen/skills/`, and persistent instructions through `QWEN.md`; it also reads an existing `AGENTS.md`. A short persistent bootstrap should point to this Skill instead of duplicating the full Coding Flow.
+
 ## Multimodal Flow
 
 Multimodal Flow remains independent from Coding. It owns Primary Observation, Observation Firewall, Routine Interaction, Creative Visual Authoring, visual/temporal progressive disclosure, curated visual checkpoints, Computer Use observe/act behavior, Semantic Checkpoints, visual verification, and narrow Multimodal → Coding handoff.
 
 The detailed rules are intentionally not duplicated in the root `SKILL.md` or this overview. See [`references/multimodal-flow.md`](references/multimodal-flow.md). The current OpenAI deployment binding is preserved separately in [`references/multimodal-openai-profile.md`](references/multimodal-openai-profile.md).
 
-The Claude Code/Anthropic runtime above applies to **Coding Flow only**. It does not claim Claude Code Multimodal support.
+The Claude Code/Anthropic and Qwen Code/Alibaba Qwen runtimes above apply to **Coding Flow only**. They do not claim corresponding Multimodal support.
 
 ## Scenario routing
 
@@ -139,8 +157,10 @@ English is the default public-facing documentation. Simplified Chinese mirrors u
 - `references/runtime/index.md`: concrete Coding deployment registry.
 - `references/runtime/hosts/codex.md`: Codex Host Adapter.
 - `references/runtime/hosts/claude-code.md`: Claude Code Host Adapter.
+- `references/runtime/hosts/qwen-code.md`: Qwen Code Host Adapter.
 - `references/runtime/profiles/openai.md`: OpenAI Coding Model Profile.
 - `references/runtime/profiles/anthropic.md`: Anthropic Coding Model Profile for the registered Claude Code deployment.
+- `references/runtime/profiles/alibaba-qwen.md`: Alibaba Qwen Coding Model Profile for the registered Qwen Code deployment.
 - `references/multimodal-flow.md`: complete Multimodal behavior.
 - `references/multimodal-openai-profile.md`: preserved current Multimodal OpenAI deployment binding.
 - [`BEST_PRACTICES.md`](BEST_PRACTICES.md): optional Codex/OpenAI Coding deployment setup and usage guide.
