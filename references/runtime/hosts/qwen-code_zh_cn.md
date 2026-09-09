@@ -10,10 +10,21 @@
 
 ## Agent Skills 与持久指令
 
-Qwen Code 会从以下位置发现手工编写的 Agent Skills：
+个人安装推荐只维护一份 canonical Skill，统一放在 `~/.agents/skills/token-io-decoupling/`。
 
-- 个人 Skill：`~/.qwen/skills/<skill-name>/SKILL.md`；
-- 项目 Skill：`.qwen/skills/<skill-name>/SKILL.md`。
+Qwen Code 原生发现 `~/.qwen/skills/` 下的个人 Skills 与 `.qwen/skills/` 下的项目 Skills。当前 Qwen Code 还支持通过 `skills.directories` 增加额外 Skill 扫描根目录，因此本项目推荐直接把共享目录加入扫描范围，而不是再复制一份到 `~/.qwen/skills/`：
+
+```json
+{
+  "skills": {
+    "directories": ["~/.agents/skills"]
+  }
+}
+```
+
+Qwen Code 会递归扫描这些额外目录中的 `SKILL.md`。默认 Skill 目录对同名 Skill 具有更高优先级，因此如果希望共享源成为唯一事实来源，就不要在 `~/.qwen/skills/` 中留下旧的同名 `token-io-decoupling` 副本。
+
+项目级 Skill 仍保留在 `.qwen/skills/<skill-name>/SKILL.md`。它们具有仓库/版本控制作用域，因此不应机械重定向到个人共享目录。
 
 若部署需要每次新 run 都能获得本 Skill 的关键约束，应使用 Qwen Code 的持久指令机制，而不是复制完整 Skill。`~/.qwen/QWEN.md` 提供用户级指令，项目根目录 `QWEN.md` 提供团队共享项目指令，`.qwen/QWEN.local.md` 提供项目内个人指令。Qwen Code 还会读取已有 `AGENTS.md`，因此已经采用这一可移植指令文件的仓库无需再维护一份重复的 QWEN 专属副本。
 
@@ -91,6 +102,10 @@ Alibaba Qwen 部署通常通过 Qwen Code 的 model-provider 配置连接 Alibab
 
 ## 生命周期与验证
 
-正常交互 Session 中，Qwen Code 会监控个人和项目 Skill 目录，并在短暂延迟后刷新变更；bare mode 可能需要重启。持久指令发生变化后，应在 fresh Session 或明确恢复且可检查加载 context 的 Session 中验证。
+正常交互 Session 中，Qwen Code 会监控默认个人/项目 Skill 目录，并在短暂延迟后刷新变更。通过 `skills.directories` 配置的额外目录属于 Skill discovery 范围；修改该设置后应验证发现结果，如果当前 mode/version 不会 live-refresh 新扫描根目录，则重启 Qwen Code。bare mode 也可能需要重启。
+
+采用个人共享源时，应确认 `~/.agents/skills/token-io-decoupling/SKILL.md` 存在、`skills.directories` 已包含 `~/.agents/skills`，并确认 `~/.qwen/skills/` 下没有更高优先级的旧同名副本遮蔽共享源。
+
+持久指令发生变化后，应在 fresh Session 或明确恢复且可检查加载 context 的 Session 中验证。
 
 本 Adapter 基于当前 Qwen Code 与 Alibaba Cloud 公开 capability 文档。在本仓库部署完成真实 Qwen Code CLI smoke test 之前，Runtime Registry 应准确标注其验证状态，而不能称为本地已验证。
