@@ -1,6 +1,6 @@
 # Shared Orchestration Protocols
 
-This file defines only the protocols shared by Coding Flow and Multimodal Flow. Scenario-specific roles, context firewalls, execution loops, and acceptance boundaries are defined by the individual Flow documents. Do not copy a Flow-specific role or raw state into another Flow merely to produce a “unified architecture.”
+This file defines only the protocols shared by Coding Flow and Multimodal Flow. Scenario-specific roles, context firewalls, execution loops, runtime mappings, and acceptance boundaries are defined by the individual Flow documents. Do not copy a Flow-specific role or raw state into another Flow merely to produce a “unified architecture.”
 
 ## Semantic Contract baseline
 
@@ -21,24 +21,24 @@ If context required for safe execution is neither present in the current Primary
 
 Decision, Input-side Reasoning, Primary Observation, Primary Output, and similar names represent responsibility and context ownership first. They do not require every role to map to a separate Agent or Session.
 
-Creating another Session requires an independent structural benefit, such as model capability tiering, distinct high-volume context ownership, real parallelism, fresh verification, context-capacity management, or an explicit isolation requirement. Do not perform same-model delegation merely because of role names, workflow topology, long output, ordinary project exploration, implementation, testing, or generic “task complexity.”
+Creating another Session requires an independent structural benefit, such as runtime capability tiering, distinct high-volume context ownership, real parallelism, fresh verification, context-capacity management, or an explicit isolation requirement. Do not perform same-runtime delegation merely because of role names, workflow topology, long output, ordinary project exploration, implementation, testing, or generic “task complexity.”
 
-When the current Agent already satisfies the target role's model and runtime requirements and no independent benefit exists, reuse the current Session by default. For Coding Flow, the concrete Single-Agent Luna Mode used when the current Agent is explicitly `gpt-5.6-luna` is defined in [`coding-flow.md`](coding-flow.md).
+When the current Agent already satisfies the target role's active runtime requirements and no independent benefit exists, reuse the current Session by default. Coding Flow's concrete Single-Session and normal two-Session semantics are defined in [`coding/session-model.md`](coding/session-model.md) and mapped to a deployment by [`coding/runtime.md`](coding/runtime.md).
 
-This rule does not mean every same-model role must be merged. In Multimodal Flow, Primary Observation and Optional Primary Output may remain separate Sessions even when both use the same model because visual/temporal raw state and output materialization have different context ownership.
+This rule does not mean every same-model role must be merged. In Multimodal Flow, Primary Observation and Optional Primary Output may remain separate Sessions even when a deployment binds them to the same model because visual/temporal raw state and output materialization have different context ownership.
 
 ## Dispatch Preview
 
 Before actually creating a child Agent or sending a new execution instruction to an existing independent Primary Agent, the parent conversation must first display an extremely short `Dispatch` preview so the user can see what is being delegated. It is a visible summary of the instruction about to be sent, not the complete child-Agent prompt, and it must not expose hidden reasoning.
 
-Switching logical roles within the current Session, performing the current Agent's own exploration/implementation/verification, or maintaining a Semantic Contract is not a Dispatch. In particular, Single-Agent Luna Mode must not print a fake `Dispatch → Luna`, construct a self-prompt, or create an unnecessary child Agent just to satisfy this rule.
+Switching logical roles within the current Session, performing the current Agent's own exploration/implementation/verification, or maintaining a Semantic Contract is not a Dispatch. Same-Session Coding must not print a fake self-dispatch, construct a self-prompt, or create an unnecessary child Agent merely to satisfy this rule.
 
 Keep only the minimum information needed to identify the delegated task:
 
 - `Task`: one sentence describing the objective or incremental objective;
 - `Scope`: only when necessary, list key paths, modules, visual collections, or processing range;
 - `Constraints`: only constraints that directly change how execution must proceed;
-- `Runtime`: only when explicit model, reasoning effort, or similar parameters matter for this dispatch.
+- `Runtime`: only when explicit model, execution parameter, or similar runtime requirements matter for this dispatch.
 
 Default to **1–3 lines** and target **about 80 tokens or less**. If it is clearly approaching or exceeding **about 120 tokens**, compress it before dispatching. Do not mechanically fill empty fields, and do not print the full acceptance checklist, full Contract, or explanatory prose.
 
@@ -52,7 +52,7 @@ Scenario-specific restrictions:
 Recommended forms:
 
 ```text
-Dispatch → Luna | Task: fix authentication middleware refresh logic; Scope: auth/*; Constraints: preserve API compatibility; Runtime: xhigh
+Dispatch → Primary Output | Task: fix authentication middleware refresh logic; Scope: auth/*; Constraints: preserve API compatibility
 ```
 
 ```text
@@ -73,7 +73,7 @@ Include only what the parent Agent needs for the next decision. Meaningful field
 
 At task completion, return only a compressed delivery summary: primary result, mechanical/visual verification conclusion, and remaining risks or boundary changes.
 
-Single-Agent mode has no independent parent/child Session and does not simulate Agent-to-parent progress messages. The current Agent reports necessary progress to the user using the host's normal interaction rules.
+Same-Session execution has no independent parent/child Session and does not simulate Agent-to-parent progress messages. The current Agent reports necessary progress to the user using the host's normal interaction rules.
 
 ## Evidence-on-Demand
 
@@ -83,12 +83,12 @@ If the high-value decision responsibility and Primary responsibility are in the 
 
 ## Cache-Aware Context Stability
 
-Within one workflow, prefer `stable prefix + small delta`: preserve stable sessions, project history, visual-state ownership, and approved decisions, then append only new goals, amendments, or verification requirements. Do not periodically resummarize the entire task merely to “synchronize state,” and do not repeatedly regenerate highly overlapping complete Contracts.
+Within one workflow, prefer `stable prefix + small delta`: preserve stable Sessions, project history, visual-state ownership, and approved decisions, then append only new goals, amendments, or verification requirements. Do not periodically resummarize the entire task merely to “synchronize state,” and do not repeatedly regenerate highly overlapping complete Contracts.
 
 Cache friendliness is a context-organization goal only. Actual cache keys, hit conditions, and quota accounting are host-defined and must not be presented as guaranteed benefits. If stable history begins to impair correct understanding, prioritize correctness and perform one state compression or Agent rebuild.
 
 ## Delegation boundary
 
-A Primary Observation Agent or independent Primary Output Agent must not recursively delegate. Additional Agents, fresh verifiers, and cross-Flow handoffs are orchestrated by the current parent high-value decision Agent. When Single-Agent mode needs an exception Agent, the current Agent creates it directly rather than constructing a virtual Primary hierarchy first.
+A Primary Observation Agent or independent Primary Output Agent must not recursively delegate. Additional Agents, fresh verifiers, and cross-Flow handoffs are orchestrated by the current parent high-value decision Agent. When same-Session Coding needs an exception Agent, the current Agent creates it directly rather than constructing a virtual Primary hierarchy first.
 
 This Skill cannot bypass higher-priority permissions, user authorization, product restrictions, or safety rules. Role division, a Semantic Contract, or established Session Affinity does not constitute additional authorization.
