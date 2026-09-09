@@ -10,7 +10,7 @@
 
 正常双 Session 模式需要项目事实才能决策时，先让 Primary Output Agent 探索项目并返回压缩事实，再由输入侧 Agent 做高价值判断；输出侧发现会改变已批准目标、架构、约束或验收标准的新事实时，暂停相关方向并极简升级。
 
-Single-Agent Luna Mode 在同一 Session 内按上述职责顺序工作，不制造角色间消息传递；发现重大新事实时直接修订当前有效 Contract 后继续。
+Single-Session Coding Mode 在同一 Session 内按上述职责顺序工作，不制造角色间消息传递；发现重大新事实时直接修订当前有效 Contract 后继续。
 
 并行只用于互不依赖且不会争用相同写入目标的任务；存在依赖、共享文件或前后结果关系时顺序执行。多个独立 Agent 需要复用状态时，应使用 [`context-exchange_zh_cn.md`](context-exchange_zh_cn.md)，而不是由父 Agent 重新生成长篇摘要。
 
@@ -32,7 +32,7 @@ Single-Agent Luna Mode 在同一 Session 内按上述职责顺序工作，不制
 
 简单、局部、低风险任务仍允许一次 Dispatch 后完成实现与验证直至结束。Coding checkpoint 的目标是防止长时间无监督的语义漂移，而不是强制父子 Agent 高频 ping-pong，也不是复制 Multimodal Routine Interaction 明确避免的逐步遥控模式。
 
-Single-Agent Luna Mode 只把相同的有界阶段纪律作为内部推理边界，不模拟发送给自己的 checkpoint 消息：到达已声明边界或出现重大新事实时，当前 Session 重新评估当前有效 Semantic Contract，完成必要高价值判断后再继续。
+Single-Session Coding Mode 只把相同的有界阶段纪律作为内部推理边界，不模拟发送给自己的 checkpoint 消息：到达已声明边界或出现重大新事实时，当前 Session 重新评估当前有效 Semantic Contract，完成必要高价值判断后再继续。
 
 独立 Primary Output Agent 的推荐形式：
 
@@ -56,7 +56,7 @@ Primary Output 职责负责机械验证和高体量证据处理，包括构建�
 
 输入侧职责负责语义验收：用户目标是否满足、Semantic Contract 是否落实、业务/兼容性约束是否被破坏、机械验证报告的风险是否可接受。
 
-正常双 Session 模式下，Primary Output Agent 只向输入侧 Agent 返回压缩后的验证结论，输入侧不默认重新读取完整 diff、测试日志或大型文件。Single-Agent Luna Mode 则由当前 Session 完成机械验证后直接进行语义验收，不为了验证边界创建额外 Agent；只有确有独立审查价值时才使用 fresh verifier。
+正常双 Session 模式下，Primary Output Agent 只向输入侧 Agent 返回压缩后的验证结论，输入侧不默认重新读取完整 diff、测试日志或大型文件。Single-Session Coding Mode 则由当前 Session 完成机械验证后直接进行语义验收，不为了验证边界创建额外 Agent；只有确有独立审查价值时才使用 fresh verifier。
 
 ## 输入侧输出纪律
 
@@ -71,6 +71,6 @@ Primary Output 职责负责机械验证和高体量证据处理，包括构建�
 - 大量项目现状复述、完整 diff/测试报告；
 - 可以由输出侧 Agent 直接物化的长最终答复。
 
-Single-Agent Luna Mode 不存在可供用户跳转的独立输出侧 Session 或上下文汇总。当前 Agent 已经承担 Primary Output Role，因此直接完成这些物化工作；任务或用户确有需要时，可以直接提供必要的详细汇报。本节关于双 Session 的“压缩并引导查看”规则不要求其模拟独立的输出侧汇报，也不得为了遵守本节而把长输出再次委派给另一个 Luna。
+Single-Session Coding Mode 不存在可供用户跳转的独立输出侧 Session 或上下文汇总。当前 Agent 已经承担 Primary Output Role，因此直接完成这些物化工作；任务或用户确有需要时，可以直接提供必要的详细汇报。本节关于双 Session 的“压缩并引导查看”规则不要求其模拟独立的输出侧汇报，也不得仅为了委派长输出而创建另一个 same-runtime Session。
 
 当正常双 Session 模式的最终答复本身很长且宿主不能直接复用输出侧结果时，优先让 Primary Output Agent 把完整内容写入用户指定文件或工作区，输入侧 Agent 只返回极简摘要和位置，不重新生成长文。
