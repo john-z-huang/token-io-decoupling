@@ -10,13 +10,13 @@ Semantic Contract 字段与 amendment、上下文阻塞规则、Dispatch Preview
 
 正常双 Session 模式使用精简提示：只给目标、必要约束、相关路径和需要返回的事实。能由 Primary Output Agent 自行读取的文件或项目状态，不由输入侧 Agent 大段复制到提示词中。
 
-Single-Agent Luna Mode 不需要把当前 Agent 已知信息重新编码成发送给自己的提示；只在当前上下文中维护完成任务所需的最小稳定目标、约束、关键决策与验收标准。
+Single-Session Coding Mode 不需要把当前 Agent 已知信息重新编码成发送给自己的提示；只在当前上下文中维护完成任务所需的最小稳定目标、约束、关键决策与验收标准。
 
 ### 复杂、强上下文任务
 
 正常双 Session 模式中，当任务明显依赖大量会话、业务或项目背景时，优先把宿主能够安全共享的完整相关上下文交给 Primary Output Agent，并额外提供简短 Semantic Contract。这样避免输入侧 Agent 为重新描述已经存在的背景信息而产生大量输出，同时用 Contract 固化最终有效决策。
 
-Single-Agent Luna Mode 继续使用 Semantic Contract 作为逻辑决策锚点，但不得为了形式完整把它当作 self-delegation prompt 再发送给自己。
+Single-Session Coding Mode 继续使用 Semantic Contract 作为逻辑决策锚点，但不得为了形式完整把它当作 self-delegation prompt 再发送给自己。
 
 ## 多 Agent Coding 的文件化 Context Exchange
 
@@ -29,7 +29,7 @@ Single-Agent Luna Mode 继续使用 Semantic Contract 作为逻辑决策锚点�
 - 每创建一个独立 Worker，父 Agent 都必须先为它创建一个专属子目录，例如 `<root>/worker-auth/`，并在派发时明确告诉该 Worker 自己拥有的准确目录。普通执行期间，Worker 只能在这个被分配的子目录内创建、读取、修改和删除与自身工作上下文有关的文档。
 - Worker **绝对禁止**在其他 Worker 的子目录、Context Exchange Root 根目录或任何其他不属于自己的位置写入、重命名、移动或删除文件。即使共享文件系统让这些目录在技术上可见，也不能跨越这个写入边界。
 - Worker 默认也不得浏览或读取其他 Worker 的子目录。只有父 Agent 因具体 handoff、验证、升级或依赖关系而**明确指定需要读取的文档或路径**时，才允许该 Worker 选择性读取对应材料；只能读取父 Agent 点名的内容，不得自行递归扫描或扩展读取其他目录。
-- Worker 被替换或 reasoning-effort 升级时，接手 Agent 必须获得新的 Context ID，并由父 Agent 为其创建新的专属子目录。前任目录对接手 Agent 保持只读，而且只有父 Agent 明确指定的前任文档才可读取；接手 Agent 永远不得写入前任目录。
+- Worker 被替换或 Runtime escalation 时，接手 Agent 必须获得新的 Context ID，并由父 Agent 为其创建新的专属子目录。前任目录对接手 Agent 保持只读，而且只有父 Agent 明确指定的前任文档才可读取；接手 Agent 永远不得写入前任目录。
 - Context Exchange Root 只属于运行时协调状态。不得暂存或提交，不得把它当作产品产物；工作流结束后默认删除，只有用户明确要求保留时才继续保存。
 
 ### 文件系统 capability 兜底
@@ -67,4 +67,4 @@ Context 文档可以记录稳定调查结论、相关路径或 symbol、执行�
 
 `Goal`、`Constraints`、`Decisions` 与 `Acceptance` 仍以 Semantic Contract 为权威来源。Worker context 文档不得静默覆盖 Contract；如果 Worker 的新发现意味着 Contract 需要变化，必须先走既有 Decision Checkpoint 与 amendment 路径，再跨越该执行边界。
 
-当 Worker 需要替换或进行 reasoning-effort 升级时，原 Worker 应在条件允许时刷新自己目录里的 Worker 本地 `INDEX.md`，并生成或更新 `handoff.md`，记录已完成状态、失败方案与证据、当前修改与验证状态、剩余 blocker 以及下一步最有价值的动作。父 Agent 随后更新根 `INDEX.md`，为接手 Agent 创建新的 Context ID 和专属子目录，并优先通过宿主 capability 把被明确指定的前任文档只读暴露给接手 Agent；如果无法安全只读暴露，则机械复制这些文档到接手 Agent 的 `imports/` 后再派发。接手 Agent 不从零重新探索项目，也永远不得写入前任目录。如果前任已经不可用，父 Agent 只根据当前已有事实写最小恢复说明，不把完整历史重新编码成长篇中转文本。
+当 Worker 需要替换或进行 Runtime escalation 时，原 Worker 应在条件允许时刷新自己目录里的 Worker 本地 `INDEX.md`，并生成或更新 `handoff.md`，记录已完成状态、失败方案与证据、当前修改与验证状态、剩余 blocker 以及下一步最有价值的动作。父 Agent 随后更新根 `INDEX.md`，为接手 Agent 创建新的 Context ID 和专属子目录，并优先通过宿主 capability 把被明确指定的前任文档只读暴露给接手 Agent；如果无法安全只读暴露，则机械复制这些文档到接手 Agent 的 `imports/` 后再派发。接手 Agent 不从零重新探索项目，也永远不得写入前任目录。如果前任已经不可用，父 Agent 只根据当前已有事实写最小恢复说明，不把完整历史重新编码成长篇中转文本。
