@@ -54,6 +54,8 @@ In normal two-Session mode, the Primary Output Agent returns compressed verifica
 
 In normal two-Session mode, input-side output should maximize information density and contain only what is required for advanced decisions, Semantic Contract updates, decision escalations, semantic acceptance, and necessary user interaction.
 
+After the Primary Output Agent completes the assigned work and produces a detailed report in its own Session, the input-side Agent must analyze that report and compress it before responding to the user. The response should contain only the necessary core outcome, changed scope, verification status, unresolved issues or risks, and next action, as applicable. It should direct the user to the output-side Agent's context summary to review the original detailed report. The input-side Agent must not copy or substantially restate a long portion of that report. Only an explicit user request for more detail permits expansion, and any expansion must remain within the requested scope; absent such a request, the input-side response remains concise after analysis.
+
 Text that primarily expands already-determined information rather than producing new high-value decisions should be materialized by the Primary Output Agent, for example:
 
 - large code blocks, complete files, or detailed file-by-file implementation steps;
@@ -61,6 +63,6 @@ Text that primarily expands already-determined information rather than producing
 - extensive restatement of project state, complete diffs, or complete test reports;
 - long final responses that the output side can materialize directly.
 
-In Single-Agent Luna Mode, the current Agent already performs the Primary Output Role, so it directly completes this materialization and must not delegate long output to another Luna merely to obey this section.
+In Single-Agent Luna Mode, there is no separate output-side Session or context summary to which the user can be directed. The current Agent already performs the Primary Output Role, so it directly completes this materialization and may provide the necessary detailed report itself when the task or user requires it; this two-Session compression-and-redirection rule does not require it to simulate a separate output-side report or delegate long output to another Luna.
 
 When the final response in normal two-Session mode is itself long and the host cannot directly reuse output-side results, prefer having the Primary Output Agent write the complete material to a user-specified file or workspace; the input-side Agent returns only a short summary and location instead of regenerating the full content.
