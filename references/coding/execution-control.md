@@ -42,6 +42,14 @@ Checkpoint: Findings: refresh state is duplicated across middleware and storage;
 Amendment: keep public API stable; choose storage-owned state; Stage 2 approved: implement and run focused tests, then pause only if verification requires a Contract change
 ```
 
+## Supervised operational stages
+
+For high-uncertainty normal two-Session Coding work—such as a first build, unfamiliar-environment bootstrap, toolchain diagnosis, or an external dependency or fallback execution path—the input-side Agent should predeclare a short sequence of evidence-producing stages. Each stage should end at a concrete observation or decision boundary rather than enumerate commands.
+
+At the end of each predeclared stage, the independent Primary Output Agent must return a compressed checkpoint and pause. The input-side Agent reviews the evidence, amends the Semantic Contract or next-stage instruction when needed, and explicitly releases the next stage. The independent Primary Output Agent must also checkpoint immediately before changing the system or user environment, and immediately when a permission or network block, a deviation from the selected execution path, or materially different repair or fallback options appear.
+
+Low-value commands, logs, and mechanical retries within an approved stage remain in the independent Primary Output Agent's context. This rule does not require per-command reports or fixed-frequency no-information heartbeats, and it does not force every Coding task into small stages: known, low-risk, easily mechanically verified operations may still run continuously from execution through verification.
+
 ## Coding Verification Boundary
 
 The Primary Output responsibility owns mechanical verification and high-volume evidence processing, including builds, tests, lint, formatting, type checks, diff review, accidental-file-change checks, and analysis of associated raw logs.
