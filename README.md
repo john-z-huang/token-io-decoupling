@@ -6,7 +6,7 @@
 
 The project contains two independent flows rather than one universal multi-Agent topology:
 
-- **Coding Flow** is the actively maintained focus. Input-side Reasoning owns high-value decisions; Primary Output owns repository exploration, implementation/materialization, raw tool output, debugging, and mechanical verification. Coding Core is now independent of concrete Code Agent products and model names; a Runtime Contract selects the Host Adapter and Model Profile for the current deployment.
+- **Coding Flow** is the actively maintained focus. Input-side Reasoning owns high-value decisions; Primary Output owns repository exploration, implementation/materialization, raw tool output, debugging, and mechanical verification. Coding Core is independent of concrete Code Agent products and model names; a Runtime Contract selects the Host Adapter and Model Profile for the current deployment.
 - **Multimodal Flow** remains available for Computer Use, Browser Use, video, large image/screenshot collections, visual design, and related high-volume visual/temporal state. Its existing architecture is preserved as a separate routed flow. Current Multimodal deployment bindings are isolated from the root Skill rather than generalized without testing.
 
 ## Architecture
@@ -44,7 +44,7 @@ A model being technically capable of implementation does not automatically make 
 
 ### Single-Session versus normal two-Session Coding
 
-Coding Core no longer contains a model-specific “single-agent” branch. The active Runtime derives the topology:
+Coding Core contains no product- or model-specific “single-agent” branch. The active Runtime derives the topology:
 
 - use **Single-Session Coding Mode** when the current Session is explicitly eligible for both Coding responsibilities, can satisfy the required runtime parameters, and there is no independent structural reason to split;
 - use **normal two-Session mode** when the current Session owns input-side reasoning but the active Profile requires a separate Primary Output runtime;
@@ -65,42 +65,48 @@ The Coding Flow keeps the architecture that has been iterated in this project wh
 - **Evidence-on-Demand** returns only the evidence needed for a high-value decision instead of replaying complete diffs or logs.
 - **Coding Verification Boundary** separates high-volume mechanical verification from semantic acceptance.
 
+## Registered Coding deployments
+
+The Runtime Registry currently contains two independent Host/Profile pairs.
+
+### Codex + OpenAI
+
+- Host Adapter: [`references/runtime/hosts/codex.md`](references/runtime/hosts/codex.md)
+- Model Profile: [`references/runtime/profiles/openai.md`](references/runtime/profiles/openai.md)
+- Status: current verified deployment.
+
+The OpenAI Coding Profile keeps Primary Output on `gpt-5.6-luna`, uses generic Single-Session Coding Mode when the current Session is explicitly the same eligible runtime, uses `xhigh` for substantive Primary Output, `high` for bounded auxiliary materialization, lower tiers only for strictly mechanical work, and `max` only for targeted escalation after repeated blocking.
+
+### Claude Code + Anthropic API
+
+- Host Adapter: [`references/runtime/hosts/claude-code.md`](references/runtime/hosts/claude-code.md)
+- Model Profile: [`references/runtime/profiles/anthropic.md`](references/runtime/profiles/anthropic.md)
+- Status: integration mapped against current official Claude Code capabilities; a live `claude` CLI smoke test has not been run in the environment that authored this change.
+
+The Anthropic Coding Profile binds Primary Output to the explicit model ID `claude-sonnet-5` rather than the provider-dependent `sonnet` alias. When the current main Session is itself explicitly `claude-sonnet-5` and the required effort can be applied, the same generic Runtime selects Single-Session Coding Mode. Otherwise an advanced parent Session keeps Input-side Reasoning while a resumable Sonnet 5 subagent owns Primary Output.
+
+For Sonnet 5, substantive Primary Output uses `effort=xhigh`; bounded auxiliary materialization uses `high`; `medium`/`low` are restricted to deterministic or mechanically verifiable work; `max` is reserved for a narrowly scoped task that has repeatedly blocked an existing Worker.
+
+Claude Code can substitute a requested subagent model when organization `availableModels` or provider restrictions prevent the exact request, and organization effort caps can clamp the requested effort. Those Host behaviors are **not** accepted as Profile fallback: the actual subagent runtime must be checked when the Host exposes it, and substantive work blocks when the effective model/effort no longer satisfies the Profile.
+
+Claude Code custom/general-purpose subagents are used for sticky Primary Execution Session semantics because they can be resumed by agent ID. Built-in Explore/Plan may handle bounded one-shot research but are not used as the long-lived Primary Execution Session. Claude Code worktree isolation can supply an isolated working copy, while Context Exchange continues to apply its own ownership and capability rules.
+
+### Claude Code installation notes
+
+Claude Code supports standard Agent Skills directly. Typical local installation locations are:
+
+- personal: `~/.claude/skills/token-io-decoupling/SKILL.md`;
+- project: `.claude/skills/token-io-decoupling/SKILL.md`.
+
+For persistent local startup guidance, keep only a short bootstrap in `~/.claude/CLAUDE.md` or project `CLAUDE.md` and point it to the Skill; do not duplicate the full Skill policy there. Claude Code cloud sessions do not read the machine's personal `~/.claude/skills/`, so use a project/synced deployment that the cloud session actually loads.
+
 ## Multimodal Flow
 
 Multimodal Flow remains independent from Coding. It owns Primary Observation, Observation Firewall, Routine Interaction, Creative Visual Authoring, visual/temporal progressive disclosure, curated visual checkpoints, Computer Use observe/act behavior, Semantic Checkpoints, visual verification, and narrow Multimodal → Coding handoff.
 
 The detailed rules are intentionally not duplicated in the root `SKILL.md` or this overview. See [`references/multimodal-flow.md`](references/multimodal-flow.md). The current OpenAI deployment binding is preserved separately in [`references/multimodal-openai-profile.md`](references/multimodal-openai-profile.md).
 
-This separation reflects the current maintenance boundary: Coding runtime portability is the primary active direction, while Multimodal behavior is preserved without an untested cross-product redesign.
-
-## Current verified Coding deployment
-
-The Runtime Registry currently contains one verified pair:
-
-- Host Adapter: [`references/runtime/hosts/codex.md`](references/runtime/hosts/codex.md)
-- Model Profile: [`references/runtime/profiles/openai.md`](references/runtime/profiles/openai.md)
-
-The current OpenAI Coding Profile preserves existing behavior:
-
-- input-side reasoning: the current advanced parent model/session;
-- Primary Output: `gpt-5.6-luna`;
-- when the current Session is explicitly `gpt-5.6-luna` and the required runtime parameters are available, it is dual-role eligible and the generic Runtime selects Single-Session Coding Mode;
-- normal two-Session Primary Output uses `reasoning_effort=xhigh` for general implementation, non-trivial debugging/refactoring, and complex verification/test code;
-- bounded auxiliary materialization normally uses `reasoning_effort=high`;
-- host-supported `medium` or lower tiers are restricted to strictly bounded, low-risk, mechanically verifiable tasks;
-- `reasoning_effort=max` is reserved for a narrowly scoped task that has repeatedly blocked an existing high/xhigh Worker, with file-backed handoff context preferred before replacement.
-
-If a required model or runtime parameter cannot be satisfied, the Profile blocks the corresponding substantive work rather than silently substituting another model.
-
-## Current Multimodal deployment
-
-The existing Multimodal OpenAI binding is preserved without being folded into the Coding Runtime abstraction:
-
-- Decision Agent: current advanced parent model;
-- Primary Observation Agent: `gpt-5.6-luna`, using `reasoning_effort=xhigh` for substantive high-volume visual/temporal analysis;
-- Optional Primary Output Agent: `gpt-5.6-luna`, using `reasoning_effort=xhigh` for substantive long output.
-
-Observation and Output remain distinct context owners even when the deployment binds them to the same model.
+The Claude Code/Anthropic runtime added above applies to **Coding Flow only**. It does not claim Claude Code Multimodal support.
 
 ## Scenario routing
 
@@ -122,11 +128,13 @@ English is the default public-facing documentation. Simplified Chinese mirrors u
 - `references/coding/execution-control.md`: stages, checkpoints, verification, and output discipline.
 - `references/coding/context-exchange.md`: file-backed multi-Agent context transport and ownership.
 - `references/runtime/index.md`: concrete Coding deployment registry.
-- `references/runtime/hosts/codex.md`: current Codex Host Adapter.
-- `references/runtime/profiles/openai.md`: current OpenAI Coding Model Profile.
+- `references/runtime/hosts/codex.md`: Codex Host Adapter.
+- `references/runtime/hosts/claude-code.md`: Claude Code Host Adapter.
+- `references/runtime/profiles/openai.md`: OpenAI Coding Model Profile.
+- `references/runtime/profiles/anthropic.md`: Anthropic Coding Model Profile for the registered Claude Code deployment.
 - `references/multimodal-flow.md`: complete Multimodal behavior.
 - `references/multimodal-openai-profile.md`: preserved current Multimodal OpenAI deployment binding.
-- [`BEST_PRACTICES.md`](BEST_PRACTICES.md): optional current Coding deployment setup and usage guide.
+- [`BEST_PRACTICES.md`](BEST_PRACTICES.md): optional Codex/OpenAI Coding deployment setup and usage guide.
 - `agents/openai.yaml`: OpenAI Agent Skill display and implicit-invocation configuration.
 
 Every English reference under `references/` has a Simplified Chinese `_zh_cn.md` semantic mirror. The Skill loads references lazily by scenario and Runtime selection.
