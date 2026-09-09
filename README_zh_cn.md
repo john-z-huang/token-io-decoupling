@@ -6,7 +6,7 @@
 
 本项目不是一套统一的多 Agent 拓扑，而是包含两条彼此独立的 Flow：
 
-- **Coding Flow** 是当前主要维护方向。Input-side Reasoning 负责高价值决策；Primary Output 负责仓库探索、实现/物化、原始工具输出、调试和机械验证。Coding Core 现在与具体 Code Agent 产品及模型名称解耦；Coding Runtime Contract 会为当前部署选择 Host Adapter 与 Model Profile。
+- **Coding Flow** 是当前主要维护方向。Input-side Reasoning 负责高价值决策；Primary Output 负责仓库探索、实现/物化、原始工具输出、调试和机械验证。Coding Core 与具体 Code Agent 产品及模型名称解耦；Coding Runtime Contract 会为当前部署选择 Host Adapter 与 Model Profile。
 - **Multimodal Flow** 继续用于 Computer Use、Browser Use、视频、大量图片/截图、视觉设计及其他高体量视觉/时序状态。其现有架构继续作为独立按需 Flow 保留；当前 Multimodal 部署绑定从根 Skill 中隔离出来，而不是在缺少测试的情况下强行通用化。
 
 ## 架构
@@ -44,7 +44,7 @@ Coding Flow
 
 ### Single-Session 与正常双 Session Coding
 
-Coding Core 不再包含模型专属的“single-agent”分支；具体拓扑由 active Runtime 推导：
+Coding Core 不包含任何产品或模型专属的“single-agent”分支；具体拓扑由 active Runtime 推导：
 
 - 当前 Session 明确同时具备两类 Coding 职责的 eligibility、能够满足所需运行参数，且不存在独立结构性拆分理由时，使用 **Single-Session Coding Mode**；
 - 当前 Session 负责输入侧推理，但 active Profile 要求独立 Primary Output Runtime 时，使用**正常双 Session 模式**；
@@ -65,42 +65,48 @@ Coding Flow 保留本项目已反复迭代的架构，同时把具体 Runtime �
 - **Evidence-on-Demand** 只返回高价值决策所需证据，不重放完整 diff 或日志。
 - **Coding Verification Boundary** 把高体量机械验证与语义验收分开。
 
+## 已登记 Coding 部署
+
+Runtime 注册表目前包含两组彼此独立的 Host/Profile 组合。
+
+### Codex + OpenAI
+
+- Host Adapter：[`references/runtime/hosts/codex_zh_cn.md`](references/runtime/hosts/codex_zh_cn.md)
+- Model Profile：[`references/runtime/profiles/openai_zh_cn.md`](references/runtime/profiles/openai_zh_cn.md)
+- 状态：当前已验证部署。
+
+OpenAI Coding Profile 继续把 Primary Output 绑定到 `gpt-5.6-luna`；当前 Session 本身就是符合要求的同一 Runtime 时使用通用 Single-Session Coding Mode。实质 Primary Output 使用 `xhigh`，有界辅助物化使用 `high`，更低档位只用于严格机械工作，`max` 只用于现有 Worker 反复阻塞后的定向 escalation。
+
+### Claude Code + Anthropic API
+
+- Host Adapter：[`references/runtime/hosts/claude-code_zh_cn.md`](references/runtime/hosts/claude-code_zh_cn.md)
+- Model Profile：[`references/runtime/profiles/anthropic_zh_cn.md`](references/runtime/profiles/anthropic_zh_cn.md)
+- 状态：已经按当前 Claude Code 官方 capability 完成映射；用于本次改动的环境没有安装 `claude` CLI，因此尚未做真实 CLI smoke test。
+
+Anthropic Coding Profile 使用明确的完整 model ID `claude-sonnet-5` 绑定 Primary Output，而不是依赖会随 provider/version 变化的 `sonnet` alias。当前主 Session 本身明确是 `claude-sonnet-5`，且所需 effort 能真实应用时，同一个通用 Runtime 会选择 Single-Session Coding Mode；否则由高级父 Session 保持 Input-side Reasoning，并由可恢复的 Sonnet 5 subagent 承担 Primary Output。
+
+Sonnet 5 的实质 Primary Output 使用 `effort=xhigh`；有界辅助物化使用 `high`；`medium`/`low` 只允许严格确定性或易机械验证的工作；`max` 只用于某个具体事项已经让现有 Worker 反复阻塞后的范围收窄 escalation。
+
+Claude Code 在 organization `availableModels` 或 provider 限制阻止所请求模型时，可能自动 substitute subagent model；组织级 effort cap 也可能把请求的 effort 向下 clamp。这些 Host 行为**不是** Profile fallback：Host 能暴露实际 subagent runtime 时必须检查真实 model/effort；若生效值不再满足 Profile，实质工作应阻塞而不是静默继续。
+
+sticky Primary Execution Session 使用可 resume 的 custom/general-purpose subagent，因为它们可以通过 agent ID 恢复。built-in Explore / Plan 只用于适合的 one-shot 有界调查，不承担长期 Primary Execution Session。Claude Code 的 worktree isolation 可以提供独立工作副本，但 Context Exchange 仍遵守自身 ownership 与 capability 边界。
+
+### Claude Code 安装说明
+
+Claude Code 原生支持标准 Agent Skills。典型本地安装位置：
+
+- 个人：`~/.claude/skills/token-io-decoupling/SKILL.md`；
+- 项目：`.claude/skills/token-io-decoupling/SKILL.md`。
+
+如果需要持久启动提示，只在 `~/.claude/CLAUDE.md` 或项目 `CLAUDE.md` 中保留简短 bootstrap 并指向本 Skill；不要把完整 Skill policy 复制进去。Claude Code cloud session 不读取本机 `~/.claude/skills/`，因此应使用 cloud session 实际会加载的项目/synced 部署方式。
+
 ## Multimodal Flow
 
 Multimodal Flow 继续独立于 Coding。它负责 Primary Observation、Observation Firewall、Routine Interaction、Creative Visual Authoring、视觉/时序渐进式读取、精选视觉 checkpoint、Computer Use observe/act 行为、Semantic Checkpoint、视觉验证，以及窄 Multimodal → Coding handoff。
 
 这些详细规则不再在根 `SKILL_zh_cn.md` 或本概览中重复。完整规则见 [`references/multimodal-flow_zh_cn.md`](references/multimodal-flow_zh_cn.md)；当前 OpenAI 部署绑定单独保存在 [`references/multimodal-openai-profile_zh_cn.md`](references/multimodal-openai-profile_zh_cn.md)。
 
-这种隔离反映当前维护边界：Coding Runtime 可移植性是主要活跃方向；Multimodal 行为保持现状，不进行未经测试的跨产品重构。
-
-## 当前已验证 Coding 部署
-
-Runtime 注册表目前只有一组已验证组合：
-
-- Host Adapter：[`references/runtime/hosts/codex_zh_cn.md`](references/runtime/hosts/codex_zh_cn.md)
-- Model Profile：[`references/runtime/profiles/openai_zh_cn.md`](references/runtime/profiles/openai_zh_cn.md)
-
-当前 OpenAI Coding Profile 保持已有行为：
-
-- 输入侧推理：当前高级父模型/Session；
-- Primary Output：`gpt-5.6-luna`；
-- 当前 Session 能明确确认自身为 `gpt-5.6-luna`，并且所需 Runtime 参数可满足时，该 Session 具有双角色 eligibility，通用 Runtime 因此选择 Single-Session Coding Mode；
-- 正常双 Session Primary Output 对一般实现、非平凡调试/重构和复杂验证/测试代码使用 `reasoning_effort=xhigh`；
-- 有界辅助物化通常使用 `reasoning_effort=high`；
-- 宿主支持的 `medium` 或更低档位只用于严格有界、低风险、易机械验证的任务；
-- `reasoning_effort=max` 仅用于某个具体事项已经让现有 high/xhigh Worker 反复阻塞后的定向升级，并优先在替换前通过文件化 handoff 保留上下文。
-
-如果所需模型或 Runtime 参数无法满足，Profile 会阻塞对应实质性工作，而不是静默替换成其他模型。
-
-## 当前 Multimodal 部署
-
-现有 Multimodal OpenAI 绑定继续保留，但不纳入 Coding Runtime 抽象：
-
-- Decision Agent：当前高级父模型；
-- Primary Observation Agent：`gpt-5.6-luna`，实质性高体量视觉/时序分析使用 `reasoning_effort=xhigh`；
-- Optional Primary Output Agent：`gpt-5.6-luna`，实质性长输出使用 `reasoning_effort=xhigh`。
-
-即使部署把 Observation 与 Output 绑定到同一模型，它们仍然是不同的上下文 owner。
+上面新增的 Claude Code/Anthropic Runtime **只适用于 Coding Flow**，不构成 Claude Code Multimodal 支持声明。
 
 ## 场景路由
 
@@ -122,11 +128,13 @@ Runtime 注册表目前只有一组已验证组合：
 - `references/coding/execution-control_zh_cn.md`：阶段、checkpoint、验证与输出纪律。
 - `references/coding/context-exchange_zh_cn.md`：文件化多 Agent 上下文传输与 ownership。
 - `references/runtime/index_zh_cn.md`：具体 Coding 部署注册表。
-- `references/runtime/hosts/codex_zh_cn.md`：当前 Codex Host Adapter。
-- `references/runtime/profiles/openai_zh_cn.md`：当前 OpenAI Coding Model Profile。
+- `references/runtime/hosts/codex_zh_cn.md`：Codex Host Adapter。
+- `references/runtime/hosts/claude-code_zh_cn.md`：Claude Code Host Adapter。
+- `references/runtime/profiles/openai_zh_cn.md`：OpenAI Coding Model Profile。
+- `references/runtime/profiles/anthropic_zh_cn.md`：Claude Code 已登记部署使用的 Anthropic Coding Model Profile。
 - `references/multimodal-flow_zh_cn.md`：完整 Multimodal 行为。
 - `references/multimodal-openai-profile_zh_cn.md`：保留的当前 Multimodal OpenAI 部署绑定。
-- [`BEST_PRACTICES_zh_cn.md`](BEST_PRACTICES_zh_cn.md)：可选的当前 Coding 部署安装与使用指南。
+- [`BEST_PRACTICES_zh_cn.md`](BEST_PRACTICES_zh_cn.md)：可选的 Codex/OpenAI Coding 部署安装与使用指南。
 - `agents/openai.yaml`：OpenAI Agent Skill 展示与隐式调用配置。
 
 `references/` 下每个英文 reference 都有对应的 `_zh_cn.md` 简体中文语义镜像。Skill 按场景与 Runtime 选择延迟加载 reference。
