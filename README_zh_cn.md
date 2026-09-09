@@ -2,111 +2,131 @@
 
 [English](README.md) | [简体中文](README_zh_cn.md)
 
-`token-io-decoupling` 是一个面向支持 Agent Skills 的 Agent 调度 Skill。它根据任务场景把高价值语义决策、高体量原始状态消费与大体量输出物化拆开处理，避免高级父模型被低决策密度的项目状态或视觉世界状态持续占用上下文。
+`token-io-decoupling` 是一个面向支持 Agent Skills 的 Agent 调度 Skill。它把高价值语义决策、高体量原始状态消费与输出物化分离，避免父级推理上下文持续吸收低决策密度的仓库状态或视觉世界状态。
 
-当前 Skill 不使用一套统一的三 Agent 架构，而是提供两条独立流程：
+本项目不是一套统一的多 Agent 拓扑，而是包含两条彼此独立的 Flow：
 
-- **Coding Flow**：保持成熟的双角色路径，由输入侧推理 Agent 负责高价值判断，Primary 输出角色负责 repo exploration、代码/文档/配置物化、测试修复和机械验证。若当前 Code Agent 已经是 Luna，默认由同一 Session 同时承担两类职责，不再为了形式创建额外 Luna。
-- **Multimodal Flow**：用于 Computer Use、Browser Use、视频、大量图片/截图和视觉设计，由 Decision Agent 负责高价值判断，Primary Observation Agent 负责高体量视觉/时序 Input Token；只有确实需要长输出时才创建 Optional Primary Output Agent，需要修改代码时通过窄 Handoff 进入 Coding Flow。
+- **Coding Flow** 是当前主要维护方向。Input-side Reasoning 负责高价值决策；Primary Output 负责仓库探索、实现/物化、原始工具输出、调试和机械验证。Coding Core 现在与具体 Code Agent 产品及模型名称解耦；Coding Runtime Contract 会为当前部署选择 Host Adapter 与 Model Profile。
+- **Multimodal Flow** 继续用于 Computer Use、Browser Use、视频、大量图片/截图、视觉设计及其他高体量视觉/时序状态。其现有架构继续作为独立按需 Flow 保留；当前 Multimodal 部署绑定从根 Skill 中隔离出来，而不是在缺少测试的情况下强行通用化。
 
-Multimodal Flow 明确区分两种模式：Routine Interaction 保持 Observation Agent 自主的低开销 observe/act；Creative Visual Authoring（绘画、图像编辑、排版、视觉设计、插画、合成等开放式创作）采用 Decision-led Visual Authoring，由 Decision Agent 先制定 Creative Brief/Visual Plan，并在默认 3–6 个自适应视觉 checkpoint 亲自查看精选截图或局部证据、提出批评和 amendment 后，Observation Agent 才能继续下一阶段。Creative 模式的主要视觉设计 ownership 属于 Decision Agent，而不是 Observation Agent。
+## 架构
 
-## 设计目标
+### Coding：职责、Runtime 与 Host 相互独立
 
-- 普通 Coding 任务不因支持多模态而增加 Observation Agent 或额外调度层。
-- 大型 diff、测试日志、文件树等项目原始状态继续由 Coding Primary Output 角色消费并压缩。
-- 连续截图、图片集合、视频帧、Computer Use Observation、OCR / DOM / accessibility state 等高体量多模态输入由 Primary Observation Agent 消费并压缩。
-- Computer Use 的普通 observe/act 循环保持在 Observation Agent 的同一 Session 内，避免逐步跨 Agent 同步临时 GUI 状态。
-- 普通 GUI 操作与开放式视觉创作分流：创作阶段以 bounded visual pass → curated checkpoint → Decision critique/amendment 为基本循环，避免 Observation Agent 闷头跨越多个视觉里程碑。
-- Creative Visual Authoring 中，构图、视觉层级、风格、色彩关系、整体观感及跨阶段方向选择属于 Decision Agent 的高价值设计判断；Observation Agent 只做局部机械视觉判断、工具操作和已批准方案的物化，不得成为事实上的主要设计者。
-- 大量图片与视频采用渐进式筛选，只对候选区域、图片、帧或时间段提高分析密度。
-- 精选 checkpoint screenshot/crop 是 Observation Firewall 的窄例外；不传递连续截图、坐标、点击序列或完整视觉历史。宿主无法向 Decision Agent 提供精选图像时，Creative 模式必须停止并报告能力阻塞。
-- 通过 Semantic Checkpoint 区分普通 GUI 操作与发送、提交、支付、删除、权限变更等高影响动作。
-- 设计分析与 Coding 之间只传递窄 Handoff Contract，不把完整设计图、截图历史或 OCR 全文重新灌入 Coding Agent。
-- 继续使用 Dispatch Preview、事件驱动汇报、Evidence-on-Demand 和缓存友好的增量通信控制父会话 Token 规模。
+```text
+Coding Flow
+    │
+    ├─ Input-side Reasoning responsibility
+    └─ Primary Output responsibility
+              │
+              ▼
+      Coding Runtime Contract
+              │
+              ▼
+        Runtime Registry
+          ┌───────┴────────┐
+          ▼                ▼
+     Host Adapter      Model Profile
+       "how"              "who"
+          └───────┬────────┘
+                  ▼
+       concrete Sessions / models /
+       execution parameters
+```
+
+这种拆分是有意设计的：
+
+- **Core responsibilities** 定义谁负责决策、项目状态、物化、验证和上下文 ownership。
+- **Host Adapter** 定义 Code Agent 产品如何创建/复用独立 Session、暴露模型/Runtime 参数、加载持久指令，以及映射 sandbox/filesystem capability。
+- **Model Profile** 定义哪些具体 Runtime 可以承担各角色、不同任务的执行参数、定向升级策略，以及 unavailable handling。
+
+某个模型“技术上能写代码”并不自动意味着它可以承担 Primary Output。角色 eligibility 属于部署策略，可以有意让高体量执行远离父级推理 Session。
+
+### Single-Session 与正常双 Session Coding
+
+Coding Core 不再包含模型专属的“single-agent”分支；具体拓扑由 active Runtime 推导：
+
+- 当前 Session 明确同时具备两类 Coding 职责的 eligibility、能够满足所需运行参数，且不存在独立结构性拆分理由时，使用 **Single-Session Coding Mode**；
+- 当前 Session 负责输入侧推理，但 active Profile 要求独立 Primary Output Runtime 时，使用**正常双 Session 模式**；
+- 只有 fresh verification、真正并行、上下文容量恢复、明确隔离或 Profile 定义的定向 escalation 等具体收益，才创建额外 Session。
+
+仓库规模、长输出、build/test 工作或笼统的“任务复杂”本身不是新建 Session 的理由。
+
+## Coding Flow 机制
+
+Coding Flow 保留本项目已反复迭代的架构，同时把具体 Runtime 绑定从 Core 文档移出：
+
+- **Semantic Contract** 固化 `Goal`、`Constraints`、`Decisions` 与 `Acceptance`，而不重新编码完整上下文。
+- **Context Firewall** 在 active Runtime 使用双 Session 时，把高体量项目状态留在独立 Primary Output Session。
+- **Primary Execution Session Affinity** 对相关的探索、实现、诊断、测试和修复优先复用执行上下文。
+- **Two-level planning** 把架构/产品判断留在输入侧，把局部执行规划留在输出侧。
+- **Bounded Coding stages 与 Decision Checkpoints** 防止独立 Worker 未经父级审查跨越重要语义边界。
+- **Context Exchange** 把可复用的多 Worker 状态外置到有界、带 ownership 控制的工作区文档，并优先使用文件系统 capability，避免父级重新生成中转文本。
+- **Evidence-on-Demand** 只返回高价值决策所需证据，不重放完整 diff 或日志。
+- **Coding Verification Boundary** 把高体量机械验证与语义验收分开。
+
+## Multimodal Flow
+
+Multimodal Flow 继续独立于 Coding。它负责 Primary Observation、Observation Firewall、Routine Interaction、Creative Visual Authoring、视觉/时序渐进式读取、精选视觉 checkpoint、Computer Use observe/act 行为、Semantic Checkpoint、视觉验证，以及窄 Multimodal → Coding handoff。
+
+这些详细规则不再在根 `SKILL_zh_cn.md` 或本概览中重复。完整规则见 [`references/multimodal-flow_zh_cn.md`](references/multimodal-flow_zh_cn.md)；当前 OpenAI 部署绑定单独保存在 [`references/multimodal-openai-profile_zh_cn.md`](references/multimodal-openai-profile_zh_cn.md)。
+
+这种隔离反映当前维护边界：Coding Runtime 可移植性是主要活跃方向；Multimodal 行为保持现状，不进行未经测试的跨产品重构。
+
+## 当前已验证 Coding 部署
+
+Runtime 注册表目前只有一组已验证组合：
+
+- Host Adapter：[`references/runtime/hosts/codex_zh_cn.md`](references/runtime/hosts/codex_zh_cn.md)
+- Model Profile：[`references/runtime/profiles/openai_zh_cn.md`](references/runtime/profiles/openai_zh_cn.md)
+
+当前 OpenAI Coding Profile 保持已有行为：
+
+- 输入侧推理：当前高级父模型/Session；
+- Primary Output：`gpt-5.6-luna`；
+- 当前 Session 能明确确认自身为 `gpt-5.6-luna`，并且所需 Runtime 参数可满足时，该 Session 具有双角色 eligibility，通用 Runtime 因此选择 Single-Session Coding Mode；
+- 正常双 Session Primary Output 对一般实现、非平凡调试/重构和复杂验证/测试代码使用 `reasoning_effort=xhigh`；
+- 有界辅助物化通常使用 `reasoning_effort=high`；
+- 宿主支持的 `medium` 或更低档位只用于严格有界、低风险、易机械验证的任务；
+- `reasoning_effort=max` 仅用于某个具体事项已经让现有 high/xhigh Worker 反复阻塞后的定向升级，并优先在替换前通过文件化 handoff 保留上下文。
+
+如果所需模型或 Runtime 参数无法满足，Profile 会阻塞对应实质性工作，而不是静默替换成其他模型。
+
+## 当前 Multimodal 部署
+
+现有 Multimodal OpenAI 绑定继续保留，但不纳入 Coding Runtime 抽象：
+
+- Decision Agent：当前高级父模型；
+- Primary Observation Agent：`gpt-5.6-luna`，实质性高体量视觉/时序分析使用 `reasoning_effort=xhigh`；
+- Optional Primary Output Agent：`gpt-5.6-luna`，实质性长输出使用 `reasoning_effort=xhigh`。
+
+即使部署把 Observation 与 Output 绑定到同一模型，它们仍然是不同的上下文 owner。
 
 ## 场景路由
 
-```text
-Token I/O Decoupling
-        │
-        ├── Coding Flow
-        │     Input-side Reasoning Role
-        │               ↓
-        │     Primary Output Role
-        │
-        └── Multimodal Flow
-              ┌─ Routine Interaction ───────────────┐
-              │   Decision Agent                    │
-              │          ↓                          │
-              │   Observation observe/act loop      │
-              │          ↓                          │
-              │   Visual / State Digest             │
-              └─────────────────────────────────────┘
-              ┌─ Creative Visual Authoring ─────────┐
-              │   Decision Agent: Brief / Plan      │
-              │          ↓                          │
-              │   bounded visual pass               │
-              │          ↓                          │
-              │   curated checkpoint screenshot     │
-              │          ↓                          │
-              │   Decision critique / amendment     │
-              │          ↺ next approved pass       │
-              └─────────────────────────────────────┘
-                             ↓
-                    optional Output / Coding Handoff
-```
+仓库探索、实现、重构、调试、build/test/lint，以及代码/配置/开发文档物化使用 Coding Flow。
 
-### Coding Flow
+连续 GUI Observation、大型视觉集合、视频/时序状态、设计对比或开放式视觉创作成为主要输入状态时使用 Multimodal Flow。
 
-适用于 repo exploration、implementation、refactor、debugging、build/test/lint、代码/配置/开发文档物化等任务。
-
-核心机制包括：Context Firewall、Primary Execution Session Affinity、Semantic Contract、两级规划、Coding Verification Boundary 与输入侧输出纪律。
-
-### Multimodal Flow
-
-适用于 Computer Use、Browser Use、连续 GUI Observation、大量图片/截图、视频或大量帧、视觉设计 reference 对比和其他高体量视觉世界状态。
-
-核心机制包括：模式路由（Routine Interaction / Creative Visual Authoring）、Observation Firewall、Visual / Temporal Progressive Disclosure、Ephemeral State Ownership、Routine Computer Use Observe/Act Loop、Decision-led Visual Authoring、Semantic Checkpoint、Visual / State Digest 与 Multimodal Verification。
-
-开放式创作时，Decision Agent 先产出构图、层级、色彩/光线、阶段和验收条件；Observation Agent 每次只执行一个有界视觉阶段，在结构、色彩/光照、细节和最终等 material milestone 返回精选截图或局部 crop；Decision Agent 必须亲自审看、批评并发 amendment 后才批准继续。默认 3–6 个 checkpoint，可按任务复杂度调整。宿主不能提供精选视觉证据时，不能退回由 Observation Agent 单独完成。这里的设计职责不是“Observation 先设计、Decision 再审批”：核心视觉方向由 Decision Agent 决定，Observation Agent 负责在 Krita、Photopea、Figma、Photoshop 等 GUI 工具中把已批准方向持续实现出来。
-
-### 混合任务
-
-例如“根据设计稿修改前端”时，先在 Multimodal Flow 中完成视觉分析，再把稳定目标、Required changes、Constraints、Evidence 引用和 Acceptance 压缩成窄 Handoff Contract，随后进入 Coding Flow。实现后若需要视觉验收，再复用原 Primary Observation Agent。
-
-## 当前 OpenAI Profile
-
-当前具体运行策略为：
-
-- Coding 输入侧推理：当前高级父模型；
-- Coding Single-Agent Luna Mode：当前 `gpt-5.6-luna` Session 同时承担两类 Coding 职责，常规保持 `reasoning_effort=xhigh`；
-- 正常双 Session Coding 的 Primary Output：`gpt-5.6-luna`，一般需求实现、非平凡调试/重构和复杂验证或测试代码默认使用 `reasoning_effort=xhigh`；
-- Coding 辅助 Worker：开发文档、代码注释、简单单元测试、低风险机械修改及类似有界辅助工作通常使用 `reasoning_effort=high`；
-- 宿主支持的 `medium` 或更低 Coding Worker：仅用于严格有界、低风险、易机械验证的任务，例如运行已经选定的检查、收集元数据、精确提取/替换或按模板格式整理；低于 medium 的档位原则上只做只读或确定性变换；
-- Coding `reasoning_effort=max`：仅用于某个具体任务已经让现有 high/xhigh Worker 反复失败或明确阻塞后的定向升级；条件允许时原 Worker 先物化文件化 handoff 上下文，阻塞解除后后续工作恢复正常档位；
-- Multimodal Decision Agent：当前高级父模型；
-- Multimodal Primary Observation Agent：`gpt-5.6-luna`，实质性高体量视觉/时序分析使用 `reasoning_effort=xhigh`；
-- Multimodal Optional Primary Output Agent：`gpt-5.6-luna`，实质性长输出使用 `reasoning_effort=xhigh`。
-
-Observation 与 Output 是不同职责和不同 Session Affinity。即使当前 Profile 使用同一种模型，也不默认共享它们的高体量上下文。
-
-该 Profile 是当前部署策略，不是架构本身。未来模型变化时，应优先调整模型绑定，而保持 Flow 的职责边界稳定。
+混合任务按当前阶段的 owner 选择 Flow，并且只交换窄 Handoff Contract；不要预加载两套完整 Flow，也不要跨边界重放完整原始状态。
 
 ## 文件与语言布局
 
 英文是默认公开入口；简体中文文档统一使用 `_zh_cn` 后缀。
 
-- `README.md`：英文项目说明与公开入口。
-- `README_zh_cn.md`：简体中文项目说明。
-- `SKILL.md`：英文 canonical Skill 入口；标准 Skill 宿主仍应加载该文件。
-- `SKILL_zh_cn.md`：用于阅读和维护的简体中文语义镜像。
-- `BEST_PRACTICES.md`：可选、非规范性的英文 Coding Flow 安装与使用指南。
-- [`BEST_PRACTICES_zh_cn.md`](BEST_PRACTICES_zh_cn.md)：可选、非规范性的 Coding Flow 最佳实践简体中文镜像。
-- `references/shared-protocols.md`：英文共享协议。
-- `references/coding-flow.md`：英文 Coding Flow 规则。
-- `references/multimodal-flow.md`：英文 Multimodal Flow 规则。
-- `references/shared-protocols_zh_cn.md`、`references/coding-flow_zh_cn.md`、`references/multimodal-flow_zh_cn.md`：对应的简体中文镜像，并且只互相引用中文文档。
-- `agents/openai.yaml`：OpenAI Agent Skill 展示与隐式调用配置，对外说明使用英文。
+- `SKILL_zh_cn.md`：中文语义镜像与路由入口。
+- `references/shared-protocols_zh_cn.md`：跨 Flow 共享调度协议。
+- `references/coding-flow_zh_cn.md`：稳定 Coding 模块加载入口。
+- `references/coding/session-model_zh_cn.md`：Runtime 无关的 Coding 角色与 Session 拓扑。
+- `references/coding/runtime_zh_cn.md`：Coding Runtime Contract。
+- `references/coding/execution-control_zh_cn.md`：阶段、checkpoint、验证与输出纪律。
+- `references/coding/context-exchange_zh_cn.md`：文件化多 Agent 上下文传输与 ownership。
+- `references/runtime/index_zh_cn.md`：具体 Coding 部署注册表。
+- `references/runtime/hosts/codex_zh_cn.md`：当前 Codex Host Adapter。
+- `references/runtime/profiles/openai_zh_cn.md`：当前 OpenAI Coding Model Profile。
+- `references/multimodal-flow_zh_cn.md`：完整 Multimodal 行为。
+- `references/multimodal-openai-profile_zh_cn.md`：保留的当前 Multimodal OpenAI 部署绑定。
+- [`BEST_PRACTICES_zh_cn.md`](BEST_PRACTICES_zh_cn.md)：可选的当前 Coding 部署安装与使用指南。
+- `agents/openai.yaml`：OpenAI Agent Skill 展示与隐式调用配置。
 
-Skill 按场景延迟加载 reference；普通 Coding 不读取 Multimodal Flow，纯多模态分析也不预加载 Coding Flow。
+`references/` 下每个英文 reference 都有对应的 `_zh_cn.md` 简体中文语义镜像。Skill 按场景与 Runtime 选择延迟加载 reference。
