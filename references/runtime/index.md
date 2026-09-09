@@ -10,8 +10,11 @@ Load this file only through [`../coding/runtime.md`](../coding/runtime.md) when 
 |---|---|---|
 | [`hosts/codex.md`](hosts/codex.md) | [`profiles/openai.md`](profiles/openai.md) | Current verified deployment |
 | [`hosts/claude-code.md`](hosts/claude-code.md) | [`profiles/anthropic.md`](profiles/anthropic.md) | Official-capability-backed integration; live Claude Code CLI smoke test pending |
+| [`hosts/qwen-code.md`](hosts/qwen-code.md) | [`profiles/alibaba-qwen.md`](profiles/alibaba-qwen.md) | Official-capability-backed integration; live Qwen Code CLI smoke test pending |
 
-The Codex/OpenAI entry preserves the existing verified Coding behavior of this Skill. The Claude Code/Anthropic entry is registered because the required Host capabilities are explicitly documented by Claude Code and the runtime mapping fits the existing Coding Runtime Contract; however, the environment used to author this integration does not have the `claude` CLI installed, so it must not be described as locally smoke-tested until a real Claude Code run verifies it.
+The Codex/OpenAI entry preserves the existing verified Coding behavior of this Skill. The Claude Code/Anthropic entry is registered because the required Host capabilities are explicitly documented by Claude Code and the runtime mapping fits the existing Coding Runtime Contract; however, the environment used to author that integration did not have the `claude` CLI installed, so it must not be described as locally smoke-tested until a real Claude Code run verifies it.
+
+The Qwen Code/Alibaba Qwen entry maps `qwen3.8-max` to Input-side Reasoning and `qwen3.8-flash` to Primary Output. Qwen Code documents the required Agent Skills, regular-subagent, model-selection, continuation, worktree, and provider-effort capabilities; Alibaba Cloud documents both Qwen3.8 model bindings and their effective reasoning tiers. The environment used to author this integration has not run a real Qwen Code CLI Max-parent/Flash-subagent smoke test, so the deployment remains capability-backed rather than locally verified.
 
 A host or model family that is not listed here must not be treated as supported merely because it can parse Agent Skills or run coding tasks.
 
@@ -27,4 +30,4 @@ Do not modify an existing deployment entry to approximate another product or pro
 
 ## Multimodal boundary
 
-Multimodal Flow is not generalized through this Coding runtime registry. Its current deployment bindings remain isolated in [`../multimodal-openai-profile.md`](../multimodal-openai-profile.md). The Claude Code/Anthropic entry in this registry applies to Coding Flow only and makes no portability claim for Multimodal Flow.
+Multimodal Flow is not generalized through this Coding runtime registry. Its current deployment bindings remain isolated in [`../multimodal-openai-profile.md`](../multimodal-openai-profile.md). The Claude Code/Anthropic and Qwen Code/Alibaba Qwen entries in this registry apply to Coding Flow only and make no portability claim for Multimodal Flow.
