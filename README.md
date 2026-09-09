@@ -2,111 +2,131 @@
 
 [English](README.md) | [简体中文](README_zh_cn.md)
 
-`token-io-decoupling` is an Agent scheduling Skill for hosts that support Agent Skills. It separates high-value semantic decisions from high-volume raw-state consumption and large output materialization, so an advanced parent model does not have to continuously absorb low-decision-density project state or visual world state.
+`token-io-decoupling` is an Agent orchestration Skill for hosts that support Agent Skills. It separates high-value semantic decisions from high-volume raw-state consumption and output materialization so the parent reasoning context does not have to continuously absorb low-decision-density repository state or visual world state.
 
-The Skill does not force one universal three-agent architecture. It provides two independent flows:
+The project contains two independent flows rather than one universal multi-Agent topology:
 
-- **Coding Flow**: keeps the mature two-role model. The input-side reasoning role owns high-value decisions, while the Primary Output role owns repository exploration, code/document/config materialization, test fixing, and mechanical verification. If the current Code Agent is already Luna, both roles stay in the same session by default instead of delegating to another Luna.
-- **Multimodal Flow**: handles Computer Use, Browser Use, video, large image/screenshot collections, and visual design. A Decision Agent owns high-value decisions while a Primary Observation Agent consumes high-volume visual/temporal input. An Optional Primary Output Agent is created only when substantial non-coding output is actually needed; code changes use a narrow handoff into Coding Flow.
+- **Coding Flow** is the actively maintained focus. Input-side Reasoning owns high-value decisions; Primary Output owns repository exploration, implementation/materialization, raw tool output, debugging, and mechanical verification. Coding Core is now independent of concrete Code Agent products and model names; a Runtime Contract selects the Host Adapter and Model Profile for the current deployment.
+- **Multimodal Flow** remains available for Computer Use, Browser Use, video, large image/screenshot collections, visual design, and related high-volume visual/temporal state. Its existing architecture is preserved as a separate routed flow. Current Multimodal deployment bindings are isolated from the root Skill rather than generalized without testing.
 
-Multimodal Flow explicitly separates two modes. **Routine Interaction** keeps a low-overhead observe/act loop inside the Observation Agent. **Creative Visual Authoring**—drawing, image editing, layout, visual design, illustration, compositing, and other open-ended visual work—uses Decision-led Visual Authoring. The Decision Agent first defines a Creative Brief/Visual Plan, then personally reviews curated screenshots or crops at a default 3–6 adaptive visual checkpoints, critiques the result, and issues amendments before the Observation Agent continues. The Decision Agent owns the primary visual direction; the Observation Agent performs local mechanical visual judgments, tool operations, and implementation of approved decisions.
+## Architecture
 
-## Design goals
+### Coding: responsibility, runtime, and host are separate concerns
 
-- Ordinary coding tasks should not gain an Observation Agent or extra orchestration layer merely because the Skill also supports multimodal work.
-- Large diffs, test logs, file trees, and other high-volume project state remain with the Coding Primary Output role for consumption and compression.
-- Continuous screenshots, image sets, video frames, Computer Use observations, OCR, DOM, accessibility state, and other high-volume multimodal input remain with the Primary Observation Agent.
-- Routine Computer Use observe/act loops stay in the same Observation session to avoid synchronizing ephemeral GUI state across agents on every step.
-- Routine GUI work and open-ended visual creation are routed differently: creative work follows bounded visual pass → curated checkpoint → Decision critique/amendment, rather than letting the Observation Agent cross multiple visual milestones without review.
-- In Creative Visual Authoring, composition, visual hierarchy, style, color relationships, overall visual quality, and cross-stage direction changes are high-value decisions owned by the Decision Agent. The Observation Agent must not become the de facto lead designer.
-- Large image and video inputs use progressive disclosure so analysis density increases only for candidate regions, images, frames, or time ranges.
-- A curated checkpoint screenshot/crop is a narrow exception to the Observation Firewall. Continuous screenshots, coordinates, click sequences, and full visual history are not passed upstream. If the host cannot provide curated visual evidence to the Decision Agent, Creative mode must stop and report a capability block.
-- Semantic Checkpoints distinguish routine GUI interaction from high-impact actions such as sending, submitting, paying, deleting, or changing permissions.
-- Visual analysis and Coding exchange only a narrow Handoff Contract rather than replaying full design assets, screenshot history, or OCR text into the Coding role.
-- Dispatch Preview, event-driven reporting, Evidence-on-Demand, and cache-friendly incremental communication keep parent-session token use bounded.
+```text
+Coding Flow
+    │
+    ├─ Input-side Reasoning responsibility
+    └─ Primary Output responsibility
+              │
+              ▼
+      Coding Runtime Contract
+              │
+              ▼
+        Runtime Registry
+          ┌───────┴────────┐
+          ▼                ▼
+     Host Adapter      Model Profile
+       "how"              "who"
+          └───────┬────────┘
+                  ▼
+       concrete Sessions / models /
+       execution parameters
+```
+
+The separation is deliberate:
+
+- **Core responsibilities** define who owns decisions, project state, materialization, verification, and context.
+- **Host Adapter** defines how a Code Agent product creates/reuses independent Sessions, exposes model/runtime parameters, loads persistent instructions, and maps sandbox/filesystem capabilities.
+- **Model Profile** defines which concrete runtime is eligible for each role, task-specific execution parameters, targeted escalation, and unavailable handling.
+
+A model being technically capable of implementation does not automatically make it eligible for Primary Output. Eligibility is deployment policy and can intentionally keep high-volume execution away from the parent reasoning Session.
+
+### Single-Session versus normal two-Session Coding
+
+Coding Core no longer contains a model-specific “single-agent” branch. The active Runtime derives the topology:
+
+- use **Single-Session Coding Mode** when the current Session is explicitly eligible for both Coding responsibilities, can satisfy the required runtime parameters, and there is no independent structural reason to split;
+- use **normal two-Session mode** when the current Session owns input-side reasoning but the active Profile requires a separate Primary Output runtime;
+- create additional Sessions only for concrete benefits such as fresh verification, real parallelism, context-capacity recovery, explicit isolation, or Profile-defined targeted escalation.
+
+Repository size, long output, build/test work, or generic task complexity are not reasons by themselves to create another Session.
+
+## Coding Flow mechanisms
+
+The Coding Flow keeps the architecture that has been iterated in this project while removing concrete runtime bindings from Core documents:
+
+- **Semantic Contract** stabilizes `Goal`, `Constraints`, `Decisions`, and `Acceptance` without re-encoding complete context.
+- **Context Firewall** keeps high-volume project state in the independent Primary Output Session when the active Runtime uses two Sessions.
+- **Primary Execution Session Affinity** reuses the execution context for related exploration, implementation, diagnosis, testing, and fixes.
+- **Two-level planning** keeps architecture/product decisions on the input side and local execution planning on the output side.
+- **Bounded Coding stages and Decision Checkpoints** prevent an independent Worker from crossing meaningful semantic boundaries without parent review.
+- **Context Exchange** externalizes reusable multi-Worker state into bounded, ownership-controlled workspace documents and prefers filesystem capabilities over parent-generated retransmission.
+- **Evidence-on-Demand** returns only the evidence needed for a high-value decision instead of replaying complete diffs or logs.
+- **Coding Verification Boundary** separates high-volume mechanical verification from semantic acceptance.
+
+## Multimodal Flow
+
+Multimodal Flow remains independent from Coding. It owns Primary Observation, Observation Firewall, Routine Interaction, Creative Visual Authoring, visual/temporal progressive disclosure, curated visual checkpoints, Computer Use observe/act behavior, Semantic Checkpoints, visual verification, and narrow Multimodal → Coding handoff.
+
+The detailed rules are intentionally not duplicated in the root `SKILL.md` or this overview. See [`references/multimodal-flow.md`](references/multimodal-flow.md). The current OpenAI deployment binding is preserved separately in [`references/multimodal-openai-profile.md`](references/multimodal-openai-profile.md).
+
+This separation reflects the current maintenance boundary: Coding runtime portability is the primary active direction, while Multimodal behavior is preserved without an untested cross-product redesign.
+
+## Current verified Coding deployment
+
+The Runtime Registry currently contains one verified pair:
+
+- Host Adapter: [`references/runtime/hosts/codex.md`](references/runtime/hosts/codex.md)
+- Model Profile: [`references/runtime/profiles/openai.md`](references/runtime/profiles/openai.md)
+
+The current OpenAI Coding Profile preserves existing behavior:
+
+- input-side reasoning: the current advanced parent model/session;
+- Primary Output: `gpt-5.6-luna`;
+- when the current Session is explicitly `gpt-5.6-luna` and the required runtime parameters are available, it is dual-role eligible and the generic Runtime selects Single-Session Coding Mode;
+- normal two-Session Primary Output uses `reasoning_effort=xhigh` for general implementation, non-trivial debugging/refactoring, and complex verification/test code;
+- bounded auxiliary materialization normally uses `reasoning_effort=high`;
+- host-supported `medium` or lower tiers are restricted to strictly bounded, low-risk, mechanically verifiable tasks;
+- `reasoning_effort=max` is reserved for a narrowly scoped task that has repeatedly blocked an existing high/xhigh Worker, with file-backed handoff context preferred before replacement.
+
+If a required model or runtime parameter cannot be satisfied, the Profile blocks the corresponding substantive work rather than silently substituting another model.
+
+## Current Multimodal deployment
+
+The existing Multimodal OpenAI binding is preserved without being folded into the Coding Runtime abstraction:
+
+- Decision Agent: current advanced parent model;
+- Primary Observation Agent: `gpt-5.6-luna`, using `reasoning_effort=xhigh` for substantive high-volume visual/temporal analysis;
+- Optional Primary Output Agent: `gpt-5.6-luna`, using `reasoning_effort=xhigh` for substantive long output.
+
+Observation and Output remain distinct context owners even when the deployment binds them to the same model.
 
 ## Scenario routing
 
-```text
-Token I/O Decoupling
-        │
-        ├── Coding Flow
-        │     Input-side Reasoning Role
-        │               ↓
-        │     Primary Output Role
-        │
-        └── Multimodal Flow
-              ┌─ Routine Interaction ───────────────┐
-              │   Decision Agent                    │
-              │          ↓                          │
-              │   Observation observe/act loop      │
-              │          ↓                          │
-              │   Visual / State Digest             │
-              └─────────────────────────────────────┘
-              ┌─ Creative Visual Authoring ─────────┐
-              │   Decision Agent: Brief / Plan      │
-              │          ↓                          │
-              │   bounded visual pass               │
-              │          ↓                          │
-              │   curated checkpoint screenshot     │
-              │          ↓                          │
-              │   Decision critique / amendment     │
-              │          ↺ next approved pass       │
-              └─────────────────────────────────────┘
-                             ↓
-                    optional Output / Coding Handoff
-```
+Use Coding Flow for repository exploration, implementation, refactoring, debugging, build/test/lint, and code/config/developer-document materialization.
 
-### Coding Flow
+Use Multimodal Flow when continuous GUI Observation, large visual collections, video/temporal state, design comparison, or open-ended visual authoring is the dominant source of input state.
 
-Use Coding Flow for repository exploration, implementation, refactoring, debugging, build/test/lint, and materializing code, configuration, or developer documentation.
-
-Its main mechanisms include Context Firewall, Primary Execution Session affinity, Semantic Contract, two-level planning, Coding Verification Boundary, and input-side output discipline.
-
-### Multimodal Flow
-
-Use Multimodal Flow for Computer Use, Browser Use, continuous GUI observation, large image/screenshot collections, video or large frame sets, visual-reference comparison, and other high-volume visual world state.
-
-Its main mechanisms include mode routing (Routine Interaction / Creative Visual Authoring), Observation Firewall, Visual / Temporal Progressive Disclosure, Ephemeral State Ownership, Routine Computer Use Observe/Act Loop, Decision-led Visual Authoring, Semantic Checkpoint, Visual / State Digest, and Multimodal Verification.
-
-For open-ended visual creation, the Decision Agent defines composition, hierarchy, color/light, stages, and acceptance conditions first. The Observation Agent executes one bounded visual stage at a time and returns curated screenshots or crops at material milestones such as structure, color/lighting, detail, and final review. The Decision Agent must personally inspect, critique, and amend the result before approving the next stage. The intended division is not “Observation designs, Decision approves”; core visual direction is decided by the Decision Agent, while the Observation Agent realizes that approved direction in GUI tools such as Krita, Photopea, Figma, or Photoshop.
-
-### Mixed tasks
-
-For tasks such as “modify the frontend from this design,” first complete visual analysis in Multimodal Flow. Compress stable goals, Required changes, Constraints, Evidence references, and Acceptance into a narrow Handoff Contract, then enter Coding Flow. If visual verification is needed after implementation, reuse the original Primary Observation Agent.
-
-## Current OpenAI profile
-
-The current deployment strategy is:
-
-- Coding input-side reasoning: the current advanced parent model;
-- Coding Single-Agent Luna Mode: the current `gpt-5.6-luna` session performs both Coding roles and normally stays at `reasoning_effort=xhigh`;
-- Coding Primary Output in normal two-Session mode: `gpt-5.6-luna`, defaulting to `reasoning_effort=xhigh` for general implementation, non-trivial debugging/refactoring, and complex verification or test code;
-- Coding auxiliary Workers: normally `reasoning_effort=high` for developer documentation, comments, simple unit tests, low-risk mechanical edits, and similarly bounded support work;
-- Host-supported `medium` or lower Coding Workers: only for strictly bounded, low-risk, mechanically verifiable tasks such as running already-selected checks, collecting metadata, exact extraction/replacement, or template-driven formatting; below-medium tiers should normally be read-only or deterministic;
-- Coding `reasoning_effort=max`: reserved for a narrowly scoped task that has repeatedly blocked an existing high/xhigh Worker; the predecessor should materialize reusable file-backed handoff context first when possible, and follow-on work returns to normal tiers after the blocker is resolved;
-- Multimodal Decision Agent: the current advanced parent model;
-- Multimodal Primary Observation Agent: `gpt-5.6-luna`, with `reasoning_effort=xhigh` for substantive high-volume visual/temporal analysis;
-- Multimodal Optional Primary Output Agent: `gpt-5.6-luna`, with `reasoning_effort=xhigh` for substantive long output.
-
-Observation and Output are different responsibilities with different session affinity. Even when the current profile binds them to the same model, their high-volume contexts are not merged by default.
-
-This profile is a deployment policy, not the architecture itself. Future model changes should primarily update the model bindings while preserving the flow boundaries.
+For mixed tasks, select the Flow that owns the current stage and exchange only a narrow Handoff Contract. Do not preload both complete Flows or replay full raw state across the boundary.
 
 ## Files and language layout
 
 English is the default public-facing documentation. Simplified Chinese mirrors use the `_zh_cn` suffix.
 
-- `README.md`: English project overview and public entry point.
-- `README_zh_cn.md`: Simplified Chinese project overview.
-- `SKILL.md`: canonical executable Skill entry in English. Standard Skill hosts should continue to load this file.
-- `SKILL_zh_cn.md`: Simplified Chinese semantic mirror for review and maintenance.
-- [`BEST_PRACTICES.md`](BEST_PRACTICES.md): optional, non-normative English Coding Flow setup and usage guide.
-- `BEST_PRACTICES_zh_cn.md`: optional, non-normative Simplified Chinese mirror of the Coding Flow guide.
-- `references/shared-protocols.md`: English shared protocols.
-- `references/coding-flow.md`: English Coding Flow rules.
-- `references/multimodal-flow.md`: English Multimodal Flow rules.
-- `references/shared-protocols_zh_cn.md`, `references/coding-flow_zh_cn.md`, `references/multimodal-flow_zh_cn.md`: Simplified Chinese mirrors that only cross-reference the Chinese document set.
-- `agents/openai.yaml`: OpenAI Agent Skill display and implicit-invocation configuration; its public-facing text is English.
+- `SKILL.md`: canonical executable routing entry.
+- `references/shared-protocols.md`: cross-Flow orchestration protocols.
+- `references/coding-flow.md`: stable Coding module loader.
+- `references/coding/session-model.md`: runtime-neutral Coding roles and Session topology.
+- `references/coding/runtime.md`: Coding Runtime Contract.
+- `references/coding/execution-control.md`: stages, checkpoints, verification, and output discipline.
+- `references/coding/context-exchange.md`: file-backed multi-Agent context transport and ownership.
+- `references/runtime/index.md`: concrete Coding deployment registry.
+- `references/runtime/hosts/codex.md`: current Codex Host Adapter.
+- `references/runtime/profiles/openai.md`: current OpenAI Coding Model Profile.
+- `references/multimodal-flow.md`: complete Multimodal behavior.
+- `references/multimodal-openai-profile.md`: preserved current Multimodal OpenAI deployment binding.
+- [`BEST_PRACTICES.md`](BEST_PRACTICES.md): optional current Coding deployment setup and usage guide.
+- `agents/openai.yaml`: OpenAI Agent Skill display and implicit-invocation configuration.
 
-The Skill loads references lazily by scenario. Ordinary Coding does not load Multimodal Flow, and pure multimodal analysis does not preload Coding Flow.
+Every English reference under `references/` has a Simplified Chinese `_zh_cn.md` semantic mirror. The Skill loads references lazily by scenario and Runtime selection.
