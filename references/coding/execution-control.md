@@ -10,7 +10,7 @@ The input-side responsibility owns semantic-level planning: goals, constraints, 
 
 When normal two-Session mode needs project facts before a decision, first ask the Primary Output Agent to explore and return compressed facts, then make the high-value decision on the input side. If the output side discovers facts that would change an approved goal, architecture, constraint, or acceptance criterion, pause that direction and escalate briefly.
 
-Single-Agent Luna Mode follows the same responsibility order in one Session without creating role-to-role messages; when major new facts appear, amend the currently effective Contract directly and continue.
+Single-Session Coding Mode follows the same responsibility order in one Session without creating role-to-role messages; when major new facts appear, amend the currently effective Contract directly and continue.
 
 Parallelism is reserved for independent work that will not contend for the same write targets. Tasks with dependencies, shared files, or ordered result relationships are executed sequentially. When multiple independent Agents need reusable state, use [`context-exchange.md`](context-exchange.md) rather than parent-generated long summaries.
 
@@ -32,7 +32,7 @@ Do not create blocking checkpoints for low-decision-density mechanics. Ordinary 
 
 Simple, local, low-risk tasks may still use one Dispatch and run through implementation plus verification to completion. The purpose of Coding checkpoints is to prevent long unsupervised semantic drift, not to force parent/child ping-pong or reproduce the click-by-click behavior intentionally avoided by Multimodal Routine Interaction.
 
-Single-Agent Luna Mode uses the same bounded-stage discipline only as an internal reasoning boundary. It does not simulate checkpoint messages to itself: at a declared boundary or major new fact, the current Session re-evaluates the effective Semantic Contract, makes the necessary high-value decision, and then continues.
+Single-Session Coding Mode uses the same bounded-stage discipline only as an internal reasoning boundary. It does not simulate checkpoint messages to itself: at a declared boundary or major new fact, the current Session re-evaluates the effective Semantic Contract, makes the necessary high-value decision, and then continues.
 
 Recommended form for an independent Primary Output Agent:
 
@@ -56,7 +56,7 @@ The Primary Output responsibility owns mechanical verification and high-volume e
 
 The input-side responsibility owns semantic acceptance: whether the user's goal is satisfied, the Semantic Contract is implemented, business/compatibility constraints remain intact, and risks reported by mechanical verification are acceptable.
 
-In normal two-Session mode, the Primary Output Agent returns compressed verification conclusions only; the input-side Agent does not reread complete diffs, test logs, or large files by default. In Single-Agent Luna Mode, the current Session performs mechanical verification and then semantic acceptance directly. Do not create another Agent merely to preserve the verification boundary; use a fresh verifier only when independent review has concrete value.
+In normal two-Session mode, the Primary Output Agent returns compressed verification conclusions only; the input-side Agent does not reread complete diffs, test logs, or large files by default. In Single-Session Coding Mode, the current Session performs mechanical verification and then semantic acceptance directly. Do not create another Agent merely to preserve the verification boundary; use a fresh verifier only when independent review has concrete value.
 
 ## Input-side output discipline
 
@@ -71,6 +71,6 @@ Text that primarily expands already-determined information rather than producing
 - extensive restatement of project state, complete diffs, or complete test reports;
 - long final responses that the output side can materialize directly.
 
-In Single-Agent Luna Mode, there is no separate output-side Session or context summary to which the user can be directed. The current Agent already performs the Primary Output Role, so it directly completes this materialization and may provide the necessary detailed report itself when the task or user requires it; this two-Session compression-and-redirection rule does not require it to simulate a separate output-side report or delegate long output to another Luna.
+In Single-Session Coding Mode, there is no separate output-side Session or context summary to which the user can be directed. The current Agent already performs the Primary Output Role, so it directly completes this materialization and may provide the necessary detailed report itself when the task or user requires it. The two-Session compression-and-redirection rule does not require it to simulate a separate output-side report or to create another same-runtime Session merely to delegate long output.
 
 When the final response in normal two-Session mode is itself long and the host cannot directly reuse output-side results, prefer having the Primary Output Agent write the complete material to a user-specified file or workspace; the input-side Agent returns only a short summary and location instead of regenerating the full content.
