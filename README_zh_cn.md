@@ -48,9 +48,9 @@ Coding Core 不包含任何产品或模型专属的“single-agent”分支；�
 
 - 当前 Session 明确同时具备两类 Coding 职责的 eligibility、能够满足所需运行参数，且不存在独立结构性拆分理由时，使用 **Single-Session Coding Mode**；
 - 当前 Session 负责输入侧推理，但 active Profile 要求独立 Primary Output Runtime 时，使用**正常双 Session 模式**；
-- 只有 fresh verification、真正并行、上下文容量恢复、明确隔离或 Profile 定义的定向 escalation 等具体收益，才创建额外 Session。
+- 只有 fresh verification、真正并行、model tiering、上下文容量恢复、明确隔离或 Profile 定义的定向 escalation 等具体收益，才创建额外 Session。
 
-仓库规模、长输出、build/test 工作或笼统的“任务复杂”本身不是新建 Session 的理由。
+仓库规模、长输出、build/test 工作或笼统的“任务复杂”本身，不是再创建一个实质 Primary Output Session 的理由。
 
 ## Coding Flow 机制
 
@@ -83,13 +83,22 @@ OpenAI Coding Profile 继续把 Primary Output 绑定到 `gpt-5.6-luna`；当前
 - Model Profile：[`references/runtime/profiles/anthropic_zh_cn.md`](references/runtime/profiles/anthropic_zh_cn.md)
 - 状态：已经按当前 Claude Code 官方 capability 完成映射；用于本次改动的环境没有安装 `claude` CLI，因此尚未做真实 CLI smoke test。
 
-Anthropic Coding Profile 使用明确的完整 model ID `claude-sonnet-5` 绑定 Primary Output，而不是依赖会随 provider/version 变化的 `sonnet` alias。当前主 Session 本身明确是 `claude-sonnet-5`，且所需 effort 能真实应用时，同一个通用 Runtime 会选择 Single-Session Coding Mode；否则由高级父 Session 保持 Input-side Reasoning，并由可恢复的 Sonnet 5 subagent 承担 Primary Output。
+Anthropic Coding Profile 现在使用**双模型执行层**，不再把所有输出任务都默认交给 Sonnet：
 
-Sonnet 5 的实质 Primary Output 使用 `effort=xhigh`；有界辅助物化使用 `high`；`medium`/`low` 只允许严格确定性或易机械验证的工作；`max` 只用于某个具体事项已经让现有 Worker 反复阻塞后的范围收窄 escalation。
+- Input-side Reasoning 继续由当前高级 Claude 父 Session 负责。
+- **实质 Primary Output** 绑定到明确的 `claude-sonnet-5`，用于一般 feature implementation、非平凡 debugging/refactor、跨模块工作、复杂测试、migration、兼容性/安全敏感修改，以及其他需要较多实现判断的执行。
+- **轻量 Output / 辅助 Worker** 优先使用明确的 `claude-haiku-4-5-20251001`，用于有界 repo exploration、事实 inventory、机械验证/日志压缩、精确提取/替换、确定性格式整理、语义已经固定的文档/注释同步，以及已经明确行为的简单单元测试物化。
+- 路由规则是 **先选模型层，再选 effort**：真正低风险、有界的任务先下放 Haiku，而不是先在 Sonnet 上降 effort 省成本。
 
-Claude Code 在 organization `availableModels` 或 provider 限制阻止所请求模型时，可能自动 substitute subagent model；组织级 effort cap 也可能把请求的 effort 向下 clamp。这些 Host 行为**不是** Profile fallback：Host 能暴露实际 subagent runtime 时必须检查真实 model/effort；若生效值不再满足 Profile，实质工作应阻塞而不是静默继续。
+当前主 Session 本身明确是 `claude-sonnet-5` 且所需 Sonnet effort 能真实应用时，通用 Runtime 仍对实质 Primary Output 选择 Single-Session Coding Mode。这并不禁止存在明确 model-tiering 收益时创建 Haiku 辅助 Worker；Sonnet Session 仍然是 Primary Execution Session。
 
-sticky Primary Execution Session 使用可 resume 的 custom/general-purpose subagent，因为它们可以通过 agent ID 恢复。built-in Explore / Plan 只用于适合的 one-shot 有界调查，不承担长期 Primary Execution Session。Claude Code 的 worktree isolation 可以提供独立工作副本，但 Context Exchange 仍遵守自身 ownership 与 capability 边界。
+Sonnet 5 的常规实质 Primary Output 使用 `effort=xhigh`；任务仍需要 Sonnet 级判断但范围更窄时使用 `high`；`max` 只用于某个具体事项已经让现有 Worker 反复阻塞后的定向 escalation。`medium`/`low` 不再是那些本来可以安全交给 Haiku 的任务的默认降本方式。
+
+Haiku 4.5 **不继承** Sonnet effort 策略。当前 Claude Code effort 支持列表不包含 Haiku 4.5，因此 Haiku 通过严格任务 eligibility 与准确模型选择控制成本/能力，而不是虚构 `high`/`xhigh`/`max` 档位。任务如果需要明显超过 Haiku 层能够安全提供的推理，应 reroute 到 Sonnet。
+
+Claude Code 可能因为 organization `availableModels`、provider 限制、配置的 fallback chain 或 runtime availability substitute/fail over subagent model；组织级 effort cap 也可能把 Sonnet effort 向下 clamp。这些 Host 行为**不是** Profile fallback。Host 能暴露实际 subagent runtime 时必须检查真实 model/effort；不匹配时应作为显式 capability/rerouting 决策处理，而不是静默接受。
+
+one-shot 只读调查在“不要求保证 Haiku 成本层”时仍可使用 built-in Explore。当前 Claude Code 版本中的 built-in Explore 会继承主会话模型，因此如果部署要求低成本 exploration，必须使用显式 Haiku 的 custom `Explore` 定义或其他明确 Haiku subagent。需要连续上下文的重复轻量工作使用可 resume 的 custom/general-purpose Haiku subagent；正常双 Session 模式下的 sticky 实质 Primary Execution Session 继续使用可 resume 的 Sonnet custom/general-purpose subagent。
 
 ### Claude Code 安装说明
 
@@ -106,7 +115,7 @@ Multimodal Flow 继续独立于 Coding。它负责 Primary Observation、Observa
 
 这些详细规则不再在根 `SKILL_zh_cn.md` 或本概览中重复。完整规则见 [`references/multimodal-flow_zh_cn.md`](references/multimodal-flow_zh_cn.md)；当前 OpenAI 部署绑定单独保存在 [`references/multimodal-openai-profile_zh_cn.md`](references/multimodal-openai-profile_zh_cn.md)。
 
-上面新增的 Claude Code/Anthropic Runtime **只适用于 Coding Flow**，不构成 Claude Code Multimodal 支持声明。
+上面的 Claude Code/Anthropic Runtime **只适用于 Coding Flow**，不构成 Claude Code Multimodal 支持声明。
 
 ## 场景路由
 

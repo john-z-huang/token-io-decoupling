@@ -48,9 +48,9 @@ Coding Core contains no product- or model-specific “single-agent” branch. Th
 
 - use **Single-Session Coding Mode** when the current Session is explicitly eligible for both Coding responsibilities, can satisfy the required runtime parameters, and there is no independent structural reason to split;
 - use **normal two-Session mode** when the current Session owns input-side reasoning but the active Profile requires a separate Primary Output runtime;
-- create additional Sessions only for concrete benefits such as fresh verification, real parallelism, context-capacity recovery, explicit isolation, or Profile-defined targeted escalation.
+- create additional Sessions only for concrete benefits such as fresh verification, real parallelism, model tiering, context-capacity recovery, explicit isolation, or Profile-defined targeted escalation.
 
-Repository size, long output, build/test work, or generic task complexity are not reasons by themselves to create another Session.
+Repository size, long output, build/test work, or generic task complexity are not reasons by themselves to create another substantive Primary Output Session.
 
 ## Coding Flow mechanisms
 
@@ -83,13 +83,22 @@ The OpenAI Coding Profile keeps Primary Output on `gpt-5.6-luna`, uses generic S
 - Model Profile: [`references/runtime/profiles/anthropic.md`](references/runtime/profiles/anthropic.md)
 - Status: integration mapped against current official Claude Code capabilities; a live `claude` CLI smoke test has not been run in the environment that authored this change.
 
-The Anthropic Coding Profile binds Primary Output to the explicit model ID `claude-sonnet-5` rather than the provider-dependent `sonnet` alias. When the current main Session is itself explicitly `claude-sonnet-5` and the required effort can be applied, the same generic Runtime selects Single-Session Coding Mode. Otherwise an advanced parent Session keeps Input-side Reasoning while a resumable Sonnet 5 subagent owns Primary Output.
+The Anthropic Coding Profile now uses a **two-model execution tier** instead of treating Sonnet as the answer to every output task:
 
-For Sonnet 5, substantive Primary Output uses `effort=xhigh`; bounded auxiliary materialization uses `high`; `medium`/`low` are restricted to deterministic or mechanically verifiable work; `max` is reserved for a narrowly scoped task that has repeatedly blocked an existing Worker.
+- Input-side Reasoning remains with the current advanced Claude parent Session.
+- **Substantive Primary Output** is bound to explicit `claude-sonnet-5` for general feature implementation, non-trivial debugging/refactoring, cross-module work, complex tests, migrations, compatibility/security-sensitive changes, and other judgment-heavy execution.
+- **Lightweight Output / Auxiliary Workers** prefer explicit `claude-haiku-4-5-20251001` for bounded repository exploration, factual inventory, mechanical verification/log compression, exact extraction/replacement, deterministic formatting, fixed-semantics documentation/comment synchronization, and already-specified simple unit-test materialization.
+- The routing rule is **model tier first, effort tier second**: move truly bounded low-risk work to Haiku before trying to save cost by lowering Sonnet effort.
 
-Claude Code can substitute a requested subagent model when organization `availableModels` or provider restrictions prevent the exact request, and organization effort caps can clamp the requested effort. Those Host behaviors are **not** accepted as Profile fallback: the actual subagent runtime must be checked when the Host exposes it, and substantive work blocks when the effective model/effort no longer satisfies the Profile.
+When the current main Session is itself explicitly `claude-sonnet-5` and the required Sonnet effort can be applied, the generic Runtime still selects Single-Session Coding Mode for substantive Primary Output. That does not prohibit a Haiku auxiliary Worker when model tiering has concrete benefit; the Sonnet Session remains the Primary Execution Session.
 
-Claude Code custom/general-purpose subagents are used for sticky Primary Execution Session semantics because they can be resumed by agent ID. Built-in Explore/Plan may handle bounded one-shot research but are not used as the long-lived Primary Execution Session. Claude Code worktree isolation can supply an isolated working copy, while Context Exchange continues to apply its own ownership and capability rules.
+Sonnet 5 uses `effort=xhigh` for normal substantive Primary Output, `high` for narrower work that still requires Sonnet-level judgment, and `max` only for targeted escalation after repeated blocking. `medium`/`low` are no longer the default way to handle work that safely qualifies for Haiku.
+
+Haiku 4.5 does **not** inherit the Sonnet effort policy. Current Claude Code effort support does not include Haiku 4.5, so Haiku is controlled by strict task eligibility and exact model selection rather than invented `high`/`xhigh`/`max` tiers. If a task needs materially more reasoning than the Haiku tier can safely provide, it is rerouted to Sonnet.
+
+Claude Code can substitute or fail over a requested subagent model because of organization `availableModels`, provider restrictions, configured fallback chains, or runtime availability; organization effort caps can also clamp Sonnet effort. Those Host behaviors are **not** accepted as Profile fallback. The actual subagent runtime must be checked when the Host exposes it, and a mismatched model/effort is handled as an explicit capability/rerouting decision rather than silently accepted.
+
+For one-shot read-only research, built-in Explore may still be used when a Haiku cost guarantee is not required. Current Claude Code versions make built-in Explore inherit the main conversation model, so deployments that require low-cost exploration must use an explicit Haiku custom `Explore` definition or another explicit Haiku subagent. Repeated lightweight work that needs context continuity uses a resumable custom/general-purpose Haiku subagent. Sticky substantive Primary Execution Session semantics continue to use resumable Sonnet custom/general-purpose subagents when normal two-Session mode applies.
 
 ### Claude Code installation notes
 
@@ -106,7 +115,7 @@ Multimodal Flow remains independent from Coding. It owns Primary Observation, Ob
 
 The detailed rules are intentionally not duplicated in the root `SKILL.md` or this overview. See [`references/multimodal-flow.md`](references/multimodal-flow.md). The current OpenAI deployment binding is preserved separately in [`references/multimodal-openai-profile.md`](references/multimodal-openai-profile.md).
 
-The Claude Code/Anthropic runtime added above applies to **Coding Flow only**. It does not claim Claude Code Multimodal support.
+The Claude Code/Anthropic runtime above applies to **Coding Flow only**. It does not claim Claude Code Multimodal support.
 
 ## Scenario routing
 
