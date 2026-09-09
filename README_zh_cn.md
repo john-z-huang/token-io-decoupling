@@ -69,6 +69,8 @@ Coding Flow 保留本项目已反复迭代的架构，同时把具体 Runtime �
 
 Runtime 注册表目前包含三组彼此独立的 Host/Profile 组合。
 
+本地个人安装如果需要跨多个 Code Agent 复用，统一把唯一 Skill 源保存在 `~/.agents/skills/token-io-decoupling/`。各 Host Adapter 只负责把这个共享源映射到各产品真实支持的发现机制，不再为每个产品维护一份可变副本。项目级 Skill 仍保留各 Host 的仓库原生目录，因为其作用域和版本控制生命周期不同。
+
 ### Codex + OpenAI
 
 - Host Adapter：[`references/runtime/hosts/codex_zh_cn.md`](references/runtime/hosts/codex_zh_cn.md)
@@ -102,12 +104,14 @@ one-shot 只读调查在“不要求保证 Haiku 成本层”时仍可使用 bui
 
 ### Claude Code 安装说明
 
-Claude Code 原生支持标准 Agent Skills。典型本地安装位置：
+canonical 个人 Skill 保存在 `~/.agents/skills/token-io-decoupling/`。Claude Code 的原生个人发现入口使用 symlink 即可，不需要复制副本：
 
-- 个人：`~/.claude/skills/token-io-decoupling/SKILL.md`；
-- 项目：`.claude/skills/token-io-decoupling/SKILL.md`。
+```bash
+mkdir -p ~/.claude/skills
+ln -s ~/.agents/skills/token-io-decoupling ~/.claude/skills/token-io-decoupling
+```
 
-如果需要持久启动提示，只在 `~/.claude/CLAUDE.md` 或项目 `CLAUDE.md` 中保留简短 bootstrap 并指向本 Skill；不要把完整 Skill policy 复制进去。Claude Code cloud session 不读取本机 `~/.claude/skills/`，因此应使用 cloud session 实际会加载的项目/synced 部署方式。
+项目级 Skill 仍放在 `.claude/skills/`。如果需要持久启动提示，只在 `~/.claude/CLAUDE.md` 或项目 `CLAUDE.md` 中保留简短 bootstrap 并指向本 Skill；不要把完整 Skill policy 复制进去。Claude Code cloud session 不读取本机共享 Skill 目录，因此应使用 cloud session 实际会加载的项目/synced 部署方式。
 
 ### Qwen Code + Alibaba Qwen
 
@@ -125,7 +129,7 @@ Qwen3.8 在本部署中当前有三个实际有效原生 reasoning 档位：`low
 
 Qwen Code regular subagent 具有独立 context、显式模型选择、通过 `list_agents` + `send_message` 的后台 continuation，并可通过 `working_dir` 绑定已有 git worktree。不过模型选择和 effort 是两个不同控制面：subagent 定义可以直接绑定 Flash，而 effective effort 可能依赖 Session/provider 配置。因此 Host Adapter 把准确模型绑定作为硬约束；Qwen Code 无法确认某个 per-subagent effort 档位时，不会假装该档位已经生效。
 
-Qwen Code 支持 `~/.qwen/skills/` 下的个人 Skills、`.qwen/skills/` 下的项目 Skills，以及通过 `QWEN.md` 加载持久指令；它也会读取已有 `AGENTS.md`。持久 bootstrap 应只指向本 Skill，而不是复制完整 Coding Flow。
+Qwen Code 可以直接扫描共享个人源：把 `~/.agents/skills` 加入 `skills.directories`，而不是再复制一份到 `~/.qwen/skills/`。其默认个人/项目目录仍然存在，并且同名 Skill 会优先使用默认目录，因此共享源作为事实来源时应移除旧的同名副本。项目级 Skill 仍放在 `.qwen/skills/`。持久指令继续使用 `QWEN.md`，Qwen Code 也会读取已有 `AGENTS.md`。
 
 ## Multimodal Flow
 

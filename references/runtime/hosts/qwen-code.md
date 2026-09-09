@@ -10,10 +10,21 @@ When Qwen Code exposes the active model, provider, effort, Session, or subagent 
 
 ## Agent Skills and persistent instructions
 
-Qwen Code discovers hand-authored Agent Skills from:
+For personal installation, keep a single canonical copy of this Skill at `~/.agents/skills/token-io-decoupling/`.
 
-- personal Skills: `~/.qwen/skills/<skill-name>/SKILL.md`;
-- project Skills: `.qwen/skills/<skill-name>/SKILL.md`.
+Qwen Code natively discovers personal Skills under `~/.qwen/skills/` and project Skills under `.qwen/skills/`. Current Qwen Code also supports additional Skill scan roots through `skills.directories`. Prefer that mechanism for this shared personal source instead of copying the Skill into `~/.qwen/skills/`:
+
+```json
+{
+  "skills": {
+    "directories": ["~/.agents/skills"]
+  }
+}
+```
+
+Qwen Code recursively scans configured additional Skill directories for `SKILL.md`. Its default Skill locations keep higher precedence for same-name Skills, so do not leave a stale duplicate `token-io-decoupling` under `~/.qwen/skills/` when the shared source is intended to be authoritative.
+
+Project-scoped Skills remain native project assets under `.qwen/skills/<skill-name>/SKILL.md`; they are intentionally not redirected to the personal shared directory because their repository/version-control scope is different.
 
 For a deployment that needs the Skill's invariants available at every new run, use Qwen Code's persistent instruction mechanism rather than duplicating the full Skill. `~/.qwen/QWEN.md` provides user-wide instructions, a project-root `QWEN.md` provides shared project instructions, and `.qwen/QWEN.local.md` provides project-local personal instructions. Qwen Code also reads an existing `AGENTS.md`, so a repository already using that portable instruction file does not need a duplicate QWEN-specific copy.
 
@@ -91,6 +102,10 @@ Qwen3.8 models preserve historical reasoning by default in some Alibaba Cloud AP
 
 ## Lifecycle and validation
 
-Qwen Code watches personal and project Skill directories in normal interactive sessions and refreshes changes after a short delay; bare mode may require a restart. Persistent instruction changes should be validated in a fresh or explicitly resumed Session whose loaded context can be inspected.
+Qwen Code watches its default personal/project Skill locations in normal interactive sessions and refreshes changes after a short delay. Additional directories configured through `skills.directories` are part of Skill discovery; validate discovery after changing that setting, and restart when the active mode/version does not live-refresh the new scan root. Bare mode may require a restart.
+
+For personal shared-source installation, validate that `~/.agents/skills/token-io-decoupling/SKILL.md` exists, the configured `skills.directories` includes `~/.agents/skills`, and no higher-precedence stale duplicate shadows it under `~/.qwen/skills/`.
+
+Persistent instruction changes should be validated in a fresh or explicitly resumed Session whose loaded context can be inspected.
 
 This Adapter is based on current Qwen Code and Alibaba Cloud public capability documentation. Until an actual Qwen Code CLI smoke test is performed for this repository deployment, the Runtime Registry should label the integration accordingly rather than calling it locally verified.

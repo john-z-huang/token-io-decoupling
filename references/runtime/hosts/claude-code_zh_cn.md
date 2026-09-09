@@ -12,11 +12,18 @@
 
 ## Skill 安装与持久 bootstrap
 
-Claude Code 原生支持 Agent Skills：
+个人安装推荐只维护一份 canonical Skill，统一放在 `~/.agents/skills/token-io-decoupling/`。不要仅因为 Claude Code 原生个人发现目录是 `~/.claude/skills/`，就再维护一份 Claude 专属副本。
 
-- 个人 Skill：`~/.claude/skills/token-io-decoupling/SKILL.md`；
-- 项目 Skill：`.claude/skills/token-io-decoupling/SKILL.md`；
-- Claude Code 对个人/项目 Skill 位置也支持使用指向其他目录的 symlink。
+Claude Code 支持 symlinked Skill directory，因此推荐本地映射为：
+
+```bash
+mkdir -p ~/.claude/skills
+ln -s ~/.agents/skills/token-io-decoupling ~/.claude/skills/token-io-decoupling
+```
+
+这样 Claude Code 看到的发现入口仍是 `~/.claude/skills/token-io-decoupling/SKILL.md`，但唯一事实来源是 `~/.agents/skills/token-io-decoupling/`。链接已经存在时，应更新或修复链接，而不是把 Skill tree 同时复制到两个目录。
+
+项目级 Skill 仍保留在 `.claude/skills/<skill-name>/SKILL.md`。它们具有仓库/版本控制作用域，因此不应机械重定向到个人共享目录。
 
 继续使用标准 `SKILL.md` 入口，不为 Claude Code 复制一份 Core 指令。
 
@@ -24,7 +31,7 @@ Claude Code 原生支持 Agent Skills：
 
 Claude Code 原生读取的是 `CLAUDE.md` 而不是 `AGENTS.md`。当一个项目需要同时服务多个 Code Agent 时，可以由 `CLAUDE.md` import 已有 `AGENTS.md`，但不得把完整 Token I/O Decoupling policy 同时复制进两个文件形成双重事实来源。
 
-Claude Code cloud session 不读取本机个人目录下的 `~/.claude/skills/`；云端环境应使用仓库中的 `.claude/skills/`、受支持的 synced skill，或该 cloud session 实际能够加载的其他部署方式。
+Claude Code cloud session 不读取本机个人目录下的 `~/.claude/skills/`，也不会读取本地 `~/.agents/skills/`；云端环境应使用仓库中的 `.claude/skills/`、受支持的 synced skill，或该 cloud session 实际能够加载的其他部署方式。
 
 ## 独立执行映射
 
@@ -103,13 +110,14 @@ Primary Output 或辅助 subagent 继续遵守 Core delegation boundary：即使
 
 安装或修改 Skill / Claude Code Runtime 配置后，使用新的 Coding Session 做一个小型、无破坏性的检查：
 
-1. 确认 Skill 可发现，Coding Flow 能加载 Runtime Registry；
-2. 确认因为真实 Host 是 Claude Code 而选择了本 Adapter；
-3. 确认 active Model Profile 会按任务类别请求预期的 Sonnet 或 Haiku Runtime；
-4. 选择实质双 Session 模式时，确认 Primary Output subagent 的实际 Sonnet model/effort 符合 Profile，而不是 substituted Runtime；
-5. 选择 Haiku-tier auxiliary 时，确认实际 model 是 Profile 绑定的 Haiku，且没有套用不受支持的 Sonnet-style effort 假设；
-6. Session Affinity 适用时，确认后续相关工作 resume 同一个 Primary Execution subagent；
-7. 确认 Coding Core 文档仍保持 vendor-neutral。
+1. 个人安装时确认 `~/.agents/skills/token-io-decoupling/` 共享源存在，且 Claude Code 能发现 symlinked personal entry；
+2. 确认 Skill 可发现，Coding Flow 能加载 Runtime Registry；
+3. 确认因为真实 Host 是 Claude Code 而选择了本 Adapter；
+4. 确认 active Model Profile 会按任务类别请求预期的 Sonnet 或 Haiku Runtime；
+5. 选择实质双 Session 模式时，确认 Primary Output subagent 的实际 Sonnet model/effort 符合 Profile，而不是 substituted Runtime；
+6. 选择 Haiku-tier auxiliary 时，确认实际 model 是 Profile 绑定的 Haiku，且没有套用不受支持的 Sonnet-style effort 假设；
+7. Session Affinity 适用时，确认后续相关工作 resume 同一个 Primary Execution subagent；
+8. 确认 Coding Core 文档仍保持 vendor-neutral。
 
 若当前环境无法完成其中某项检查，应明确标记该 capability 尚未验证，不得把部署描述成已完整 smoke-tested。
 

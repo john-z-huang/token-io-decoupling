@@ -69,6 +69,8 @@ The Coding Flow keeps the architecture that has been iterated in this project wh
 
 The Runtime Registry currently contains three independent Host/Profile pairs.
 
+For local personal installation across multiple Code Agents, keep one canonical Skill source at `~/.agents/skills/token-io-decoupling/`. Each Host Adapter maps that source into the discovery mechanism its product actually supports; do not maintain separate mutable copies under every product-specific home directory. Project-scoped Skills remain Host-native repository assets because they have a different scope and version-control lifecycle.
+
 ### Codex + OpenAI
 
 - Host Adapter: [`references/runtime/hosts/codex.md`](references/runtime/hosts/codex.md)
@@ -102,12 +104,14 @@ For one-shot read-only research, built-in Explore may still be used when a Haiku
 
 ### Claude Code installation notes
 
-Claude Code supports standard Agent Skills directly. Typical local installation locations are:
+Keep the canonical personal Skill at `~/.agents/skills/token-io-decoupling/`. Claude Code's native personal discovery entry can be a symlink rather than a duplicate copy:
 
-- personal: `~/.claude/skills/token-io-decoupling/SKILL.md`;
-- project: `.claude/skills/token-io-decoupling/SKILL.md`.
+```bash
+mkdir -p ~/.claude/skills
+ln -s ~/.agents/skills/token-io-decoupling ~/.claude/skills/token-io-decoupling
+```
 
-For persistent local startup guidance, keep only a short bootstrap in `~/.claude/CLAUDE.md` or project `CLAUDE.md` and point it to the Skill; do not duplicate the full Skill policy there. Claude Code cloud sessions do not read the machine's personal `~/.claude/skills/`, so use a project/synced deployment that the cloud session actually loads.
+Project Skills remain under `.claude/skills/`. For persistent local startup guidance, keep only a short bootstrap in `~/.claude/CLAUDE.md` or project `CLAUDE.md` and point it to the Skill; do not duplicate the full Skill policy there. Claude Code cloud sessions do not read the machine's local shared Skill directory, so use a project/synced deployment that the cloud session actually loads.
 
 ### Qwen Code + Alibaba Qwen
 
@@ -125,7 +129,7 @@ Qwen3.8 currently has three effective native reasoning tiers for this deployment
 
 Qwen Code regular subagents have independent context, explicit model selection, background continuation through `list_agents` + `send_message`, and can bind to an existing git worktree through `working_dir`. Model selection and effort are separate controls, however: the subagent definition can bind Flash directly, while effective effort may depend on Session/provider configuration. The Host Adapter therefore requires the actual model binding to remain authoritative and does not pretend a per-subagent effort tier was applied when Qwen Code cannot confirm it.
 
-Qwen Code supports personal Skills under `~/.qwen/skills/`, project Skills under `.qwen/skills/`, and persistent instructions through `QWEN.md`; it also reads an existing `AGENTS.md`. A short persistent bootstrap should point to this Skill instead of duplicating the full Coding Flow.
+Qwen Code can scan the shared personal source directly: add `~/.agents/skills` to `skills.directories` instead of copying this Skill into `~/.qwen/skills/`. Its default personal/project directories still exist and take precedence for same-name Skills, so stale duplicates should be removed when the shared source is intended to be authoritative. Project Skills remain under `.qwen/skills/`. Persistent instructions use `QWEN.md`, and Qwen Code also reads an existing `AGENTS.md`.
 
 ## Multimodal Flow
 
