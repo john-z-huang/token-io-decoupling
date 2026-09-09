@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate bilingual Markdown structure and language-link isolation."""
+"""Validate bilingual Markdown structure, link isolation, and runtime-neutral Core docs."""
 
 from __future__ import annotations
 
@@ -19,6 +19,29 @@ PAIR_ROOTS = [
     Path("MULTI_LINGUAL.md"),
     Path("BEST_PRACTICES.md"),
 ]
+
+RUNTIME_NEUTRAL_CORE = [
+    PurePosixPath("references/shared-protocols.md"),
+    PurePosixPath("references/coding-flow.md"),
+    PurePosixPath("references/coding/session-model.md"),
+    PurePosixPath("references/coding/runtime.md"),
+    PurePosixPath("references/coding/execution-control.md"),
+    PurePosixPath("references/coding/context-exchange.md"),
+]
+
+RUNTIME_LEAK_PATTERNS = {
+    "Luna": re.compile(r"\bLuna\b", re.IGNORECASE),
+    "concrete GPT model": re.compile(r"\bgpt-[a-z0-9_.-]+", re.IGNORECASE),
+    "Codex": re.compile(r"\bCodex\b", re.IGNORECASE),
+    "OpenAI": re.compile(r"\bOpenAI\b", re.IGNORECASE),
+    "Claude": re.compile(r"\bClaude(?:\s+Code)?\b", re.IGNORECASE),
+    "Anthropic": re.compile(r"\bAnthropic\b", re.IGNORECASE),
+    "Sonnet": re.compile(r"\bSonnet\b", re.IGNORECASE),
+    "Opus": re.compile(r"\bOpus\b", re.IGNORECASE),
+    "Codex home path": re.compile(r"~/.codex(?:/|\b)", re.IGNORECASE),
+    "Claude home path": re.compile(r"~/.claude(?:/|\b)", re.IGNORECASE),
+    "reasoning_effort parameter": re.compile(r"\breasoning_effort\b", re.IGNORECASE),
+}
 
 
 def zh_peer(path: PurePosixPath) -> PurePosixPath:
@@ -80,6 +103,17 @@ def main() -> int:
             counterpart = en_peer(rel) if source_is_zh else zh_peer(rel)
             if source_is_zh != target_is_zh and target != counterpart:
                 errors.append(f"cross-language Markdown link: {rel} -> {raw_target}")
+
+    for english in RUNTIME_NEUTRAL_CORE:
+        for rel in (english, zh_peer(english)):
+            file_path = ROOT / rel
+            if not file_path.exists():
+                errors.append(f"missing runtime-neutral Core document: {rel}")
+                continue
+            text = file_path.read_text(encoding="utf-8")
+            for label, pattern in RUNTIME_LEAK_PATTERNS.items():
+                if pattern.search(text):
+                    errors.append(f"runtime-specific term in Core ({label}): {rel}")
 
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     if "MULTI_LINGUAL.md" not in agents or "MULTI_LINGUAL_zh_cn.md" in agents:
