@@ -9,8 +9,11 @@ Load this file only through [`../coding/runtime.md`](../coding/runtime.md) when 
 | Host Adapter | Model Profile | Status |
 |---|---|---|
 | [`hosts/codex.md`](hosts/codex.md) | [`profiles/openai.md`](profiles/openai.md) | Current verified deployment |
+| [`hosts/claude-code.md`](hosts/claude-code.md) | [`profiles/anthropic.md`](profiles/anthropic.md) | Official-capability-backed integration; live Claude Code CLI smoke test pending |
 
-The current registry entry preserves the existing Coding behavior of this Skill. A host or model family that is not listed here must not be treated as supported merely because it can parse Agent Skills or run coding tasks.
+The Codex/OpenAI entry preserves the existing verified Coding behavior of this Skill. The Claude Code/Anthropic entry is registered because the required Host capabilities are explicitly documented by Claude Code and the runtime mapping fits the existing Coding Runtime Contract; however, the environment used to author this integration does not have the `claude` CLI installed, so it must not be described as locally smoke-tested until a real Claude Code run verifies it.
+
+A host or model family that is not listed here must not be treated as supported merely because it can parse Agent Skills or run coding tasks.
 
 ## Adding another Code Agent product
 
@@ -20,8 +23,8 @@ A new deployment should normally add:
 2. a Model Profile declaring role eligibility, concrete model bindings, execution-parameter policy, escalation, and unavailable handling;
 3. validation showing that the deployment preserves the Coding Runtime Contract and does not require vendor branches in Core documents.
 
-Do not modify the existing deployment entry to approximate another product. Add a separate adapter/profile pair after the new environment has been tested.
+Do not modify an existing deployment entry to approximate another product or provider. Add a separate adapter/profile pair when the new environment has a concrete capability mapping, and label its validation status accurately until an actual runtime smoke test has been performed.
 
 ## Multimodal boundary
 
-Multimodal Flow is not generalized through this Coding runtime registry. Its current deployment bindings remain isolated in [`../multimodal-openai-profile.md`](../multimodal-openai-profile.md). This registry makes no portability claim for Multimodal Flow.
+Multimodal Flow is not generalized through this Coding runtime registry. Its current deployment bindings remain isolated in [`../multimodal-openai-profile.md`](../multimodal-openai-profile.md). The Claude Code/Anthropic entry in this registry applies to Coding Flow only and makes no portability claim for Multimodal Flow.
