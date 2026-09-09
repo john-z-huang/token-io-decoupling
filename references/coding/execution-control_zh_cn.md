@@ -42,6 +42,14 @@ Checkpoint: Findings: refresh state 同时存在于 middleware 与 storage；Iss
 Amendment: 保持 public API 稳定；选择 storage-owned state；批准 Stage 2：实现并运行定向测试，只有当验证要求修改 Contract 时再次暂停
 ```
 
+## 受监督的操作阶段
+
+对于高不确定性的正常双 Session Coding 工作——例如首次构建、陌生环境 bootstrap、工具链诊断，或外部依赖/替代执行路径——输入侧 Agent 应预先划分一组短小、能够产出证据的阶段。每个阶段应以明确的观察结果或决策边界结束，而不是枚举命令。
+
+每个预先声明的阶段结束时，独立 Primary Output Agent 必须返回压缩 checkpoint 并暂停。输入侧 Agent 审查证据，必要时修订 Semantic Contract 或下一阶段指令，并明确放行下一阶段。独立 Primary Output Agent 还必须在变更系统或用户环境之前，以及发现权限或网络阻塞、偏离选定执行路径，或出现实质不同修复/替代方案时立即 checkpoint。
+
+已批准阶段内的低价值命令、日志和机械重试留在独立 Primary Output Agent 的上下文中。本规则不要求逐命令汇报或固定频率的无信息心跳，也不强制所有 Coding 任务都拆成小阶段：已知、低风险且易于机械验证的操作仍可从执行连续到验证。
+
 ## Coding Verification Boundary
 
 Primary Output 职责负责机械验证和高体量证据处理，包括构建、测试、lint、formatter、类型检查、diff 检查、意外文件修改检查以及相关原始日志分析。
