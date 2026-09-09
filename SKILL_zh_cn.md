@@ -1,6 +1,6 @@
 ---
 name: token-io-decoupling
-description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高价值推理与 Primary 输出双角色职责，并在当前 Code Agent 已是 Luna 时默认单 Session 自执行；Browser Use、Computer Use、浏览器/桌面 GUI 连续操作、视频、大量图片/截图和视觉设计场景使用独立 Multimodal Flow，由 Decision Agent 与 Primary Observation Agent 隔离高体量视觉/时序 Input Token；开放式绘画、图像编辑与视觉创作采用 Decision-led Visual Authoring，并按需 handoff 到输出或 Coding 流程。"
+description: "高体量 Agent Token I/O 解耦：Coding 将输入侧高价值推理与 Primary Output 职责分离，同时让 Core 的角色与 Session 规则保持对具体 Code Agent 产品和模型无关；具体 Runtime 绑定通过 Host Adapter 与 Model Profile 选择。Browser Use、Computer Use、连续 GUI 工作流、视频、大量图片/截图和视觉设计使用独立 Multimodal Flow 隔离高体量视觉/时序输入。"
 ---
 
 # Token I/O Decoupling
@@ -9,15 +9,15 @@ description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高
 
 本 Skill 定义两套按场景选择的 Agent 调度流程，用于把高价值语义决策与高体量原始状态消费、输出物化分离。Coding 与 Multimodal 的执行架构差异较大，因此只共享少量调度协议，不强行使用统一角色拓扑。
 
-本 Skill 提供调度约定，不能绕过更高优先级的权限、用户授权、产品限制或安全规则，也不把价格、缓存命中或额度节省表述为未经实测的事实。
+本 Skill 提供调度约定，不能绕过更高优先级的权限、用户授权、产品限制或安全规则，也不把价格、缓存命中、额度节省或 Runtime 质量表述为未经实测的事实。
 
 ## 核心原则
 
 1. **先选 Flow，再加载细则**：不要启动时无条件加载所有 reference。
-2. **Coding 路由保持轻量**：普通 Coding 仍使用“输入侧推理 → Primary 输出”的逻辑职责分工，但具体 Session 拓扑、模型/强度策略、上下文交换、checkpoint、验证和输出规则由所选 Coding 模块独立负责，不在 `SKILL_zh_cn.md` 中重复。
-3. **Multimodal 隔离高体量 Observation**：Computer Use、视频、大量图片/截图、视觉设计等任务由 Primary Observation Agent 消费视觉/时序世界状态，Decision Agent 只接收压缩 Digest；开放式视觉创作另遵循 Decision-led Visual Authoring 的精选证据回路。
+2. **Coding Core 保持 Runtime 无关**：Coding 独立于具体产品或模型定义 Input-side Reasoning 与 Primary Output 职责、Session/context 规则、checkpoint 和验证边界；当前环境的 Runtime 映射由 Coding Runtime Contract、Host Adapter 与 Model Profile 共同解析。
+3. **Multimodal 细节独立存放**：Computer Use、视频、大量图片/截图、视觉设计等任务使用独立 Multimodal Flow；其工作模式、视觉 checkpoint、Observation 规则和当前部署绑定全部放在按路由加载的 reference 中，不在根文件重复。
 4. **混合任务使用窄 Handoff**：视觉分析与 Coding 之间只传递稳定目标、必要变更、约束、证据引用和验收标准，不跨 Flow 倾倒完整原始状态。
-5. **角色按职责映射到模型与 Session**：角色首先表示职责和上下文边界，不要求一对一对应独立 Agent 实例。只有模型分层、独立上下文 ownership、并行、独立验证或容量管理存在实际收益时才分离 Session；Multimodal 中 Observation 与 Output 即使都使用 Luna，也可因高体量上下文 ownership 不同而保持独立。
+5. **角色首先表示职责**：角色表示责任和上下文 ownership，不要求一对一对应独立 Agent 实例。Coding 的 Session 拓扑由 active runtime 推导；Multimodal 保留自己的上下文 ownership 规则。
 
 ## Scenario Routing
 
@@ -36,52 +36,37 @@ description: "高体量 Agent Token I/O 解耦：Coding 场景保持输入侧高
 1. [`references/shared-protocols_zh_cn.md`](references/shared-protocols_zh_cn.md)
 2. [`references/coding-flow_zh_cn.md`](references/coding-flow_zh_cn.md)
 
-随后按 `coding-flow_zh_cn.md` 中的模块加载表继续；不要预加载 `references/coding/` 下全部文件，只加载当前职责和阶段需要的 Coding 模块。
+随后按 `coding-flow_zh_cn.md` 中的模块加载表继续。不要预加载 `references/coding/` 或 `references/runtime/` 下全部文件，只加载当前职责、阶段与 active runtime 所需的 Coding 模块和部署文档。
 
-普通 Coding 任务不得仅因为本 Skill 支持 Multimodal Flow 而加载 `multimodal-flow_zh_cn.md` 或创建 Primary Observation Agent。
+普通 Coding 任务不得仅因为本 Skill 支持视觉工作而加载 Multimodal Flow 或创建 Primary Observation Agent。
 
 ### Multimodal Flow
 
-以下任务默认进入 Multimodal Flow：
-
-- Computer Use、浏览器/桌面 GUI 的连续 observe/act 工作流；
-- 大量图片、截图、设计 reference 或 rendered UI 分析；
-- 视频、大量视频帧或其他时序视觉输入；
-- UI / visual design 对比与验收；
-- 高体量 OCR、DOM、accessibility tree 或其他世界状态主要通过视觉/界面 Observation 获得的任务。
+连续 GUI Observation、大量图片/截图、视频或大量帧、视觉 reference 对比、高体量 OCR/DOM/accessibility state，或开放式视觉创作占主要 Token 压力时，进入 Multimodal Flow。
 
 选择后加载：
 
 1. [`references/shared-protocols_zh_cn.md`](references/shared-protocols_zh_cn.md)
 2. [`references/multimodal-flow_zh_cn.md`](references/multimodal-flow_zh_cn.md)
+3. 当前随仓库提供的部署绑定使用 [`references/multimodal-openai-profile_zh_cn.md`](references/multimodal-openai-profile_zh_cn.md)
 
-进入 Multimodal Flow 后先区分两种工作模式：
+`multimodal-flow_zh_cn.md` 独立负责 Routine Interaction 与 Creative Visual Authoring 的详细区分、Observation Firewall、视觉/时序渐进式读取、精选视觉 checkpoint、Computer Use 执行、Semantic Checkpoint 和视觉验证。不得在本根入口重新构造或摘要这些规则。
 
-- **Routine Interaction**：浏览、控件定位、表单填写、普通页面检查，以及目标和视觉结果已经明确的有界编辑。沿用 Primary Observation Agent 自主维持的低开销 observe/act 闭环。
-- **Creative Visual Authoring**：绘画、插画、图像编辑、合成、排版、视觉设计、画布创作、风格化或任何需要决定构图、视觉层级、色彩/光线、材质或整体观感的开放式工作。必须使用 Decision-led Visual Authoring，让 Decision Agent 在关键视觉里程碑亲自审看精选证据并批准下一阶段。Creative 模式的主要视觉设计 ownership 属于 Decision Agent：构图、视觉层级、风格、色彩关系、整体观感及跨阶段方向选择不得下放给 Observation Agent；Observation Agent 只负责局部机械视觉判断与已批准方案的物化。
-
-如果任务从 Routine Interaction 演变为需要改变核心构图、风格或视觉层级的开放式创作，应立即切换到 Creative Visual Authoring；不能继续让 Observation Agent 独立完成后续创作。Creative 模式的完整回路、精选证据边界和宿主能力阻塞规则见 `multimodal-flow_zh_cn.md`。
-
-不要为了形式统一同时加载 Coding Flow。只有任务真实进入代码/repo 物化阶段时，才按 Multimodal → Coding 窄 Handoff 再加载 Coding Flow。
-
-### 小型视觉输入例外
-
-单张简单图片、少量严格有界截图或其他明显不会产生高体量 Observation 的输入，不必机械创建 Primary Observation Agent。是否使用 Multimodal Flow 取决于潜在原始输入体积、时序/交互状态复杂度与决策密度，而不是“任务里是否出现图片”这一单一条件；但这项输入规模例外不把开放式视觉创作降级为 Routine Interaction，创作仍须遵循 Creative Visual Authoring 回路。
+当前 Multimodal 部署 Profile 有意与 Coding Runtime 注册表分离；本 Skill 不在这里声称 Multimodal 绑定已经完成跨 Code Agent 产品的通用化或测试。
 
 ### 混合任务与 Flow Handoff
 
-不要在混合任务开始时预加载两套完整 Flow。按当前阶段的主要 Token 压力选择 Flow，并在职责真正变化时 handoff。
+不要在混合任务开始时预加载两套完整 Flow。按当前阶段主要 Token 压力选择 Flow，并在职责真正变化时 handoff。
 
 典型视觉设计驱动 Coding：
 
 ```text
 Multimodal Flow
-→ Primary Observation Agent 分析 reference / current UI
-→ Visual / State Digest
-→ Decision Agent 确认需要修改的语义目标
+→ visual analysis / Visual-State Digest
+→ Decision 确认稳定的必要变更
 → narrow Handoff Contract
 → Coding Flow
-→ Primary Output Role 实现与机械验证
+→ implementation / mechanical verification
 → 必要时回到原 Multimodal Flow 做视觉验收
 ```
 
@@ -90,46 +75,43 @@ Multimodal Flow
 ```text
 Coding Flow
 → implementation / tests
-→ 需要高体量视觉验收时再加载 Multimodal Flow
+→ 只有确实需要高体量视觉验收时再加载 Multimodal Flow
 → visual verification
 ```
 
-Handoff 的字段和禁止携带的原始状态以 `multimodal-flow_zh_cn.md` 为准。
+准确 Handoff 字段和禁止携带的原始状态以 `multimodal-flow_zh_cn.md` 为准。
 
 ## Reference 加载规则
 
-- 只加载当前场景需要的 Flow 文档和共享协议。
+- 只加载当前场景需要的 Flow 文档、Coding 模块和 active runtime 文档。
 - 如果当前会话已加载且相关规则仍然有效，不重复读取同一 reference。
-- 从一个 Flow 切换到另一个 Flow 时，只新增目标 Flow 所需 reference，不重新加载无变化的共享协议。
-- 主 `SKILL_zh_cn.md` 是中文路由和跨 Flow Profile 入口，不替代 Flow 细则；实际执行前必须加载所选 Flow 的中文 reference。
-- Coding 专属模块通过 `references/coding-flow_zh_cn.md` 加载，不得在本文件重复其规范性内容。
-- 当正确性需要跨 Flow 信息时使用窄 Handoff 或 Evidence-on-Demand，不通过一次性加载所有 reference 和原始状态来规避上下文边界。
+- 从一个 Flow 切换到另一个 Flow 时，只新增所需 reference，不重新加载无变化的共享协议。
+- 主 `SKILL_zh_cn.md` 是中文路由入口，不替代 Flow、Runtime 或部署细则。
+- Coding 专属模块通过 [`references/coding-flow_zh_cn.md`](references/coding-flow_zh_cn.md) 加载；具体 Coding Host/Model 部署文件由 Runtime Contract 选择，不在 Core 规则中写死。
+- 当正确性需要跨 Flow 信息时使用窄 Handoff 或 Evidence-on-Demand，不通过一次性加载全部 reference 和原始状态规避上下文边界。
 
-## 当前 OpenAI Profile
+## Runtime 边界
 
-模型绑定属于当前运行 Profile，不是 Token I/O Decoupling 架构本身。未来模型变化应优先修改负责该规则的 Profile 模块，而不是改写 Flow 的角色边界。
+Coding 架构与具体部署策略有意分离：
 
-### Coding Flow
+```text
+Coding Core responsibilities
+        ↓
+Coding Runtime Contract
+        ↓
+Host Adapter + Model Profile
+        ↓
+具体 Code Agent Sessions / models / parameters
+```
 
-Coding 的模型绑定、Session 映射、reasoning-effort 分级和定向升级规则定义在 [`references/coding/profile_zh_cn.md`](references/coding/profile_zh_cn.md)。选择 Coding Flow 后应按 Coding 模块加载规则读取该文件，不在这里重复这些细节。
+Runtime Contract 通过 Coding Flow 加载，并只选择与当前环境匹配的已登记部署。产品专属持久指令路径、Agent/Session 操作、模型名称和执行参数值属于 Runtime 部署文件，不属于根 Skill 或 Coding Core 模块。
 
-### Multimodal Flow
-
-- Decision Agent：当前高级父模型。
-- Primary Observation Agent：`gpt-5.6-luna`；承担大规模图片、视频帧、Computer Use Observation 或其他实质性高体量分析时显式使用 `reasoning_effort=xhigh`。
-- Optional Primary Output Agent：`gpt-5.6-luna`；长输出和其他实质性物化任务显式使用 `reasoning_effort=xhigh`。
-- Observation Agent 与 Output Agent 是不同职责和不同 Session Affinity；即使当前 Profile 使用同一种模型，也不得因此把两者的高体量上下文默认合并。Single-Agent Luna Mode 只改变 Coding Flow 的默认角色映射，不削弱 Multimodal Flow 的独立 Observation ownership。
-
-### Profile 约束
-
-- 不得把要求使用 Luna 的角色静默替换为其他模型。
-- 若需要独立 Luna 角色但无法确认 `gpt-5.6-luna` 身份、无法显式选择该模型，或宿主无法满足当前 dispatch 所要求的 reasoning-effort 档位，则停止对应实质性工作并简短报告阻塞。Multimodal 的实质性 Observation/物化仍按上文要求使用 `reasoning_effort=xhigh`。
-- 纯只读、严格有界的诊断或观察，在能够确认 Luna 身份但宿主无法设置 reasoning effort 时可以继续；不得因此把复杂高体量工作回退给高级父模型，也不得把原本要求 `high` 或 `xhigh` 的任务静默降级给轻量强度。
+Multimodal Flow 当前不纳入这套 Coding Runtime 抽象；其现有部署绑定保存在自己的按需 Profile 中，不进行未经测试的可移植性重构。
 
 ## 加载边界
 
-本 Skill 默认允许自动发现；普通 Skill 的 `description` 只影响隐式匹配，不能保证每次启动完整加载。若要保证特定宿主每次运行都遵循核心分工，应把必要不变量放入该宿主的持久指令机制，例如 Codex 的全局 `~/.codex/AGENTS.md`，或由宿主注入 system/developer instructions。
+本 Skill 默认允许自动发现；普通 Skill `description` 只影响隐式匹配，不能保证每次启动都加载完整 Skill。若某个 Host 必须始终遵循特定不变量，应使用该 Host Adapter 定义的持久指令机制，或其他更高优先级、由宿主正式支持的指令通道。
 
-`references/` 中的 Flow 文档采用按需加载，禁止因为“可能以后会用到”而在任务开始时全部读取。
+`references/` 中的文档采用按需加载，禁止因为“可能以后会用到”而在任务开始时全部读取。
 
-关于 Coding Flow 的部署、bootstrap、Session 重启、验证和采用建议，请参阅 [`BEST_PRACTICES_zh_cn.md`](BEST_PRACTICES_zh_cn.md)。该指南不替代本 Skill 及所选 reference 中的规范性 Flow、角色或 Profile 规则；Multimodal Flow 应按路由加载其自身的 reference。
+关于当前已验证 Coding 部署的 bootstrap、Session 重启、验证和采用建议，请参阅 [`BEST_PRACTICES_zh_cn.md`](BEST_PRACTICES_zh_cn.md)。该指南是非规范性说明，不能替代所选 Flow、Runtime Contract、Host Adapter 或 Model Profile。
