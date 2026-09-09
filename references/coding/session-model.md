@@ -1,6 +1,6 @@
 # Coding Session Model
 
-This module owns Coding Flow role definitions, Session topology, Context Firewall rules, and Primary Execution Session affinity. Coding runtime model bindings and reasoning-effort policy are defined separately in [`profile.md`](profile.md).
+This module owns Coding Flow role definitions, Session topology, Context Firewall rules, and Primary Execution Session affinity. Concrete Host/model eligibility and runtime parameters are resolved separately through [`runtime.md`](runtime.md).
 
 All roles also follow [`../shared-protocols.md`](../shared-protocols.md).
 
@@ -18,31 +18,53 @@ Owns high-volume project exploration, raw tool-output handling, semantic compres
 
 The Agent performing the Primary Output Role reads project state progressively: inspect summaries, statistics, and relevant paths first, then expand specific files, diffs, or logs only when needed. It may decide **how** to execute but must not independently change approved goals, architecture, constraints, or acceptance criteria.
 
-## Luna Single-Agent Mode
+## Single-Session Coding Mode
 
-When the currently running Code Agent can explicitly confirm that it is `gpt-5.6-luna`, Coding Flow enters **Single-Agent Luna Mode** by default:
+Coding Flow enters **Single-Session Coding Mode** when the active Runtime Contract confirms all of the following:
 
-- The current Session performs both the Input-side Reasoning Role and Primary Output Role. Do not create, hand off to, or require an additional Luna Primary Output Agent.
-- The role boundaries still exist as logical execution discipline: stabilize high-value goals, constraints, and acceptance first; then progressively inspect project state, implement, mechanically verify, and perform final semantic acceptance. No Agent handoff is required between those stages.
-- The current Luna's ordinary exploration, implementation, testing, fixing, and output are same-Session self-execution. They are not a Dispatch and must not print a fake self-dispatch.
-- Large project size, many changed files, long output, build/test/debug requirements, or generic “task complexity” are not reasons to create another Luna.
+- the current Session is explicitly eligible for both the Input-side Reasoning and Primary Output responsibilities under the selected Model Profile;
+- the Host can satisfy the runtime parameters required for the current task in that Session;
+- no independent structural benefit requires another Session.
+
+In this mode:
+
+- the current Session performs both Coding responsibilities; do not create, hand off to, or require an additional Primary Output Agent merely to preserve a two-role topology;
+- role boundaries still exist as logical execution discipline: stabilize high-value goals, constraints, decisions, and acceptance first; then progressively inspect project state, implement, mechanically verify, and perform final semantic acceptance;
+- the current Agent's ordinary exploration, implementation, testing, fixing, and output are same-Session self-execution, not a Dispatch; do not print a fake self-dispatch or construct a prompt addressed to the same Session;
+- large repository size, many changed files, long output, build/test/debug requirements, or generic “task complexity” are not reasons to create another Session.
 
 Another Agent is allowed only when there is an independent structural benefit, for example:
 
 - fresh verification that should not inherit the current implementation history;
 - real parallelism where tasks are independent and do not contend for the same write targets;
-- current Session context is clearly stale, contradictory, or too overgrown to continue effectively;
+- the current Session context is clearly stale, contradictory, or too overgrown to continue effectively;
 - explicit context, permission, or other isolation requirements whose benefit exceeds handoff cost.
 
-The current Coding Profile may also define a narrowly scoped escalation exception for a repeatedly blocked task. Follow [`profile.md`](profile.md) for that exception instead of treating stronger reasoning effort as a general reason to split Sessions.
+The selected Model Profile may also define a narrowly scoped escalation exception for a repeatedly blocked task. Follow [`runtime.md`](runtime.md) and the active Profile for that exception instead of treating a stronger model or runtime parameter as a general reason to split Sessions.
 
-These exceptions must not restore same-model delegation as the default path for ordinary Coding. The Multimodal Primary Observation Agent owns an independent high-volume visual/temporal context and is not weakened by this section's “ordinary Coding defaults to one Session” rule.
+These exceptions must not restore same-runtime delegation as the default path for ordinary Coding. Multimodal Flow keeps its own independent high-volume Observation ownership and is not weakened by Coding's same-Session rules.
+
+## Normal two-Session Coding Mode
+
+When the active Runtime Contract declares the current Session eligible for Input-side Reasoning but not for Primary Output, and the Host can create or reuse a compatible independent Primary Output Session, use the normal two-Session topology:
+
+```text
+current parent Session
+    └─ Input-side Reasoning
+
+independent Primary Execution Session
+    └─ Primary Output
+```
+
+The split exists because the active deployment requires different runtime eligibility or context ownership, not merely because two logical role names exist. Concrete model selection and execution parameters remain outside this module.
+
+If the required independent Session cannot be instantiated according to the active Runtime, do not silently collapse into Single-Session Coding Mode. Follow the active Profile's unavailable-handling rule.
 
 ## Context Firewall
 
-In the normal two-Session Coding Flow, the input-side Agent does not perform open-ended inspections that may bring large volumes of raw project state into its own context. `git diff`, large `git status` or logs, `find`, `rg`, file trees, build/test output, and similar high-volume checks go to the independent Agent performing the Primary Output Role, which reads, filters, and returns only the facts required for decisions.
+In normal two-Session Coding, the input-side Agent does not perform open-ended inspections that may bring large volumes of raw project state into its own context. `git diff`, large `git status` or logs, `find`, `rg`, file trees, build/test output, and similar high-volume checks go to the independent Agent performing the Primary Output Role, which reads, filters, and returns only the facts required for decisions.
 
-Single-Agent Luna Mode has no cross-Session Context Firewall. The current Luna directly performs the Primary Output Role and consumes necessary project state, but it must still use progressive reading and semantic compression rather than dumping an entire project, full logs, or unrelated diffs into active context without purpose.
+Single-Session Coding Mode has no cross-Session Context Firewall. The current Session directly performs the Primary Output Role and consumes necessary project state, but it must still use progressive reading and semantic compression rather than dumping an entire project, full logs, or unrelated diffs into active context without purpose.
 
 Only strictly bounded, obviously small metadata queries may be executed directly by the input-side Agent in normal two-Session mode—for example `pwd`, `git branch --show-current`, or checking existence of one file. The criterion is potential raw-output volume, not the command name itself.
 
@@ -52,9 +74,9 @@ An independent Primary Output Agent semantically compresses diagnostics by defau
 
 A continuous Coding workflow maintains one **Primary Execution Session** by default:
 
-- in normal two-Session mode, it is the independent Primary Luna;
-- in Single-Agent Luna Mode, it is the current Luna Session itself. Do not create another Luna merely to obtain “Primary Session Affinity.”
+- in normal two-Session mode, it is the independent Session assigned the Primary Output Role by the active Runtime;
+- in Single-Session Coding Mode, it is the current Session itself. Do not create another Session merely to obtain “Primary Session Affinity.”
 
 Subsequent project exploration, implementation, diagnosis, testing, fixing, and local execution should preferentially reuse that Primary Execution Session. Reuse preserves project working context, reduces repeated exploration, and may improve stable prompt-prefix reuse opportunities. Do not claim that the same Agent is guaranteed to hit prompt cache, or that a new Agent is guaranteed not to.
 
-Create a new execution Session only for the independent-verification, real-parallelism, context-degradation/capacity, explicit-isolation, or Profile-defined targeted-escalation cases described above. The Primary Execution Session is sticky but not immortal: reuse it by default, rebuild it when correctness, capacity, or isolation requires it.
+Create a new execution Session only for independent verification, real parallelism, context-degradation/capacity recovery, explicit isolation, or an active-Profile targeted escalation. The Primary Execution Session is sticky but not immortal: reuse it by default, rebuild it when correctness, capacity, or isolation requires it.

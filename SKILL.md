@@ -1,6 +1,6 @@
 ---
 name: token-io-decoupling
-description: "High-volume Agent Token I/O decoupling. Coding keeps high-value input-side reasoning separate from Primary Output responsibilities, while defaulting to single-session self-execution when the current Code Agent is already Luna. Browser Use, Computer Use, continuous browser/desktop GUI workflows, video, large image/screenshot sets, and visual design use an independent Multimodal Flow that isolates high-volume visual/temporal input between a Decision Agent and a Primary Observation Agent. Open-ended drawing, image editing, and visual creation use Decision-led Visual Authoring and hand off to output or Coding only when needed."
+description: "High-volume Agent Token I/O decoupling. Coding separates high-value input-side reasoning from Primary Output responsibilities while keeping Core role and Session rules independent of any specific Code Agent product or model; concrete runtime bindings are selected through Host Adapters and Model Profiles. Browser Use, Computer Use, continuous GUI workflows, video, large image/screenshot sets, and visual design use an independent Multimodal Flow that isolates high-volume visual/temporal input."
 ---
 
 # Token I/O Decoupling
@@ -9,17 +9,17 @@ description: "High-volume Agent Token I/O decoupling. Coding keeps high-value in
 
 This Skill defines two scenario-specific Agent orchestration flows that separate high-value semantic decisions from high-volume raw-state consumption and output materialization. Coding and Multimodal have materially different execution architectures, so they share only a small set of orchestration protocols instead of forcing one universal role topology.
 
-This Skill defines orchestration conventions only. It cannot bypass higher-priority permissions, user authorization, product limitations, or safety rules, and it must not present unmeasured claims about price, cache hits, or quota savings as facts.
+This Skill defines orchestration conventions only. It cannot bypass higher-priority permissions, user authorization, product limitations, or safety rules, and it must not present unmeasured claims about price, cache hits, quota savings, or runtime quality as facts.
 
 ## Core principles
 
 1. **Choose the Flow first, then load its details**: do not load every reference unconditionally at startup.
-2. **Keep Coding routing thin**: ordinary Coding still uses the logical “input-side reasoning → Primary Output” responsibility split, but concrete Session topology, model/effort policy, context exchange, checkpoints, verification, and output rules are owned by the selected Coding modules rather than duplicated in `SKILL.md`.
-3. **Isolate high-volume Multimodal Observation**: Computer Use, video, large image/screenshot sets, visual design, and similar tasks are routed so the Primary Observation Agent consumes visual/temporal world state while the Decision Agent receives compressed Digests. Open-ended visual creation additionally follows the curated-evidence loop of Decision-led Visual Authoring.
+2. **Keep Coding Core runtime-neutral**: Coding defines Input-side Reasoning and Primary Output responsibilities, Session/context rules, checkpoints, and verification independently from concrete products or models. Runtime mapping is resolved through the Coding Runtime Contract, Host Adapter, and Model Profile selected for the current environment.
+3. **Keep Multimodal details isolated**: Computer Use, video, large image/screenshot sets, visual design, and similar tasks use the independent Multimodal Flow. Its working modes, visual checkpoints, Observation rules, and current deployment bindings live in its routed references rather than being duplicated in this root file.
 4. **Use narrow Handoffs for mixed tasks**: visual analysis and Coding exchange only stable goals, required changes, constraints, evidence references, and acceptance criteria. Do not dump full raw state across Flows.
-5. **Map roles to models and Sessions by responsibility**: a role represents responsibility and context ownership first; it does not require a one-to-one Agent instance. Split Sessions only when model tiering, independent context ownership, real parallelism, fresh verification, capacity management, or another concrete isolation benefit exists. In Multimodal Flow, Observation and Output may remain separate even when both use Luna because they own different high-volume contexts.
+5. **Treat roles as responsibilities first**: a role represents responsibility and context ownership, not a mandatory one-to-one Agent instance. Coding Session topology is derived from the active runtime; Multimodal keeps its own context-ownership rules.
 
-## Scenario Routing
+## Scenario routing
 
 ### Coding Flow
 
@@ -36,37 +36,23 @@ After selecting Coding Flow, load:
 1. [`references/shared-protocols.md`](references/shared-protocols.md)
 2. [`references/coding-flow.md`](references/coding-flow.md)
 
-Then follow the module-loading table in `coding-flow.md`. Do not preload every file under `references/coding/`; load the Coding modules required by the current responsibility and stage.
+Then follow the module-loading table in `coding-flow.md`. Do not preload every file under `references/coding/` or `references/runtime/`; load only the Coding modules and active runtime files required by the current responsibility and stage.
 
-Ordinary Coding must not load `multimodal-flow.md` or create a Primary Observation Agent merely because this Skill also supports Multimodal Flow.
+Ordinary Coding must not load Multimodal Flow or create a Primary Observation Agent merely because this Skill also supports visual work.
 
 ### Multimodal Flow
 
-Route the following tasks to Multimodal Flow by default:
-
-- Computer Use and continuous browser/desktop GUI observe/act workflows;
-- large image, screenshot, design-reference, or rendered-UI analysis;
-- video, large frame sets, or other temporal visual input;
-- UI / visual design comparison and verification;
-- tasks where high-volume OCR, DOM, accessibility tree, or other world state is primarily obtained through visual/interface Observation.
+Route tasks dominated by continuous GUI Observation, large image/screenshot collections, video or large frame sets, visual-reference comparison, high-volume OCR/DOM/accessibility state, or open-ended visual authoring to Multimodal Flow.
 
 After selecting Multimodal Flow, load:
 
 1. [`references/shared-protocols.md`](references/shared-protocols.md)
 2. [`references/multimodal-flow.md`](references/multimodal-flow.md)
+3. [`references/multimodal-openai-profile.md`](references/multimodal-openai-profile.md) for the current bundled deployment bindings
 
-Then distinguish two working modes:
+`multimodal-flow.md` owns the detailed distinction between Routine Interaction and Creative Visual Authoring, the Observation Firewall, visual/temporal progressive disclosure, curated visual checkpoints, Computer Use execution, Semantic Checkpoints, and visual verification. Do not reconstruct or summarize those rules in this root entry point.
 
-- **Routine Interaction**: browsing, control localization, form filling, normal page inspection, and bounded edits whose intended visual result is already clear. Keep the low-overhead observe/act loop inside the Primary Observation Agent.
-- **Creative Visual Authoring**: drawing, illustration, image editing, compositing, layout, visual design, canvas creation, stylization, or any open-ended work that requires decisions about composition, visual hierarchy, color/light, material, or overall visual quality. Use Decision-led Visual Authoring. The Decision Agent owns the primary visual design direction: composition, hierarchy, style, color relationships, overall look, and cross-stage direction changes must not be delegated to the Observation Agent. The Observation Agent performs local mechanical visual judgments and materializes approved direction.
-
-If a Routine Interaction task evolves into open-ended changes to core composition, style, or visual hierarchy, switch immediately to Creative Visual Authoring. Do not allow the Observation Agent to continue the creative work independently. See `multimodal-flow.md` for the full loop, curated-evidence boundary, and host capability-block rules.
-
-Do not load Coding Flow merely for architectural symmetry. Load Coding Flow only when the task actually enters a code/repository materialization stage via a narrow Multimodal → Coding handoff.
-
-### Small visual-input exception
-
-A single simple image, a few strictly bounded screenshots, or another clearly small Observation does not require mechanical creation of a Primary Observation Agent. Decide based on potential raw-input volume, temporal/interaction complexity, and decision density rather than the mere presence of images. This size exception does not downgrade open-ended visual creation to Routine Interaction; creative work still follows Creative Visual Authoring.
+The current Multimodal deployment profile is intentionally kept separate from the Coding Runtime registry. This Skill makes no claim here that Multimodal bindings have been generalized or tested across other Code Agent products.
 
 ### Mixed tasks and Flow Handoff
 
@@ -76,12 +62,11 @@ Typical design-driven Coding:
 
 ```text
 Multimodal Flow
-→ Primary Observation Agent analyzes reference / current UI
-→ Visual / State Digest
-→ Decision Agent confirms semantic changes
+→ visual analysis / Visual-State Digest
+→ Decision confirms stable required changes
 → narrow Handoff Contract
 → Coding Flow
-→ Primary Output Role implements and mechanically verifies
+→ implementation / mechanical verification
 → return to the original Multimodal Flow for visual verification when needed
 ```
 
@@ -94,42 +79,39 @@ Coding Flow
 → visual verification
 ```
 
-The Handoff fields and prohibited raw-state payloads are defined in `multimodal-flow.md`.
+The exact Handoff fields and prohibited raw-state payloads are defined in `multimodal-flow.md`.
 
 ## Reference loading rules
 
-- Load only the Flow documents and shared protocols required for the current scenario.
+- Load only the Flow documents, Coding modules, and active runtime documents required for the current scenario.
 - If a relevant reference is already loaded and its rules remain valid, do not read it again.
-- When switching Flows, load only the newly required Flow reference; do not reload unchanged shared protocols.
-- The main `SKILL.md` is the routing and cross-Flow Profile entry point, not a replacement for Flow details. Load the selected Flow reference before substantive execution.
-- Coding-specific modules are loaded through `references/coding-flow.md`; do not duplicate their normative content in this file.
+- When switching Flows, load only newly required references; do not reload unchanged shared protocols.
+- The main `SKILL.md` is the routing entry point, not a replacement for Flow, Runtime, or deployment details.
+- Coding-specific modules are loaded through [`references/coding-flow.md`](references/coding-flow.md); concrete Coding Host/Model deployment files are selected through the Runtime Contract rather than named in Core rules.
 - When correctness requires cross-Flow information, use a narrow Handoff or Evidence-on-Demand instead of loading all references and raw state at once.
 
-## Current OpenAI Profile
+## Runtime boundary
 
-Model bindings are part of the current runtime Profile, not the Token I/O Decoupling architecture itself. Future model changes should update the owning Profile module before changing Flow responsibility boundaries.
+Coding architecture and concrete deployment policy are intentionally separated:
 
-### Coding Flow
+```text
+Coding Core responsibilities
+        ↓
+Coding Runtime Contract
+        ↓
+Host Adapter + Model Profile
+        ↓
+concrete Code Agent Sessions / models / parameters
+```
 
-Coding model bindings, Session mapping, reasoning-effort tiers, and targeted escalation are defined in [`references/coding/profile.md`](references/coding/profile.md). After selecting Coding Flow, load them through the Coding module-loading rules instead of duplicating those details here.
+The Runtime Contract is loaded through Coding Flow and selects only the registered deployment that matches the current environment. Product-specific persistent-instruction paths, Agent/Session operations, model names, and execution-parameter values belong to runtime deployment files, not this root Skill or Coding Core modules.
 
-### Multimodal Flow
-
-- Decision Agent: the current advanced parent model.
-- Primary Observation Agent: `gpt-5.6-luna`; substantive large image/video/Computer Use Observation analysis uses `reasoning_effort=xhigh`.
-- Optional Primary Output Agent: `gpt-5.6-luna`; substantive long output uses `reasoning_effort=xhigh`.
-- Observation and Output are different responsibilities with different Session Affinity. Even if the current Profile binds both to Luna, do not merge their high-volume contexts by default. Single-Agent Luna Mode changes only the default Coding role mapping and does not weaken Multimodal Observation ownership.
-
-### Profile constraints
-
-- Do not silently replace a role that requires Luna with another model.
-- If an independent Luna role is required but `gpt-5.6-luna` identity cannot be confirmed, the model cannot be selected explicitly, or the host cannot satisfy the reasoning-effort tier required for that dispatch, stop that substantive work and briefly report the block. Multimodal substantive Observation/materialization continues to require `reasoning_effort=xhigh` as specified above.
-- Purely read-only, strictly bounded diagnosis or observation may continue when Luna identity is confirmed but the host cannot set reasoning effort. Do not use that exception to move complex high-volume work back to the advanced parent model or to silently assign lightweight effort to a task whose profile requires `high` or `xhigh`.
+Multimodal Flow is currently kept outside that Coding runtime abstraction. Its existing deployment bindings are preserved in its own routed profile without attempting an untested portability redesign.
 
 ## Loading boundary
 
-This Skill may be automatically discovered, but a normal Skill `description` only influences implicit matching and cannot guarantee that the complete Skill is loaded on every host startup. If a host must always obey specific invariants, put those invariants in that host's persistent instruction mechanism—for example, Codex global `~/.codex/AGENTS.md` or host-injected system/developer instructions.
+This Skill may be automatically discovered, but a normal Skill `description` only influences implicit matching and cannot guarantee that the complete Skill is loaded on every host startup. If a host must always obey specific invariants, use that Host Adapter's persistent-instruction mechanism or another higher-priority host-supported instruction channel.
 
 References under `references/` are loaded on demand. Do not read all of them at task startup merely because they might become useful later.
 
-For Coding Flow deployment, bootstrap, Session restart, validation, and adoption guidance, see [`BEST_PRACTICES.md`](BEST_PRACTICES.md). This guide does not replace the normative Flow, role, or Profile rules in this Skill and its selected references; Multimodal Flow uses its own routed references.
+For the current verified Coding deployment's bootstrap, Session restart, validation, and adoption guidance, see [`BEST_PRACTICES.md`](BEST_PRACTICES.md). That guide is non-normative and does not replace the selected Flow, Runtime Contract, Host Adapter, or Model Profile.

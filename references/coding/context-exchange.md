@@ -10,13 +10,13 @@ All Semantic Contract fields, amendments, context-block rules, Dispatch Preview 
 
 Normal two-Session mode uses a compact prompt: provide only the goal, necessary constraints, relevant paths, and facts to return. Do not make the input-side Agent copy large file contents or project state that the Primary Output Agent can inspect itself.
 
-Single-Agent Luna Mode does not re-encode already-known information into a prompt addressed to itself. Maintain only the minimum stable goal, constraints, key decisions, and acceptance criteria needed in the current context.
+Single-Session Coding Mode does not re-encode already-known information into a prompt addressed to itself. Maintain only the minimum stable goal, constraints, key decisions, and acceptance criteria needed in the current context.
 
 ### Complex, context-heavy tasks
 
 In normal two-Session mode, when a task clearly depends on substantial conversation, business, or project background, prefer sharing the full relevant context that the host can safely provide with the Primary Output Agent, plus a short Semantic Contract. This avoids making the input-side Agent generate large output simply to redescribe existing background while the Contract stabilizes the currently effective decisions.
 
-Single-Agent Luna Mode continues to use the Semantic Contract as a logical decision anchor but must not resend it to itself as a self-delegation prompt for formal completeness.
+Single-Session Coding Mode continues to use the Semantic Contract as a logical decision anchor but must not resend it to itself as a self-delegation prompt for formal completeness.
 
 ## File-backed Context Exchange for multi-Agent Coding
 
@@ -67,4 +67,4 @@ The parent Agent should synthesize a new prose summary only when it must integra
 
 The Semantic Contract remains authoritative for `Goal`, `Constraints`, `Decisions`, and `Acceptance`. Worker context documents cannot silently override it. If a Worker's findings imply a Contract change, use the existing Decision Checkpoint and amendment path before execution crosses that boundary.
 
-For Worker replacement or reasoning-effort escalation, the predecessor should, when possible, refresh its Worker-local `INDEX.md` and produce a `handoff.md` covering achieved state, failed approaches and evidence, current modifications and verification state, the remaining blocker, and the next useful action. The parent updates the root `INDEX.md`, provisions a new Context ID and subdirectory for the successor, and should first expose specifically named predecessor documents to the successor through host-level read-only capability. If safe read-only exposure is unavailable, mechanically copy those documents into the successor's `imports/` directory before dispatch. The successor does not restart project exploration from zero and never writes into the predecessor's directory. If the predecessor is unavailable, the parent may create only the smallest recovery note supported by facts already present; do not reconstruct the full history as a long parent-generated transcript.
+For Worker replacement or runtime escalation, the predecessor should, when possible, refresh its Worker-local `INDEX.md` and produce a `handoff.md` covering achieved state, failed approaches and evidence, current modifications and verification state, the remaining blocker, and the next useful action. The parent updates the root `INDEX.md`, provisions a new Context ID and subdirectory for the successor, and should first expose specifically named predecessor documents to the successor through host-level read-only capability. If safe read-only exposure is unavailable, mechanically copy those documents into the successor's `imports/` directory before dispatch. The successor does not restart project exploration from zero and never writes into the predecessor's directory. If the predecessor is unavailable, the parent may create only the smallest recovery note supported by facts already present; do not reconstruct the full history as a long parent-generated transcript.
