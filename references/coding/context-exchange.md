@@ -14,15 +14,26 @@ Single-Session Coding Mode does not re-encode already-known information into a p
 
 ### Complex, context-heavy tasks
 
-In normal two-Session mode, when a task clearly depends on substantial conversation, business, or project background, prefer sharing the full relevant context that the host can safely provide with the Primary Output Agent, plus a short Semantic Contract. This avoids making the input-side Agent generate large output simply to redescribe existing background while the Contract stabilizes the currently effective decisions.
+In normal two-Session mode, when a task clearly depends on substantial conversation, business, or project background, prefer sharing the full relevant context that the host can safely provide with the Worker that owns the current slice, plus a short Semantic Contract. The Primary Output Agent receives implementation context; a Change Verification Agent receives only the final-state verification inputs; a Documentation/Comments Agent receives only the final verified state and approved documentation/comment scope; and a delivery slice receives only the final accepted state, approved complete-change-set scope, and explicit delivery authorization. This avoids making the input-side Agent generate large output simply to redescribe existing background while the Contract stabilizes the currently effective decisions.
 
 Single-Session Coding Mode continues to use the Semantic Contract as a logical decision anchor but must not resend it to itself as a self-delegation prompt for formal completeness.
 
-### Parent-led rendezvous for multiple Output Workers
+### Role-specific handoffs and parent-led rendezvous
 
-When multiple independent Output Role Agents are active, the parent Agent defines an Interaction Slice and feedback boundary for each Worker before dispatch. Each Worker receives its own `Objective`, `Authorized scope/mutations`, `Return conditions`, and `Unreleased boundary`; parallel execution does not authorize a Worker to cross an unreleased boundary or infer permission from another Worker's progress.
+The parent Input-side Reasoning Agent creates and manages all independent Workers. Each Worker receives only the context required for its role:
 
-Workers may emit compressed Progress Signals within their authorized slices, but the parent owns every blocking Control Checkpoint. At a Control Checkpoint, the parent analyzes the evidence and decides `Continue`, `Amend`, or `Stop` for that Worker, or requests Evidence-on-Demand first. If the Semantic Contract, architecture, scope, permission, security, or public-interface assumptions change, the parent decides whether other Workers continue, receive amended slices, or stop; Workers must not silently continue on stale instructions.
+- **Primary Output** receives the approved implementation Contract, relevant project context, authorized write scope, and the current Interaction Slice. Its focused checks are implementation feedback and are passed forward as a compressed summary.
+- **Change Verification** receives a fresh Context ID, the final project state or an isolated verification snapshot, the Contract and acceptance criteria, changed-scope evidence, and the compressed implementation-feedback summary. It must not inherit the Primary Output implementation history, must not modify tracked product/test/documentation files, and must return evidence rather than repairs.
+- **Documentation/Comments** is created only after the verifier passes and receives a fresh bounded context, the final verified state, the Contract, the verifier conclusion, and an explicit docs/comment-only scope. Its RW capability must be limited to approved documentation and comment locations; all functionality and tests remain outside its write scope. After its docs-only checkpoint passes, it may receive a separate delivery slice only from the parent.
+- **Delivery slice** receives a fresh or explicitly amended bounded context containing the final accepted state, changed-scope evidence, approved paths/hunks, explicit user/task authorization, and the applicable repository development workflow reference. It may stage the approved complete change set and operate on Git metadata or the remote repository as authorized, but it must not edit tracked content, perform semantic acceptance, or infer authorization from another role. It returns compressed delivery evidence.
+
+When a verifier reports a material failure and Primary Output repairs it, the parent provisions a new verifier Context ID and fresh Session for the new final state. Do not reuse a verifier after a material repair: the required independent review must not inherit the earlier implementation or failure history.
+
+### Parent-led rendezvous for multiple Coding Workers
+
+When multiple independent Coding Workers are active, the parent Agent defines an Interaction Slice and feedback boundary for each Worker before dispatch. Each Worker receives its own `Objective`, `Authorized scope/mutations`, `Return conditions`, and `Unreleased boundary`; parallel execution does not authorize a Worker to cross an unreleased boundary or infer permission from another Worker's progress.
+
+Workers may emit compressed Progress Signals within their authorized slices, but the parent owns every blocking Control Checkpoint. At a Control Checkpoint, the parent analyzes the evidence and decides `Continue`, `Amend`, or `Stop` for that Worker, or requests Evidence-on-Demand first. If the Semantic Contract, architecture, scope, permission, security, or public-interface assumptions change, the parent decides whether other Workers continue, receive amended slices, or stop; Workers must not silently continue on stale instructions. The verifier's pass/fail conclusion does not itself release documentation, repair, or delivery work; only the parent can release the next dependent slice.
 
 Context Exchange documents transport compressed findings, handoff state, and reusable evidence between Workers; they do not replace this live parent-led control loop. The parent should update the routing index and relevant Worker context at material rendezvous points, not after every Progress Signal or command.
 
@@ -49,6 +60,7 @@ The ownership rules above should be enforced by host filesystem permissions or s
   - **RW**: that Worker's own code worktree and its dedicated `<root>/<worker-context-id>/` context subdirectory;
   - **RO**: only individual documents or tightly bounded paths from another Worker that the parent explicitly grants for the current handoff;
   - **DENY / not exposed**: `<root>/INDEX.md`, all remaining paths owned by other Workers, and any Context Exchange path not explicitly granted.
+- During the Documentation/Comments slice, tracked functionality and tests remain outside RW capability. If the parent later releases a delivery slice, it must separately grant only the Git metadata and remote capabilities required for delivery; tracked-content editing remains denied.
 - These capabilities are host/process-level constraints, not merely recommendations in a Dispatch prompt. If a Worker drifts semantically and attempts an out-of-scope write, the filesystem layer should reject it.
 - If multiple Workers actually run as the same OS user, `chmod` or ordinary Unix owner/group permissions alone generally cannot distinguish Worker identity reliably. Strong enforcement requires a real per-Worker sandbox, separate container/mount namespace, path capability, or equivalent mechanism.
 - Cross-Worker sharing should prefer a **targeted read-only capability on the original document**. The parent passes only the document paths and authorization boundary; it does not read the body, copy the body into the prompt, or regenerate a summary merely to transport the same content.

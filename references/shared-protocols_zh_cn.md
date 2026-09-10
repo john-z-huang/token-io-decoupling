@@ -11,11 +11,11 @@ Decision / Input-side Reasoning Agent 负责固化高价值决策信息。Contra
 - `Decisions`：已批准的架构与关键取舍；
 - `Acceptance`：验收标准。
 
-Semantic Contract 是决策锚点，不是完整上下文或原始 Observation 的替代品。宿主能够安全共享的相关上下文可直接提供给对应 Primary Agent；后续默认只发送新增目标、决策变化和必要约束，不周期性重写完整背景。
+Semantic Contract 是决策锚点，不是完整上下文或原始 Observation 的替代品。宿主能够安全共享的相关上下文可直接提供给对应职责 Worker；后续默认只发送新增目标、决策变化和必要约束，不周期性重写完整背景。
 
-Contract 更新优先使用 amendment。只有历史修订已冲突到无法判断当前有效状态时，才发送一次明确的 authoritative decision snapshot；必要时重建对应 Primary Agent。
+Contract 更新优先使用 amendment。只有历史修订已冲突到无法判断当前有效状态时，才发送一次明确的 authoritative decision snapshot；必要时重建对应 Worker。
 
-若安全执行所需上下文既不在当前 Primary Agent 中、宿主又无法共享，而短 Contract 也不足以弥补，则停止并报告上下文阻塞；不要由高价值决策 Agent 用长篇输出重新编码整段历史来绕过限制。
+若安全执行所需上下文既不在当前职责 Worker 中、宿主又无法共享，而短 Contract 也不足以弥补，则停止并报告上下文阻塞；不要由高价值决策 Agent 用长篇输出重新编码整段历史来绕过限制。
 
 ## Role 与 Session 映射
 
@@ -29,7 +29,7 @@ Flow 中的 Decision、Input-side Reasoning、Primary Observation、Primary Outp
 
 ## Dispatch Preview
 
-每次实际创建子 Agent 或向既有独立 Primary Agent 发送新的执行指令前，父会话必须先显示一条极简 `Dispatch` 预览，使用户能够知道本次具体派发了什么。它只是即将派发指令的可见摘要，不是完整子 Agent prompt，也不得暴露不可见内部推理。
+每次实际创建子 Agent 或向既有独立 Worker 发送新的执行指令前，父会话必须先显示一条极简 `Dispatch` 预览，使用户能够知道本次具体派发了什么。它只是即将派发指令的可见摘要，不是完整子 Agent prompt，也不得暴露不可见内部推理。
 
 当前 Session 在同一 Agent 内切换逻辑职责、执行自己的探索/实现/验证或维护 Semantic Contract 不属于 Dispatch。同 Session Coding 不得为了满足 Dispatch Preview 规则打印虚构 self-dispatch、构造 self-prompt 或创建无必要子 Agent。
 
@@ -42,7 +42,7 @@ Flow 中的 Decision、Input-side Reasoning、Primary Observation、Primary Outp
 
 默认输出 **1–3 行**，以 **约 80 tokens 以内**为目标；如果明显接近或超过 **约 120 tokens**，必须继续压缩后再派发。不要为了格式机械补齐没有内容的字段，也不要输出完整验收清单、完整 Contract 或解释性长文。
 
-复用独立 Primary Agent 时只显示本次新增 delta，不重复此前已经可见的派发内容。若宿主已在同一父会话中自动、清晰地显示等价任务摘要，可不重复打印；仅显示“已创建 Agent”“正在工作”等无任务语义的信息不算等价。
+复用独立 Worker 时只显示本次新增 delta，不重复此前已经可见的派发内容。若宿主已在同一父会话中自动、清晰地显示等价任务摘要，可不重复打印；仅显示“已创建 Agent”“正在工作”等无任务语义的信息不算等价。
 
 场景特例：
 
@@ -61,7 +61,7 @@ Dispatch → Observation | Task: 对比 checkout 设计稿与当前 UI；Scope: 
 
 ## 事件驱动进度反馈
 
-独立 Primary Agent 不持续发送工作日志。普通文件读取、grep、截图变化、滚动、局部分析、编译错误修复、下一条命令等低决策密度步骤留在自身上下文。
+独立 Worker 不持续发送工作日志。普通文件读取、grep、截图变化、滚动、局部分析、编译错误修复、下一条命令等低决策密度步骤留在该 Worker 自身上下文。
 
 只在以下事件主动向父 Agent 发送极简消息：
 
@@ -77,7 +77,7 @@ Dispatch → Observation | Task: 对比 checkout 设计稿与当前 UI；Scope: 
 
 ## Evidence-on-Demand
 
-高价值决策 Agent 默认不重新读取完整原始证据。需要确认某项结论时，向持有原始状态的独立 Primary Agent 提出定向问题，由后者返回最小必要证据、相关路径、图片/帧引用或小段事实。
+高价值决策 Agent 默认不重新读取完整原始证据。需要确认某项结论时，向持有原始状态的独立 Worker 提出定向问题，由后者返回最小必要证据、相关路径、图片/帧引用或小段事实。
 
 如果高价值决策职责与 Primary 职责位于同一 Session，则直接定向检查当前上下文或工具状态，不为了 Evidence-on-Demand 创建 self-handoff。只有高风险任务或确有独立审查价值时，才创建 fresh verifier；不能把独立验证变成所有任务的固定开销。
 
@@ -89,6 +89,6 @@ Dispatch → Observation | Task: 对比 checkout 设计稿与当前 UI；Scope: 
 
 ## 委派边界
 
-任何 Primary Observation Agent 或独立 Primary Output Agent 都不得递归委派。需要额外 Agent、独立 verifier 或跨 Flow handoff 时，由当前父级高价值决策 Agent 统一调度；同 Session Coding 需要触发例外 Agent 时，也由当前 Agent 直接创建，不先构造虚拟 Primary 层级。
+任何 Primary Observation Agent、独立 Primary Output Agent 或其他独立 Worker 都不得递归委派。需要额外 Agent、独立 verifier 或跨 Flow handoff 时，由当前父级高价值决策 Agent 统一调度；同 Session Coding 需要触发例外 Agent 时，也由当前 Agent 直接创建，不先构造虚拟 Primary 层级。
 
 本 Skill 不能绕过更高优先级的权限、用户授权、产品限制或安全规则。角色分工、Semantic Contract 或已建立 Session Affinity 都不构成额外授权。

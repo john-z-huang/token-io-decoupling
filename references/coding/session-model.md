@@ -18,11 +18,25 @@ The input-side role should not perform large-volume output whose main purpose is
 
 ### Primary Output Role
 
-Owns high-volume project exploration, raw tool-output handling, evidence collection and semantic compression, execution-level planning within an approved semantic plan, code/document/config materialization, compilation and testing, debugging fixes, and mechanical verification.
+Owns high-volume project exploration, raw tool-output handling, evidence collection and semantic compression, execution-level planning within an approved semantic plan, code/config materialization, implementation fixes, and provisional implementation-feedback checks.
 
-The Agent performing the Primary Output Role reads project state progressively: inspect summaries, statistics, and relevant paths first, then expand specific files, diffs, or logs only when needed. It may analyze evidence and surface evidence-backed candidate options, and it may decide **how** to execute an approved direction inside the current Interaction Slice, but it must not approve or independently change unresolved semantic or architecture decisions, user/business trade-offs, goals, constraints, or acceptance criteria.
+The Agent performing the Primary Output Role reads project state progressively: inspect summaries, statistics, and relevant paths first, then expand specific files, diffs, or logs only when needed. It may analyze evidence and surface evidence-backed candidate options, and it may decide **how** to execute an approved direction inside the current Interaction Slice, but it must not approve or independently change unresolved semantic or architecture decisions, user/business trade-offs, goals, constraints, or acceptance criteria. Its compile, lint, unit, or narrow integration checks are implementation feedback used to guide local fixes; they are not the final change-result verification. Documentation and code-comment materialization belongs to the separate Documentation/Comments role.
 
-The Primary Output Agent, and any other independent Output Role Agent, must send minimal Progress Signals within an authorized slice, return a compressed Control Checkpoint at the slice's return conditions or a mandatory material boundary, and pause before crossing its `Unreleased boundary`. Parallelism does not widen a Worker's slice or release future work.
+Each independent Coding Worker must send minimal Progress Signals within an authorized slice, return a compressed Control Checkpoint at the slice's return conditions or a mandatory material boundary, and pause before crossing its `Unreleased boundary`. Parallelism does not widen a Worker's slice or release future work.
+
+### Change Verification Agent
+
+Owns the final, independent verification of a material change after the Primary Output implementation slice. It receives the final project state, the effective Semantic Contract, acceptance criteria, changed-scope evidence, and provisional implementation checks, then progressively inspects the relevant diff and surrounding behavior and runs the appropriate holistic checks, such as integration, regression, cross-module, system, or end-to-end tests. It reports compressed evidence, coverage gaps, failures, and residual risks; it does not own architecture or product decisions, semantic acceptance, or repair work.
+
+The Change Verification Agent must use a fresh independent Session when selected so it does not inherit the Primary Output implementation history. Its authorized verification slice is read-only with respect to product code, tests, documentation, and configuration; disposable test/build outputs may be isolated by the Host. It must not recursively delegate. A material repair returns to Primary Output through the parent Input-side Agent and requires a fresh verification pass for the new final state.
+
+### Documentation/Comments Agent
+
+Owns optional post-verification materialization of developer documentation and code comments. It receives the final verified project state, the effective Contract, the explicit documentation/comment scope, and the compressed verification conclusion, and changes only approved documentation and comment locations. It must not modify functionality, tests, fixtures, schemas, generated behavior, or other implementation logic, and it does not perform final change verification or semantic acceptance. English and Simplified Chinese Markdown must remain semantically mirrored according to the repository's multilingual rules.
+
+The Documentation/Comments Agent is created and managed by the parent Input-side Reasoning Agent only when documentation or comment work is needed. It uses its own bounded context and a lower Profile effort tier than substantive implementation/verification; it must not recursively delegate.
+
+After this documentation-only slice returns a passing documentation-specific checkpoint, the parent Input-side Reasoning Agent may release a separate delivery slice to this Worker or another supported Worker. That slice is not an extension of Documentation/Comments authority: it may inspect the final approved tree, stage the approved complete change set, and perform explicitly authorized repository/GitHub delivery mechanics without editing tracked functionality, tests, or other content. Exact mechanics come from the applicable repository development workflow. The role, Contract, or Session affinity grants no external authorization; the parent must release delivery only when user/task authority and an input-side acceptance decision for the verified final tree are present, with final semantic acceptance still incorporating any delivery evidence.
 
 ## Single-Session Coding Mode
 
@@ -34,10 +48,11 @@ Coding Flow enters **Single-Session Coding Mode** when the active Runtime Contra
 
 In this mode:
 
-- the current Session performs both Coding responsibilities; do not create, hand off to, or require an additional Primary Output Agent merely to preserve a two-role topology;
-- role boundaries still exist as logical execution discipline: stabilize high-value goals, constraints, decisions, and acceptance first; then progressively inspect project state, implement, mechanically verify, and perform final semantic acceptance;
+- the current Session performs Input-side Reasoning and Primary Output implementation/provisional checks; do not create, hand off to, or require an additional Primary Output Agent merely to preserve a two-role topology;
+- role boundaries still exist as logical execution discipline: stabilize high-value goals, constraints, decisions, and acceptance first; then progressively inspect project state, implement, run provisional feedback checks, obtain independent change verification when selected, and perform final semantic acceptance;
+- for a material functional change, the current Session does not act as the final Change Verification Agent. The Input-side Agent creates a fresh verifier Session after implementation; it may also create a separate Documentation/Comments Agent after verification when that work is needed;
 - interaction slices and Continue/Amend/Stop decisions remain internal reasoning boundaries; do not simulate Progress Signal or Control Checkpoint messages to the same Session;
-- the current Agent's ordinary exploration, implementation, testing, fixing, and output are same-Session self-execution, not a Dispatch; do not print a fake self-dispatch or construct a prompt addressed to the same Session;
+- the current Agent's ordinary exploration, implementation, focused testing, fixing, and implementation output are same-Session self-execution, not a Dispatch; do not print a fake self-dispatch or construct a prompt addressed to the same Session;
 - large repository size, many changed files, long output, build/test/debug requirements, or generic “task complexity” are not reasons to create another Session.
 
 Another Agent is allowed only when there is an independent structural benefit, for example:
@@ -46,6 +61,7 @@ Another Agent is allowed only when there is an independent structural benefit, f
 - real parallelism where tasks are independent and do not contend for the same write targets;
 - the current Session context is clearly stale, contradictory, or too overgrown to continue effectively;
 - explicit context, permission, or other isolation requirements whose benefit exceeds handoff cost.
+- post-verification documentation/comment isolation that prevents implementation context from owning the final docs pass.
 
 The selected Model Profile may also define a narrowly scoped escalation exception for a repeatedly blocked task. Follow [`runtime.md`](runtime.md) and the active Profile for that exception instead of treating a stronger model or runtime parameter as a general reason to split Sessions.
 
@@ -61,15 +77,21 @@ current parent Session
 
 independent Primary Execution Session
     └─ Primary Output
+
+optional fresh Change Verification Session
+    └─ Change Verification
+
+optional Documentation/Comments Session
+    └─ Documentation/Comments
 ```
 
-The split exists because the active deployment requires different runtime eligibility or context ownership, not merely because two logical role names exist. Concrete model selection and execution parameters remain outside this module.
+The first split exists because the active deployment requires different runtime eligibility or context ownership, not merely because two logical role names exist. The optional verifier split is selected for the independent fresh-review benefit of material changes; the documentation split is selected for explicit post-verification isolation. Concrete model selection and execution parameters remain outside this module.
 
 If the required independent Session cannot be instantiated according to the active Runtime, do not silently collapse into Single-Session Coding Mode. Follow the active Profile's unavailable-handling rule.
 
 ## Context Firewall
 
-In normal two-Session Coding, the input-side Agent does not perform open-ended inspections that may bring large volumes of raw project state into its own context. `git diff`, large `git status` or logs, `find`, `rg`, file trees, build/test output, and similar high-volume checks go to the independent Agent performing the Primary Output Role, which reads, filters, and returns only the facts required for decisions.
+In normal two-Session Coding, the input-side Agent does not perform open-ended inspections that may bring large volumes of raw project state into its own context. `git diff`, large `git status` or logs, `find`, `rg`, file trees, build/test output, and similar high-volume implementation checks go to the independent Agent performing the Primary Output Role. Final-state diff inspection and holistic verification go to the independent Change Verification Agent when that role is selected. Each Agent reads, filters, and returns only the facts required for the parent's next decision.
 
 The Context Firewall limits raw project-state ingress; it does not limit input-side reasoning or transfer decision ownership. The input-side Agent must still formulate the problem, define what evidence is needed, interpret compressed findings, choose among material directions, and release the next approved stage.
 
@@ -77,7 +99,7 @@ Single-Session Coding Mode has no cross-Session Context Firewall. The current Se
 
 Only strictly bounded, obviously small metadata queries may be executed directly by the input-side Agent in normal two-Session mode—for example `pwd`, `git branch --show-current`, or checking existence of one file. The criterion is potential raw-output volume, not the command name itself.
 
-An independent Primary Output Agent semantically compresses diagnostics by default rather than returning complete command output. It reports only facts, anomalies, relevant paths, and small evidence snippets needed for the parent's next decision; more evidence is expanded through Evidence-on-Demand.
+An independent Primary Output or Change Verification Agent semantically compresses diagnostics by default rather than returning complete command output. It reports only facts, anomalies, relevant paths, and small evidence snippets needed for the parent's next decision; more evidence is expanded through Evidence-on-Demand. The Documentation/Comments Agent likewise returns only its changed documentation/comment scope and documentation-specific checks.
 
 ## Primary Execution Session and Session Affinity
 
@@ -88,4 +110,4 @@ A continuous Coding workflow maintains one **Primary Execution Session** by defa
 
 Subsequent project exploration, implementation, diagnosis, testing, fixing, and local execution should preferentially reuse that Primary Execution Session. Reuse preserves project working context, reduces repeated exploration, and may improve stable prompt-prefix reuse opportunities. Do not claim that the same Agent is guaranteed to hit prompt cache, or that a new Agent is guaranteed not to.
 
-Create a new execution Session only for independent verification, real parallelism, context-degradation/capacity recovery, explicit isolation, or an active-Profile targeted escalation. The Primary Execution Session is sticky but not immortal: reuse it by default, rebuild it when correctness, capacity, or isolation requires it.
+Create a new execution Session only for selected independent change verification, real parallelism, context-degradation/capacity recovery, explicit documentation/comment isolation, or an active-Profile targeted escalation. The Primary Execution Session is sticky but not immortal: reuse it for implementation and provisional feedback by default, and rebuild it when correctness, capacity, or isolation requires it. A selected verifier and documentation Worker are intentionally fresh and do not replace the Primary Execution Session.
