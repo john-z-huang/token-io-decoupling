@@ -36,7 +36,7 @@ After selecting Coding Flow, load:
 1. [`references/shared-protocols.md`](references/shared-protocols.md)
 2. [`references/coding-flow.md`](references/coding-flow.md)
 
-Then follow the module-loading table in `coding-flow.md`. Do not preload every file under `references/coding/` or `references/runtime/`; load only the Coding modules and active runtime files required by the current responsibility and stage.
+Then follow the module-loading table in `references/coding-flow.md`. Do not preload every file under `references/coding/` or `references/runtime/`; load only the Coding modules and active runtime files required by the current responsibility and stage.
 
 Ordinary Coding must not load Multimodal Flow or create a Primary Observation Agent merely because this Skill also supports visual work.
 
@@ -50,7 +50,7 @@ After selecting Multimodal Flow, load:
 2. [`references/multimodal-flow.md`](references/multimodal-flow.md)
 3. [`references/multimodal-openai-profile.md`](references/multimodal-openai-profile.md) for the current bundled deployment bindings
 
-`multimodal-flow.md` owns the detailed distinction between Routine Interaction and Creative Visual Authoring, the Observation Firewall, visual/temporal progressive disclosure, curated visual checkpoints, Computer Use execution, Semantic Checkpoints, and visual verification. Do not reconstruct or summarize those rules in this root entry point.
+`references/multimodal-flow.md` owns the detailed distinction between Routine Interaction and Creative Visual Authoring, the Observation Firewall, visual/temporal progressive disclosure, curated visual checkpoints, Computer Use execution, Semantic Checkpoints, and visual verification. Do not reconstruct or summarize those rules in this root entry point.
 
 The current Multimodal deployment profile is intentionally kept separate from the Coding Runtime registry. This Skill makes no claim here that Multimodal bindings have been generalized or tested across other Code Agent products.
 
@@ -79,7 +79,7 @@ Coding Flow
 → visual verification
 ```
 
-The exact Handoff fields and prohibited raw-state payloads are defined in `multimodal-flow.md`.
+The exact Handoff fields and prohibited raw-state payloads are defined in `references/multimodal-flow.md`.
 
 ## Reference loading rules
 

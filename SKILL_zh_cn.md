@@ -36,7 +36,7 @@ description: "高体量 Agent Token I/O 解耦：Coding 将输入侧高价值推
 1. [`references/shared-protocols_zh_cn.md`](references/shared-protocols_zh_cn.md)
 2. [`references/coding-flow_zh_cn.md`](references/coding-flow_zh_cn.md)
 
-随后按 `coding-flow_zh_cn.md` 中的模块加载表继续。不要预加载 `references/coding/` 或 `references/runtime/` 下全部文件，只加载当前职责、阶段与 active runtime 所需的 Coding 模块和部署文档。
+随后按 `references/coding-flow_zh_cn.md` 中的模块加载表继续。不要预加载 `references/coding/` 或 `references/runtime/` 下全部文件，只加载当前职责、阶段与 active runtime 所需的 Coding 模块和部署文档。
 
 普通 Coding 任务不得仅因为本 Skill 支持视觉工作而加载 Multimodal Flow 或创建 Primary Observation Agent。
 
@@ -50,7 +50,7 @@ description: "高体量 Agent Token I/O 解耦：Coding 将输入侧高价值推
 2. [`references/multimodal-flow_zh_cn.md`](references/multimodal-flow_zh_cn.md)
 3. 当前随仓库提供的部署绑定使用 [`references/multimodal-openai-profile_zh_cn.md`](references/multimodal-openai-profile_zh_cn.md)
 
-`multimodal-flow_zh_cn.md` 独立负责 Routine Interaction 与 Creative Visual Authoring 的详细区分、Observation Firewall、视觉/时序渐进式读取、精选视觉 checkpoint、Computer Use 执行、Semantic Checkpoint 和视觉验证。不得在本根入口重新构造或摘要这些规则。
+`references/multimodal-flow_zh_cn.md` 独立负责 Routine Interaction 与 Creative Visual Authoring 的详细区分、Observation Firewall、视觉/时序渐进式读取、精选视觉 checkpoint、Computer Use 执行、Semantic Checkpoint 和视觉验证。不得在本根入口重新构造或摘要这些规则。
 
 当前 Multimodal 部署 Profile 有意与 Coding Runtime 注册表分离；本 Skill 不在这里声称 Multimodal 绑定已经完成跨 Code Agent 产品的通用化或测试。
 
@@ -79,7 +79,7 @@ Coding Flow
 → visual verification
 ```
 
-准确 Handoff 字段和禁止携带的原始状态以 `multimodal-flow_zh_cn.md` 为准。
+准确 Handoff 字段和禁止携带的原始状态以 `references/multimodal-flow_zh_cn.md` 为准。
 
 ## Reference 加载规则
 
