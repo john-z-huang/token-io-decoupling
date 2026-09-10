@@ -14,6 +14,12 @@ Single-Session Coding Mode 在同一 Session 内按上述职责顺序工作，�
 
 并行只用于互不依赖且不会争用相同写入目标的任务；存在依赖、共享文件或前后结果关系时顺序执行。多个独立 Agent 需要复用状态时，应使用 [`context-exchange_zh_cn.md`](context-exchange_zh_cn.md)，而不是由父 Agent 重新生成长篇摘要。
 
+### Context Bootstrap/Refresh 选择
+
+Context Bootstrap/Refresh 是可选的辅助 slice。满足以下任一条件时，选择一个由父 Agent 管理且不递归委派的 Bootstrap Worker：预计至少有两个相互独立的下游 Worker；某个 fresh Worker 原本需要广泛探索项目并加载三个或更多路由 policy module；或相关 source set 大约超过 20k 原始字符 / 5k token-equivalents 且 capsule 会被复用。Single-Session 工作、一个小型 Worker、本地或仅文档的快路径、已知只涉及一两个文件，以及预期复用不超过建立成本的情况都应跳过。Bootstrap Worker 只能物化带 source fingerprint 与 freshness 数据的有界事实/policy-routing capsule，不负责语义决策或验证结论。上述规则是可测量的路由标准，不代表 billed token、cache 命中、成本、额度、延迟或质量方面的声明。
+
+复用前，对照当前状态检查 capsule 的 `HEAD`/tree、tracked-delta fingerprint、列出的 source hash、相关未跟踪项目状态以及 active task/scope。任何实质性失配都要求父 Agent 复用同一个 Bootstrap Worker，增量刷新受影响的事实和 pointer；或者要求接收 Worker 直接读取点名的权威 source。任何 Worker 都不得依赖过时的 capsule 声明。Refresh 不满足 fresh verification。
+
 ## 派发前推理与实现放行
 
 除简单、局部、低风险、方案明显、可逆且可机械验证的工作外，输入侧 Agent 必须在第一次实质性 Dispatch 前形成简洁的 **Decision Brief**。该 brief 记录输入侧分析结果，而不是 hidden chain-of-thought。至少应包含：
@@ -95,7 +101,9 @@ Amendment: 保持 public API 稳定；选择 storage-owned state；批准 Stage 
 
 Primary Output 职责只负责实现反馈检查及其高体量证据处理，例如用于指导实现修复的聚焦构建、测试、lint、formatter、类型检查和局部诊断。这些检查是临时性的，不得表述为最终改动结果验证。
 
-Change Verification 职责负责实质性改动的最终改动结果验证。其 fresh 独立 Agent/Session 使用 Documentation/Comments & Git Operations 产出的变更范围清单和 Git 证据，检查最终项目状态、相关周边行为、完整变更范围与意外文件状态，并运行适当的整体证据检查，例如集成、回归、跨模块、系统或端到端测试。它不执行非简单 Git 查询或操作。它返回压缩后的证据、失败、覆盖缺口和剩余风险；不得修改产品代码、测试、文档或配置，也不负责修复发现的问题。
+Change Verification 职责负责实质性改动的最终改动结果验证。其 fresh 独立 Agent/Session 使用 Documentation/Comments & Git Operations 产出的变更范围清单和 Git 证据，检查最终项目状态、相关周边行为、完整变更范围与意外文件状态，并运行适当的整体证据检查，例如集成、回归、跨模块、系统或端到端测试。Fresh 指独立判断且不继承 Primary Output 的实现历史或此前 verifier 结论；不等于完全无上下文，并且可以使用当前有界事实/路由 capsule。它不执行非简单 Git 查询或操作。通常一个 verifier Session 对应一个连贯的实质性最终状态 fingerprint（epoch），覆盖该不可变状态的验收矩阵和全部适用检查。它返回压缩后的证据、失败、覆盖缺口和剩余风险；不得修改产品代码、测试、文档或配置，也不负责修复发现的问题。
+
+在最终状态 fingerprint 未变化时，针对性的 Evidence-on-Demand 或澄清继续复用该 verifier。实质修复会改变 fingerprint，必须创建新的 fresh verifier；相同状态上的非实质重跑不会仅因某项检查待执行就创建另一个 verifier。
 
 Documentation/Comments & Git Operations 职责负责验证通过后、已批准的开发文档和代码注释物化，以及所有非简单的项目级 Git 操作。它可以运行文档专属检查（包括仓库双语验证器）和 Git 专属检查（例如有界 status/diff 校验），但不执行最终功能验证或语义验收，也不得修改功能或测试；只有明确获准且使用已批准内容的冲突解决编辑属于例外。
 
@@ -105,7 +113,9 @@ Documentation/Comments & Git Operations 职责负责验证通过后、已批准�
 
 每个 Documentation/Comments & Git Operations slice 都必须写明目标、准确的文档/注释或仓库/worktree/ref/remote 范围、允许的变更与外部副作用、Return conditions 和 Unreleased boundary。Git slice 可以按授权检查或修改 Git 元数据，同步仓库，管理分支/worktree，暂存、提交、rebase/merge/cherry-pick，执行 reset/clean/stash，管理标签，处理明确获准的冲突，配置远端，推送并执行适用的 Issue/PR 交付；不得编辑已跟踪的功能、测试或其他内容，冲突解决例外仅限使用已批准内容。它不得做产品决策、执行语义验收，也不得从自身角色、Contract 或 Session Affinity 推断外部授权。具体操作和检查以适用的仓库开发流程为准；本模块不复制 provider 专属命令或私有流程细节。
 
-对于明确放行的远端 Git slice，高层顺序为：确认最终 Git 证据和批准范围；使用合适的开放 Issue，或创建带类别 label 且指派 `@me` 的 Issue，然后核验；创建或确认合规分支和中文提交；只有 Issue 及暂存/提交检查通过后才推送；创建带有 `Closes #N` 且指派 `@me` 的 PR；核验远端分支、Issue 状态/label/assignee、PR base/head/assignee 以及 Issue 关联。同步、分支/worktree 准备和历史整合可以作为更早的独立 Git slice。未被放行覆盖的外部副作用发生前，以及权限、网络、label、assignee、分支、暂存范围、冲突或 PR 拓扑检查失败时，Worker 必须在阻塞式 Control Checkpoint 暂停。没有经过核验的开放 Issue 时，不得推送或创建 PR。
+常规交付 read-back（status、暂存范围、commit、branch、Issue 或 PR metadata）留在已经获准的交付 slice 内，默认不创建单独的 delivery verifier。只有当父 Agent 指出明确的外部风险或独立性收益，例如高影响远端操作，或交付边界无法由 delivery Worker 安全检查时，才创建独立 delivery verifier，并明确放行该额外 slice。
+
+在已放行的 slice 内，操作的高层顺序为：确认最终 Git 证据、status/diff、暂存范围和批准范围；使用合适的开放 Issue，或创建带类别 label 且指派 `@me` 的 Issue，然后核验；创建或确认合规分支和中文提交；只有 Issue 及暂存/提交检查通过后才推送；创建带有 `Closes #N` 且指派 `@me` 的 PR；核验远端分支、Issue 状态/label/assignee、PR base/head/assignee 以及 Issue 关联。同步、分支/worktree 准备和历史整合可以作为更早的独立 Git slice。未被放行覆盖的外部副作用发生前，以及权限、网络、label、assignee、分支、暂存范围、冲突或 PR 拓扑检查失败时，Worker 必须在阻塞式 Control Checkpoint 暂停。没有经过核验的开放 Issue 时，不得推送或创建 PR。
 
 输入侧职责负责语义验收：用户目标是否满足、Semantic Contract 是否落实、业务/兼容性约束是否被破坏、Change Verification、文档检查和 Git 操作证据报告的风险是否可接受。它还决定改动是否达到需要 fresh verifier 的实质程度、是否需要验证后的文档/注释工作，以及当前阶段是否授权 Git slice。
 

@@ -24,11 +24,17 @@
 
 每个独立 Coding Worker 都必须在已授权 slice 内发送极简 Progress Signal，在 slice 的 return conditions 或重大强制边界处返回压缩 Control Checkpoint，并在跨越 `Unreleased boundary` 前暂停。并行不会扩大 Worker 的 slice，也不会自动放行未来工作。
 
+### Context Bootstrap/Refresh 职责
+
+Context Bootstrap/Refresh 是按需的辅助职责，不是第五个核心角色，也不是强制的 Session 拓扑。只有达到 `execution-control_zh_cn.md` 中的选择阈值时，父级 Input-side Reasoning Agent 才创建或复用一个 Bootstrap Worker。该 Worker 构建或增量刷新有界、带 fingerprint 的 capsule，其中包含中性项目事实、准确 source pointer、policy-routing pointer 以及 freshness/invalidation 数据。它不负责问题定义、Semantic Contract 决策、实现、验证结论或文档物化，也不得递归委派。
+
+Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 capsule 只能补充这些指令，不能替代它们。下游 Worker（包括 fresh verifier）可以通过定向只读暴露接收 capsule，然后直接读取点名的权威文件。Fresh verification 指独立判断，且不继承实现历史或此前验证结论；不要求 verifier 从零重新发现稳定的项目布局和 policy routing。项目或 Skill 发生实质相关变化后，复用同一个 Bootstrap Worker 做增量 refresh；但任何新的实质性最终状态仍需创建新的 verifier。
+
 ### Change Verification Agent
 
 负责 Primary Output 实现 slice 完成后的最终、独立改动验证。它接收最终项目状态、当前有效 Semantic Contract、验收标准、变更范围证据和临时实现检查，然后渐进检查相关 diff 与周边行为，并执行适当的整体检查，例如集成、回归、跨模块、系统或端到端测试。它返回压缩后的证据、覆盖缺口、失败和剩余风险；不负责架构或产品决策、语义验收或修复工作。
 
-选择该角色时，Change Verification Agent 必须使用新的独立 Session，避免继承 Primary Output 的实现历史。其验证 slice 对产品代码、测试、文档、配置和 Git 状态保持只读。它消费 Documentation/Comments & Git Operations Agent 提供的变更范围清单和 Git 证据，然后独立验证内容与行为；不执行非简单 Git 查询或操作。临时测试/构建输出可由 Host 隔离。它不得递归委派。若发现需要实质修复，应由父级输入侧 Agent 将修复返回 Primary Output，并针对新的最终状态重新执行一次 fresh verification。
+选择该角色时，Change Verification Agent 必须使用新的独立 Session，避免继承 Primary Output 的实现历史或此前验证结论。其验证 slice 对产品代码、测试、文档、配置和 Git 状态保持只读。它消费 Documentation/Comments & Git Operations Agent 提供的变更范围清单和 Git 证据，然后独立验证内容与行为；也可以使用当前有界 Bootstrap capsule 作为事实/路由上下文，但必须独立判断最终状态和所需证据。不执行非简单 Git 查询或操作。临时测试/构建输出可由 Host 隔离。它不得递归委派。若发现需要实质修复，应由父级输入侧 Agent 将修复返回 Primary Output，并针对新的最终状态重新执行一次 fresh verification。
 
 ### Documentation/Comments & Git Operations Agent
 

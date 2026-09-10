@@ -10,6 +10,7 @@
 - **Primary Output**：本 OpenAI 部署要求的执行模型为 `gpt-5.6-luna`。
 - **Change Verification**：选择该角色时，使用全新的独立 `gpt-5.6-luna` Session 进行最终改动结果验证。
 - **Documentation/Comments & Git Operations**：选择该角色时，使用独立的 `gpt-5.6-luna` Session 负责获准的验证后文档/代码注释物化，以及所有非简单仓库 Git 操作。它负责同步、分支/worktree 操作、暂存、提交、历史整合、reset/clean/stash、冲突处理、标签、远端、推送和适用的 Issue/PR 交付；只有极小的只读 Git 元数据查询可以留在该角色之外。
+- **Context Bootstrap/Refresh**：选择该职责时，使用独立或可复用的 `gpt-5.6-luna` Worker；有界事实与 policy-routing capsule 物化默认使用 `reasoning_effort=high`。只有在 Host 明确支持时，确定性的 metadata/source-hash 或增量 refresh 工作才可使用 `reasoning_effort=medium`；语义解释仍由 Input-side Reasoning 负责。
 - **双角色 eligibility**：当前 Session 能明确确认自身为 `gpt-5.6-luna`，并且 Host 能在该 Session 满足当前任务要求的 reasoning-effort 档位时，本 Profile 声明当前 Session 同时可以承担 Input-side Reasoning 与 Primary Output；因此通用 Runtime 映射默认进入 **Single-Session Coding Mode**，除非存在需要额外 Session 的具体结构性理由。
 - **正常双 Session 映射**：当前 Agent 不能明确确认自己是 `gpt-5.6-luna` 时，当前 Agent 只承担输入侧推理职责，并使用独立 `gpt-5.6-luna` Session 承担 Primary Output。
 
