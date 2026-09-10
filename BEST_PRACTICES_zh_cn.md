@@ -53,9 +53,9 @@
 2. 确认未预加载无关的 Multimodal reference。
 3. 确认 Runtime 解析选择了登记的 Codex Host Adapter 与 OpenAI Model Profile。
 4. 确认 Session 拓扑与当前模型身份及 Profile eligibility 一致。
-5. 在本仓库运行 `python3 scripts/check-multilingual-docs.py`、`git diff --check` 和 `git status --short`。
+5. 在本仓库由 Documentation/Comments & Git Operations 针对文档/Git 范围运行 `python3 scripts/check-multilingual-docs.py`、`git diff --check` 和 `git status --short`。
 6. 对非简单任务，确认存在简洁 Decision Brief；当缺少重大事实时，确认 reconnaissance 在实现前暂停，并且实现放行发生在输入侧综合证据之后。
-7. 对实质性功能改动，确认 Primary Output 只负责实现和临时聚焦检查，由全新的 Change Verification Session 执行最终整体检查，并且 Documentation/Comments 只有在验证通过后、且仅限于文档/注释专属范围才能放行。
+7. 对实质性功能改动，确认 Primary Output 只负责实现和临时聚焦检查，由全新的 Change Verification Session 执行最终整体检查，并按独立、明确的范围放行 Documentation/Comments & Git Operations：文档/注释只能在验证后放行，非简单 Git 工作在需要的阶段放行。
 8. 对非简单多 Session 任务，确认每个 Worker 都只有一个已授权 Interaction Slice；Progress Signal 不会造成不必要阻塞，并且下一个 slice 放行前，Control Checkpoint 已产生明确的 Continue/Amend/Stop 决定。
 
 若检查失败，应先修复加载、Runtime 选择或优先级问题。不要把完整 Skill 粘贴进任务，也不要静默替换所需模型。
@@ -67,7 +67,7 @@
 3. 若缺少证据，先运行有界 reconnaissance，并在实现前暂停等待输入侧综合；随后按 [`SKILL_zh_cn.md`](SKILL_zh_cn.md) 与 [`references/coding-flow_zh_cn.md`](references/coding-flow_zh_cn.md) 进行路由和分阶段执行。
 4. 对非简单的正常双 Session 工作，每次只放行一个 Interaction Slice；在 slice 内使用自适应 Progress Signal，在自然或重大边界使用阻塞式 Control Checkpoint，并在放行下一个 slice 前决定 Continue/Amend/Stop。
 5. 将普通工作限制在已批准 slice 内；存在多个 Coding Worker 时，遵循 [`references/coding/context-exchange_zh_cn.md`](references/coding/context-exchange_zh_cn.md) 的父级会合与 Context Exchange 指引。
-6. 让 Primary Output 在实现期间运行临时聚焦检查。对实质性改动，由输入侧 Reasoning 创建全新的 Change Verification Agent 执行最终整体检查，再把每项验收标准映射到其压缩证据并根据 Contract 完成语义验收。只有之后确有需要时才创建 Documentation/Comments，并限制该 Agent 只能修改文档/注释及运行文档专属检查。Session ownership 细节以 [`references/coding/session-model_zh_cn.md`](references/coding/session-model_zh_cn.md) 为准。
+6. 让 Primary Output 在实现期间运行临时聚焦检查，但不执行非简单 Git 操作。对实质性改动，由输入侧 Reasoning 创建全新的 Change Verification Agent 执行最终整体检查，再把每项验收标准映射到其压缩证据并根据 Contract 完成语义验收。任一职责需要时创建 Documentation/Comments & Git Operations：文档/注释只能在验证后放行，复杂 Git 操作在相关阶段分别作为有界 slice 放行。均使用 `reasoning_effort=high`，并且同步、分支/worktree 变更、暂存、提交、历史整合、冲突处理、推送或 Issue/PR 交付都必须有明确的用户/任务授权。Session ownership 细节以 [`references/coding/session-model_zh_cn.md`](references/coding/session-model_zh_cn.md) 为准。
 
 该 Flow 提供操作结构，不保证缓存命中、成本、额度、延迟或模型质量。
 

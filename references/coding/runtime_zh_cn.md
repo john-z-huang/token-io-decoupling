@@ -41,15 +41,15 @@ Host Adapter 回答“**这个产品怎么实例化工作**”；Model Profile �
 
 仓库规模、长输出、build/test 工作或笼统的“任务复杂”本身不会改变上述映射。
 
-## 按需验证、文档与交付映射
+## 按需验证、文档与 Git 操作映射
 
 输入侧 Reasoning Agent 决定改动的实质程度、风险或用户明确要求是否使独立最终验证具有具体收益。选择 **Change Verification** 后，Host 必须在 Primary Output 到达实现 checkpoint 后，按照 active Profile 为该角色创建一个全新的独立 Session。verifier 接收最终状态和已批准的验证输入，不得继承 Primary Output 的实现历史，也不得静默变成修复 Worker。
 
-验证完成后如有文档或代码注释工作，输入侧 Agent 可以选择 **Documentation/Comments**，并使用 Profile 指定的辅助物化绑定与 effort 档位创建独立 Session。只有 verifier 通过（或输入侧 Agent 明确将任务分类为行为保持不变并跳过独立验证）后，才能放行该 Session；在文档 slice 期间，其写入 capability 必须限制在获准的文档/注释范围内。该 slice 的文档专属 checkpoint 通过后，父 Agent 才能使用单独授予的能力边界放行一个独立的交付 slice。
+验证完成后如有文档或代码注释工作，或需要任何非简单仓库 Git 工作，输入侧 Agent 可以选择 **Documentation/Comments & Git Operations**，并使用 Profile 指定的辅助物化绑定与 effort 档位创建独立 Session。文档 slice 只有在 verifier 通过（或输入侧 Agent 明确将任务分类为行为保持不变并跳过独立验证）后才能放行，且写入 capability 必须限制在获准的文档/注释范围内。Git slice 可以在需要同步、分支/worktree 准备、历史整合、冲突处理或其他仓库 Git 工作的阶段放行，并必须设置准确的 Git 范围与 capability 边界。
 
-交付 slice 不是新的角色绑定，也不会由 active Profile 自动授予。只有在父 Agent 具有明确的用户/任务授权且 Host 能够强制实施所需边界时，它才能检查并暂存已批准的完整变更集，并在不编辑已跟踪内容的前提下执行获准的仓库/GitHub 交付。如果 active Runtime 无法提供这种隔离或受支持的交付 Worker，应遵循其 unavailable 规则并阻塞；不得静默自行授权、扩大文档写入范围或替换为任意模型。
+不存在独立的交付角色或交付 Worker：提交、推送、远端和 Issue/PR 交付都属于 Documentation/Comments & Git Operations 的 Git slice。只有在父 Agent 具有明确的用户/任务授权且 Host 能够强制实施所需边界时，该 Agent 才能检查或修改 Git 元数据和远端状态。仅当使用已批准内容完成明确获准的操作时才允许冲突解决编辑；若需要新的语义或产品决策，应返回父级与 Primary Output。如果 active Runtime 无法提供所需隔离或受支持的 Worker，应遵循其 unavailable 规则并阻塞；不得静默自行授权、扩大文档范围或替换为任意模型。
 
-在 Single-Session Coding Mode 中，双角色 eligibility 只覆盖 Input-side Reasoning 与 Primary Output 的实现，不授权当前 Session 对已选择 fresh verifier 的实质性最终改动自行验证，也不让当前 Session 充当 Documentation/Comments Agent。如果无法创建所选独立绑定或满足所需参数，应遵循 active Profile 的 unavailable 规则，不得静默退回 Primary Output 自我验证或让输入侧承担长篇物化。
+在 Single-Session Coding Mode 中，双角色 eligibility 只覆盖 Input-side Reasoning 与 Primary Output 的实现，不授权当前 Session 对已选择 fresh verifier 的实质性最终改动自行验证，也不让当前 Session 充当 Documentation/Comments & Git Operations Agent 或执行非简单 Git 工作。如果无法创建所选独立绑定或满足所需参数，应遵循 active Profile 的 unavailable 规则，不得静默退回 Primary Output 自我验证、让输入侧承担长篇物化或由输入侧执行 Git 操作。
 
 ## Runtime 参数 ownership
 
@@ -67,12 +67,12 @@ Model Profile 可以为某个已经反复失败、来回振荡或明确阻塞的
 
 新增 Code Agent 产品时，正常应通过新增 Host Adapter 和兼容 Model Profile 接入，而不修改：
 
-- Input-side Reasoning、Primary Output、Change Verification 与 Documentation/Comments 角色定义；
+- Input-side Reasoning、Primary Output、Change Verification 与 Documentation/Comments & Git Operations 角色定义；
 - Context Firewall 语义；
 - Semantic Contract 与 Decision Checkpoint；
 - Primary Execution Session Affinity 与按需 Worker 生命周期；
 - Context Exchange ownership；
 - 实现反馈、独立改动验证与语义验收边界；
-- 文档/注释专属物化边界。
+- 文档/注释专属物化与非简单 Git 操作边界。
 
 只有新环境暴露出无法通过 Runtime Contract 表达的真实架构要求时，才修改 Core。不得为了部署方便在 Core 文档中加入 `if <product>` 或 `if <model>` 分支。
