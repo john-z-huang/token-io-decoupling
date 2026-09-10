@@ -6,6 +6,9 @@ on:
       - "**/*.md"
       - "agents/openai.yaml"
       - "scripts/check-multilingual-docs.py"
+      - "scripts/check-context-exchange.py"
+      - "tests/test_check_context_exchange.py"
+      - ".gitignore"
       - ".github/workflows/multilingual-docs.yml"
   push:
     branches:
@@ -14,6 +17,9 @@ on:
       - "**/*.md"
       - "agents/openai.yaml"
       - "scripts/check-multilingual-docs.py"
+      - "scripts/check-context-exchange.py"
+      - "tests/test_check_context_exchange.py"
+      - ".gitignore"
       - ".github/workflows/multilingual-docs.yml"
 
 jobs:
@@ -25,3 +31,9 @@ jobs:
 
       - name: Validate multilingual documentation
         run: python3 scripts/check-multilingual-docs.py
+
+      - name: Validate Context Exchange preservation
+        run: python3 scripts/check-context-exchange.py
+
+      - name: Run Context Exchange regression tests
+        run: python3 -m unittest discover -s tests -p 'test_check_context_exchange.py'

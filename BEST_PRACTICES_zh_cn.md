@@ -53,12 +53,20 @@
 2. 确认未预加载无关的 Multimodal reference。
 3. 确认 Runtime 解析选择了登记的 Codex Host Adapter 与 OpenAI Model Profile。
 4. 确认 Session 拓扑与当前模型身份及 Profile eligibility 一致。
-5. 在本仓库由 Documentation/Comments & Git Operations 针对文档/Git 范围运行 `python3 scripts/check-multilingual-docs.py`、`git diff --check` 和 `git status --short`。
+5. 在本仓库由 Documentation/Comments & Git Operations 针对文档/Git 范围运行 `python3 scripts/check-multilingual-docs.py`、`python3 scripts/check-context-exchange.py`、`git diff --check` 和 `git status --short`。
 6. 对非简单任务，确认存在简洁 Decision Brief；当缺少重大事实时，确认 reconnaissance 在实现前暂停，并且实现放行发生在输入侧综合证据之后。
 7. 对实质性功能改动，确认 Primary Output 只负责实现和临时聚焦检查，由全新的 Change Verification Session 执行最终整体检查，并按独立、明确的范围放行 Documentation/Comments & Git Operations：文档/注释只能在验证后放行，非简单 Git 工作在需要的阶段放行。
 8. 对非简单多 Session 任务，确认每个 Worker 都只有一个已授权 Interaction Slice；Progress Signal 不会造成不必要阻塞，并且下一个 slice 放行前，Control Checkpoint 已产生明确的 Continue/Amend/Stop 决定。
 
 若检查失败，应先修复加载、Runtime 选择或优先级问题。不要把完整 Skill 粘贴进任务，也不要静默替换所需模型。
+
+### 在不同 run 之间保留 context capsule
+
+`.token-io-decoupling/` 目录是持久的运行时协调状态。保留根 `.gitignore` 中对 `/.token-io-decoupling/` 的忽略规则；不得暂存、提交或自动删除该目录。只有明确的用户或 retention policy 才能触发清理。
+
+只有在复用可能值得建立成本时才使用 Context Bootstrap/Refresh：预计至少有两个相互独立的下游 Worker；某个 fresh Worker 需要广泛探索并加载三个或更多路由 policy module；或相关 source set 大约超过 20k 原始字符 / 5k token-equivalents。Single-Session 工作、一个小型 Worker、本地或仅文档的快路径、已知只涉及一两个文件，或建立成本预计为净负值时都应跳过。Capsule 应保持有界，只包含中性事实、source/policy pointer、fingerprint 和 freshness 数据；它不能替代强制指令加载或语义决策。
+
+下游使用前，对照当前状态检查 capsule 的 `HEAD`/tree、tracked-delta fingerprint、列出的 source hash、相关未跟踪状态以及 active task/scope。发生实质相关变化后，复用同一个 Bootstrap Worker，只刷新受影响 section；在 refresh 完成前则直接读取点名的权威文件。对一个未变化的实质性最终状态 fingerprint，Evidence-on-Demand 复用同一个 fresh verifier；只有实质修复改变 fingerprint 后才创建新的 verifier。常规交付 read-back 留在交付 slice 内，除非明确的外部风险标准选择独立 delivery verification。
 
 ## 日常 Coding 循环
 

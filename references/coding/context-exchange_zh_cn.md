@@ -36,6 +36,14 @@ Worker 可以在已授权 slice 内发送压缩 Progress Signal，但所有阻�
 
 Context Exchange 文档只负责在 Worker 之间传输压缩发现、handoff 状态和可复用证据，不替代这个实时的父级 control loop。父 Agent 应在重大会合点更新 routing index 和相关 Worker 上下文，不要在每个 Progress Signal 或命令之后写记录。
 
+### 按需 Context Bootstrap/Refresh
+
+**Context Bootstrap/Refresh** 是一个可选的辅助职责，用于在多个下游 Worker 之前构建小型、可复用的事实与 policy-routing capsule。它不是第五个核心角色、强制 Session，也不负责 Semantic Contract 决策。只有在复用收益可能超过建立成本时，父级 Input-side Agent 才选择它：预计至少有两个相互独立的下游 Worker；某个 fresh Worker 原本需要广泛探索并加载三个或更多路由 policy module；或相关 source set 大约超过 20k 原始字符 / 5k token-equivalents。Single-Session 工作、一个小型 Worker、本地或仅文档的快路径、已知只涉及一两个文件，以及预期复用不超过建立成本的情况都应跳过。上述阈值只是路由启发式，不代表已测量的 billed、cached、quota、latency 或质量节省。
+
+选定的 Bootstrap Worker 必须独立读取所有强制指令，并且只能在 `context/context-bootstrap/` 下写入有界 capsule：`MANIFEST.md` 记录快照身份、source hash 与 freshness 规则；`project-context.md` 记录中性的项目事实和准确 source pointer；`policy-context.md` 记录 policy routing 与权威 section。Capsule 可以包含事实、路径、hash、freshness/invalidation 数据和窄范围证据指针，但不得包含实现推理、Semantic Contract 结论、私有 chain-of-thought、秘密、完整 diff 或原始日志。下游 Worker 先读取 capsule，再只读取明确指向且自身确实需要的 source/code 路径；父级 Contract 与权威文件仍具有约束力。
+
+Freshness 必须对照 `HEAD`/tree、tracked-delta fingerprint、列出的 source hash、相关未跟踪项目状态以及当前 task/scope 检查。任何实质字段发生变化时，父 Agent 都应重新激活同一个 Bootstrap Worker，只刷新受影响 section，之后才能依赖 capsule。若无法 refresh，接收 Worker 应直接读取点名的权威 source，并将受影响的 capsule 声明视为过时。Refresh 不替代 fresh Change Verification Session；verifier 可以使用当前有界 capsule，但不得继承实现历史或此前结论。
+
 ## 多 Agent Coding 的文件化 Context Exchange
 
 当 Coding Flow 使用多个独立执行 Agent 时，可复用的跨 Agent 上下文应优先物化为小型工作区文档，而不是反复经过父 Agent 重新生成摘要。该机制只用于补充 Semantic Contract、Decision Checkpoint、Evidence-on-Demand 与各 Agent 自身的活跃上下文，不替代这些既有机制。
@@ -48,7 +56,7 @@ Context Exchange 文档只负责在 Worker 之间传输压缩发现、handoff �
 - Worker **绝对禁止**在其他 Worker 的子目录、Context Exchange Root 根目录或任何其他不属于自己的位置写入、重命名、移动或删除文件。即使共享文件系统让这些目录在技术上可见，也不能跨越这个写入边界。
 - Worker 默认也不得浏览或读取其他 Worker 的子目录。只有父 Agent 因具体 handoff、验证、升级或依赖关系而**明确指定需要读取的文档或路径**时，才允许该 Worker 选择性读取对应材料；只能读取父 Agent 点名的内容，不得自行递归扫描或扩展读取其他目录。
 - Worker 被替换或 Runtime escalation 时，接手 Agent 必须获得新的 Context ID，并由父 Agent 为其创建新的专属子目录。前任目录对接手 Agent 保持只读，而且只有父 Agent 明确指定的前任文档才可读取；接手 Agent 永远不得写入前任目录。
-- Context Exchange Root 只属于运行时协调状态。不得暂存或提交，不得把它当作产品产物；工作流结束后默认删除，只有用户明确要求保留时才继续保存。
+- **Context Exchange Root** 是持久的运行时协调状态。仓库根目录的 `.gitignore` 必须忽略 `/.token-io-decoupling/`，使目录及其中的 capsule 能跨越工作流边界保留，同时不会被暂存或提交。不得把它当作产品产物，不得自动删除；只有明确的用户或 retention policy 才能触发清理。
 
 ### 文件系统 capability 兜底
 

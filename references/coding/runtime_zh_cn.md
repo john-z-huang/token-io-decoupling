@@ -43,6 +43,8 @@ Host Adapter 回答“**这个产品怎么实例化工作**”；Model Profile �
 
 ## 按需验证、文档与 Git 操作映射
 
+当 `execution-control_zh_cn.md` 中的输入侧选择标准表明可复用上下文具有价值时，Host 可以依据 active Model Profile 的辅助绑定，为可选的 Context Bootstrap/Refresh 职责创建或复用一个独立 Session。该 Session 只能写入有界、带 fingerprint 的事实/policy-routing capsule，并可在相关项目或 Skill 发生变化后重新激活做增量 refresh。它不是强制的拓扑拆分，不负责语义决策，也不替代强制指令加载或 fresh verification。下游 Worker 只能接收父 Agent 授权的 capsule 路径或定向只读暴露。
+
 输入侧 Reasoning Agent 决定改动的实质程度、风险或用户明确要求是否使独立最终验证具有具体收益。选择 **Change Verification** 后，Host 必须在 Primary Output 到达实现 checkpoint 后，按照 active Profile 为该角色创建一个全新的独立 Session。verifier 接收最终状态和已批准的验证输入，不得继承 Primary Output 的实现历史，也不得静默变成修复 Worker。
 
 验证完成后如有文档或代码注释工作，或需要任何非简单仓库 Git 工作，输入侧 Agent 可以选择 **Documentation/Comments & Git Operations**，并使用 Profile 指定的辅助物化绑定与 effort 档位创建独立 Session。文档 slice 只有在 verifier 通过（或输入侧 Agent 明确将任务分类为行为保持不变并跳过独立验证）后才能放行，且写入 capability 必须限制在获准的文档/注释范围内。Git slice 可以在需要同步、分支/worktree 准备、历史整合、冲突处理或其他仓库 Git 工作的阶段放行，并必须设置准确的 Git 范围与 capability 边界。
