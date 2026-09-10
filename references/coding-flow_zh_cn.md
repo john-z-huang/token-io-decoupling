@@ -13,7 +13,7 @@
 1. 加载 [`coding/session-model_zh_cn.md`](coding/session-model_zh_cn.md)，建立角色 ownership、通用 Single-Session/正常双 Session 语义、Context Firewall 与 Primary Execution Session Affinity。
 2. 加载 [`coding/runtime_zh_cn.md`](coding/runtime_zh_cn.md)，解析 active Host Adapter 与 Model Profile，并把上述 Session 语义映射到当前环境。
 3. 在进行实质性 implementation、refactor、debugging、build/test 或其他可能跨越语义决策边界的执行前，加载 [`coding/execution-control_zh_cn.md`](coding/execution-control_zh_cn.md)。
-4. 当任务使用多个独立 Coding Agent、需要复用跨 Agent 上下文，或需要 Worker 替换/升级接力时，加载 [`coding/context-exchange_zh_cn.md`](coding/context-exchange_zh_cn.md)。
+4. 当任务使用多个独立 Coding Agent、需要复用跨 Agent 上下文、需要 Worker 替换/升级接力，或需要父级多 Worker 会合与 slice 同步时，加载 [`coding/context-exchange_zh_cn.md`](coding/context-exchange_zh_cn.md)。
 
 纯有界 exploration 可以在真正进入执行前暂缓加载 `execution-control_zh_cn.md`。从未创建额外 Coding Agent 的 Single-Session Coding 任务，不必机械加载 `context-exchange_zh_cn.md`，除非确实需要文件化恢复或上下文传输。
 
@@ -27,10 +27,10 @@
 
 | 关注点 | 负责文档 |
 |---|---|
-| 角色、Session 拓扑、Context Firewall、Primary Execution Session | [`coding/session-model_zh_cn.md`](coding/session-model_zh_cn.md) |
+| 角色、Session 拓扑、Context Firewall、Primary Execution Session、派发前 ownership | [`coding/session-model_zh_cn.md`](coding/session-model_zh_cn.md) |
 | Runtime 选择、Host/Profile 组成、角色 eligibility 映射、unavailable 边界 | [`coding/runtime_zh_cn.md`](coding/runtime_zh_cn.md) |
-| Semantic Contract 传输、文件化 Context Exchange、Worker handoff | [`coding/context-exchange_zh_cn.md`](coding/context-exchange_zh_cn.md) |
-| 两级规划、有界阶段、Decision Checkpoint、验证、输出纪律 | [`coding/execution-control_zh_cn.md`](coding/execution-control_zh_cn.md) |
+| Semantic Contract 传输、文件化 Context Exchange、Worker handoff、多 Worker 会合 | [`coding/context-exchange_zh_cn.md`](coding/context-exchange_zh_cn.md) |
+| 两级规划、派发前/实现放行门槛、Interaction Slice、反馈、有界阶段、Decision Checkpoint、验证、输出纪律 | [`coding/execution-control_zh_cn.md`](coding/execution-control_zh_cn.md) |
 
 具体产品操作与具体模型/参数策略不属于上述 Core ownership；Runtime Contract 通过注册表选择对应部署文件。
 
@@ -41,6 +41,8 @@
 ## 职责顺序
 
 Coding 架构由 Input-side Reasoning 负责高价值语义决策，Primary Output 负责高体量项目状态消费、物化与机械验证。逻辑角色不等于独立 Agent 实例；`session-model_zh_cn.md` 定义可能的拓扑，`runtime_zh_cn.md` 决定 active deployment 可以使用哪种拓扑。
+
+在实质性派发前，应查阅 [`coding/execution-control_zh_cn.md`](coding/execution-control_zh_cn.md) 中的派发前推理、Interaction Slice 与实现放行门槛；存在多个 Output Agent 时，还应加载 [`coding/context-exchange_zh_cn.md`](coding/context-exchange_zh_cn.md) 中的父级会合规则。本入口只负责让这些 ownership 边界可被发现，不复制其细则。
 
 详细角色与 Session 规则以 [`coding/session-model_zh_cn.md`](coding/session-model_zh_cn.md) 为规范来源，不得根据本摘要额外推导新的 Session 要求。
 

@@ -13,7 +13,7 @@ After Coding Flow is selected:
 1. Load [`coding/session-model.md`](coding/session-model.md) to establish role ownership, generic Single-Session/normal two-Session semantics, Context Firewall, and Primary Execution Session affinity.
 2. Load [`coding/runtime.md`](coding/runtime.md) to resolve the active Host Adapter and Model Profile and map those Session semantics to the current environment.
 3. Load [`coding/execution-control.md`](coding/execution-control.md) before substantive implementation, refactoring, debugging, build/test work, or other execution that may cross semantic decision boundaries.
-4. Load [`coding/context-exchange.md`](coding/context-exchange.md) when the task uses multiple independent Coding Agents, needs reusable cross-Agent context, or requires Worker replacement/escalation handoff.
+4. Load [`coding/context-exchange.md`](coding/context-exchange.md) when the task uses multiple independent Coding Agents, needs reusable cross-Agent context, requires Worker replacement/escalation handoff, or needs parent-led multi-Worker rendezvous and slice synchronization.
 
 Purely bounded exploration may defer `execution-control.md` until execution begins. A Single-Session Coding task that never creates another Coding Agent does not need to load `context-exchange.md` unless file-backed recovery/context transport is actually useful.
 
@@ -27,10 +27,10 @@ Each Coding concern has one primary owning module:
 
 | Concern | Owning document |
 |---|---|
-| roles, Session topology, Context Firewall, Primary Execution Session | [`coding/session-model.md`](coding/session-model.md) |
+| roles, Session topology, Context Firewall, Primary Execution Session, pre-dispatch ownership | [`coding/session-model.md`](coding/session-model.md) |
 | Runtime selection, Host/Profile composition, role eligibility mapping, unavailable boundary | [`coding/runtime.md`](coding/runtime.md) |
-| Semantic Contract transport, file-backed Context Exchange, Worker handoff | [`coding/context-exchange.md`](coding/context-exchange.md) |
-| two-level planning, bounded stages, Decision Checkpoints, verification, output discipline | [`coding/execution-control.md`](coding/execution-control.md) |
+| Semantic Contract transport, file-backed Context Exchange, Worker handoff, multi-Worker rendezvous | [`coding/context-exchange.md`](coding/context-exchange.md) |
+| two-level planning, pre-dispatch/release gate, Interaction Slices, feedback, bounded stages, Decision Checkpoints, verification, output discipline | [`coding/execution-control.md`](coding/execution-control.md) |
 
 Concrete product mechanics and concrete model/parameter policy do not belong to these Core ownership rows; the Runtime Contract selects their deployment files from the runtime registry.
 
@@ -41,6 +41,8 @@ This ownership boundary is also the maintenance boundary for parallel git worktr
 ## Responsibility order
 
 The Coding architecture uses Input-side Reasoning for high-value semantic decisions and Primary Output for high-volume project-state consumption, materialization, and mechanical verification. Logical roles do not imply separate Agent instances. `session-model.md` defines the possible topologies, while `runtime.md` determines which topology the active deployment may use.
+
+Before substantive dispatch, consult the pre-dispatch reasoning, Interaction Slice, and implementation-release gates in [`coding/execution-control.md`](coding/execution-control.md); when multiple Output Agents are active, also load the parent-led rendezvous rules in [`coding/context-exchange.md`](coding/context-exchange.md). This entry point only makes those ownership boundaries discoverable.
 
 The detailed role and Session rules are normative in [`coding/session-model.md`](coding/session-model.md); do not infer additional Session requirements from this summary.
 

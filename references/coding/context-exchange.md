@@ -18,6 +18,14 @@ In normal two-Session mode, when a task clearly depends on substantial conversat
 
 Single-Session Coding Mode continues to use the Semantic Contract as a logical decision anchor but must not resend it to itself as a self-delegation prompt for formal completeness.
 
+### Parent-led rendezvous for multiple Output Workers
+
+When multiple independent Output Role Agents are active, the parent Agent defines an Interaction Slice and feedback boundary for each Worker before dispatch. Each Worker receives its own `Objective`, `Authorized scope/mutations`, `Return conditions`, and `Unreleased boundary`; parallel execution does not authorize a Worker to cross an unreleased boundary or infer permission from another Worker's progress.
+
+Workers may emit compressed Progress Signals within their authorized slices, but the parent owns every blocking Control Checkpoint. At a Control Checkpoint, the parent analyzes the evidence and decides `Continue`, `Amend`, or `Stop` for that Worker, or requests Evidence-on-Demand first. If the Semantic Contract, architecture, scope, permission, security, or public-interface assumptions change, the parent decides whether other Workers continue, receive amended slices, or stop; Workers must not silently continue on stale instructions.
+
+Context Exchange documents transport compressed findings, handoff state, and reusable evidence between Workers; they do not replace this live parent-led control loop. The parent should update the routing index and relevant Worker context at material rendezvous points, not after every Progress Signal or command.
+
 ## File-backed Context Exchange for multi-Agent Coding
 
 When Coding Flow uses multiple independent execution Agents, reusable cross-Agent context should be externalized into small workspace documents instead of repeatedly passing through parent-generated summaries. This mechanism supplements the Semantic Contract, Decision Checkpoints, Evidence-on-Demand, and each Agent's live context; it does not replace them.

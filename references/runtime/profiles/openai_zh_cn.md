@@ -15,7 +15,7 @@ Single-Session Coding Mode 保持当前部署已有行为：当前 Luna 直接�
 
 ## Reasoning-effort 分级
 
-- 正常双 Session Coding 中，独立 Primary Output Luna 默认使用 `reasoning_effort=xhigh`。一般需求开发、非平凡重构或调试、复杂测试/验证代码，以及其他需要较多实现判断的工作使用 `xhigh`；输出很长或项目规模很大本身不能作为继续提高强度的理由。
+- 正常双 Session Coding 中，独立 Primary Output Luna 默认使用 `reasoning_effort=xhigh`。一般需求开发、非平凡重构或调试、复杂测试/验证代码，以及其他需要在**已批准语义方案内进行较多执行判断**的工作使用 `xhigh`。这一强度档位不会把问题定义、架构选择、未解决的语义权衡或验收 ownership 转移给 Primary Output；输出很长或项目规模很大本身不能作为继续提高强度的理由。
 - 对主要工作是开发文档编写/修改、代码注释、简单单元测试、低风险机械性修改或其他有界辅助物化的任务，优先使用 `reasoning_effort=high`。额外辅助 Coding Worker 默认使用 `high`，除非其具体任务明确符合 `xhigh` 条件。
 - 只有 Host 明确支持对应档位，并且任务严格有界、语义风险低且容易机械验证时，才使用 `reasoning_effort=medium` 或更低强度。适合的例子包括运行已经选定的 test/formatter/lint 并压缩结果、收集文件/路径元数据、精确搜索或提取、字面量替换、按明确模板格式整理或更新生成表格。低于 `medium` 的档位原则上只用于只读工作或确定性机械变换。不得把 Semantic Contract ownership、架构/产品判断、跨模块实现、复杂调试、复杂测试设计、公共 API/schema/权限变更交给这些轻量 Worker。
 
