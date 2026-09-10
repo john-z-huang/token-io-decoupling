@@ -1,6 +1,6 @@
 ---
 name: token-io-decoupling
-description: "高体量 Agent Token I/O 解耦：Coding 将输入侧高价值推理与 Primary Output 职责分离，同时让 Core 的角色与 Session 规则保持对具体 Code Agent 产品和模型无关；具体 Runtime 绑定通过 Host Adapter 与 Model Profile 选择。Browser Use、Computer Use、连续 GUI 工作流、视频、大量图片/截图和视觉设计使用独立 Multimodal Flow 隔离高体量视觉/时序输入。"
+description: "高体量 Agent Token I/O 解耦：Coding 将输入侧高价值推理、实现输出、独立改动验证以及按需文档/注释物化分离，同时让 Core 的角色与 Session 规则保持对具体 Code Agent 产品和模型无关；具体 Runtime 绑定通过 Host Adapter 与 Model Profile 选择。Browser Use、Computer Use、连续 GUI 工作流、视频、大量图片/截图和视觉设计使用独立 Multimodal Flow 隔离高体量视觉/时序输入。"
 ---
 
 # Token I/O Decoupling
@@ -14,7 +14,7 @@ description: "高体量 Agent Token I/O 解耦：Coding 将输入侧高价值推
 ## 核心原则
 
 1. **先选 Flow，再加载细则**：不要启动时无条件加载所有 reference。
-2. **Coding Core 保持 Runtime 无关**：Coding 独立于具体产品或模型定义 Input-side Reasoning 与 Primary Output 职责、Session/context 规则、checkpoint 和验证边界；当前环境的 Runtime 映射由 Coding Runtime Contract、Host Adapter 与 Model Profile 共同解析。
+2. **Coding Core 保持 Runtime 无关**：Coding 独立于具体产品或模型定义 Input-side Reasoning、Primary Output、按需 Change Verification 与 Documentation/Comments 职责、Session/context 规则、checkpoint 和验证边界；当前环境的 Runtime 映射由 Coding Runtime Contract、Host Adapter 与 Model Profile 共同解析。
 3. **Multimodal 细节独立存放**：Computer Use、视频、大量图片/截图、视觉设计等任务使用独立 Multimodal Flow；其工作模式、视觉 checkpoint、Observation 规则和当前部署绑定全部放在按路由加载的 reference 中，不在根文件重复。
 4. **混合任务使用窄 Handoff**：视觉分析与 Coding 之间只传递稳定目标、必要变更、约束、证据引用和验收标准，不跨 Flow 倾倒完整原始状态。
 5. **角色首先表示职责**：角色表示责任和上下文 ownership，不要求一对一对应独立 Agent 实例。Coding 的 Session 拓扑由 active runtime 推导；Multimodal 保留自己的上下文 ownership 规则。
@@ -28,6 +28,7 @@ description: "高体量 Agent Token I/O 解耦：Coding 将输入侧高价值推
 - repo / project exploration；
 - implementation、refactor、bug fix、debugging；
 - 代码、配置或开发文档物化；
+- 对实质性功能改动及其周边行为进行独立验证；
 - build、test、lint、formatter、type check、diff / log 分析；
 - 其他以项目文本状态和大体量输出为主要 Token 压力的开发任务。
 
@@ -66,7 +67,9 @@ Multimodal Flow
 → Decision 确认稳定的必要变更
 → narrow Handoff Contract
 → Coding Flow
-→ implementation / mechanical verification
+→ implementation / provisional focused checks
+→ 需要时进行独立改动验证
+→ 按需物化文档/注释
 → 必要时回到原 Multimodal Flow 做视觉验收
 ```
 

@@ -41,6 +41,16 @@ After the active runtime is resolved, map the logical responsibilities defined i
 
 Repository size, long output, build/test work, or generic task complexity do not by themselves change this mapping.
 
+## On-demand verification, documentation, and delivery mapping
+
+The Input-side Reasoning Agent decides whether the change's materiality, risk, or explicit user requirement gives independent final verification concrete value. When it selects **Change Verification**, the Host must create a fresh independent Session eligible for that role under the active Profile after Primary Output reaches its implementation checkpoint. The verifier receives the final state and approved verification inputs; it must not inherit the Primary Output implementation history or silently become a repair Worker.
+
+When documentation or code-comment work is needed after verification, the Input-side Agent may select **Documentation/Comments** and create a separate Session with the Profile's auxiliary materialization binding and effort tier. That Session is released only after the verifier has passed (or the Input-side Agent has explicitly classified the task as behavior-preserving and skipped independent verification), and its write capability during the documentation slice is restricted to the approved documentation/comment scope. After that slice passes its documentation-specific checkpoint, the parent may release a separate delivery slice with a separately granted capability boundary.
+
+A delivery slice is not a new role binding and is not granted automatically by the active Profile. It may inspect and stage the already approved complete change set and perform authorized repository/GitHub delivery without editing tracked content, but only when the parent has explicit user/task authorization and the Host can enforce the required boundary. If the active Runtime cannot provide that separation or a supported delivery Worker, follow its unavailable rule and block; do not silently self-authorize, widen the documentation write scope, or substitute an arbitrary model.
+
+In Single-Session Coding Mode, dual eligibility covers Input-side Reasoning and Primary Output implementation only. It does not authorize the current Session to self-verify a material final change once the fresh verifier is selected, nor does it make the current Session the Documentation/Comments Agent. If a selected independent binding or required parameter cannot be created, follow the active Profile's unavailable rule rather than silently falling back to Primary Output self-verification or input-side long-form materialization.
+
 ## Runtime parameter ownership
 
 Core Coding documents intentionally do not define vendor-specific parameter names or concrete model tiers. A Model Profile may classify tasks and bind them to host-supported parameters, while the Host Adapter describes how those parameters are requested on that product.
@@ -57,11 +67,12 @@ When escalation replaces an existing independent Worker, preserve reusable state
 
 A new Code Agent product should normally be integrated by adding a Host Adapter and a compatible Model Profile entry without changing:
 
-- Input-side Reasoning and Primary Output role definitions;
+- Input-side Reasoning, Primary Output, Change Verification, and Documentation/Comments role definitions;
 - Context Firewall semantics;
 - Semantic Contract and Decision Checkpoints;
-- Primary Execution Session affinity;
+- Primary Execution Session affinity and on-demand Worker lifecycle;
 - Context Exchange ownership;
-- mechanical versus semantic verification boundaries.
+- implementation feedback, independent change verification, and semantic acceptance boundaries;
+- documentation/comment-only materialization boundaries.
 
 Change Core rules only when a new environment reveals a genuine architecture requirement that cannot be expressed through the runtime contract. Do not add `if <product>` or `if <model>` branches to Core documents as a shortcut for deployment policy.

@@ -57,7 +57,8 @@ In the new run, perform a small non-destructive smoke check:
 4. Confirm that Session topology matches the current model identity and Profile eligibility.
 5. In this repository, run `python3 scripts/check-multilingual-docs.py`, `git diff --check`, and `git status --short`.
 6. For a non-simple task, confirm that a concise Decision Brief exists, reconnaissance pauses before implementation when material facts are missing, and implementation release follows input-side synthesis.
-7. For a non-simple multi-Session task, confirm that each Output Agent has one authorized Interaction Slice, that Progress Signals do not block unnecessarily, and that Control Checkpoints produce an explicit Continue/Amend/Stop decision before the next slice.
+7. For a material functional change, confirm that Primary Output is limited to implementation and provisional focused checks, a fresh Change Verification Session is created for final holistic checks, and Documentation/Comments is released only after verification with a docs/comment-only scope.
+8. For a non-simple multi-Session task, confirm that each Worker has one authorized Interaction Slice, that Progress Signals do not block unnecessarily, and that Control Checkpoints produce an explicit Continue/Amend/Stop decision before the next slice.
 
 If any check fails, fix loading, Runtime selection, or precedence before continuing. Never paste the full Skill into a task or silently substitute a required model.
 
@@ -67,8 +68,8 @@ If any check fails, fix loading, Runtime selection, or precedence before continu
 2. For non-simple work, form the concise Decision Brief and keep problem definition, decision questions, solution approval, and release ownership on the input side.
 3. If evidence is missing, run a bounded reconnaissance stage and pause for input-side synthesis before implementation; then follow [`SKILL.md`](SKILL.md) and [`references/coding-flow.md`](references/coding-flow.md) for routing and staged execution.
 4. For non-simple normal two-Session work, authorize one Interaction Slice at a time; use adaptive Progress Signals inside the slice and blocking Control Checkpoints at natural or material boundaries, then decide Continue/Amend/Stop before releasing the next slice.
-5. Keep routine work within the approved slice; when multiple Output Agents are active, use the parent-led rendezvous and Context Exchange guidance in [`references/coding/context-exchange.md`](references/coding/context-exchange.md).
-6. Run the appropriate mechanical checks, then map each acceptance criterion to compressed evidence and perform semantic acceptance against the Contract. Session ownership details belong to [`references/coding/session-model.md`](references/coding/session-model.md).
+5. Keep routine work within the approved slice; when multiple Coding Workers are active, use the parent-led rendezvous and Context Exchange guidance in [`references/coding/context-exchange.md`](references/coding/context-exchange.md).
+6. Let Primary Output run provisional focused checks during implementation. For a material change, have Input-side Reasoning create a fresh Change Verification Agent for holistic final checks, map each acceptance criterion to its compressed evidence, and perform semantic acceptance against the Contract. Only then create Documentation/Comments when needed, and restrict that Agent to documentation/comments plus documentation-specific checks. Session ownership details belong to [`references/coding/session-model.md`](references/coding/session-model.md).
 
 The flow provides operational structure, not guarantees about cache hits, cost, quota, latency, or model quality.
 

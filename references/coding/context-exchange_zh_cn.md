@@ -14,15 +14,26 @@ Single-Session Coding Mode 不需要把当前 Agent 已知信息重新编码成�
 
 ### 复杂、强上下文任务
 
-正常双 Session 模式中，当任务明显依赖大量会话、业务或项目背景时，优先把宿主能够安全共享的完整相关上下文交给 Primary Output Agent，并额外提供简短 Semantic Contract。这样避免输入侧 Agent 为重新描述已经存在的背景信息而产生大量输出，同时用 Contract 固化最终有效决策。
+正常双 Session 模式中，当任务明显依赖大量会话、业务或项目背景时，优先把宿主能够安全共享的完整相关上下文交给当前 slice 的 Worker，并额外提供简短 Semantic Contract。Primary Output Agent 接收实现上下文；Change Verification Agent 只接收最终状态验证所需输入；Documentation/Comments Agent 只接收最终已验证状态和获准的文档/注释范围；交付 slice 只接收最终已验收状态、已批准的完整变更集范围和明确的交付授权。这样避免输入侧 Agent 为重新描述已经存在的背景信息而产生大量输出，同时用 Contract 固化最终有效决策。
 
 Single-Session Coding Mode 继续使用 Semantic Contract 作为逻辑决策锚点，但不得为了形式完整把它当作 self-delegation prompt 再发送给自己。
 
-### 多 Output Worker 的父级会合
+### 角色专属 handoff 与父级会合
 
-当多个独立 Output Role Agent 同时工作时，父 Agent 必须在派发前为每个 Worker 定义 Interaction Slice 和反馈边界。每个 Worker 都应收到自己的 `Objective`、`Authorized scope/mutations`、`Return conditions` 与 `Unreleased boundary`；并行执行不会授权 Worker 跨越未放行边界，也不能从其他 Worker 的进度推断自己已获许可。
+所有独立 Worker 都由父级 Input-side Reasoning Agent 创建和管理。每个 Worker 只接收其职责所需的上下文：
 
-Worker 可以在已授权 slice 内发送压缩 Progress Signal，但所有阻塞式 Control Checkpoint 都由父 Agent 负责。到达 Control Checkpoint 后，父 Agent 分析证据并为该 Worker 选择 `Continue`、`Amend` 或 `Stop`，也可以先请求 Evidence-on-Demand。如果 Semantic Contract、架构、范围、权限、安全或公共接口假设发生变化，父 Agent 决定其他 Worker 是继续、接收修订后的 slice，还是停止；Worker 不得在过时指令下静默继续。
+- **Primary Output** 接收已批准的实现 Contract、相关项目上下文、获准写入范围和当前 Interaction Slice。它的聚焦检查属于实现反馈，并以压缩摘要向后传递。
+- **Change Verification** 接收新的 Context ID、最终项目状态或隔离的验证快照、Contract 与验收标准、变更范围证据以及压缩的实现反馈摘要。它不得继承 Primary Output 的实现历史，不得修改受跟踪的产品/测试/文档文件，并且应返回证据而不是修复。
+- **Documentation/Comments** 只在 verifier 通过后创建，接收新的有界上下文、最终已验证状态、Contract、verifier 结论和明确的文档/注释范围。它的 RW capability 必须限制在获准的文档与注释位置；所有功能与测试都在其写入范围之外。其仅限文档的 checkpoint 通过后，只有父 Agent 可以再向它放行单独的交付 slice。
+- **交付 slice** 接收新的或明确修订的有界上下文，其中包含最终已验收状态、变更范围证据、已批准的路径/hunk、明确的用户/任务授权以及适用的仓库开发流程引用。它可以暂存已批准的完整变更集，并按授权操作 Git 元数据或远端仓库，但不得编辑已跟踪内容、执行语义验收，也不得从其他角色推断授权。它返回压缩后的交付证据。
+
+当 verifier 报告实质性失败且 Primary Output 完成修复后，父 Agent 必须为新的最终状态提供新的 verifier Context ID 和全新 Session。实质修复后不得复用旧 verifier：所需的独立审查不能继承此前的实现或失败历史。
+
+### 多 Coding Worker 的父级会合
+
+当多个独立 Coding Worker 同时工作时，父 Agent 必须在派发前为每个 Worker 定义 Interaction Slice 和反馈边界。每个 Worker 都应收到自己的 `Objective`、`Authorized scope/mutations`、`Return conditions` 与 `Unreleased boundary`；并行执行不会授权 Worker 跨越未放行边界，也不能从其他 Worker 的进度推断自己已获许可。
+
+Worker 可以在已授权 slice 内发送压缩 Progress Signal，但所有阻塞式 Control Checkpoint 都由父 Agent 负责。到达 Control Checkpoint 后，父 Agent 分析证据并为该 Worker 选择 `Continue`、`Amend` 或 `Stop`，也可以先请求 Evidence-on-Demand。如果 Semantic Contract、架构、范围、权限、安全或公共接口假设发生变化，父 Agent 决定其他 Worker 是继续、接收修订后的 slice，还是停止；Worker 不得在过时指令下静默继续。verifier 的通过/失败结论不会自行放行文档、修复或交付阶段；只有父 Agent 可以放行下一个存在依赖关系的 slice。
 
 Context Exchange 文档只负责在 Worker 之间传输压缩发现、handoff 状态和可复用证据，不替代这个实时的父级 control loop。父 Agent 应在重大会合点更新 routing index 和相关 Worker 上下文，不要在每个 Progress Signal 或命令之后写记录。
 
@@ -49,6 +60,7 @@ Context Exchange 文档只负责在 Worker 之间传输压缩发现、handoff �
   - **RW**：该 Worker 自己的代码 worktree，以及 `<root>/<worker-context-id>/` 专属 context 子目录；
   - **RO**：父 Agent 为当前具体 handoff 明确授权的其他 Worker 单个文档或严格有界路径；
   - **DENY / 不暴露**：`<root>/INDEX.md`、其他 Worker 的其余目录，以及任何未明确授权的 Context Exchange 路径。
+- 在 Documentation/Comments slice 期间，已跟踪的功能与测试必须保持在 RW capability 之外。如果父 Agent 后续放行交付 slice，必须单独授予交付所需的 Git 元数据和远端能力；仍然禁止写入已跟踪内容。
 - 上述 capability 是宿主/进程级约束，不只是 Dispatch 文本中的建议。Worker 即使因语义漂移尝试越界写入，文件系统层也应拒绝该操作。
 - 如果多个 Worker 实际共享同一个 OS 用户身份，单纯依赖 `chmod` 或普通 Unix owner/group 权限通常不能可靠地区分 Worker 身份。需要真正的 per-Worker sandbox、独立容器/挂载命名空间、路径 capability 或等价机制才能形成强制边界。
 - 跨 Worker 共享优先使用**原文档的定向只读 capability**。父 Agent 只传递文档路径与授权范围，不读取正文、不复制正文到 prompt，也不为纯传输目的重新总结内容。

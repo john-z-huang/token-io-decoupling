@@ -1,6 +1,6 @@
 # Coding Flow
 
-This Flow covers project exploration, planning, implementation, refactoring, fixes, code/config/document materialization, builds, tests, and debugging. It preserves two logical responsibilities—Input-side Reasoning and Primary Output—while keeping detailed Coding rules in independent modules so unrelated concerns can evolve without repeatedly editing one shared document.
+This Flow covers project exploration, planning, implementation, refactoring, fixes, code/config materialization, builds, tests, debugging, independent change verification, optional documentation/comments materialization, and separately gated repository delivery. It preserves Input-side Reasoning and Primary Output as its base responsibilities, with on-demand Change Verification and Documentation/Comments roles plus a separately authorized delivery slice, while keeping detailed Coding rules in independent modules so unrelated concerns can evolve without repeatedly editing one shared document.
 
 All Coding roles also follow [`shared-protocols.md`](shared-protocols.md).
 
@@ -10,7 +10,7 @@ All Coding roles also follow [`shared-protocols.md`](shared-protocols.md).
 
 After Coding Flow is selected:
 
-1. Load [`coding/session-model.md`](coding/session-model.md) to establish role ownership, generic Single-Session/normal two-Session semantics, Context Firewall, and Primary Execution Session affinity.
+1. Load [`coding/session-model.md`](coding/session-model.md) to establish role ownership, generic Session semantics for implementation and on-demand Workers, Context Firewall, and Primary Execution Session affinity.
 2. Load [`coding/runtime.md`](coding/runtime.md) to resolve the active Host Adapter and Model Profile and map those Session semantics to the current environment.
 3. Load [`coding/execution-control.md`](coding/execution-control.md) before substantive implementation, refactoring, debugging, build/test work, or other execution that may cross semantic decision boundaries.
 4. Load [`coding/context-exchange.md`](coding/context-exchange.md) when the task uses multiple independent Coding Agents, needs reusable cross-Agent context, requires Worker replacement/escalation handoff, or needs parent-led multi-Worker rendezvous and slice synchronization.
@@ -30,7 +30,7 @@ Each Coding concern has one primary owning module:
 | roles, Session topology, Context Firewall, Primary Execution Session, pre-dispatch ownership | [`coding/session-model.md`](coding/session-model.md) |
 | Runtime selection, Host/Profile composition, role eligibility mapping, unavailable boundary | [`coding/runtime.md`](coding/runtime.md) |
 | Semantic Contract transport, file-backed Context Exchange, Worker handoff, multi-Worker rendezvous | [`coding/context-exchange.md`](coding/context-exchange.md) |
-| two-level planning, pre-dispatch/release gate, Interaction Slices, feedback, bounded stages, Decision Checkpoints, verification, output discipline | [`coding/execution-control.md`](coding/execution-control.md) |
+| two-level planning, pre-dispatch/release gate, Interaction Slices, feedback, bounded stages, Decision Checkpoints, verification, delivery release, output discipline | [`coding/execution-control.md`](coding/execution-control.md) |
 
 Concrete product mechanics and concrete model/parameter policy do not belong to these Core ownership rows; the Runtime Contract selects their deployment files from the runtime registry.
 
@@ -40,9 +40,9 @@ This ownership boundary is also the maintenance boundary for parallel git worktr
 
 ## Responsibility order
 
-The Coding architecture uses Input-side Reasoning for high-value semantic decisions and Primary Output for high-volume project-state consumption, materialization, and mechanical verification. Logical roles do not imply separate Agent instances. `session-model.md` defines the possible topologies, while `runtime.md` determines which topology the active deployment may use.
+The Coding architecture uses Input-side Reasoning for high-value semantic decisions, Primary Output for implementation and provisional focused checks, Change Verification for independent final change-result verification, Documentation/Comments for optional post-verification docs and comment materialization, and a separately gated delivery slice that may follow a successful documentation checkpoint. Logical roles do not imply separate Agent instances, but Change Verification and Documentation/Comments are created as independent Sessions when their isolation benefit is selected; delivery is not a new role binding. `session-model.md` defines the possible topologies, while `runtime.md` determines which topology the active deployment may use.
 
-Before substantive dispatch, consult the pre-dispatch reasoning, Interaction Slice, and implementation-release gates in [`coding/execution-control.md`](coding/execution-control.md); when multiple Output Agents are active, also load the parent-led rendezvous rules in [`coding/context-exchange.md`](coding/context-exchange.md). This entry point only makes those ownership boundaries discoverable.
+Before substantive dispatch, consult the pre-dispatch reasoning, Interaction Slice, implementation-release, final-verification, and delivery-release gates in [`coding/execution-control.md`](coding/execution-control.md); when multiple Coding Workers are active, also load the parent-led rendezvous rules in [`coding/context-exchange.md`](coding/context-exchange.md). This entry point only makes those ownership boundaries discoverable.
 
 The detailed role and Session rules are normative in [`coding/session-model.md`](coding/session-model.md); do not infer additional Session requirements from this summary.
 
