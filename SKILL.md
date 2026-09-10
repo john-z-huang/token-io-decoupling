@@ -1,6 +1,6 @@
 ---
 name: token-io-decoupling
-description: "High-volume Agent Token I/O decoupling. Coding separates high-value input-side reasoning, implementation output, independent change verification, and optional documentation/comments materialization while keeping Core role and Session rules independent of any specific Code Agent product or model; concrete runtime bindings are selected through Host Adapters and Model Profiles. Browser Use, Computer Use, continuous GUI workflows, video, large image/screenshot sets, and visual design use an independent Multimodal Flow that isolates high-volume visual/temporal input."
+description: "High-volume Agent Token I/O decoupling. Coding separates high-value input-side reasoning, implementation output, independent change verification, and the Documentation/Comments & Git Operations role for approved documentation/comments and non-trivial repository Git work, while keeping Core role and Session rules independent of any specific Code Agent product or model; concrete runtime bindings are selected through Host Adapters and Model Profiles. Browser Use, Computer Use, continuous GUI workflows, video, large image/screenshot sets, and visual design use an independent Multimodal Flow that isolates high-volume visual/temporal input."
 ---
 
 # Token I/O Decoupling
@@ -14,7 +14,7 @@ This Skill defines orchestration conventions only. It cannot bypass higher-prior
 ## Core principles
 
 1. **Choose the Flow first, then load its details**: do not load every reference unconditionally at startup.
-2. **Keep Coding Core runtime-neutral**: Coding defines Input-side Reasoning, Primary Output, on-demand Change Verification, and Documentation/Comments responsibilities, Session/context rules, checkpoints, and verification independently from concrete products or models. Runtime mapping is resolved through the Coding Runtime Contract, Host Adapter, and Model Profile selected for the current environment.
+2. **Keep Coding Core runtime-neutral**: Coding defines Input-side Reasoning, Primary Output, on-demand Change Verification, and Documentation/Comments & Git Operations responsibilities, Session/context rules, checkpoints, and verification independently from concrete products or models. Runtime mapping is resolved through the Coding Runtime Contract, Host Adapter, and Model Profile selected for the current environment.
 3. **Keep Multimodal details isolated**: Computer Use, video, large image/screenshot sets, visual design, and similar tasks use the independent Multimodal Flow. Its working modes, visual checkpoints, Observation rules, and current deployment bindings live in its routed references rather than being duplicated in this root file.
 4. **Use narrow Handoffs for mixed tasks**: visual analysis and Coding exchange only stable goals, required changes, constraints, evidence references, and acceptance criteria. Do not dump full raw state across Flows.
 5. **Treat roles as responsibilities first**: a role represents responsibility and context ownership, not a mandatory one-to-one Agent instance. Coding Session topology is derived from the active runtime; Multimodal keeps its own context-ownership rules.
@@ -28,6 +28,7 @@ Route the following tasks to Coding Flow by default:
 - repository or project exploration;
 - implementation, refactoring, bug fixing, debugging;
 - materializing code, configuration, or developer documentation;
+- non-trivial repository Git work, including synchronization, branch/worktree operations, staging, commits, history integration, remotes, pushes, and applicable Issue/PR delivery;
 - independently verifying material functional changes and their surrounding behavior;
 - build, test, lint, formatting, type checking, diff/log analysis;
 - other development tasks where project text state and large output are the primary Token pressure.
@@ -69,7 +70,7 @@ Multimodal Flow
 → Coding Flow
 → implementation / provisional focused checks
 → independent change verification when material
-→ optional documentation/comments materialization
+→ optional Documentation/Comments & Git Operations slices
 → return to the original Multimodal Flow for visual verification when needed
 ```
 

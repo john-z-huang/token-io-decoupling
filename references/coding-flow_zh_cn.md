@@ -1,6 +1,6 @@
 # Coding Flow
 
-本 Flow 用于项目探索、规划、实现、重构、修复、代码/配置物化、构建测试、调试、独立改动验证、按需文档/注释物化，以及单独受控的仓库交付等 Coding 场景。它以 Input-side Reasoning 与 Primary Output 为基础逻辑职责，并按需增加 Change Verification 与 Documentation/Comments 角色以及单独获准的交付 slice，同时把具体 Coding 规则拆分到独立模块，使互不相关的关注点可以独立演进，避免反复修改同一个共享文件。
+本 Flow 用于项目探索、规划、实现、重构、修复、代码/配置物化、构建测试、调试、独立改动验证、按需文档/注释物化，以及所有非简单仓库 Git 工作等 Coding 场景。它以 Input-side Reasoning 与 Primary Output 为基础逻辑职责，并按需增加 Change Verification 与 Documentation/Comments & Git Operations 角色，为文档和 Git 操作分别设置获准的 Interaction Slice；具体 Coding 规则拆分到独立模块，使互不相关的关注点可以独立演进，避免反复修改同一个共享文件。
 
 所有 Coding 角色同时遵循 [`shared-protocols_zh_cn.md`](shared-protocols_zh_cn.md)。
 
@@ -30,7 +30,7 @@
 | 角色、Session 拓扑、Context Firewall、Primary Execution Session、派发前 ownership | [`coding/session-model_zh_cn.md`](coding/session-model_zh_cn.md) |
 | Runtime 选择、Host/Profile 组成、角色 eligibility 映射、unavailable 边界 | [`coding/runtime_zh_cn.md`](coding/runtime_zh_cn.md) |
 | Semantic Contract 传输、文件化 Context Exchange、Worker handoff、多 Worker 会合 | [`coding/context-exchange_zh_cn.md`](coding/context-exchange_zh_cn.md) |
-| 两级规划、派发前/实现放行门槛、Interaction Slice、反馈、有界阶段、Decision Checkpoint、验证、交付放行、输出纪律 | [`coding/execution-control_zh_cn.md`](coding/execution-control_zh_cn.md) |
+| 两级规划、派发前/实现放行门槛、Interaction Slice、反馈、有界阶段、Decision Checkpoint、验证、Git 操作放行、输出纪律 | [`coding/execution-control_zh_cn.md`](coding/execution-control_zh_cn.md) |
 
 具体产品操作与具体模型/参数策略不属于上述 Core ownership；Runtime Contract 通过注册表选择对应部署文件。
 
@@ -40,9 +40,9 @@
 
 ## 职责顺序
 
-Coding 架构由 Input-side Reasoning 负责高价值语义决策，Primary Output 负责实现与实现反馈检查，Change Verification 负责独立的最终改动结果验证，Documentation/Comments 负责验证通过后的按需文档和注释物化，并包含一个可在文档 checkpoint 通过后继续的、单独受控的交付 slice。逻辑角色不必都对应独立 Agent 实例，但这两个按需角色在选择其隔离收益时应创建独立 Session；交付不是新的角色绑定。`session-model_zh_cn.md` 定义可能的拓扑，`runtime_zh_cn.md` 决定 active deployment 可以使用哪种拓扑。
+Coding 架构由 Input-side Reasoning 负责高价值语义决策，Primary Output 负责实现与实现反馈检查，Change Verification 负责独立的最终改动结果验证，Documentation/Comments & Git Operations 负责验证通过后的按需文档/注释物化，以及所有非简单仓库 Git 工作。Git 工作包括同步、分支/worktree 生命周期、暂存、提交、历史整合、冲突处理、远端、推送及适用的 Issue/PR 交付。逻辑角色不必都对应独立 Agent 实例，但 Change Verification 与 Documentation/Comments & Git Operations 在选择隔离收益时应创建独立 Session；每个文档或 Git 操作仍需由父 Agent 单独放行 Interaction Slice。`session-model_zh_cn.md` 定义可能的拓扑，`runtime_zh_cn.md` 决定 active deployment 可以使用哪种拓扑。
 
-在实质性派发前，应查阅 [`coding/execution-control_zh_cn.md`](coding/execution-control_zh_cn.md) 中的派发前推理、Interaction Slice、实现放行、最终验证和交付放行门槛；存在多个 Coding Worker 时，还应加载 [`coding/context-exchange_zh_cn.md`](coding/context-exchange_zh_cn.md) 中的父级会合规则。本入口只负责让这些 ownership 边界可被发现，不复制其细则。
+在实质性派发前，应查阅 [`coding/execution-control_zh_cn.md`](coding/execution-control_zh_cn.md) 中的派发前推理、Interaction Slice、实现放行、最终验证和 Git 操作放行门槛；存在多个 Coding Worker 时，还应加载 [`coding/context-exchange_zh_cn.md`](coding/context-exchange_zh_cn.md) 中的父级会合规则。本入口只负责让这些 ownership 边界可被发现，不复制其细则。
 
 详细角色与 Session 规则以 [`coding/session-model_zh_cn.md`](coding/session-model_zh_cn.md) 为规范来源，不得根据本摘要额外推导新的 Session 要求。
 

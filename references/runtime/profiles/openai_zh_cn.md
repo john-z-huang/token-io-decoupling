@@ -9,17 +9,17 @@
 - **Input-side Reasoning**：当前高级父模型/Session 负责高价值语义决策。
 - **Primary Output**：本 OpenAI 部署要求的执行模型为 `gpt-5.6-luna`。
 - **Change Verification**：选择该角色时，使用全新的独立 `gpt-5.6-luna` Session 进行最终改动结果验证。
-- **Documentation/Comments**：选择该角色时，使用独立的 `gpt-5.6-luna` Session 只进行验证后的文档和代码注释物化。
+- **Documentation/Comments & Git Operations**：选择该角色时，使用独立的 `gpt-5.6-luna` Session 负责获准的验证后文档/代码注释物化，以及所有非简单仓库 Git 操作。它负责同步、分支/worktree 操作、暂存、提交、历史整合、reset/clean/stash、冲突处理、标签、远端、推送和适用的 Issue/PR 交付；只有极小的只读 Git 元数据查询可以留在该角色之外。
 - **双角色 eligibility**：当前 Session 能明确确认自身为 `gpt-5.6-luna`，并且 Host 能在该 Session 满足当前任务要求的 reasoning-effort 档位时，本 Profile 声明当前 Session 同时可以承担 Input-side Reasoning 与 Primary Output；因此通用 Runtime 映射默认进入 **Single-Session Coding Mode**，除非存在需要额外 Session 的具体结构性理由。
 - **正常双 Session 映射**：当前 Agent 不能明确确认自己是 `gpt-5.6-luna` 时，当前 Agent 只承担输入侧推理职责，并使用独立 `gpt-5.6-luna` Session 承担 Primary Output。
 
-Single-Session Coding Mode 保持当前部署在实现方面的已有行为：当前 Luna 直接完成项目探索、实现、调试、临时聚焦检查和实现输出，不为了维持双角色形式再把普通工作委派给另一个 Luna。对实质性功能改动，输入侧 Agent 仍会创建全新的 Change Verification Luna；验证后如有需要，还可创建独立的 Documentation/Comments Luna。由于当前 Session 同时承担高价值推理职责，其普通实质性实现使用 `reasoning_effort=xhigh`。
+Single-Session Coding Mode 保持当前部署在实现方面的已有行为：当前 Luna 直接完成源代码/项目探索、实现、调试、临时聚焦检查和实现输出，不为了维持双角色形式再把普通工作委派给另一个 Luna。它不承担非简单 Git 操作。对实质性功能改动，输入侧 Agent 仍会创建全新的 Change Verification Luna；需要文档或 Git 工作时，还可创建独立的 Documentation/Comments & Git Operations Luna。由于当前 Session 同时承担高价值推理职责，其普通实质性实现使用 `reasoning_effort=xhigh`。
 
 ## Reasoning-effort 分级
 
 - 正常双 Session Coding 中，独立 Primary Output Luna 默认使用 `reasoning_effort=xhigh`。一般需求开发、非平凡重构或调试、实现反馈测试代码，以及其他需要在**已批准语义方案内进行较多执行判断**的工作使用 `xhigh`。这一强度档位不会把问题定义、架构选择、未解决的语义权衡或验收 ownership 转移给 Primary Output；输出很长或项目规模很大本身不能作为继续提高强度的理由。
 - 选择的 Change Verification Luna 默认使用 `reasoning_effort=xhigh`，因为它需要针对最终变更状态独立选择并解释整体检查。它只负责验证证据，不负责修复、架构决策或语义验收。
-- 选择的 Documentation/Comments Luna 默认使用 `reasoning_effort=high`，在验证后有界物化开发文档与代码注释。它的写入范围排除功能与测试，不得用来弥补验证失败。
+- 选择的 Documentation/Comments & Git Operations Luna 对文档/注释物化和非简单仓库 Git 工作均默认使用 `reasoning_effort=high`。其文档写入范围排除功能与测试；其 Git 范围限制为明确放行的仓库/worktree/ref/remote 操作。不得用来弥补验证失败或自行做未经批准的产品决策。
 - 其他辅助物化 Worker 默认使用 `high`，除非具体任务明确符合 `xhigh` 条件。
 - 只有 Host 明确支持对应档位，并且任务严格有界、语义风险低且容易机械验证时，才使用 `reasoning_effort=medium` 或更低强度。适合的例子包括运行已经选定的 test/formatter/lint 并压缩结果、收集文件/路径元数据、精确搜索或提取、字面量替换、按明确模板格式整理或更新生成表格。低于 `medium` 的档位原则上只用于只读工作或确定性机械变换。不得把 Semantic Contract ownership、架构/产品判断、跨模块实现、复杂调试、复杂测试设计、公共 API/schema/权限变更交给这些轻量 Worker。
 
@@ -31,7 +31,7 @@ Single-Session Coding Mode 保持当前部署在实现方面的已有行为：�
 
 阻塞解除后，后续无关工作恢复正常 `xhigh`/`high` 档位，不让 max 继续成为默认值。
 
-当前 Luna Session 处于 Single-Session Coding Mode 时，只有选定的 fresh verification、验证后的文档/注释隔离、真正并行、当前上下文明显失效/膨胀、存在明确独立隔离收益，或某个具体任务反复阻塞而需要定向 `max` 升级时才允许创建额外 Agent。项目探索、实现、测试、长输出或笼统的“任务复杂”本身不是例外理由。
+当前 Luna Session 处于 Single-Session Coding Mode 时，只有选定的 fresh verification、验证后的文档/注释或非简单 Git 操作隔离、真正并行、当前上下文明显失效/膨胀、存在明确独立隔离收益，或某个具体任务反复阻塞而需要定向 `max` 升级时才允许创建额外 Agent。项目探索、实现、测试、长输出或笼统的“任务复杂”本身不是例外理由。
 
 ## Profile 约束
 
