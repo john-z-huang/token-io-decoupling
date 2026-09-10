@@ -32,6 +32,15 @@ Before any Coding work:
    use only the Host Adapter and Model Profile registered for this environment.
 4. Do not substitute a model or runtime parameter when the selected Profile
    requires an exact binding; follow its unavailable-handling rule.
+5. Before substantive dispatch, the Input-side Agent must define the problem,
+   assumptions, decision questions, risks, acceptance, and stage/checkpoint
+   plan. If project facts are missing, dispatch bounded reconnaissance first,
+   then explicitly release implementation after synthesizing the evidence.
+   Do not delegate an unresolved combined “analyze, choose, implement, and
+   verify” mandate.
+6. For non-simple normal two-Session work, authorize one Interaction Slice at
+   a time. Use adaptive non-blocking Progress Signals and blocking Control
+   Checkpoints; after each Control Checkpoint, choose Continue, Amend, or Stop.
 ```
 
 This file includes the English bootstrap; use the corresponding language version when persistent instructions are in Chinese.
@@ -47,15 +56,19 @@ In the new run, perform a small non-destructive smoke check:
 3. Confirm that Runtime resolution selects the registered Codex Host Adapter and OpenAI Model Profile.
 4. Confirm that Session topology matches the current model identity and Profile eligibility.
 5. In this repository, run `python3 scripts/check-multilingual-docs.py`, `git diff --check`, and `git status --short`.
+6. For a non-simple task, confirm that a concise Decision Brief exists, reconnaissance pauses before implementation when material facts are missing, and implementation release follows input-side synthesis.
+7. For a non-simple multi-Session task, confirm that each Output Agent has one authorized Interaction Slice, that Progress Signals do not block unnecessarily, and that Control Checkpoints produce an explicit Continue/Amend/Stop decision before the next slice.
 
 If any check fails, fix loading, Runtime selection, or precedence before continuing. Never paste the full Skill into a task or silently substitute a required model.
 
 ## Day-to-day Coding loop
 
 1. Start with a small Semantic Contract; use [`references/shared-protocols.md`](references/shared-protocols.md) for its fields and update rules.
-2. Follow [`SKILL.md`](SKILL.md) and [`references/coding-flow.md`](references/coding-flow.md) for routing and staged execution.
-3. Keep routine work within the approved stage; use the checkpoint and evidence guidance in [`references/coding/execution-control.md`](references/coding/execution-control.md) when a decision boundary appears.
-4. Run the appropriate mechanical checks, then perform semantic acceptance against the Contract. Session ownership details belong to [`references/coding/session-model.md`](references/coding/session-model.md).
+2. For non-simple work, form the concise Decision Brief and keep problem definition, decision questions, solution approval, and release ownership on the input side.
+3. If evidence is missing, run a bounded reconnaissance stage and pause for input-side synthesis before implementation; then follow [`SKILL.md`](SKILL.md) and [`references/coding-flow.md`](references/coding-flow.md) for routing and staged execution.
+4. For non-simple normal two-Session work, authorize one Interaction Slice at a time; use adaptive Progress Signals inside the slice and blocking Control Checkpoints at natural or material boundaries, then decide Continue/Amend/Stop before releasing the next slice.
+5. Keep routine work within the approved slice; when multiple Output Agents are active, use the parent-led rendezvous and Context Exchange guidance in [`references/coding/context-exchange.md`](references/coding/context-exchange.md).
+6. Run the appropriate mechanical checks, then map each acceptance criterion to compressed evidence and perform semantic acceptance against the Contract. Session ownership details belong to [`references/coding/session-model.md`](references/coding/session-model.md).
 
 The flow provides operational structure, not guarantees about cache hits, cost, quota, latency, or model quality.
 

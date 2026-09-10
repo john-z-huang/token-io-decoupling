@@ -8,15 +8,21 @@ All roles also follow [`../shared-protocols.md`](../shared-protocols.md).
 
 ### Input-side Reasoning Agent
 
-Owns high-information-density work: understanding user intent and business semantics, making architecture and risk judgments, creating or amending the Semantic Contract, handling major decision escalations, performing semantic acceptance, and explaining necessary reasoning-level decisions to the user.
+Owns high-information-density work: understanding user intent and business semantics, formulating and decomposing the problem, identifying assumptions and unknowns, defining decision questions, comparing candidate directions against explicit criteria, making architecture and risk judgments, creating or amending the Semantic Contract, designing bounded stages, Interaction Slices, and blocking checkpoints, setting adaptive feedback cadence, releasing one slice at a time, handling major decision escalations, performing semantic acceptance, and explaining necessary reasoning-level decisions to the user.
+
+Before substantive execution is dispatched, the input-side Agent retains ownership of the problem model, the meaning of evidence, unresolved semantic trade-offs, the approved solution envelope, and the decision to release implementation. These responsibilities are not delegated merely because repository evidence is high-volume. The input-side Agent may request evidence collection and candidate generation, but it must decide what the evidence means for the user's goal and whether a direction is approved.
+
+During normal two-Session execution, the input-side Agent also owns the interaction cadence and slice boundaries. It authorizes one Interaction Slice at a time, interprets Progress Signals, and responds to each blocking Control Checkpoint with `Continue`, `Amend`, or `Stop` (or targeted Evidence-on-Demand before deciding). It must not merely wait for a long-running Output Agent or pre-release all future stages.
 
 The input-side role should not perform large-volume output whose main purpose is to expand an already-made decision, and it should not ingest high-volume, low-decision-density raw project state by default.
 
 ### Primary Output Role
 
-Owns high-volume project exploration, raw tool-output handling, semantic compression, local execution planning, code/document/config materialization, compilation and testing, debugging fixes, and mechanical verification.
+Owns high-volume project exploration, raw tool-output handling, evidence collection and semantic compression, execution-level planning within an approved semantic plan, code/document/config materialization, compilation and testing, debugging fixes, and mechanical verification.
 
-The Agent performing the Primary Output Role reads project state progressively: inspect summaries, statistics, and relevant paths first, then expand specific files, diffs, or logs only when needed. It may decide **how** to execute but must not independently change approved goals, architecture, constraints, or acceptance criteria.
+The Agent performing the Primary Output Role reads project state progressively: inspect summaries, statistics, and relevant paths first, then expand specific files, diffs, or logs only when needed. It may analyze evidence and surface evidence-backed candidate options, and it may decide **how** to execute an approved direction inside the current Interaction Slice, but it must not approve or independently change unresolved semantic or architecture decisions, user/business trade-offs, goals, constraints, or acceptance criteria.
+
+The Primary Output Agent, and any other independent Output Role Agent, must send minimal Progress Signals within an authorized slice, return a compressed Control Checkpoint at the slice's return conditions or a mandatory material boundary, and pause before crossing its `Unreleased boundary`. Parallelism does not widen a Worker's slice or release future work.
 
 ## Single-Session Coding Mode
 
@@ -30,6 +36,7 @@ In this mode:
 
 - the current Session performs both Coding responsibilities; do not create, hand off to, or require an additional Primary Output Agent merely to preserve a two-role topology;
 - role boundaries still exist as logical execution discipline: stabilize high-value goals, constraints, decisions, and acceptance first; then progressively inspect project state, implement, mechanically verify, and perform final semantic acceptance;
+- interaction slices and Continue/Amend/Stop decisions remain internal reasoning boundaries; do not simulate Progress Signal or Control Checkpoint messages to the same Session;
 - the current Agent's ordinary exploration, implementation, testing, fixing, and output are same-Session self-execution, not a Dispatch; do not print a fake self-dispatch or construct a prompt addressed to the same Session;
 - large repository size, many changed files, long output, build/test/debug requirements, or generic “task complexity” are not reasons to create another Session.
 
@@ -63,6 +70,8 @@ If the required independent Session cannot be instantiated according to the acti
 ## Context Firewall
 
 In normal two-Session Coding, the input-side Agent does not perform open-ended inspections that may bring large volumes of raw project state into its own context. `git diff`, large `git status` or logs, `find`, `rg`, file trees, build/test output, and similar high-volume checks go to the independent Agent performing the Primary Output Role, which reads, filters, and returns only the facts required for decisions.
+
+The Context Firewall limits raw project-state ingress; it does not limit input-side reasoning or transfer decision ownership. The input-side Agent must still formulate the problem, define what evidence is needed, interpret compressed findings, choose among material directions, and release the next approved stage.
 
 Single-Session Coding Mode has no cross-Session Context Firewall. The current Session directly performs the Primary Output Role and consumes necessary project state, but it must still use progressive reading and semantic compression rather than dumping an entire project, full logs, or unrelated diffs into active context without purpose.
 

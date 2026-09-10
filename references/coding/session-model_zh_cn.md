@@ -8,15 +8,21 @@
 
 ### 输入侧推理 Agent
 
-负责高信息密度工作：理解用户意图与业务语义、做架构和风险判断、形成或修订 Semantic Contract、处理重大决策升级、执行语义验收，并向用户解释必要的推理级决策。
+负责高信息密度工作：理解用户意图与业务语义，定义和拆解问题，识别假设与未知项，提出决策问题，按明确标准比较候选方向，做架构和风险判断，形成或修订 Semantic Contract，设计有界阶段、Interaction Slice 与阻塞式 checkpoint，设置自适应反馈频率，逐个放行 slice，处理重大决策升级，执行语义验收，并向用户解释必要的推理级决策。
+
+在派发实质性执行前，输入侧 Agent 始终拥有问题模型、证据含义、未解决的语义权衡、批准的解决方案范围以及放行实现的决定权。项目证据体量大并不会改变这些职责。输入侧 Agent 可以要求收集证据和生成候选项，但必须由输入侧决定证据对用户目标意味着什么，以及某个方向是否已获批准。
+
+在正常双 Session 执行期间，输入侧 Agent 还拥有交互频率和 slice 边界的决定权。它每次只批准一个 Interaction Slice，解释 Progress Signal，并对每个阻塞式 Control Checkpoint 回复 `Continue`、`Amend` 或 `Stop`（也可以先通过定向 Evidence-on-Demand 获取证据再决定）。不得只是等待长期独立运行的 Output Agent，也不得预先放行所有未来阶段。
 
 输入侧 Agent 不应承担主要用于展开既有决策的大体量输出，也不应默认摄入高体量、低决策密度的项目原始状态。
 
 ### Primary 输出角色
 
-负责高体量项目探索、原始工具输出处理、语义压缩、局部执行计划、代码/文档/配置物化、编译测试、调试修复和机械验证。
+负责高体量项目探索、原始工具输出处理、证据收集与语义压缩、在已批准语义方案内的执行级规划、代码/文档/配置物化、编译测试、调试修复和机械验证。
 
-承担 Primary Output Role 的 Agent 对项目原始信息采用渐进式读取：优先先看摘要、统计和相关路径，再按需展开具体文件、diff 或日志。它可以决定“怎么执行”，但不能自行改变已批准目标、架构、约束或验收标准。
+承担 Primary Output Role 的 Agent 对项目原始信息采用渐进式读取：优先先看摘要、统计和相关路径，再按需展开具体文件、diff 或日志。它可以分析证据、提出有证据支持的候选项，也可以在当前 Interaction Slice 内决定如何执行已批准的方向，但不能自行批准或改变未解决的语义/架构决策、用户/业务权衡、目标、约束或验收标准。
+
+Primary Output Agent 以及其他独立 Output Role Agent 必须在已授权 slice 内发送极简 Progress Signal，在 slice 的 return conditions 或重大强制边界处返回压缩 Control Checkpoint，并在跨越 `Unreleased boundary` 前暂停。并行不会扩大 Worker 的 slice，也不会自动放行未来工作。
 
 ## Single-Session Coding Mode
 
@@ -30,6 +36,7 @@
 
 - 当前 Session 同时承担两类 Coding 职责；不得仅为了维持双角色形式而创建、handoff 到或要求存在额外 Primary Output Agent；
 - 角色边界仍作为逻辑执行纪律存在：先固化高价值目标、约束、决策和验收，再渐进读取项目状态、实现、机械验证并进行最终语义验收；
+- interaction slice 与 Continue/Amend/Stop 决策作为内部推理边界保留；不得向同一 Session 模拟发送 Progress Signal 或 Control Checkpoint 消息；
 - 当前 Agent 自己的普通探索、实现、测试、修复和输出属于同 Session 自执行，不构成 Dispatch；不得打印虚构的 self-dispatch，也不得构造发给同一 Session 的提示词；
 - 仓库规模大、修改文件多、输出长、需要 build/test/debug 或笼统的“任务复杂”都不是创建额外 Session 的理由。
 
@@ -63,6 +70,8 @@
 ## Context Firewall
 
 在正常双 Session Coding Flow 中，输入侧 Agent 不直接执行可能把大量项目原始状态带入自身上下文的开放式检查。`git diff`、大型 `git status`/日志、`find`、`rg`、文件树、构建/测试输出及同类高体量检查默认交给承担 Primary Output Role 的独立 Agent，由其读取、筛选并返回决策所需事实。
+
+Context Firewall 限制的是项目原始状态进入输入侧上下文，并不限制输入侧推理，也不转移决策 ownership。输入侧 Agent 仍必须定义问题、确定所需证据、解释压缩后的发现、在重大方向之间做选择，并放行下一阶段。
 
 Single-Session Coding Mode 不存在跨 Session 的 Context Firewall；当前 Session 直接承担 Primary Output Role 并消费必要项目状态，但仍必须使用渐进式读取和语义压缩，避免无目的地一次性倾倒整个项目、完整日志或无关 diff 到活跃上下文。
 

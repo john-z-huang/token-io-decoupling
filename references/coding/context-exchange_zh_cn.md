@@ -18,6 +18,14 @@ Single-Session Coding Mode 不需要把当前 Agent 已知信息重新编码成�
 
 Single-Session Coding Mode 继续使用 Semantic Contract 作为逻辑决策锚点，但不得为了形式完整把它当作 self-delegation prompt 再发送给自己。
 
+### 多 Output Worker 的父级会合
+
+当多个独立 Output Role Agent 同时工作时，父 Agent 必须在派发前为每个 Worker 定义 Interaction Slice 和反馈边界。每个 Worker 都应收到自己的 `Objective`、`Authorized scope/mutations`、`Return conditions` 与 `Unreleased boundary`；并行执行不会授权 Worker 跨越未放行边界，也不能从其他 Worker 的进度推断自己已获许可。
+
+Worker 可以在已授权 slice 内发送压缩 Progress Signal，但所有阻塞式 Control Checkpoint 都由父 Agent 负责。到达 Control Checkpoint 后，父 Agent 分析证据并为该 Worker 选择 `Continue`、`Amend` 或 `Stop`，也可以先请求 Evidence-on-Demand。如果 Semantic Contract、架构、范围、权限、安全或公共接口假设发生变化，父 Agent 决定其他 Worker 是继续、接收修订后的 slice，还是停止；Worker 不得在过时指令下静默继续。
+
+Context Exchange 文档只负责在 Worker 之间传输压缩发现、handoff 状态和可复用证据，不替代这个实时的父级 control loop。父 Agent 应在重大会合点更新 routing index 和相关 Worker 上下文，不要在每个 Progress Signal 或命令之后写记录。
+
 ## 多 Agent Coding 的文件化 Context Exchange
 
 当 Coding Flow 使用多个独立执行 Agent 时，可复用的跨 Agent 上下文应优先物化为小型工作区文档，而不是反复经过父 Agent 重新生成摘要。该机制只用于补充 Semantic Contract、Decision Checkpoint、Evidence-on-Demand 与各 Agent 自身的活跃上下文，不替代这些既有机制。

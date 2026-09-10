@@ -32,6 +32,13 @@
    只使用为当前环境登记的 Host Adapter 与 Model Profile。
 4. 所选 Profile 要求精确模型或 Runtime 参数时不得静默替换；
    按其 unavailable-handling 规则处理。
+5. 在实质性派发前，输入侧 Agent 必须定义问题、假设、决策问题、风险、
+   验收标准以及阶段/checkpoint 计划。若缺少项目事实，先派发有界
+   reconnaissance，再由输入侧综合证据并显式放行实现。不得派发未解决的
+   “分析、选择、实现并验证”组合式指令。
+6. 对非简单的正常双 Session 工作，每次只放行一个 Interaction Slice。
+   使用自适应的非阻塞 Progress Signal 和阻塞式 Control Checkpoint；每次
+   Control Checkpoint 后选择 Continue、Amend 或 Stop。
 ```
 
 本文包含中文 bootstrap；持久指令使用英文时，请使用对应语言版本。
@@ -47,15 +54,19 @@
 3. 确认 Runtime 解析选择了登记的 Codex Host Adapter 与 OpenAI Model Profile。
 4. 确认 Session 拓扑与当前模型身份及 Profile eligibility 一致。
 5. 在本仓库运行 `python3 scripts/check-multilingual-docs.py`、`git diff --check` 和 `git status --short`。
+6. 对非简单任务，确认存在简洁 Decision Brief；当缺少重大事实时，确认 reconnaissance 在实现前暂停，并且实现放行发生在输入侧综合证据之后。
+7. 对非简单多 Session 任务，确认每个 Output Agent 都只有一个已授权 Interaction Slice；Progress Signal 不会造成不必要阻塞，并且下一个 slice 放行前，Control Checkpoint 已产生明确的 Continue/Amend/Stop 决定。
 
 若检查失败，应先修复加载、Runtime 选择或优先级问题。不要把完整 Skill 粘贴进任务，也不要静默替换所需模型。
 
 ## 日常 Coding 循环
 
 1. 从最小 Semantic Contract 开始；字段和更新规则见 [`references/shared-protocols_zh_cn.md`](references/shared-protocols_zh_cn.md)。
-2. 按 [`SKILL_zh_cn.md`](SKILL_zh_cn.md) 与 [`references/coding-flow_zh_cn.md`](references/coding-flow_zh_cn.md) 进行路由和分阶段执行。
-3. 将普通工作限制在已批准阶段内；出现决策边界时，遵循 [`references/coding/execution-control_zh_cn.md`](references/coding/execution-control_zh_cn.md) 的 checkpoint 与证据指引。
-4. 运行适当的机械检查，再根据 Contract 完成语义验收。Session ownership 细节以 [`references/coding/session-model_zh_cn.md`](references/coding/session-model_zh_cn.md) 为准。
+2. 对非简单工作形成简洁 Decision Brief，并把问题定义、决策问题、方案批准与放行 ownership 保留在输入侧。
+3. 若缺少证据，先运行有界 reconnaissance，并在实现前暂停等待输入侧综合；随后按 [`SKILL_zh_cn.md`](SKILL_zh_cn.md) 与 [`references/coding-flow_zh_cn.md`](references/coding-flow_zh_cn.md) 进行路由和分阶段执行。
+4. 对非简单的正常双 Session 工作，每次只放行一个 Interaction Slice；在 slice 内使用自适应 Progress Signal，在自然或重大边界使用阻塞式 Control Checkpoint，并在放行下一个 slice 前决定 Continue/Amend/Stop。
+5. 将普通工作限制在已批准 slice 内；存在多个 Output Agent 时，遵循 [`references/coding/context-exchange_zh_cn.md`](references/coding/context-exchange_zh_cn.md) 的父级会合与 Context Exchange 指引。
+6. 运行适当的机械检查，再把每项验收标准映射到压缩证据并根据 Contract 完成语义验收。Session ownership 细节以 [`references/coding/session-model_zh_cn.md`](references/coding/session-model_zh_cn.md) 为准。
 
 该 Flow 提供操作结构，不保证缓存命中、成本、额度、延迟或模型质量。
 
