@@ -23,7 +23,7 @@ Single-Session Coding Mode 继续使用 Semantic Contract 作为逻辑决策锚�
 所有独立 Worker 都由父级 Input-side Reasoning Agent 创建和管理。每个 Worker 只接收其职责所需的上下文：
 
 - **Primary Output** 接收已批准的实现 Contract、相关项目上下文、获准写入范围和当前 Interaction Slice。它的聚焦检查属于实现反馈，并以压缩摘要向后传递。
-- **Change Verification** 接收最终项目状态或隔离的验证快照、验证 slice/最终状态 fingerprint 或 epoch、Contract 与验收标准、变更范围证据以及压缩的实现反馈摘要。初始 verifier Session 独立于 Primary Output 且为全新 Session；同一个 task conversation 中的后续验证 slice 复用该 verifier。它必须对每个所提供的 epoch 独立重新评估，不能把此前结论作为证据；不得修改受跟踪的产品/测试/文档文件，并且应返回证据而不是修复。
+- **Change Verification** 接收最终项目状态或隔离的验证快照、验证 slice/最终状态 fingerprint 或 epoch、Contract 与验收标准、变更范围证据以及压缩的实现反馈摘要。初始 verifier Session 独立于 Primary Output 且为全新 Session；同一个 task conversation 中的后续验证 slice 复用该 verifier。Handoff 在可用时应指出累计的完整套件入口或等价 manifest 及其已知覆盖边界，使 verifier 能先运行它，再做针对变更风险的定向分析。它必须对每个所提供的 epoch 独立重新评估，不能把此前结论作为证据；不得修改受跟踪的产品/测试/文档文件，并且应返回证据而不是修复。如果发现有价值的可重复覆盖缺口，应在保持只读的同时报告准确的预期断言；父 Agent 将物化返回 Primary Output，然后针对新的 epoch 和累计套件运行复用同一个 verifier。
 - **Documentation/Comments & Git Operations** 为每个明确放行的 slice 接收新的有界上下文。文档 slice 只在 verifier 通过（或明确跳过简单任务验证）后创建，并接收最终已验证状态、Contract、verifier 结论和仅限文档/注释的范围。Git slice 接收准确的仓库/worktree/ref/remote 范围、当前 Git 证据、已批准内容、适用流程、允许的操作和明确的用户/任务授权。它可以按授权操作 Git 元数据或远端仓库；只有使用已批准内容处理明确获准操作时才可解决冲突，不得进行语义决策、实现功能/测试或从其他角色推断授权。它返回压缩后的文档或 Git 操作证据。
 
 当 verifier 报告实质性失败且 Primary Output 完成修复后，父 Agent 应向同一个 verifier 发送新的验证 slice 和修复后的最终状态 fingerprint/epoch。verifier 必须独立重新评估验收矩阵和所需检查；此前结论不能作为修复状态的证据。不得仅因发生修复就创建新的 verifier。只有确实需要隔离时才创建额外 verifier，例如不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
