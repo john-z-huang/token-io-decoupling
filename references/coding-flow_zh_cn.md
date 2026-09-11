@@ -40,7 +40,7 @@
 
 ## 职责顺序
 
-Coding 架构由 Input-side Reasoning 负责高价值语义决策，Primary Output 负责实现与实现反馈检查，Change Verification 负责独立的最终改动结果验证，Documentation/Comments & Git Operations 负责验证通过后的按需文档/注释物化，以及所有非简单仓库 Git 工作。Git 工作包括同步、分支/worktree 生命周期、暂存、提交、历史整合、冲突处理、远端、推送及适用的 Issue/PR 交付。逻辑角色不必都对应独立 Agent 实例，但 Change Verification 与 Documentation/Comments & Git Operations 在选择隔离收益时应创建独立 Session；每个文档或 Git 操作仍需由父 Agent 单独放行 Interaction Slice。`session-model_zh_cn.md` 定义可能的拓扑，`runtime_zh_cn.md` 决定 active deployment 可以使用哪种拓扑。
+Coding 架构由 Input-side Reasoning 负责高价值语义决策，Primary Output 负责实现与实现反馈检查，Change Verification 负责独立的最终改动结果验证，Documentation/Comments & Git Operations 负责验证通过后的按需文档/注释物化，以及所有非简单仓库 Git 工作。Git 工作包括同步、分支/worktree 生命周期、暂存、提交、历史整合、冲突处理、远端、推送及适用的 Issue/PR 交付。逻辑角色不必都对应独立 Agent 实例。选择 Change Verification 时，为该 task conversation 启动一个独立 verifier 并在各验证 slice 中复用；每个新的最终状态 fingerprint/epoch 都必须独立重新评估，不能把此前结论作为证据；只有确实隔离的验证需求才创建额外 verifier。Documentation/Comments & Git Operations 在选择隔离收益时仍使用独立 Session；每个文档或 Git 操作仍需由父 Agent 单独放行 Interaction Slice。`session-model_zh_cn.md` 定义可能的拓扑，`runtime_zh_cn.md` 决定 active deployment 可以使用哪种拓扑。
 
 在实质性派发前，应查阅 [`coding/execution-control_zh_cn.md`](coding/execution-control_zh_cn.md) 中的派发前推理、Interaction Slice、实现放行、最终验证和 Git 操作放行门槛；存在多个 Coding Worker 时，还应加载 [`coding/context-exchange_zh_cn.md`](coding/context-exchange_zh_cn.md) 中的父级会合规则。本入口只负责让这些 ownership 边界可被发现，不复制其细则。
 

@@ -28,13 +28,13 @@
 
 Context Bootstrap/Refresh 是按需的辅助职责，不是第五个核心角色，也不是强制的 Session 拓扑。只有达到 `execution-control_zh_cn.md` 中的选择阈值时，父级 Input-side Reasoning Agent 才创建或复用一个 Bootstrap Worker。该 Worker 构建或增量刷新有界、带 fingerprint 的 capsule，其中包含中性项目事实、准确 source pointer、policy-routing pointer 以及 freshness/invalidation 数据。它不负责问题定义、Semantic Contract 决策、实现、验证结论或文档物化，也不得递归委派。
 
-Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 capsule 只能补充这些指令，不能替代它们。下游 Worker（包括 fresh verifier）可以通过定向只读暴露接收 capsule，然后直接读取点名的权威文件。Fresh verification 指独立判断，且不继承实现历史或此前验证结论；不要求 verifier 从零重新发现稳定的项目布局和 policy routing。项目或 Skill 发生实质相关变化后，复用同一个 Bootstrap Worker 做增量 refresh；但任何新的实质性最终状态仍需创建新的 verifier。
+Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 capsule 只能补充这些指令，不能替代它们。下游 Worker（包括初始 verifier）可以通过定向只读暴露接收 capsule，然后直接读取点名的权威文件。独立验证意味着独立判断，不能把此前的 verifier 结论当作证据；不要求 verifier 从零重新发现稳定的项目布局和 policy routing。项目或 Skill 发生实质相关变化后，复用同一个 Bootstrap Worker 做增量 refresh。在同一个 task conversation 中，后续验证 slice 复用一个独立 verifier，并要求它针对每个新的实质性最终状态 fingerprint/epoch 独立重新评估；只有确实存在独立隔离需求时才创建额外 verifier，例如不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
 
 ### Change Verification Agent
 
 负责 Primary Output 实现 slice 完成后的最终、独立改动验证。它接收最终项目状态、当前有效 Semantic Contract、验收标准、变更范围证据和临时实现检查，然后渐进检查相关 diff 与周边行为，并执行适当的整体检查，例如集成、回归、跨模块、系统或端到端测试。它返回压缩后的证据、覆盖缺口、失败和剩余风险；不负责架构或产品决策、语义验收或修复工作。
 
-选择该角色时，Change Verification Agent 必须使用新的独立 Session，避免继承 Primary Output 的实现历史或此前验证结论。其验证 slice 对产品代码、测试、文档、配置和 Git 状态保持只读。它消费 Documentation/Comments & Git Operations Agent 提供的变更范围清单和 Git 证据，然后独立验证内容与行为；也可以使用当前有界 Bootstrap capsule 作为事实/路由上下文，但必须独立判断最终状态和所需证据。不执行非简单 Git 查询或操作。临时测试/构建输出可由 Host 隔离。它不得递归委派。若发现需要实质修复，应由父级输入侧 Agent 将修复返回 Primary Output，并针对新的最终状态重新执行一次 fresh verification。
+选择该角色时，Change Verification Agent 首先使用新的独立 Session，避免继承 Primary Output 的实现历史。其验证 slice 对产品代码、测试、文档、配置和 Git 状态保持只读。它消费 Documentation/Comments & Git Operations Agent 提供的变更范围清单和 Git 证据，然后独立验证内容与行为；也可以使用当前有界 Bootstrap capsule 作为事实/路由上下文，但必须独立判断所提供的最终状态和所需证据。不执行非简单 Git 查询或操作。临时测试/构建输出可由 Host 隔离。它不得递归委派。若发现需要实质修复，应由父级输入侧 Agent 将修复返回 Primary Output；修复后，父 Agent 应复用同一个 verifier，为新的验证 slice 和最终状态 fingerprint/epoch 重新独立评估验收矩阵，不能把此前结论作为证据。只有父 Agent 确认存在多个确实隔离的验证需求时，才创建额外 verifier，例如并发不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
 
 ### Documentation/Comments & Git Operations Agent
 
@@ -56,14 +56,14 @@ Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 caps
 
 - 当前 Session 同时承担 Input-side Reasoning 与 Primary Output 的实现/临时检查；不得仅为了维持双角色形式而创建、handoff 到或要求存在额外 Primary Output Agent；
 - 角色边界仍作为逻辑执行纪律存在：先固化高价值目标、约束、决策和验收，再渐进读取项目状态、实现、运行临时反馈检查，在需要时取得独立改动验证，最后进行语义验收；
-- 对有实质性的功能改动，当前 Session 不承担最终 Change Verification Agent 职责。实现完成后由输入侧 Agent 创建 fresh verifier Session；验证通过后如有需要，还可创建独立 Documentation/Comments & Git Operations Agent；
+- 对有实质性的功能改动，当前 Session 不承担最终 Change Verification Agent 职责。实现完成后由输入侧 Agent 创建一个新的独立 verifier Session，并在同一个 task conversation 的后续验证 slice 中复用它；每个新的最终状态 fingerprint/epoch 都必须独立重新评估，不能把此前结论作为证据。额外 verifier Session 只能用于确实隔离的验证需求。验证通过后如有需要，还可创建独立 Documentation/Comments & Git Operations Agent；
 - interaction slice 与 Continue/Amend/Stop 决策作为内部推理边界保留；不得向同一 Session 模拟发送 Progress Signal 或 Control Checkpoint 消息；
 - 当前 Agent 自己的普通探索、实现、聚焦测试、修复和实现输出属于同 Session 自执行，不构成 Dispatch；不得打印虚构的 self-dispatch，也不得构造发给同一 Session 的提示词；
 - 仓库规模大、修改文件多、输出长、需要 build/test/debug 或笼统的“任务复杂”都不是创建额外 Session 的理由。
 
 只有存在独立结构性收益时才允许额外 Agent，例如：
 
-- 需要不受当前实现历史影响的 fresh verification；
+- 首次需要不受当前实现历史影响的独立验证，之后在各验证 epoch 中复用该 verifier；
 - 需要真正并行，且各任务互不依赖、不会争用相同写入目标；
 - 当前 Session 的上下文明显失效、冲突严重或膨胀到不再适合继续工作；
 - 存在明确的独立上下文、权限或其他隔离需求，且收益高于 handoff 成本。
@@ -84,7 +84,7 @@ Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 caps
 独立 Primary Execution Session
     └─ Primary Output
 
-可选的全新 Change Verification Session
+可选的独立 Change Verification Session（跨验证 epoch 复用）
     └─ Change Verification
 
 可选的 Documentation/Comments & Git Operations Session
@@ -116,4 +116,4 @@ Single-Session Coding Mode 不存在跨 Session 的 Context Firewall；当前 Se
 
 后续项目探索、实现、诊断、测试、修复和局部执行优先复用该 Primary Execution Session。复用的目的包括保留项目工作上下文、减少重复探索，并提高稳定 prompt prefix 的复用机会。不得宣称同一 Agent 必然命中 prompt cache，也不得宣称新 Agent 必然无法命中缓存。
 
-只有选定的独立改动验证、真正并行、上下文失效/容量恢复、明确的文档/注释或非简单 Git 操作隔离，或 active Profile 定义的定向 escalation 场景才新建执行 Session。Primary Execution Session 应保持 sticky but not immortal：默认复用于实现和临时反馈，但允许在正确性、上下文容量或隔离需求要求时重建。选定的 verifier 与 Documentation/Comments & Git Operations Worker 有意使用全新 Session，不替代 Primary Execution Session。
+为选定的独立改动验证创建初始执行 Session，或因真正并行、上下文失效/容量恢复、明确的文档/注释或非简单 Git 操作隔离，或 active Profile 定义的定向 escalation 场景才新建执行 Session。在同一个 task conversation 中，后续验证 epoch 复用选定的 verifier；只有确实隔离的验证需求才创建额外 verifier。Primary Execution Session 应保持 sticky but not immortal：默认复用于实现和临时反馈，但允许在正确性、上下文容量或隔离需求要求时重建。选定的 verifier 与 Documentation/Comments & Git Operations Worker 均独立于 Primary Execution，不替代 Primary Execution Session。

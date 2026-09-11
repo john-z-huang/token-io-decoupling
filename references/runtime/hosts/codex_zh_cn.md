@@ -22,6 +22,7 @@
 - Codex 暴露模型和运行参数控制时，显式请求 Profile 要求的模型与宿主支持参数；
 - Profile 要求精确模型或 reasoning-effort 档位时，不依赖未指定的宿主默认值；
 - 相关工作优先复用已经建立的 Primary Execution Session，只有 Core 规则给出具体重建/拆分理由时才新建；
+- 在同一个 task conversation 的后续验证 slice 中复用已经建立的 verifier Session，传入新的最终状态 fingerprint/epoch 并要求独立重新评估；只有父 Agent 指出确实隔离的验证需求时才创建额外 verifier；
 - 同一兼容 Session 只是切换逻辑职责时，不因为角色名称变化而创建第二个 Session。
 
 当前 Codex 环境若无法创建所需独立 Session、无法选择所需模型，或不能满足所需运行参数，应把 capability failure 交给 active Model Profile 的 unavailable 规则处理；Host Adapter 不得自行换模型。

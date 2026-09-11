@@ -79,7 +79,7 @@ Dispatch → Observation | Task: 对比 checkout 设计稿与当前 UI；Scope: 
 
 高价值决策 Agent 默认不重新读取完整原始证据。需要确认某项结论时，向持有原始状态的独立 Worker 提出定向问题，由后者返回最小必要证据、相关路径、图片/帧引用或小段事实。
 
-如果高价值决策职责与 Primary 职责位于同一 Session，则直接定向检查当前上下文或工具状态，不为了 Evidence-on-Demand 创建 self-handoff。只有高风险任务或确有独立审查价值时，才创建 fresh verifier；不能把独立验证变成所有任务的固定开销。
+如果高价值决策职责与 Primary 职责位于同一 Session，则直接定向检查当前上下文或工具状态，不为了 Evidence-on-Demand 创建 self-handoff。当独立审查具有具体收益时，为该 task conversation 创建一个独立 verifier，并在后续验证 slice 中复用它。每个 slice 都必须根据所提供的最终状态 fingerprint/epoch 独立评估；此前的结论只能作为上下文，永远不能作为证据。只有确实存在独立隔离需求时才创建额外 verifier，例如不兼容的快照/环境、不同的权限或安全域，或明确要求的独立审计。
 
 ## Cache-Aware Context Stability
 
@@ -89,6 +89,6 @@ Dispatch → Observation | Task: 对比 checkout 设计稿与当前 UI；Scope: 
 
 ## 委派边界
 
-任何 Primary Observation Agent、独立 Primary Output Agent 或其他独立 Worker 都不得递归委派。需要额外 Agent、独立 verifier 或跨 Flow handoff 时，由当前父级高价值决策 Agent 统一调度；同 Session Coding 需要触发例外 Agent 时，也由当前 Agent 直接创建，不先构造虚拟 Primary 层级。
+任何 Primary Observation Agent、独立 Primary Output Agent 或其他独立 Worker 都不得递归委派。初始独立 verifier、任何因例外需要的额外 verifier 以及跨 Flow handoff，都由当前父级高价值决策 Agent 统一调度；同 Session Coding 需要触发例外 Agent 时，也由当前 Agent 直接创建，不先构造虚拟 Primary 层级。
 
 本 Skill 不能绕过更高优先级的权限、用户授权、产品限制或安全规则。角色分工、Semantic Contract 或已建立 Session Affinity 都不构成额外授权。

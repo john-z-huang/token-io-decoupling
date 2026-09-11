@@ -22,6 +22,7 @@ When the active Model Profile requires an independent Primary Output, verifier, 
 - explicitly request the Profile-required model and host-supported runtime parameters when Codex exposes controls for them;
 - do not rely on an unspecified host default when the Profile requires an exact model or reasoning-effort tier;
 - reuse the established Primary Execution Session for related work unless the Core rules provide a concrete reason to rebuild or split it;
+- reuse the established verifier Session for subsequent verification slices in the same task conversation, passing the new final-state fingerprint/epoch and requiring independent re-evaluation; create another verifier only when the parent identifies a genuinely isolated verification requirement;
 - do not create a second Session merely because the logical role name changes inside a compatible same-Session execution.
 
 If the current Codex environment cannot create the required independent Session, cannot select the required model, or cannot satisfy a required runtime parameter, return that capability failure to the active Model Profile's unavailable-handling rule. The Adapter must not substitute another model on its own.

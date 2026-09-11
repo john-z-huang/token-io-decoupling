@@ -55,7 +55,7 @@
 4. 确认 Session 拓扑与当前模型身份及 Profile eligibility 一致。
 5. 在本仓库由 Documentation/Comments & Git Operations 针对文档/Git 范围运行 `python3 scripts/check-multilingual-docs.py`、`python3 scripts/check-context-exchange.py`、`git diff --check` 和 `git status --short`。
 6. 对非简单任务，确认存在简洁 Decision Brief；当缺少重大事实时，确认 reconnaissance 在实现前暂停，并且实现放行发生在输入侧综合证据之后。
-7. 对实质性功能改动，确认 Primary Output 只负责实现和临时聚焦检查，由全新的 Change Verification Session 执行最终整体检查，并按独立、明确的范围放行 Documentation/Comments & Git Operations：文档/注释只能在验证后放行，非简单 Git 工作在需要的阶段放行。
+7. 对实质性功能改动，确认 Primary Output 只负责实现和临时聚焦检查，由一个全新的独立 Change Verification Session 执行最终整体检查，并在同一个 task conversation 的后续验证 slice 中复用；每个新的最终状态 fingerprint/epoch 都必须独立重新评估，不能把此前结论作为证据。只有确实隔离的验证需求才创建额外 verifier。Documentation/Comments & Git Operations 按独立、明确的范围放行：文档/注释只能在验证后放行，非简单 Git 工作在需要的阶段放行。
 8. 对非简单多 Session 任务，确认每个 Worker 都只有一个已授权 Interaction Slice；Progress Signal 不会造成不必要阻塞，并且下一个 slice 放行前，Control Checkpoint 已产生明确的 Continue/Amend/Stop 决定。
 
 若检查失败，应先修复加载、Runtime 选择或优先级问题。不要把完整 Skill 粘贴进任务，也不要静默替换所需模型。
@@ -66,7 +66,7 @@
 
 只有在复用可能值得建立成本时才使用 Context Bootstrap/Refresh：预计至少有两个相互独立的下游 Worker；某个 fresh Worker 需要广泛探索并加载三个或更多路由 policy module；或相关 source set 大约超过 20k 原始字符 / 5k token-equivalents。Single-Session 工作、一个小型 Worker、本地或仅文档的快路径、已知只涉及一两个文件，或建立成本预计为净负值时都应跳过。Capsule 应保持有界，只包含中性事实、source/policy pointer、fingerprint 和 freshness 数据；它不能替代强制指令加载或语义决策。
 
-下游使用前，对照当前状态检查 capsule 的 `HEAD`/tree、tracked-delta fingerprint、列出的 source hash、相关未跟踪状态以及 active task/scope。发生实质相关变化后，复用同一个 Bootstrap Worker，只刷新受影响 section；在 refresh 完成前则直接读取点名的权威文件。对一个未变化的实质性最终状态 fingerprint，Evidence-on-Demand 复用同一个 fresh verifier；只有实质修复改变 fingerprint 后才创建新的 verifier。常规交付 read-back 留在交付 slice 内，除非明确的外部风险标准选择独立 delivery verification。
+下游使用前，对照当前状态检查 capsule 的 `HEAD`/tree、tracked-delta fingerprint、列出的 source hash、相关未跟踪状态以及 active task/scope。发生实质相关变化后，复用同一个 Bootstrap Worker，只刷新受影响 section；在 refresh 完成前则直接读取点名的权威文件。对实质性任务，Evidence-on-Demand 和后续每个验证 epoch 都复用同一个独立 verifier；每个新的最终状态 fingerprint 都必须独立重新评估，不能把此前结论作为证据。只有确实隔离的验证需求才创建额外 verifier。常规交付 read-back 留在交付 slice 内，除非明确的外部风险标准选择独立 delivery verification。
 
 ## 日常 Coding 循环
 
@@ -75,7 +75,7 @@
 3. 若缺少证据，先运行有界 reconnaissance，并在实现前暂停等待输入侧综合；随后按 [`SKILL_zh_cn.md`](SKILL_zh_cn.md) 与 [`references/coding-flow_zh_cn.md`](references/coding-flow_zh_cn.md) 进行路由和分阶段执行。
 4. 对非简单的正常双 Session 工作，每次只放行一个 Interaction Slice；在 slice 内使用自适应 Progress Signal，在自然或重大边界使用阻塞式 Control Checkpoint，并在放行下一个 slice 前决定 Continue/Amend/Stop。
 5. 将普通工作限制在已批准 slice 内；存在多个 Coding Worker 时，遵循 [`references/coding/context-exchange_zh_cn.md`](references/coding/context-exchange_zh_cn.md) 的父级会合与 Context Exchange 指引。
-6. 让 Primary Output 在实现期间运行临时聚焦检查，但不执行非简单 Git 操作。对实质性改动，由输入侧 Reasoning 创建全新的 Change Verification Agent 执行最终整体检查，再把每项验收标准映射到其压缩证据并根据 Contract 完成语义验收。任一职责需要时创建 Documentation/Comments & Git Operations：文档/注释只能在验证后放行，复杂 Git 操作在相关阶段分别作为有界 slice 放行。均使用 `reasoning_effort=high`，并且同步、分支/worktree 变更、暂存、提交、历史整合、冲突处理、推送或 Issue/PR 交付都必须有明确的用户/任务授权。Session ownership 细节以 [`references/coding/session-model_zh_cn.md`](references/coding/session-model_zh_cn.md) 为准。
+6. 让 Primary Output 在实现期间运行临时聚焦检查，但不执行非简单 Git 操作。对实质性改动，由输入侧 Reasoning 创建一个全新的独立 Change Verification Agent 执行最终整体检查，在同一个 task conversation 中复用它完成后续验证 epoch，要求每个最终状态独立重新评估，再把每项验收标准映射到其压缩证据并根据 Contract 完成语义验收。只有确实隔离的验证需求才创建额外 verifier。任一职责需要时创建 Documentation/Comments & Git Operations：文档/注释只能在验证后放行，复杂 Git 操作在相关阶段分别作为有界 slice 放行。均使用 `reasoning_effort=high`，并且同步、分支/worktree 变更、暂存、提交、历史整合、冲突处理、推送或 Issue/PR 交付都必须有明确的用户/任务授权。Session ownership 细节以 [`references/coding/session-model_zh_cn.md`](references/coding/session-model_zh_cn.md) 为准。
 
 该 Flow 提供操作结构，不保证缓存命中、成本、额度、延迟或模型质量。
 

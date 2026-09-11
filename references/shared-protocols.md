@@ -79,7 +79,7 @@ Same-Session execution has no independent parent/child Session and does not simu
 
 A high-value decision Agent does not re-read complete raw evidence by default. When it must verify a conclusion, ask the independent Worker that owns the raw state a targeted question. That Worker returns only the minimum necessary evidence, relevant paths, image/frame references, or small factual excerpts.
 
-If the high-value decision responsibility and Primary responsibility are in the same Session, inspect the current context or tool state directly rather than creating a self-handoff for Evidence-on-Demand. Create a fresh verifier only for high-risk work or when independent review has concrete value; independent verification is not a fixed cost for every task.
+If the high-value decision responsibility and Primary responsibility are in the same Session, inspect the current context or tool state directly rather than creating a self-handoff for Evidence-on-Demand. When independent review has concrete value, create one independent verifier for the task conversation and reuse it for subsequent verification slices. Each slice must independently evaluate its supplied final-state fingerprint/epoch; a prior verdict is context only and never evidence. Create additional verifiers only for genuinely separate isolation requirements, such as incompatible snapshots/environments, distinct permission or security domains, or an explicitly independent audit.
 
 ## Cache-Aware Context Stability
 
@@ -89,6 +89,6 @@ Cache friendliness is a context-organization goal only. Actual cache keys, hit c
 
 ## Delegation boundary
 
-A Primary Observation Agent, independent Primary Output Agent, or any other independent Worker must not recursively delegate. Additional Agents, fresh verifiers, and cross-Flow handoffs are orchestrated by the current parent high-value decision Agent. When same-Session Coding needs an exception Agent, the current Agent creates it directly rather than constructing a virtual Primary hierarchy first.
+A Primary Observation Agent, independent Primary Output Agent, or any other independent Worker must not recursively delegate. Additional Agents, the initial independent verifier and any exceptional additional verifiers, and cross-Flow handoffs are orchestrated by the current parent high-value decision Agent. When same-Session Coding needs an exception Agent, the current Agent creates it directly rather than constructing a virtual Primary hierarchy first.
 
 This Skill cannot bypass higher-priority permissions, user authorization, product restrictions, or safety rules. Role division, a Semantic Contract, or established Session Affinity does not constitute additional authorization.
