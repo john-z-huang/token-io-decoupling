@@ -45,13 +45,13 @@ Host Adapter 回答“**这个产品怎么实例化工作**”；Model Profile �
 
 当 `execution-control_zh_cn.md` 中的输入侧选择标准表明可复用上下文具有价值时，Host 可以依据 active Model Profile 的辅助绑定，为可选的 Context Bootstrap/Refresh 职责创建或复用一个独立 Session。该 Session 只能写入有界、带 fingerprint 的事实/policy-routing capsule，并可在相关项目或 Skill 发生变化后重新激活做增量 refresh。它不是强制的拓扑拆分，不负责语义决策，也不替代强制指令加载或 fresh verification。下游 Worker 只能接收父 Agent 授权的 capsule 路径或定向只读暴露。
 
-输入侧 Reasoning Agent 决定改动的实质程度、风险或用户明确要求是否使独立最终验证具有具体收益。选择 **Change Verification** 后，Host 必须在 Primary Output 到达实现 checkpoint 后，按照 active Profile 为该角色创建一个全新的独立 Session。verifier 接收最终状态和已批准的验证输入，不得继承 Primary Output 的实现历史，也不得静默变成修复 Worker。
+输入侧 Reasoning Agent 决定改动的实质程度、风险或用户明确要求是否使独立最终验证具有具体收益。选择 **Change Verification** 后，Host 必须在 Primary Output 到达实现 checkpoint 后，按照 active Profile 为该角色创建一个全新的独立 Session。verifier 接收最终状态、其 fingerprint/epoch 和已批准的验证输入，不得继承 Primary Output 的实现历史，也不得静默变成修复 Worker。在同一个 task conversation 中，后续验证 slice 复用该 verifier，并要求每个新的 fingerprint/epoch 都独立重新评估；此前结论只能作为非权威上下文。只有确实存在独立隔离需求时才创建额外 verifier，例如不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
 
 验证完成后如有文档或代码注释工作，或需要任何非简单仓库 Git 工作，输入侧 Agent 可以选择 **Documentation/Comments & Git Operations**，并使用 Profile 指定的辅助物化绑定与 effort 档位创建独立 Session。文档 slice 只有在 verifier 通过（或输入侧 Agent 明确将任务分类为行为保持不变并跳过独立验证）后才能放行，且写入 capability 必须限制在获准的文档/注释范围内。Git slice 可以在需要同步、分支/worktree 准备、历史整合、冲突处理或其他仓库 Git 工作的阶段放行，并必须设置准确的 Git 范围与 capability 边界。
 
 不存在独立的交付角色或交付 Worker：提交、推送、远端和 Issue/PR 交付都属于 Documentation/Comments & Git Operations 的 Git slice。只有在父 Agent 具有明确的用户/任务授权且 Host 能够强制实施所需边界时，该 Agent 才能检查或修改 Git 元数据和远端状态。仅当使用已批准内容完成明确获准的操作时才允许冲突解决编辑；若需要新的语义或产品决策，应返回父级与 Primary Output。如果 active Runtime 无法提供所需隔离或受支持的 Worker，应遵循其 unavailable 规则并阻塞；不得静默自行授权、扩大文档范围或替换为任意模型。
 
-在 Single-Session Coding Mode 中，双角色 eligibility 只覆盖 Input-side Reasoning 与 Primary Output 的实现，不授权当前 Session 对已选择 fresh verifier 的实质性最终改动自行验证，也不让当前 Session 充当 Documentation/Comments & Git Operations Agent 或执行非简单 Git 工作。如果无法创建所选独立绑定或满足所需参数，应遵循 active Profile 的 unavailable 规则，不得静默退回 Primary Output 自我验证、让输入侧承担长篇物化或由输入侧执行 Git 操作。
+在 Single-Session Coding Mode 中，双角色 eligibility 只覆盖 Input-side Reasoning 与 Primary Output 的实现，不授权当前 Session 对已选择的独立 verifier 的实质性最终改动自行验证，也不让当前 Session 充当 Documentation/Comments & Git Operations Agent 或执行非简单 Git 工作。后续验证 epoch 复用已选 verifier；只有确实隔离的验证需求才创建额外 verifier。如果无法创建所选独立绑定或满足所需参数，应遵循 active Profile 的 unavailable 规则，不得静默退回 Primary Output 自我验证、让输入侧承担长篇物化或由输入侧执行 Git 操作。
 
 ## Runtime 参数 ownership
 

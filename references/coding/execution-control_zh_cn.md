@@ -18,7 +18,7 @@ Single-Session Coding Mode 在同一 Session 内按上述职责顺序工作，�
 
 Context Bootstrap/Refresh 是可选的辅助 slice。满足以下任一条件时，选择一个由父 Agent 管理且不递归委派的 Bootstrap Worker：预计至少有两个相互独立的下游 Worker；某个 fresh Worker 原本需要广泛探索项目并加载三个或更多路由 policy module；或相关 source set 大约超过 20k 原始字符 / 5k token-equivalents 且 capsule 会被复用。Single-Session 工作、一个小型 Worker、本地或仅文档的快路径、已知只涉及一两个文件，以及预期复用不超过建立成本的情况都应跳过。Bootstrap Worker 只能物化带 source fingerprint 与 freshness 数据的有界事实/policy-routing capsule，不负责语义决策或验证结论。上述规则是可测量的路由标准，不代表 billed token、cache 命中、成本、额度、延迟或质量方面的声明。
 
-复用前，对照当前状态检查 capsule 的 `HEAD`/tree、tracked-delta fingerprint、列出的 source hash、相关未跟踪项目状态以及 active task/scope。任何实质性失配都要求父 Agent 复用同一个 Bootstrap Worker，增量刷新受影响的事实和 pointer；或者要求接收 Worker 直接读取点名的权威 source。任何 Worker 都不得依赖过时的 capsule 声明。Refresh 不满足 fresh verification。
+复用前，对照当前状态检查 capsule 的 `HEAD`/tree、tracked-delta fingerprint、列出的 source hash、相关未跟踪项目状态以及 active task/scope。任何实质性失配都要求父 Agent 复用同一个 Bootstrap Worker，增量刷新受影响的事实和 pointer；或者要求接收 Worker 直接读取点名的权威 source。任何 Worker 都不得依赖过时的 capsule 声明。Refresh 不满足独立的 Change Verification。
 
 ## 派发前推理与实现放行
 
@@ -101,9 +101,9 @@ Amendment: 保持 public API 稳定；选择 storage-owned state；批准 Stage 
 
 Primary Output 职责只负责实现反馈检查及其高体量证据处理，例如用于指导实现修复的聚焦构建、测试、lint、formatter、类型检查和局部诊断。这些检查是临时性的，不得表述为最终改动结果验证。
 
-Change Verification 职责负责实质性改动的最终改动结果验证。其 fresh 独立 Agent/Session 使用 Documentation/Comments & Git Operations 产出的变更范围清单和 Git 证据，检查最终项目状态、相关周边行为、完整变更范围与意外文件状态，并运行适当的整体证据检查，例如集成、回归、跨模块、系统或端到端测试。Fresh 指独立判断且不继承 Primary Output 的实现历史或此前 verifier 结论；不等于完全无上下文，并且可以使用当前有界事实/路由 capsule。它不执行非简单 Git 查询或操作。通常一个 verifier Session 对应一个连贯的实质性最终状态 fingerprint（epoch），覆盖该不可变状态的验收矩阵和全部适用检查。它返回压缩后的证据、失败、覆盖缺口和剩余风险；不得修改产品代码、测试、文档或配置，也不负责修复发现的问题。
+Change Verification 职责负责实质性改动的最终改动结果验证。其初始全新独立 Agent/Session 使用 Documentation/Comments & Git Operations 产出的变更范围清单和 Git 证据，检查最终项目状态、相关周边行为、完整变更范围与意外文件状态，并运行适当的整体证据检查，例如集成、回归、跨模块、系统或端到端测试。独立指独立判断且不继承 Primary Output 的实现历史；可以使用当前有界事实/路由 capsule，但此前 verifier 结论永远不能作为证据。它不执行非简单 Git 查询或操作。通常为一个 task conversation 创建一个独立 verifier，并在后续验证 slice 中复用。每个 slice 都带有最终状态 fingerprint（epoch），verifier 必须独立重新评估该状态的验收矩阵和全部适用检查。它返回压缩后的证据、失败、覆盖缺口和剩余风险；不得修改产品代码、测试、文档或配置，也不负责修复发现的问题。
 
-在最终状态 fingerprint 未变化时，针对性的 Evidence-on-Demand 或澄清继续复用该 verifier。实质修复会改变 fingerprint，必须创建新的 fresh verifier；相同状态上的非实质重跑不会仅因某项检查待执行就创建另一个 verifier。
+针对性的 Evidence-on-Demand、澄清以及修复后的验证 slice 都复用该 verifier。最终状态 fingerprint 发生变化时，复用的 verifier 必须独立重新评估新的 epoch，不能把此前结论作为证据；相同状态上的非实质重跑也复用该 verifier，不会仅因某项检查待执行就创建另一个 verifier。只有确实存在多个隔离的验证需求时才创建额外 verifier，例如并发不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
 
 Documentation/Comments & Git Operations 职责负责验证通过后、已批准的开发文档和代码注释物化，以及所有非简单的项目级 Git 操作。它可以运行文档专属检查（包括仓库双语验证器）和 Git 专属检查（例如有界 status/diff 校验），但不执行最终功能验证或语义验收，也不得修改功能或测试；只有明确获准且使用已批准内容的冲突解决编辑属于例外。
 
@@ -117,20 +117,20 @@ Documentation/Comments & Git Operations 职责负责验证通过后、已批准�
 
 在已放行的 slice 内，操作的高层顺序为：确认最终 Git 证据、status/diff、暂存范围和批准范围；使用合适的开放 Issue，或创建带类别 label 且指派 `@me` 的 Issue，然后核验；创建或确认合规分支和中文提交；只有 Issue 及暂存/提交检查通过后才推送；创建带有 `Closes #N` 且指派 `@me` 的 PR；核验远端分支、Issue 状态/label/assignee、PR base/head/assignee 以及 Issue 关联。同步、分支/worktree 准备和历史整合可以作为更早的独立 Git slice。未被放行覆盖的外部副作用发生前，以及权限、网络、label、assignee、分支、暂存范围、冲突或 PR 拓扑检查失败时，Worker 必须在阻塞式 Control Checkpoint 暂停。没有经过核验的开放 Issue 时，不得推送或创建 PR。
 
-输入侧职责负责语义验收：用户目标是否满足、Semantic Contract 是否落实、业务/兼容性约束是否被破坏、Change Verification、文档检查和 Git 操作证据报告的风险是否可接受。它还决定改动是否达到需要 fresh verifier 的实质程度、是否需要验证后的文档/注释工作，以及当前阶段是否授权 Git slice。
+输入侧职责负责语义验收：用户目标是否满足、Semantic Contract 是否落实、业务/兼容性约束是否被破坏、Change Verification、文档检查和 Git 操作证据报告的风险是否可接受。它还决定改动是否达到需要独立 verifier 的实质程度、是否需要验证后的文档/注释工作，以及当前阶段是否授权 Git slice。
 
 ### 最终改动结果的有序流程
 
 对于实质性功能改动，默认顺序为：
 
 1. Primary Output 实现已批准的 slice，并运行临时聚焦检查，然后在实现 checkpoint 暂停。
-2. 输入侧 Reasoning 使用最终状态、Contract、验收标准、变更范围证据和临时检查摘要，创建全新的 Change Verification Agent/Session。verifier 独立运行整体检查，并在压缩验证 checkpoint 暂停。
-3. 输入侧 Reasoning 将每项验收标准映射到 verifier 证据，并选择 `Continue`、`Amend` 或 `Stop`。验证失败时，只向 Primary Output 放行有界修复 slice，之后针对修复后的最终状态重新进行 fresh verification。实质性验证问题解决前不得启动文档/注释或依赖验证的远端 Git slice。
+2. 输入侧 Reasoning 使用最终状态、其 fingerprint/epoch、Contract、验收标准、变更范围证据和临时检查摘要，创建一个全新的独立 Change Verification Agent/Session。verifier 独立运行整体检查，并在压缩验证 checkpoint 暂停。
+3. 输入侧 Reasoning 将每项验收标准映射到 verifier 证据，并选择 `Continue`、`Amend` 或 `Stop`。验证失败时，只向 Primary Output 放行有界修复 slice，之后复用同一个 verifier，针对修复后的新最终状态 fingerprint/epoch 开启验证 slice。verifier 必须独立重新评估修复后的状态，不能把此前结论作为证据；只有确实隔离的验证需求才创建额外 verifier。实质性验证问题解决前不得启动文档/注释或依赖验证的远端 Git slice。
 4. 验证通过后，输入侧 Reasoning 执行语义验收；如有需要，创建带有明确文档/注释范围的 Documentation/Comments & Git Operations Agent/Session。该 Agent 返回其变更范围和文档专属检查。如其他阶段需要 Git 同步、分支/worktree 准备或历史整合，父 Agent 为同一角色放行独立 Git 范围并设置自己的 checkpoint。
 5. 最终工作树和文档 checkpoint 通过后，如果存在明确的用户/任务授权且 Host 具备所需能力，输入侧 Reasoning 可以向同一角色放行提交、推送、远端或 Issue/PR Git slice。Git slice 返回压缩后的本地与远端证据；不得做产品决策或执行语义验收。
 6. 输入侧 Reasoning 执行最终语义验收，并确认文档/注释阶段没有引入功能或测试变更、冲突处理始终使用已批准内容，且请求的 Git/远端交付证据与已批准改动一致。
 
-对于行为保持不变的简单任务或纯文档任务，输入侧 Reasoning 可以明确跳过 Change Verification Agent；但必须记录独立审查没有具体收益的原因，并运行适用的文档/静态检查。不改变已跟踪内容的纯 Git 操作可以使用记录的前后 Git 证据而不创建 verifier；冲突解决或任何已跟踪内容变化都需要 fresh verification。Primary Output 的自我汇报永远不能替代明确要求的 fresh verifier。
+对于行为保持不变的简单任务或纯文档任务，输入侧 Reasoning 可以明确跳过 Change Verification Agent；但必须记录独立审查没有具体收益的原因，并运行适用的文档/静态检查。不改变已跟踪内容的纯 Git 操作可以使用记录的前后 Git 证据而不创建 verifier；冲突解决或任何已跟踪内容变化都需要独立验证，若已有该任务的 verifier 则应复用它。Primary Output 的自我汇报永远不能替代明确要求的 verifier。
 
 在最终语义验收时，输入侧 Agent 必须在需要 verifier 时把每项验收标准映射到 Change Verification 的压缩证据（若明确跳过独立验证，则映射到已记录的聚焦/静态证据），并在适用时补充文档证据，然后给出明确判断：
 
@@ -140,7 +140,7 @@ Acceptance criterion → evidence → input-side judgment
 
 判断必须确认用户目标已满足、实现仍在批准的解决方案范围内、业务与兼容性约束保持不变、执行过程中没有偷偷引入未经批准的语义决策、需要时独立 verifier 确实检查了最终状态、批准的 Git 范围得到保持，并且验证留下的剩余风险可接受。这个基于证据的映射不要求重新读取完整 diff、完整测试日志或大型文件；只通过 Evidence-on-Demand 请求完成判断所需的最小额外证据。
 
-正常双 Session 模式下，Primary Output 返回压缩的实现反馈结论，Change Verification 返回压缩的最终验证结论；输入侧不默认重新读取完整 diff、测试日志或大型文件。Single-Session Coding Mode 由当前 Session 完成实现和临时检查，然后对实质性改动创建 fresh verifier，而不是接受自己的最终验证。不得仅为了角色名称创建 verifier；只有 Contract、风险/实质程度或用户明确要求使独立审查具有具体收益时才创建。
+正常双 Session 模式下，Primary Output 返回压缩的实现反馈结论，Change Verification 返回压缩的最终验证结论；输入侧不默认重新读取完整 diff、测试日志或大型文件。Single-Session Coding Mode 由当前 Session 完成实现和临时检查，然后对实质性改动创建一个全新的独立 verifier，并在后续验证 epoch 中复用它，而不是接受自己的最终验证。不得仅为了角色名称创建 verifier；只有 Contract、风险/实质程度或用户明确要求使独立审查具有具体收益时才创建初始 verifier；额外 verifier 仅用于确实隔离的验证需求。
 
 ## 输入侧输出纪律
 

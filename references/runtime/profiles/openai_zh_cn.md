@@ -8,13 +8,13 @@
 
 - **Input-side Reasoning**：当前高级父模型/Session 负责高价值语义决策。
 - **Primary Output**：本 OpenAI 部署要求的执行模型为 `gpt-5.6-luna`。
-- **Change Verification**：选择该角色时，使用全新的独立 `gpt-5.6-luna` Session 进行最终改动结果验证。
+- **Change Verification**：选择该角色时，为该 task conversation 启动一个全新的独立 `gpt-5.6-luna` Session 进行最终改动结果验证，然后复用该 verifier 执行后续验证 slice。每个新的最终状态 fingerprint/epoch 都必须独立重新评估；此前结论不能作为证据。只有确实存在独立隔离需求时才创建额外 verifier Session，例如不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
 - **Documentation/Comments & Git Operations**：选择该角色时，使用独立的 `gpt-5.6-luna` Session 负责获准的验证后文档/代码注释物化，以及所有非简单仓库 Git 操作。它负责同步、分支/worktree 操作、暂存、提交、历史整合、reset/clean/stash、冲突处理、标签、远端、推送和适用的 Issue/PR 交付；只有极小的只读 Git 元数据查询可以留在该角色之外。
 - **Context Bootstrap/Refresh**：选择该职责时，使用独立或可复用的 `gpt-5.6-luna` Worker；有界事实与 policy-routing capsule 物化默认使用 `reasoning_effort=high`。只有在 Host 明确支持时，确定性的 metadata/source-hash 或增量 refresh 工作才可使用 `reasoning_effort=medium`；语义解释仍由 Input-side Reasoning 负责。
 - **双角色 eligibility**：当前 Session 能明确确认自身为 `gpt-5.6-luna`，并且 Host 能在该 Session 满足当前任务要求的 reasoning-effort 档位时，本 Profile 声明当前 Session 同时可以承担 Input-side Reasoning 与 Primary Output；因此通用 Runtime 映射默认进入 **Single-Session Coding Mode**，除非存在需要额外 Session 的具体结构性理由。
 - **正常双 Session 映射**：当前 Agent 不能明确确认自己是 `gpt-5.6-luna` 时，当前 Agent 只承担输入侧推理职责，并使用独立 `gpt-5.6-luna` Session 承担 Primary Output。
 
-Single-Session Coding Mode 保持当前部署在实现方面的已有行为：当前 Luna 直接完成源代码/项目探索、实现、调试、临时聚焦检查和实现输出，不为了维持双角色形式再把普通工作委派给另一个 Luna。它不承担非简单 Git 操作。对实质性功能改动，输入侧 Agent 仍会创建全新的 Change Verification Luna；需要文档或 Git 工作时，还可创建独立的 Documentation/Comments & Git Operations Luna。由于当前 Session 同时承担高价值推理职责，其普通实质性实现使用 `reasoning_effort=xhigh`。
+Single-Session Coding Mode 保持当前部署在实现方面的已有行为：当前 Luna 直接完成源代码/项目探索、实现、调试、临时聚焦检查和实现输出，不为了维持双角色形式再把普通工作委派给另一个 Luna。它不承担非简单 Git 操作。对实质性功能改动，输入侧 Agent 仍会启动一个全新的独立 Change Verification Luna，并在同一个 task conversation 的后续验证 epoch 中复用它；每个 epoch 都必须独立重新评估，不能沿用此前结论。只有确实存在独立隔离需求时才创建额外 verifier Session；需要文档或 Git 工作时，还可创建独立的 Documentation/Comments & Git Operations Luna。由于当前 Session 同时承担高价值推理职责，其普通实质性实现使用 `reasoning_effort=xhigh`。
 
 ## Reasoning-effort 分级
 
@@ -32,7 +32,7 @@ Single-Session Coding Mode 保持当前部署在实现方面的已有行为：�
 
 阻塞解除后，后续无关工作恢复正常 `xhigh`/`high` 档位，不让 max 继续成为默认值。
 
-当前 Luna Session 处于 Single-Session Coding Mode 时，只有选定的 fresh verification、验证后的文档/注释或非简单 Git 操作隔离、真正并行、当前上下文明显失效/膨胀、存在明确独立隔离收益，或某个具体任务反复阻塞而需要定向 `max` 升级时才允许创建额外 Agent。项目探索、实现、测试、长输出或笼统的“任务复杂”本身不是例外理由。
+当前 Luna Session 处于 Single-Session Coding Mode 时，只有初始选定的独立验证、验证后的文档/注释或非简单 Git 操作隔离、真正并行、当前上下文明显失效/膨胀、存在明确独立隔离收益，或某个具体任务反复阻塞而需要定向 `max` 升级时才允许创建额外 Agent。后续验证 epoch 复用已选 verifier；额外 verifier Session 需要确实隔离的验证需求。项目探索、实现、测试、长输出或笼统的“任务复杂”本身不是例外理由。
 
 ## Profile 约束
 
