@@ -36,6 +36,8 @@ Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 caps
 
 选择该角色时，Change Verification Agent 首先使用新的独立 Session，避免继承 Primary Output 的实现历史。其验证 slice 对产品代码、测试、文档、配置和 Git 状态保持只读。它消费 Documentation/Comments & Git Operations Agent 提供的变更范围清单和 Git 证据，然后独立验证内容与行为；也可以使用当前有界 Bootstrap capsule 作为事实/路由上下文，但必须独立判断所提供的最终状态和所需证据。不执行非简单 Git 查询或操作。临时测试/构建输出可由 Host 隔离。它不得递归委派。若发现需要实质修复，应由父级输入侧 Agent 将修复返回 Primary Output；修复后，父 Agent 应复用同一个 verifier，为新的验证 slice 和最终状态 fingerprint/epoch 重新独立评估验收矩阵，不能把此前结论作为证据。只有父 Agent 确认存在多个确实隔离的验证需求时，才创建额外 verifier，例如并发不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
 
+当仓库提供累计的完整套件入口或等价 manifest 时，全新的 verifier 应先运行该入口，再做针对变更风险的定向分析；详细的验证资产、覆盖缺口和文档快路径规则由 Coding Verification Boundary 负责。verifier 报告缺口时仍保持只读，修复返回 Primary Output；针对修复后的 epoch 复用同一个 verifier，不要为每项检查创建新的 verifier。
+
 ### Documentation/Comments & Git Operations Agent
 
 负责两类彼此独立的职责。第一类是验证通过后的、按需开发文档和代码注释物化：它接收最终已验证项目状态、当前有效 Contract、明确的文档/注释范围和压缩后的验证结论，只修改获准的文档与注释位置。第二类是所有非简单的项目级 Git 职责，包括仓库同步（`fetch`/`pull`）、分支和 worktree 生命周期、暂存、提交、历史整合（`rebase`/`merge`/`cherry-pick`）、冲突处理、reset/clean/stash、标签、远端配置、推送以及适用的 Issue/PR 交付。它只能在父 Agent 放行的 Git Interaction Slice 内检查或修改 Git 元数据与远端状态。

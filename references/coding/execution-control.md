@@ -99,6 +99,20 @@ Low-value commands, logs, and mechanical retries within an approved implementati
 
 ## Coding Verification Boundary
 
+### Verification assets and regression-first fresh verification
+
+Each repeatable verification point should be materialized in the repository as an automated test or deterministic, project-native Python, Shell, or other script when doing so provides reusable regression value. One-off commands may diagnose a problem, but they must not remain the sole durable evidence for a check that is expected to recur.
+
+When a repository has multiple verification assets, it should maintain discoverable phase or component aggregators and one full-suite entrypoint, or an equivalent manifest. A fresh Change Verification session must run the accumulated full-suite entrypoint first when one is available. It then performs targeted independent analysis only for changed risks or acceptance criteria that the suite does not cover, rather than rediscovering the repository layout and standard commands from scratch.
+
+The verifier remains read-only. If it identifies a valuable missing recurring check, it reports the coverage gap and the precise expected assertion; it does not add the check itself. The parent routes the repair to Primary Output, which materializes the test or deterministic script. The same verifier is reused for the new final-state epoch and reruns the cumulative suite. Do not create a new verifier for every verification point or coverage gap.
+
+Verification assets must be deterministic, idempotent, non-interactive, and have meaningful exit statuses. They should run offline without live APIs or secrets by default, make minimal or no product and Git mutations, and leave no generated artifacts behind. Optional network, system, or end-to-end suites should be explicit and separate when applicable so baseline regression does not depend on them.
+
+### Documentation-only verification fast path
+
+Ordinary documentation-only changes to wording, paths, status, or references default to lightweight deterministic checks: relevant stale-reference searches, Markdown or link checks, whitespace/diff checks, and the affected existing contract script. They do not require complex full functional verification merely because a documentation file changed. Escalate when documentation changes or defines a public contract, schema, configuration format, executable command, security or permission rule, generated artifact, or materially executable behavior.
+
 The Primary Output responsibility owns only implementation-feedback checks and their high-volume evidence processing, such as focused builds, tests, lint, formatting, type checks, and local diagnostics used to guide implementation fixes. These checks are provisional and must not be presented as final change-result verification.
 
 The Change Verification responsibility owns final change-result verification for a material change. Its initially fresh independent Agent/Session inspects the final project state and relevant surrounding behavior, checks the complete changed scope and accidental-file status against the changed-scope manifest and Git evidence produced by Documentation/Comments & Git Operations, and runs the appropriate holistic evidence-producing checks, such as integration, regression, cross-module, system, or end-to-end tests. Independent means independent judgment and no inherited Primary Output implementation history; a current bounded factual/routing capsule may be used, but a prior verifier verdict is never evidence. It does not perform non-trivial Git queries or operations. Normally create one independent verifier for a task conversation and reuse it across verification slices. Each slice has a supplied final-state fingerprint (epoch), and the verifier must independently re-evaluate the acceptance matrix and all appropriate checks for that state. It reports compressed evidence, failures, coverage gaps, and residual risks; it does not modify product code, tests, documentation, or configuration and does not repair findings.
