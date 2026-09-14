@@ -34,7 +34,7 @@ When multiple independent Coding Workers are active, the parent Agent defines an
 
 Workers may emit compressed Progress Signals within their authorized slices, but the parent owns every blocking Control Checkpoint. At a Control Checkpoint, the parent analyzes the evidence and decides `Continue`, `Amend`, or `Stop` for that Worker, or requests Evidence-on-Demand first. If the Semantic Contract, architecture, scope, permission, security, or public-interface assumptions change, the parent decides whether other Workers continue, receive amended slices, or stop; Workers must not silently continue on stale instructions. Every Worker reports to the parent and stops at its released boundary; it may not dispatch or begin another task category. The verifier's pass/fail conclusion does not itself release documentation, repair, or Git work; only the parent can release the next dependent slice.
 
-Context Exchange documents transport compressed findings, handoff state, and reusable evidence between Workers; they do not replace this live parent-led control loop. The parent should update the routing index and relevant Worker context at material rendezvous points, not after every Progress Signal or command.
+Context Exchange documents transport compressed findings, handoff state, and reusable evidence between Workers; they do not replace this live parent-led control loop. The parent updates the routing index at material rendezvous points. Worker-authored execution-summary memo language, default creation policy, and refresh cadence are owned by [`content-memo.md`](content-memo.md), not by this module.
 
 ### On-demand Context Bootstrap/Refresh
 
@@ -46,7 +46,7 @@ Freshness is checked against `HEAD`/tree, tracked-delta fingerprint, listed sour
 
 ## File-backed Context Exchange for multi-Agent Coding
 
-When Coding Flow uses multiple independent execution Agents, reusable cross-Agent context should be externalized into small workspace documents instead of repeatedly passing through parent-generated summaries. This mechanism supplements the Semantic Contract, Decision Checkpoints, Evidence-on-Demand, and each Agent's live context; it does not replace them.
+When Coding Flow uses multiple independent execution Agents, reusable cross-Agent context should be externalized into small workspace documents instead of repeatedly passing through parent-generated summaries. This mechanism supplements the Semantic Contract, Decision Checkpoints, Evidence-on-Demand, and each Agent's live context; it does not replace them. Worker-authored execution content memos inside this workspace follow [`content-memo.md`](content-memo.md); this module continues to own workspace layout, ownership, isolation, transport, and handoff mechanics.
 
 ### Workspace layout and ownership
 
@@ -78,7 +78,7 @@ The ownership rules above should be enforced by host filesystem permissions or s
 
 ### Bounded document set
 
-Each active Worker maintains a compact `INDEX.md` inside its own assigned subdirectory. This **Worker-local index** is distinct from the parent-maintained root `INDEX.md`. It contains only the information needed to route that Worker's context: current `Task`, `Scope`, `Status`, last material update, a one-line purpose for each context document, and any current blocker or handoff target. Create additional documents only when they provide reusable value; recommended names include `findings.md`, `changes.md`, `verification.md`, and `handoff.md`. Do not mechanically create every file or turn the directory into an execution journal.
+Each active Worker maintains a compact `INDEX.md` inside its own assigned subdirectory. This **Worker-local index** is distinct from the parent-maintained root `INDEX.md`. It contains only the information needed to route that Worker's context: current `Task`, `Scope`, `Status`, last material update, a one-line purpose for each context document, and any current blocker or handoff target. The default execution-content memo and its `write_content_memo` policy are governed by [`content-memo.md`](content-memo.md). Additional specialized documents such as `findings.md`, `changes.md`, `verification.md`, and `handoff.md` should be created only when they add distinct reusable value; do not mechanically create every file or turn the directory into an execution journal.
 
 Context documents may contain stable findings, relevant paths or symbols, execution-level assumptions and local choices, attempted approaches and failure reasons, a concise changed-file summary, exact verification commands and outcomes, remaining work, and pointers to evidence. Prefer references to project files or log locations over copying raw content.
 
@@ -86,7 +86,7 @@ Do not store credentials, secrets, unnecessary personal data, complete logs, com
 
 ### Synchronization and handoff
 
-Update reusable context at material milestones, blocking Decision Checkpoints, and before an Agent exits or is replaced; do not write a note after every command or tool call.
+Content-memo creation and refresh cadence are owned by [`content-memo.md`](content-memo.md). Other reusable Context Exchange documents should be updated only when their own routing, evidence, or handoff state materially changes; do not write a note after every command or tool call.
 
 The parent uses the root `INDEX.md` to track which Worker owns which subdirectory and to decide what context, if any, another Worker should receive. When another Agent needs prior work, the parent should preferably grant a read-only capability on the specifically named original documents and pass only the exact paths and capability boundary in the Dispatch, for example `Own Context RW: <path>; Read-only Context: <specific paths>`. The receiving Agent reads only the Worker-local index and specifically named documents that the parent authorized, plus direct project files required for its task. It must not discover or recursively load other Worker directories on its own.
 
