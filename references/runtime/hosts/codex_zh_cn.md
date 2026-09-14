@@ -20,6 +20,7 @@
 
 - 使用当前 Codex 环境提供的独立 Agent/Session 机制；
 - Codex 暴露模型和运行参数控制时，显式请求 Profile 要求的模型与宿主支持参数；
+- 创建 Agent 时，在指令正文中以可读文本写明本次指定的具体模型名称/标识和 `reasoning_effort`，即使也通过宿主控制项设置了这些值；不得要求 Agent 从工具参数或自身运行时身份推断本次指定。复用已明确写过相同指定的 Agent 时，不要机械重复；指定发生变化或先前指令缺失、不明确时再写明；
 - Profile 要求精确模型或 reasoning-effort 档位时，不依赖未指定的宿主默认值；
 - 相关工作优先复用已经建立的 Primary Execution Session，只有 Core 规则给出具体重建/拆分理由时才新建；
 - 在同一个 task conversation 的后续验证 slice 中复用已经建立的 verifier Session，传入新的最终状态 fingerprint/epoch 并要求独立重新评估；只有父 Agent 指出确实隔离的验证需求时才创建额外 verifier；
