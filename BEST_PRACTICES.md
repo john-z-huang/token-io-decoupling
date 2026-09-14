@@ -1,8 +1,8 @@
-# Coding Flow Best Practices — Current Codex Deployment
+# Coding Flow Best Practices
 
 [English](BEST_PRACTICES.md) | [简体中文](BEST_PRACTICES_zh_cn.md)
 
-This optional, non-normative guide covers installation and day-to-day use of the current verified Codex + OpenAI Coding deployment. It is not a product-neutral specification: normative behavior belongs to [`SKILL.md`](SKILL.md) and the Coding references, while concrete Host/Model policy belongs to the Runtime deployment files.
+This optional, non-normative guide covers installation and day-to-day use of the registered Coding deployments. It is not a product-neutral specification: normative behavior belongs to [`SKILL.md`](SKILL.md) and the Coding references, while concrete host mechanics and model policy belong to the deployment document registered for the current environment.
 
 For the shortest normative loading path, use [`references/shared-protocols.md`](references/shared-protocols.md), [`references/coding-flow.md`](references/coding-flow.md), and the Runtime documents selected through [`references/coding/runtime.md`](references/coding/runtime.md). This guide is deliberately operational and should not duplicate those rules.
 
@@ -10,13 +10,13 @@ For the shortest normative loading path, use [`references/shared-protocols.md`](
 
 ### Install once
 
-Keep the canonical personal Skill at `~/.agents/skills/token-io-decoupling/`. The installation must include the root Skill, its bilingual mirror, the shared/Coding references, the Coding modules, the Runtime registry, and the selected Codex Host Adapter and OpenAI Model Profile. `BEST_PRACTICES*.md` is optional human-facing guidance, not a Runtime dependency.
+Keep the canonical personal Skill at `~/.agents/skills/token-io-decoupling/`. The installation must include the root Skill, its bilingual mirror, the shared/Coding references, the Coding modules, the Runtime registry, and the deployment document registered for the current environment. `BEST_PRACTICES*.md` is optional human-facing guidance, not a Runtime dependency.
 
-Each Host Adapter maps this one source to the product's supported discovery mechanism. Keep project-scoped Skills in the host-native repository directory.
+Each registered deployment document maps this one source to the product's supported discovery mechanism. Keep project-scoped Skills in the host-native repository directory.
 
-### Add the Codex global bootstrap
+### Add the deployment's global bootstrap
 
-Put one language version in `~/.codex/AGENTS.md`. If `~/.codex/AGENTS.override.md` exists, it takes precedence; inspect the active file and remove conflicting bootstrap copies. Keep repository and project policy in their own instruction files.
+Put one language version of the bootstrap in the persistent instruction file of the host that runs your Coding sessions: `~/.codex/AGENTS.md` for Codex, or `~/.claude/CLAUDE.md` for Claude Code. The registered deployment document for that host owns the exact precedence and override rules; inspect the active file and remove conflicting bootstrap copies from anything that takes precedence over it. Keep repository and project policy in their own instruction files.
 
 Use this English bootstrap when persistent instructions are in English:
 
@@ -29,8 +29,8 @@ Before any Coding work:
 2. Choose Coding Flow, then load references/shared-protocols.md and
    references/coding-flow.md, followed by the Coding modules they require.
 3. Resolve the active Coding runtime through references/coding/runtime.md and
-   use only the Host Adapter and Model Profile registered for this environment.
-4. Do not substitute a model or runtime parameter when the selected Profile
+   use only the deployment document registered for this environment.
+4. Do not substitute a model or runtime parameter when the selected deployment
    requires an exact binding; follow its unavailable-handling rule.
 5. Before substantive dispatch, the Input-side Agent must define the problem,
    assumptions, decision questions, risks, acceptance, and stage/checkpoint
@@ -47,14 +47,14 @@ This file includes the English bootstrap; use the corresponding language version
 
 ### Start a fresh run after instruction changes
 
-After changing `~/.codex/AGENTS.md`, its override, a Skill file, or a project instruction file, start a new run or TUI Session. Do not assume an existing Session has adopted the change.
+After changing the persistent instruction file, its override, a Skill file, or a project instruction file, start a new run or Session. Do not assume an existing Session has adopted the change.
 
 In the new run, perform a small non-destructive smoke check:
 
 1. Confirm that the Skill is loaded and the task is routed to Coding Flow.
 2. Confirm that unrelated Multimodal references are not preloaded.
-3. Confirm that Runtime resolution selects the registered Codex Host Adapter and OpenAI Model Profile.
-4. Confirm that Session topology matches the current model identity and Profile eligibility.
+3. Confirm that Runtime resolution selects the registered deployment document for this environment and that its Host Adapter matches the actual Host.
+4. Confirm that Session topology matches the current model identity and the deployment's role eligibility.
 5. In this repository, have Documentation/Comments & Git Operations run `python3 scripts/check-multilingual-docs.py`, `python3 scripts/check-context-exchange.py`, `git diff --check`, and `git status --short` for the documentation/Git scope.
 6. For a non-simple task, confirm that a concise Decision Brief exists, reconnaissance pauses before implementation when material facts are missing, and implementation release follows input-side synthesis.
 7. For a material functional change, confirm that Primary Output is limited to implementation and provisional focused checks, one fresh independent Change Verification Session is started for the task conversation and reused across later verification slices, and each new final-state fingerprint/epoch is independently re-evaluated without carrying forward an earlier verdict as evidence. Create additional verifiers only for genuinely isolated requirements. Documentation/Comments & Git Operations is released with separate, explicit scopes: docs/comments only after verification, and non-trivial Git work at the stage where it is needed.
@@ -77,13 +77,13 @@ Before downstream use, compare the capsule's `HEAD`/tree, tracked-delta fingerpr
 3. If evidence is missing, run a bounded reconnaissance stage and pause for input-side synthesis before implementation; then follow [`SKILL.md`](SKILL.md) and [`references/coding-flow.md`](references/coding-flow.md) for routing and staged execution.
 4. For non-simple normal two-Session work, authorize one Interaction Slice at a time; use adaptive Progress Signals inside the slice and blocking Control Checkpoints at natural or material boundaries, then decide Continue/Amend/Stop before releasing the next slice.
 5. Keep routine work within the approved slice; when multiple Coding Workers are active, use the parent-led rendezvous and Context Exchange guidance in [`references/coding/context-exchange.md`](references/coding/context-exchange.md).
-6. Let Primary Output run provisional focused checks during implementation, without performing non-trivial Git operations. For a material change, have Input-side Reasoning start one fresh independent Change Verification Agent for holistic final checks, reuse it for later verification epochs, require independent re-evaluation of each final state, and map each acceptance criterion to its compressed evidence before semantic acceptance against the Contract. Create additional verifiers only for genuinely isolated requirements. Create Documentation/Comments & Git Operations when either responsibility is needed: release docs/comments only after verification, and release complex Git operations at the relevant stage as separate bounded slices. Use `reasoning_effort=high` and require explicit user/task authorization for synchronization, branch/worktree changes, staging, commits, history integration, conflict handling, pushes, or Issue/PR delivery. Session ownership details belong to [`references/coding/session-model.md`](references/coding/session-model.md).
+6. Let Primary Output run provisional focused checks during implementation, without performing non-trivial Git operations. For a material change, have Input-side Reasoning start one fresh independent Change Verification Agent for holistic final checks, reuse it for later verification epochs, require independent re-evaluation of each final state, and map each acceptance criterion to its compressed evidence before semantic acceptance against the Contract. Create additional verifiers only for genuinely isolated requirements. Create Documentation/Comments & Git Operations when either responsibility is needed: release docs/comments only after verification, and release complex Git operations at the relevant stage as separate bounded slices. Run that Agent at the execution tier its registered deployment document binds for the role, and require explicit user/task authorization for synchronization, branch/worktree changes, staging, commits, history integration, conflict handling, pushes, or Issue/PR delivery. Session ownership details belong to [`references/coding/session-model.md`](references/coding/session-model.md).
 
 The flow provides operational structure, not guarantees about cache hits, cost, quota, latency, or model quality.
 
 ## Runtime-specific decisions
 
-This guide does not restate model, effort, Session-topology, escalation, or unavailable-handling policy. Resolve those decisions through [`references/coding/runtime.md`](references/coding/runtime.md), then follow the registered [`Codex Host Adapter`](references/runtime/hosts/codex.md) and [`OpenAI Model Profile`](references/runtime/profiles/openai.md).
+This guide does not restate model, effort, Session-topology, escalation, or unavailable-handling policy. Resolve those decisions through [`references/coding/runtime.md`](references/coding/runtime.md), then follow the deployment document registered for the current environment: [`hosts/codex-openai.md`](references/runtime/hosts/codex-openai.md) for Codex, or [`hosts/claude-code-anthropic.md`](references/runtime/hosts/claude-code-anthropic.md) for Claude Code.
 
 ## References
 
@@ -93,8 +93,8 @@ This guide does not restate model, effort, Session-topology, escalation, or unav
 - [`references/coding/session-model.md`](references/coding/session-model.md): runtime-neutral role and Session semantics.
 - [`references/coding/runtime.md`](references/coding/runtime.md): Runtime Contract and selection algorithm.
 - [`references/runtime/index.md`](references/runtime/index.md): registered deployments.
-- [`references/runtime/hosts/codex.md`](references/runtime/hosts/codex.md): current Codex Host Adapter.
-- [`references/runtime/profiles/openai.md`](references/runtime/profiles/openai.md): current OpenAI Coding Model Profile.
+- [`references/runtime/hosts/codex-openai.md`](references/runtime/hosts/codex-openai.md): registered Codex + OpenAI Coding deployment.
+- [`references/runtime/hosts/claude-code-anthropic.md`](references/runtime/hosts/claude-code-anthropic.md): registered Claude Code + Anthropic Coding deployment.
 - [`MULTI_LINGUAL.md`](MULTI_LINGUAL.md): bilingual documentation rules.
 
 This guide covers Coding Flow only. For Multimodal work, return to [`SKILL.md`](SKILL.md) and load its routed references.

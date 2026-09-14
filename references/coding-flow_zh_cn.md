@@ -11,13 +11,13 @@
 选择 Coding Flow 后：
 
 1. 加载 [`coding/session-model_zh_cn.md`](coding/session-model_zh_cn.md)，建立角色 ownership、实现与按需 Worker 的通用 Session 语义、Context Firewall 与 Primary Execution Session Affinity。
-2. 加载 [`coding/runtime_zh_cn.md`](coding/runtime_zh_cn.md)，解析 active Host Adapter 与 Model Profile，并把上述 Session 语义映射到当前环境。
+2. 加载 [`coding/runtime_zh_cn.md`](coding/runtime_zh_cn.md)，解析当前环境对应的已登记部署文档，并把上述 Session 语义映射到该部署。
 3. 在进行实质性 implementation、refactor、debugging、build/test 或其他可能跨越语义决策边界的执行前，加载 [`coding/execution-control_zh_cn.md`](coding/execution-control_zh_cn.md)。
 4. 当任务使用多个独立 Coding Agent、需要复用跨 Agent 上下文、需要 Worker 替换/升级接力，或需要父级多 Worker 会合与 slice 同步时，加载 [`coding/context-exchange_zh_cn.md`](coding/context-exchange_zh_cn.md)。
 
 纯有界 exploration 可以在真正进入执行前暂缓加载 `execution-control_zh_cn.md`。从未创建额外 Coding Agent 的 Single-Session Coding 任务，不必机械加载 `context-exchange_zh_cn.md`，除非确实需要文件化恢复或上下文传输。
 
-`runtime_zh_cn.md` 只加载当前环境匹配的已登记 Host Adapter 与 Model Profile，不预加载 `references/runtime/` 下所有文件。
+`runtime_zh_cn.md` 只加载当前环境匹配的已登记部署文档，不预加载 `references/runtime/` 下所有文件。
 
 如果某个 Coding 模块已经加载且规则仍有效，不重复读取。按职责加载需要的模块，不得默认预加载整个 `references/coding/` 目录。
 
@@ -32,7 +32,7 @@
 | Semantic Contract 传输、文件化 Context Exchange、Worker handoff、多 Worker 会合 | [`coding/context-exchange_zh_cn.md`](coding/context-exchange_zh_cn.md) |
 | 两级规划、派发前/实现放行门槛、Interaction Slice、反馈、有界阶段、Decision Checkpoint、验证、Git 操作放行、输出纪律 | [`coding/execution-control_zh_cn.md`](coding/execution-control_zh_cn.md) |
 
-具体产品操作与具体模型/参数策略不属于上述 Core ownership；Runtime Contract 通过注册表选择对应部署文件。
+具体产品操作与具体模型/参数策略不属于上述 Core ownership；Runtime Contract 通过注册表选择对应部署文档。
 
 不得在 `SKILL_zh_cn.md`、本入口或另一个 Coding 模块中重复某模块的规范性规则；应改为引用 owner 文档。只有当 Coding 路由、模块 ownership 或跨模块加载条件变化时才修改本文件。
 
