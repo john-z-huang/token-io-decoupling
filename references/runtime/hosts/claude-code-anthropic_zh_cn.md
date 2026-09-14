@@ -134,7 +134,7 @@ Effort 名称只是宿主/Runtime 控制项，不是跨模型通用的能力单�
 
 ## Haiku 推理控制边界
 
-**不得**把 Sonnet 的 `low`/`medium`/`high` 规则机械复制给 Haiku。当前产品中 Haiku 层没有 effort surface，因此本部署主要通过**任务 eligibility + 模型选择**控制 Haiku 的成本与能力边界，不虚构 Haiku effort tier。Haiku-tier Worker 不能仅因为 subagent schema 存在 `effort` 字段，就继承 Sonnet 的档位。由于层级 alias 会跟随宿主当前版本，应把该 effort surface 当作需要重新确认的宿主 capability，而不是层级的永久属性：即使未来某个 Haiku 层版本支持 effort，本部署也不会在没有显式修订的情况下授权把 Sonnet 的档位复制过去。
+**不得**把 Sonnet 的 `low`/`medium`/`high` 规则机械复制给 Haiku。当前产品中 Haiku 层没有 effort surface，因此本部署主要通过**任务 eligibility + 模型选择**控制 Haiku 的成本与能力边界，不虚构 Haiku effort tier。尚未观察到宿主按模型层级收窄 Worker 的工具集合：以与其他 subagent 相同的执行形式派发的 Haiku-tier Worker，已被观察到获得相同工具集合，因此本部署的 Haiku 作用域来自所派发任务的有界范围，而不是层级施加的工具限制。工具可用性仍可能随执行形式不同；参见 `## Foreground、background 与工具能力` 一节。Haiku-tier Worker 不能仅因为 subagent schema 存在 `effort` 字段，就继承 Sonnet 的档位。由于层级 alias 会跟随宿主当前版本，应把该 effort surface 当作需要重新确认的宿主 capability，而不是层级的永久属性：即使未来某个 Haiku 层版本支持 effort，本部署也不会在没有显式修订的情况下授权把 Sonnet 的档位复制过去。
 
 Haiku 层与 Sonnet 层在 Anthropic API 层的 thinking 语义也不同。本部署不要求固定 thinking budget，也不人为定义 Haiku 对应的 effort 等价物。一个有界任务如果需要明显更强推理，应改路由到 Sonnet，而不是在 Haiku 上模拟 Sonnet effort。
 
@@ -207,7 +207,7 @@ Primary Output 或辅助 subagent 继续遵守 Core delegation boundary：即使
 7. Session Affinity 适用时，确认后续相关工作 resume 同一个 Primary Execution subagent；
 8. 确认 Coding Core 文档仍保持 vendor-neutral。
 
-本部署在真实使用中已经覆盖：Skill 发现与 Runtime 解析、Host 身份解析、Sonnet 层 Single-Session Coding Mode，以及 Coding Core 保持 vendor-neutral。依赖 Haiku-tier 辅助派发或正常双 Session Primary Output 派发的检查尚未执行：这些 capability 应标记为未验证，而不是按已验证假设处理，也不得把整个部署描述成已完整 smoke-tested。
+本部署在真实使用中已经覆盖：Skill 发现与 Runtime 解析、Host 身份解析、Sonnet 层 Single-Session Coding Mode、Coding Core 保持 vendor-neutral、一次 Haiku-tier 辅助派发、正常双 Session 映射下的一次独立 Sonnet 层 Primary Output 派发，以及跨后续 slice 复用同一 Primary Output Session，并针对已变化的最终状态在后续验证 epoch 中复用同一 verifier Session。仍有两项限制。所使用的派发界面只在层级层面解析各 tier alias，未报告具体版本 ID，因此没有观察到任何固定模型版本，采用检查第 5 项的版本记录步骤也无法在这些界面上完成——该步骤因此仍属未完成，而不是已通过。真实使用中没有任何 effort 值通过宿主控制项被请求，因为所用派发界面不暴露任何 effort 控制项；该档位因此只作为指令文本传递，而不是作为已生效设置，也没有发生 clamp。仅写在文本中的档位不能证明所请求的档位已经生效——这与上文 substitution 规则的既有告警一致：“工具调用没有报错”本身不足以作为证据；而通过 custom subagent definition 配置 effort override 仍是本文件记录在案的机制。本文件或宿主未暴露的内容仍必须报告为未验证，也不得把整个部署描述成已完整 smoke-tested。
 
 ## 官方能力来源
 

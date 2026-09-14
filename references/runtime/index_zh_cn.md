@@ -9,11 +9,11 @@
 | 部署文档 | 状态 |
 |---|---|
 | [`hosts/codex-openai_zh_cn.md`](hosts/codex-openai_zh_cn.md) | 已验证部署；保持本 Skill 既有 Coding 行为 |
-| [`hosts/claude-code-anthropic_zh_cn.md`](hosts/claude-code-anthropic_zh_cn.md) | 已投入真实使用；尚未覆盖的 capability 列在该文档中 |
+| [`hosts/claude-code-anthropic_zh_cn.md`](hosts/claude-code-anthropic_zh_cn.md) | 已投入真实使用；Haiku-tier 辅助派发与正常双 Session Sonnet Primary Output 派发现已执行，其余限制列在该文档中 |
 
 每份文档覆盖一个产品/provider 组合的两个部署关注点：**Host Adapter**（这个产品如何实例化工作）与 **Model Profile**（哪个 Runtime 应承担某项职责）。应选择 Host Adapter 与当前环境匹配的那份文档。
 
-Codex/OpenAI 条目继续保持本 Skill 已验证的 Coding 行为。Claude Code/Anthropic 条目已投入本 Skill 自身的真实 Coding 使用，其宿主映射以 Claude Code 官方文档为依据；真实使用已经覆盖的路径记录在该文档中，文档列为尚未覆盖的 capability 必须继续标记为未验证，而不是按已验证假设处理。
+Codex/OpenAI 条目继续保持本 Skill 已验证的 Coding 行为。Claude Code/Anthropic 条目已投入本 Skill 自身的真实 Coding 使用，其宿主映射以 Claude Code 官方文档为依据；真实使用已经覆盖的路径与仍然记录的限制都写在该文档中，该文档或宿主未暴露的内容必须继续标记为未验证，而不是按已验证假设处理。
 
 没有列在这里的 Host 或模型族，不能仅因为能够解析 Agent Skills 或执行 Coding 任务，就被视为已经受到本 Skill 支持。
 
