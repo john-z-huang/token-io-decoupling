@@ -84,6 +84,20 @@ ChatGPT 普通聊天可能暴露 GitHub、Google Drive、代码执行、文件�
 3. 工具权限不足、缺少写能力或缺少文件系统隔离时，不得通过其他未授权通道绕过。
 4. 同一连接器可以被多个逻辑职责使用，但角色切换本身不会产生新的验证独立性。
 
+## 验证与执行环境限制
+
+ChatGPT 普通聊天不应被视为具有 Codex CLI 或普通本地开发环境那样的通用 shell / Python 执行环境。即使某个具体聊天暴露了受控代码执行工具，也只能使用该会话实际提供的能力，不能据此假定仓库脚本、Python、shell、Git CLI 或完整项目依赖可用。
+
+因此，当仓库开发流程要求运行 `python3 scripts/...`、shell 检查、测试套件、lint、build 或其他本地验证命令，而当前普通聊天没有暴露相应执行环境时：
+
+- 不得声称已经运行或通过这些验证；
+- 不得把 GitHub/Drive 等连接器的文件读写能力当作 shell、Python 或测试执行能力；
+- 可以检查 diff、文档结构和连接器可获得的静态证据，但这些证据不能替代要求实际执行的验证脚本；
+- 在 PR、Issue 或最终交付说明中应明确记录“由于 ChatGPT 普通聊天 Host 缺少所需执行环境，相关验证未运行”，并把需要执行的命令留给具备本地/CI/Code Agent 环境的一方运行；
+- 如果任务验收标准强制要求这些命令实际通过，则当前 Host 只能完成可支持的修改与静态检查，不能把任务标记为完成验证。
+
+不得为了获得 shell、Python 或 cloud computer 而把 ChatGPT Work 的能力引入本 Adapter；Work 仍属于明确排除的独立 Host。
+
 ## Model Profile
 
 本部署不硬编码“普通 ChatGPT 必然运行某个模型”。模型绑定只使用当前会话能够明确确认的事实。
@@ -119,13 +133,14 @@ ChatGPT 普通聊天可能暴露 GitHub、Google Drive、代码执行、文件�
 - 无法确认当前模型：使用 host-managed model 表述，不声称具体模型绑定。
 - 无法创建独立 Session：进入 Single-Session responsibility isolation；需要独立性的 Change Verification 不得伪造通过。
 - 无法显式选择 Worker 模型：不得声称完成跨模型输出转移。
+- 缺少 shell / Python / 项目执行环境：不得声称运行仓库验证脚本、测试、lint 或 build；明确记录未运行的验证及原因。
 - 缺少仓库/文件写能力：只返回计划、patch 建议或其他当前工具真实支持的产物。
 - 缺少用户授权：停止对应写操作。
 
-如果任务的验收标准强制要求独立 verifier、明确的低成本 Worker 或真实 Session 隔离，而普通聊天无法提供这些 capability，应明确说明当前 Host 不满足该 Runtime 要求。
+如果任务的验收标准强制要求独立 verifier、明确的低成本 Worker、真实 Session 隔离或必须实际运行的仓库验证，而普通聊天无法提供这些 capability，应明确说明当前 Host 不满足该 Runtime 要求。
 
 ## 验证状态
 
 本部署登记的是 **ChatGPT 普通聊天的受限/能力驱动映射**。已确认的设计目标是：在没有独立子 Agent 能力时保持 Coding Core 的职责与边界，同时拒绝伪造多 Session 或跨模型收益。
 
-在普通 ChatGPT 聊天真正暴露并执行独立 Session 创建、模型路由与隔离验证之前，不得把这些路径标记为已验证。ChatGPT Work 的任何真实使用也不能作为本部署的验证证据。
+在普通 ChatGPT 聊天真正暴露并执行独立 Session 创建、模型路由与隔离验证之前，不得把这些路径标记为已验证。普通聊天缺少所需 shell / Python / 项目执行环境时，仓库验证脚本与测试同样必须保持“未运行”状态，不能根据静态检查推断通过。ChatGPT Work 的任何真实使用也不能作为本部署的验证证据。
