@@ -20,6 +20,7 @@ When the active Model Profile requires an independent Primary Output, verifier, 
 
 - use the independent Agent/Session mechanism exposed by the current Codex environment;
 - explicitly request the Profile-required model and host-supported runtime parameters when Codex exposes controls for them;
+- in each newly created Agent's instruction body, state the concrete assigned model name/identifier and `reasoning_effort` in readable text, even when also setting them through host controls; the Agent must not be expected to infer this assignment from tool arguments or its runtime identity. When reusing an Agent with the same assignment already stated, do not repeat it mechanically; state it when the assignment changes or the prior instruction was missing or unclear;
 - do not rely on an unspecified host default when the Profile requires an exact model or reasoning-effort tier;
 - reuse the established Primary Execution Session for related work unless the Core rules provide a concrete reason to rebuild or split it;
 - reuse the established verifier Session for subsequent verification slices in the same task conversation, passing the new final-state fingerprint/epoch and requiring independent re-evaluation; create another verifier only when the parent identifies a genuinely isolated verification requirement;
