@@ -23,7 +23,7 @@ Single-Session Coding Mode 继续使用 Semantic Contract 作为逻辑决策锚�
 所有独立 Worker 都由父级 Input-side Reasoning Agent 创建和管理。每个 Worker 只接收其职责所需的上下文：
 
 - **Primary Output** 接收已批准的实现 Contract、相关项目上下文、获准写入范围和当前 Interaction Slice。它的聚焦检查属于实现反馈，并以压缩摘要向后传递。
-- **Change Verification** 接收最终项目状态或隔离的验证快照、验证 slice/最终状态 fingerprint 或 epoch、Contract 与验收标准、变更范围证据以及压缩的实现反馈摘要。初始 verifier Session 独立于 Primary Output 且为全新 Session；同一个 task conversation 中的后续验证 slice 复用该 verifier。Handoff 在可用时应指出累计的完整套件入口或等价 manifest 及其已知覆盖边界，使 verifier 能先运行它，再做针对变更风险的定向分析。它必须对每个所提供的 epoch 独立重新评估，不能把此前结论作为证据；不得修改受跟踪的产品/测试/文档文件，并且应返回证据而不是修复。如果发现有价值的可重复覆盖缺口，应在保持只读的同时报告准确的预期断言；父 Agent 将物化返回 Primary Output，然后针对新的 epoch 和累计套件运行复用同一个 verifier。
+- **Change Verification** 接收最终项目状态或隔离的验证快照、验证 slice/最终状态 fingerprint 或 epoch、Contract 与验收标准、变更范围证据、压缩的实现反馈摘要，以及任何明确授权的验证资产写入范围。初始 verifier Session 独立于 Primary Output 且为全新 Session；同一个 task conversation 中的后续验证 slice 复用该 verifier。Handoff 在可用时应指出累计的完整套件入口或等价 manifest 及其已知覆盖边界，使 verifier 能先运行它，再做针对变更风险的定向分析。它必须对每个所提供的 epoch 独立重新评估，不能把此前结论作为证据；只能在已放行的写入范围内创建或更新点名的验证脚本/测试，产品代码/配置、文档和 Git 状态均保持只读。如果有价值的重复检查超出授权资产范围或需要修复产品，应向父 Agent 报告准确的预期断言，由父 Agent 路由给相应 Worker。
 - **Documentation/Comments & Git Operations** 为每个明确放行的 slice 接收新的有界上下文。文档 slice 只在 verifier 通过（或明确跳过简单任务验证）后创建，并接收最终已验证状态、Contract、verifier 结论和仅限文档/注释的范围。Git slice 接收准确的仓库/worktree/ref/remote 范围、当前 Git 证据、已批准内容、适用流程、允许的操作和明确的用户/任务授权。它可以按授权操作 Git 元数据或远端仓库；只有使用已批准内容处理明确获准操作时才可解决冲突，不得进行语义决策、实现功能/测试或从其他角色推断授权。它返回压缩后的文档或 Git 操作证据。
 
 当 verifier 报告实质性失败且 Primary Output 完成修复后，父 Agent 应向同一个 verifier 发送新的验证 slice 和修复后的最终状态 fingerprint/epoch。verifier 必须独立重新评估验收矩阵和所需检查；此前结论不能作为修复状态的证据。不得仅因发生修复就创建新的 verifier。只有确实需要隔离时才创建额外 verifier，例如不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
@@ -32,7 +32,7 @@ Single-Session Coding Mode 继续使用 Semantic Contract 作为逻辑决策锚�
 
 当多个独立 Coding Worker 同时工作时，父 Agent 必须在派发前为每个 Worker 定义 Interaction Slice 和反馈边界。每个 Worker 都应收到自己的 `Objective`、`Authorized scope/mutations`、`Return conditions` 与 `Unreleased boundary`；并行执行不会授权 Worker 跨越未放行边界，也不能从其他 Worker 的进度推断自己已获许可。
 
-Worker 可以在已授权 slice 内发送压缩 Progress Signal，但所有阻塞式 Control Checkpoint 都由父 Agent 负责。到达 Control Checkpoint 后，父 Agent 分析证据并为该 Worker 选择 `Continue`、`Amend` 或 `Stop`，也可以先请求 Evidence-on-Demand。如果 Semantic Contract、架构、范围、权限、安全或公共接口假设发生变化，父 Agent 决定其他 Worker 是继续、接收修订后的 slice，还是停止；Worker 不得在过时指令下静默继续。verifier 的通过/失败结论不会自行放行文档、修复或 Git 阶段；只有父 Agent 可以放行下一个存在依赖关系的 slice。
+Worker 可以在已授权 slice 内发送压缩 Progress Signal，但所有阻塞式 Control Checkpoint 都由父 Agent 负责。到达 Control Checkpoint 后，父 Agent 分析证据并为该 Worker 选择 `Continue`、`Amend` 或 `Stop`，也可以先请求 Evidence-on-Demand。如果 Semantic Contract、架构、范围、权限、安全或公共接口假设发生变化，父 Agent 决定其他 Worker 是继续、接收修订后的 slice，还是停止；Worker 不得在过时指令下静默继续。每个 Worker 都向父 Agent 汇报，并在已放行边界处停止；不得自行派发或开始另一类任务。verifier 的通过/失败结论不会自行放行文档、修复或 Git 阶段；只有父 Agent 可以放行下一个存在依赖关系的 slice。
 
 Context Exchange 文档只负责在 Worker 之间传输压缩发现、handoff 状态和可复用证据，不替代这个实时的父级 control loop。父 Agent 应在重大会合点更新 routing index 和相关 Worker 上下文，不要在每个 Progress Signal 或命令之后写记录。
 
@@ -50,12 +50,14 @@ Freshness 必须对照 `HEAD`/tree、tracked-delta fingerprint、列出的 sourc
 
 ### 工作区布局与 ownership
 
-- 父 Agent 建立 **Context Exchange Root**：`<primary-worktree>/.token-io-decoupling/context/`。这里的 `primary-worktree` 指当前父级/高价值决策 Agent 用于协调本任务的工作树；即使具体执行 Agent 正在其他 worktree 中修改代码，共享上下文仍统一放在该主工作树下。
+- 同一个 task/开发需求中的所有 Worker 通常共享同一个 primary Git worktree，包括父 Agent 与实现 Worker。Agent/Session 隔离、全新的 verifier Session，以及 Worker 各自独立的上下文 ownership 本身都不足以成为新增 worktree 的理由。即使代码 worktree 共用，每个 Worker 的 Context Exchange 子目录仍保持独立。
+- 只有具体隔离需求确实必要时才创建额外 worktree，例如验证不兼容的快照或环境、隔离无法重定向或以其他方式隔离的验证写入、为满足不同的权限/安全边界而使用单独限定的 worktree 路径，或执行明确要求隔离的审计。全新的 verifier 通常可以在共享 worktree 中检查固定的最终状态，写入仅限明确授权的验证资产；验证该 fingerprint 期间应暂停会冲突的实现写入。并发写入发生冲突时，应先缩小并分配互不重叠的路径范围，或按依赖顺序执行 slice，而不是默认每个 Worker 配一个 worktree。
+- 父 Agent 在 `<primary-worktree>/.token-io-decoupling/context/` 建立 **Context Exchange Root**。这里的 `primary-worktree` 指父级/高价值决策 Agent 与本需求其他 Worker 共用的工作树；只有明确放行的隔离验证 worktree 除外。
 - 父 Agent 在 `<root>/INDEX.md` 创建并独占维护一个**根路由索引**。该文件记录每个当前或历史 Worker/Context ID 与其专属子目录的对应关系，并只补充父 Agent 路由所需的最小元数据，例如任务、scope、状态和 handoff 关系。任何 Worker 都不得修改根 `INDEX.md`。
 - 每创建一个独立 Worker，父 Agent 都必须先为它创建一个专属子目录，例如 `<root>/worker-auth/`，并在派发时明确告诉该 Worker 自己拥有的准确目录。普通执行期间，Worker 只能在这个被分配的子目录内创建、读取、修改和删除与自身工作上下文有关的文档。
 - Worker **绝对禁止**在其他 Worker 的子目录、Context Exchange Root 根目录或任何其他不属于自己的位置写入、重命名、移动或删除文件。即使共享文件系统让这些目录在技术上可见，也不能跨越这个写入边界。
 - Worker 默认也不得浏览或读取其他 Worker 的子目录。只有父 Agent 因具体 handoff、验证、升级或依赖关系而**明确指定需要读取的文档或路径**时，才允许该 Worker 选择性读取对应材料；只能读取父 Agent 点名的内容，不得自行递归扫描或扩展读取其他目录。
-- Worker 被替换或 Runtime escalation 时，接手 Agent 必须获得新的 Context ID，并由父 Agent 为其创建新的专属子目录。前任目录对接手 Agent 保持只读，而且只有父 Agent 明确指定的前任文档才可读取；接手 Agent 永远不得写入前任目录。
+- Worker 被替换或 Runtime escalation 时，接手 Agent 必须获得新的 Context ID，并由父 Agent 为其创建新的专属子目录；默认继续使用同一个 primary worktree。前任目录对接手 Agent 保持只读，而且只有父 Agent 明确指定的前任文档才可读取；接手 Agent 永远不得写入前任目录。只有其他新增 worktree 所需的具体隔离需求成立时，才允许为接手 Agent 使用不同 worktree。
 - **Context Exchange Root** 是持久的运行时协调状态。仓库根目录的 `.gitignore` 必须忽略 `/.token-io-decoupling/`，使目录及其中的 capsule 能跨越工作流边界保留，同时不会被暂存或提交。不得把它当作产品产物，不得自动删除；只有明确的用户或 retention policy 才能触发清理。
 
 ### 文件系统 capability 兜底
@@ -64,8 +66,8 @@ Freshness 必须对照 `HEAD`/tree、tracked-delta fingerprint、列出的 sourc
 
 - `git worktree` 用于提供独立工作副本、分支和清晰的物理目录边界，但 **worktree 本身不是文件写权限机制**。`git worktree lock`、sparse-checkout、`.gitignore`、`skip-worktree` 等 Git 功能也不得被当成跨 Worker 写入隔离手段。
 - 当宿主支持 per-Agent sandbox、container/mount namespace、路径 allowlist 或等价 filesystem capability 时，父 Agent 应在 Worker 开始执行前配置最小权限集合：
-  - **RW**：该 Worker 自己的代码 worktree，以及 `<root>/<worker-context-id>/` 专属 context 子目录；
-  - **RO**：父 Agent 为当前具体 handoff 明确授权的其他 Worker 单个文档或严格有界路径；
+  - **RW**：共享 primary worktree 中该 Worker 获准修改的代码路径，以及 `<root>/<worker-context-id>/` 专属 context 子目录。verifier 只能获得其已放行 slice 中点名的验证脚本/测试路径（或新增验证脚本的一个明确限定目录）的写入权限。明确放行的隔离验证也可以只获准访问其指定的验证 worktree 或严格有界的验证输出路径；
+  - **RO**：在固定共享 worktree 状态上工作的 verifier 所需源文件路径，以及父 Agent 为当前具体 handoff 明确授权的其他 Worker 单个文档或严格有界的 context 路径；
   - **DENY / 不暴露**：`<root>/INDEX.md`、其他 Worker 的其余目录，以及任何未明确授权的 Context Exchange 路径。
 - 在文档 slice 期间，已跟踪的功能与测试必须保持在 RW capability 之外。在 Git slice 期间，父 Agent 只授予执行明确操作所需的 Git 元数据、目标 worktree 和远端 capability；仍禁止写入已跟踪内容，只有使用已批准内容进行明确获准冲突解决时才允许在严格有界文件中编辑。如果冲突解决需要新的语义决策，Worker 必须暂停并返回父 Agent；Git 角色不因此获得实现权限。
 - 上述 capability 是宿主/进程级约束，不只是 Dispatch 文本中的建议。Worker 即使因语义漂移尝试越界写入，文件系统层也应拒绝该操作。

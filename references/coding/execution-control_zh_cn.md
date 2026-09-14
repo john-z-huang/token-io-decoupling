@@ -41,6 +41,34 @@ reconnaissance 完成后，输入侧 Agent 综合证据，确认或推翻假设�
 
 当重大语义、架构、兼容性、安全、schema 或公共接口决策仍未解决时，不得派发宽泛的组合式指令，例如“分析问题、选择最佳方案、实现并验证”。简单快路径任务仍可一次 Dispatch 完成实现和适用的聚焦检查，但前提是批准方向明显且结果可机械验证；若选择最终 verifier，仍必须单独 Dispatch。
 
+### 分析完成后的三类任务输出
+
+输入侧分析以及所需的 reconnaissance 完成后，父 Agent 必须将批准的工作组织为且仅组织为三个任务部分：**开发**、**文档**和**验证**。这些部分是精简的任务指令，不是第二套计划或逐命令操作方案。每个适用部分只说明对应职责、目标、授权范围/变更、返回条件和未放行边界。某一类没有具体工作时，标记为 `不适用` 并简述原因；不得创建无实际任务的 Worker。具体职责是否使用独立 Session，仍由 Runtime eligibility 决定。
+
+每个适用任务都必须包含以下四个字段。标记为 `不适用` 的部分只需说明原因：
+
+```text
+开发任务内容 — Owner: Primary Output
+Objective: ...
+Authorized scope/mutations: ...
+Return conditions: ...
+Unreleased boundary: ...
+
+文档任务内容 — Owner: Documentation/Comments & Git Operations（仅文档/注释 slice）
+...
+
+验证任务内容 — Owner: Change Verification
+...
+```
+
+父 Agent 在任务汇总中保留这三个部分；派发给独立 Worker 时，只发送该 Worker 自己的任务部分和它需要的共享上下文。不得把其他类别的指令一并交给 Worker，使其误以为自己已获准执行后续任务。
+
+- **开发任务**对应 Primary Output：只实现已批准的代码/配置变更，并运行临时聚焦反馈检查。不负责文档、最终验证或 Git 工作。
+- **文档任务**对应现有 Documentation/Comments & Git Operations 职责中的文档/注释 slice：只更新获准的开发文档或注释，并保持双语镜像一致。该任务本身不授权 Git 工作；任何 Git 操作都必须由父 Agent 按既有门槛单独放行。不负责实现、测试或验证脚本。
+- **验证任务**对应 Change Verification：独立依据已批准的验收标准检查最终状态，并将所有可确定性检查的标准脚本化。若存在累计完整套件入口，应先运行该入口；随后先运行相关的现有验证脚本，再考虑新增覆盖。如果没有现有资产能够充分检查某项可确定性验证的标准，验证 slice 应授权所需的最小确定性脚本，由 verifier 仅创建或更新该范围内的资产并运行它。无法客观脚本化的标准应报告最小相关证据，不得因此设计通用框架。verifier 不修复产品行为或文档，不作语义决策，也不执行 Git 工作。
+
+任务输出必须始终包含以上三个标题，即使某一部分不适用。只派发有具体内容的工作，并且每次只放行一个 slice；标题的展示顺序不改变依赖关系或放行门槛。对于实质性实现，先到达实现 checkpoint，再进行验证；验证通过后才进行文档任务，纯文档快路径沿用既有规则。每个 Worker 都向父 Agent 返回压缩结果，并在自己的边界处停止。只有父 Agent 可以放行修复、另一类别或后续 slice。Worker 不得执行分配给其他类别的任务，也不得根据其他 Worker 的进展推断自己已获授权。每次派发独立 Worker 前，仍须遵循 [`../shared-protocols_zh_cn.md`](../shared-protocols_zh_cn.md) 要求的精简 Dispatch Preview。
+
 ## Interaction Slice 与自适应反馈
 
 对于正常双 Session Coding 中的非简单工作，输入侧 Agent 每次只批准一个 **Interaction Slice**。每个 slice 必须说明：
@@ -105,7 +133,7 @@ Amendment: 保持 public API 稳定；选择 storage-owned state；批准 Stage 
 
 当仓库存在多个验证资产时，应维护可发现的阶段或组件聚合器，以及一个完整套件入口，或等价的 manifest。全新的 Change Verification Session 在入口可用时必须先运行累计的完整套件入口；随后只针对套件未覆盖的已变更风险或验收标准执行独立的定向分析，而不是从零重新发现仓库布局和标准命令。
 
-verifier 保持只读。如果发现有价值但缺失的可重复检查，应报告覆盖缺口和准确的预期断言；不得自行添加检查。父 Agent 将修复返回 Primary Output，由其物化测试或确定性脚本。使用同一个 verifier 针对新的最终状态 epoch 重新验证并重新运行累计套件。不得为每个验证点或覆盖缺口创建新的 verifier。
+对于产品代码/配置、文档和 Git 状态，verifier 保持只读。获准的 slice 可以仅允许其修改明确列出的验证脚本/测试路径（或新增脚本的一个明确限定目录）。如果没有现有资产能够充分检查某项可确定性验证的验收标准，verifier 应在该写入范围内添加最小确定性检查并运行；不得扩大测试套件或重构无关测试。如果该写入改变了跟踪状态，verifier 应返回脚本路径、验收标准覆盖情况和临时结果，然后暂停，不得对写入前的 fingerprint 声称最终验证通过。父 Agent 提供更新后的范围证据和最终状态 fingerprint，再将新 slice 交给同一个 verifier，使其在该 epoch 上重新运行累计套件与限定检查。如果发现的问题需要修改产品、文档或范围外测试，应向父 Agent 报告覆盖缺口和准确的预期断言，由父 Agent 路由给相应 Worker。不得为每个验证点或覆盖缺口创建新的 verifier。
 
 验证资产必须确定性、幂等、非交互并具有有意义的退出状态；默认应离线运行、不调用实时 API、不读取秘密，尽量不修改产品和 Git 状态，并且不留下生成产物。适用时，网络、系统或端到端套件应明确区分并单独运行，使基线回归不依赖这些可选套件。
 
@@ -115,7 +143,7 @@ verifier 保持只读。如果发现有价值但缺失的可重复检查，应�
 
 Primary Output 职责只负责实现反馈检查及其高体量证据处理，例如用于指导实现修复的聚焦构建、测试、lint、formatter、类型检查和局部诊断。这些检查是临时性的，不得表述为最终改动结果验证。
 
-Change Verification 职责负责实质性改动的最终改动结果验证。其初始全新独立 Agent/Session 使用 Documentation/Comments & Git Operations 产出的变更范围清单和 Git 证据，检查最终项目状态、相关周边行为、完整变更范围与意外文件状态，并运行适当的整体证据检查，例如集成、回归、跨模块、系统或端到端测试。独立指独立判断且不继承 Primary Output 的实现历史；可以使用当前有界事实/路由 capsule，但此前 verifier 结论永远不能作为证据。它不执行非简单 Git 查询或操作。通常为一个 task conversation 创建一个独立 verifier，并在后续验证 slice 中复用。每个 slice 都带有最终状态 fingerprint（epoch），verifier 必须独立重新评估该状态的验收矩阵和全部适用检查。它返回压缩后的证据、失败、覆盖缺口和剩余风险；不得修改产品代码、测试、文档或配置，也不负责修复发现的问题。
+Change Verification 职责负责实质性改动的最终改动结果验证。其初始全新独立 Agent/Session 使用 Documentation/Comments & Git Operations 产出的变更范围清单和 Git 证据，检查最终项目状态、相关周边行为、完整变更范围与意外文件状态，并运行适当的整体证据检查，例如集成、回归、跨模块、系统或端到端测试。独立指独立判断且不继承 Primary Output 的实现历史；可以使用当前有界事实/路由 capsule，但此前 verifier 结论永远不能作为证据。它不执行非简单 Git 查询或操作。通常为一个 task conversation 创建一个独立 verifier，并在后续验证 slice 中复用。每个 slice 都带有最终状态 fingerprint（epoch），verifier 必须独立重新评估该状态的验收矩阵和全部适用检查。它返回压缩后的证据、失败、覆盖缺口和剩余风险；唯一允许的已跟踪写入是当前 slice 明确授权范围内的验证资产，不负责修复产品或文档问题。
 
 针对性的 Evidence-on-Demand、澄清以及修复后的验证 slice 都复用该 verifier。最终状态 fingerprint 发生变化时，复用的 verifier 必须独立重新评估新的 epoch，不能把此前结论作为证据；相同状态上的非实质重跑也复用该 verifier，不会仅因某项检查待执行就创建另一个 verifier。只有确实存在多个隔离的验证需求时才创建额外 verifier，例如并发不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
 
