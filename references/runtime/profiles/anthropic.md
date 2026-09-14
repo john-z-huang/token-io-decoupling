@@ -12,7 +12,7 @@ At Coding Flow startup, confirm the current Session's actual model identity thro
 - **Substantive Primary Output**: the required Anthropic execution model is **`claude-sonnet-5`**.
 - **Change Verification**: when selected, start one fresh independent **`claude-sonnet-5`** Session for the task conversation's final change-result verification, then reuse that verifier for later verification slices. Each new final-state fingerprint/epoch must be independently re-evaluated; an earlier verdict is not evidence. Create additional verifier Sessions only for genuinely isolated requirements, such as incompatible environments/snapshots, distinct permission or security domains, or an explicit independent audit.
 - **Documentation/Comments & Git Operations**: when selected, use a separate **`claude-sonnet-5`** Session for approved post-verification documentation/code-comment materialization and all non-trivial repository Git operations. It owns synchronization, branch/worktree operations, staging, commits, history integration, reset/clean/stash, conflict handling, tags, remotes, pushes, and applicable Issue/PR delivery; only tiny read-only Git metadata queries remain outside this role.
-- **Context Bootstrap/Refresh**: when selected, use a dedicated or reusable **`claude-sonnet-5`** Worker with `effort=high` by default for bounded factual and policy-routing capsule materialization. Because this Profile controls cost through model choice rather than `medium`/`low` Sonnet effort, deterministic metadata/source-hash or delta-refresh capsule work may instead use **`claude-haiku-4-5-20251001`** when it stays mechanically verifiable. Semantic interpretation remains with Input-side Reasoning.
+- **Context Bootstrap/Refresh**: when selected, use a dedicated or reusable **`claude-sonnet-5`** Worker with `effort=medium` by default for bounded factual and policy-routing capsule materialization. Deterministic metadata/source-hash or delta-refresh capsule work may instead use **`claude-haiku-4-5-20251001`** when it stays mechanically verifiable, or `effort=low` when it must stay on Sonnet. Semantic interpretation remains with Input-side Reasoning.
 - **Lightweight Output / Auxiliary Workers**: strictly bounded, low-semantic-risk, mechanically verifiable work should prefer **`claude-haiku-4-5-20251001`** when an independent Worker has concrete model-tiering value.
 - **Dual-role eligibility**: when the current Session can explicitly confirm that it is `claude-sonnet-5` and the Host can satisfy the task's required Sonnet effort level in that Session, this Profile declares the current Session eligible for both Input-side Reasoning and substantive Primary Output. The generic runtime mapping therefore enters **Single-Session Coding Mode** unless a concrete structural reason requires another Session.
 - **Normal two-Session mapping**: when the current advanced parent Session is not `claude-sonnet-5`, keep the parent constrained to the input-side reasoning responsibility and create/reuse an independent `claude-sonnet-5` Primary Output subagent for substantive execution.
@@ -50,20 +50,27 @@ When uncertain whether a task is genuinely low-risk and mechanically verifiable,
 
 ## Sonnet effort selection
 
-Claude Code currently supports `low`, `medium`, `high`, `xhigh`, and `max` effort for Sonnet 5. Apply effort only **after** the task has been routed to Sonnet:
+Claude Code currently supports `low`, `medium`, `high`, `xhigh`, and `max` effort for Sonnet 5. Apply effort only **after** the task has been routed to Sonnet, and choose the band from the task's actual difficulty:
 
-- **Substantive Primary Output**: use `effort=xhigh` for general feature implementation, non-trivial refactoring/debugging, implementation-feedback test code, migration work within an approved Contract, and other tasks where substantial **execution judgment within an approved semantic plan** is expected. This effort tier does not transfer ownership of problem formulation, architecture choice, unresolved semantic trade-offs, or acceptance to the Primary Output role. Output length or project size alone does not justify increasing effort.
-- **Change Verification**: a selected verifier defaults to `effort=xhigh` because it must independently choose and interpret holistic checks across the final changed state. It owns verification evidence only; it does not own repair, architecture decisions, or semantic acceptance.
-- **Documentation/Comments & Git Operations**: a selected Documentation/Comments & Git Operations Worker defaults to `effort=high` for both bounded developer documentation/code-comment materialization and non-trivial repository Git work. Its documentation write scope excludes functionality and tests; its Git scope is limited to the explicitly released repository/worktree/ref/remote operations. It must not be used to compensate for failed verification or to make unapproved product decisions.
-- **Other auxiliary Sonnet Workers**: default to `high` unless their concrete task meets the `xhigh` criteria — for example a focused technical document, a non-trivial but local test, or a constrained implementation that is not safely Haiku-eligible.
-- **Lower Sonnet effort**: `medium`/`low` are not the default cost-control mechanism for work that could safely move to Haiku. Use them only when the task still specifically requires Sonnet but can trade reasoning depth for cost/latency.
-- **Targeted escalation**: reserve `effort=max` for a narrowly scoped task that an existing Sonnet `high`/`xhigh` Worker has repeatedly failed, oscillated on, or become clearly blocked by.
+- **`low`**: simple documentation edits and simple code writing — documentation/comment synchronization whose meaning is already fixed, and small, well-specified code changes that need little reasoning depth.
+- **`medium`**: ordinary development. This is the default band for general feature implementation, routine refactoring or debugging, and implementation-feedback test code.
+- **`high`**: difficult tasks — cross-module changes, non-trivial debugging, compatibility- or security-sensitive work, approved migrations, complex test/verification logic, and any task that has already resisted `medium`.
+
+`xhigh` is not a default band in this Profile. Treat work that would previously have justified `xhigh` as `high`, and reserve the targeted `max` escalation below for a task that `high` has repeatedly failed.
+
+Role placement:
+
+- **Substantive Primary Output**: `medium` for ordinary development, `low` for a released task that is a simple documentation edit or simple code writing, and `high` when the task is genuinely difficult. This ladder does not transfer ownership of problem formulation, architecture choice, unresolved semantic trade-offs, or acceptance to the Primary Output role; output length or project size alone does not justify moving up a band.
+- **Change Verification**: a selected verifier defaults to `high` because it must independently choose and interpret holistic checks across the final changed state. It owns verification evidence only; it does not own repair, architecture decisions, or semantic acceptance.
+- **Documentation/Comments & Git Operations**: `low` for bounded developer documentation/code-comment materialization, and `medium` for non-trivial repository Git work, which is routine operation rather than a simple edit. Its documentation write scope excludes functionality and tests; its Git scope is limited to the explicitly released repository/worktree/ref/remote operations. It must not be used to compensate for failed verification or to make unapproved product decisions.
+- **Other auxiliary Sonnet Workers**: `medium` by default, moving to `high` only when the concrete task is genuinely difficult and to `low` only when it is a simple documentation edit or simple code writing.
+- **Targeted escalation**: reserve `effort=max` for a narrowly scoped task that an existing Sonnet `high` Worker has repeatedly failed, oscillated on, or become clearly blocked by.
 
 Effort names are host/runtime controls, not universal capability units. The same label is calibrated per model and must not be treated as a cross-model measure of intelligence.
 
 ## Haiku reasoning-control boundary
 
-Do **not** copy Sonnet's `high`/`xhigh`/`max` policy onto Haiku. Current Claude Code effort support does not include Haiku 4.5, so this Profile controls Haiku cost/capability primarily through **task eligibility and model choice**, not an assumed effort tier.
+Do **not** copy Sonnet's `low`/`medium`/`high`/`max` policy onto Haiku. Current Claude Code effort support does not include Haiku 4.5, so this Profile controls Haiku cost/capability primarily through **task eligibility and model choice**, not an assumed effort tier.
 
 Haiku 4.5 has different thinking semantics from Sonnet 5 at the Anthropic API layer. This Profile does not require a fixed-thinking budget or invent an effort equivalent for Haiku. If a bounded task needs materially more reasoning than ordinary Haiku execution can provide, reroute it to Sonnet instead of emulating Sonnet effort on Haiku.
 
@@ -71,9 +78,9 @@ Haiku 4.5 has different thinking semantics from Sonnet 5 at the Anthropic API la
 
 `effort=max` is an exception for Sonnet, not the normal Primary Output setting and not a Haiku setting.
 
-Use a new, narrowly scoped `claude-sonnet-5` max-effort Worker only when an existing Sonnet `high`/`xhigh` Worker has repeatedly failed, oscillated, or become clearly blocked on one specific task. When possible, the predecessor first writes reusable context/handoff documents in the primary worktree as defined by [`../../coding/context-exchange.md`](../../coding/context-exchange.md), and the max Worker reads those documents instead of restarting project exploration from zero.
+Use a new, narrowly scoped `claude-sonnet-5` max-effort Worker only when an existing Sonnet `high` Worker has repeatedly failed, oscillated, or become clearly blocked on one specific task. When possible, the predecessor first writes reusable context/handoff documents in the primary worktree as defined by [`../../coding/context-exchange.md`](../../coding/context-exchange.md), and the max Worker reads those documents instead of restarting project exploration from zero.
 
-After the blocker is resolved, follow-on work returns to the normal Sonnet `xhigh`/`high` tiers or the Haiku lightweight tier when the new task independently qualifies for Haiku.
+After the blocker is resolved, follow-on work returns to the normal Sonnet `medium`/`high` bands or the Haiku lightweight tier when the new task independently qualifies for Haiku.
 
 A current Sonnet 5 Session in Single-Session Coding Mode may create another Agent only for the initial selected independent verification, post-verification documentation/comment or non-trivial Git-operation isolation, real parallelism, clearly degraded/overgrown current context, explicit isolation benefit, targeted `max` escalation for a specific repeatedly blocked task, **or bounded Haiku model tiering**. Reuse the selected verifier across later verification epochs; additional verifier Sessions require genuinely isolated requirements. Repository size, long output, build/test work, or generic task complexity are not by themselves reasons to split substantive Primary Output into another Sonnet Session.
 

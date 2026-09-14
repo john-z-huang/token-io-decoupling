@@ -12,7 +12,7 @@
 - **实质 Primary Output**：要求使用的 Anthropic 执行模型为 **`claude-sonnet-5`**。
 - **Change Verification**：选择该角色时，为该 task conversation 启动一个全新的独立 `claude-sonnet-5` Session 进行最终改动结果验证，然后复用该 verifier 执行后续验证 slice。每个新的最终状态 fingerprint/epoch 都必须独立重新评估；此前结论不能作为证据。只有确实存在独立隔离需求时才创建额外 verifier Session，例如不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
 - **Documentation/Comments & Git Operations**：选择该角色时，使用独立的 `claude-sonnet-5` Session 负责获准的验证后文档/代码注释物化，以及所有非简单仓库 Git 操作。它负责同步、分支/worktree 操作、暂存、提交、历史整合、reset/clean/stash、冲突处理、标签、远端、推送和适用的 Issue/PR 交付；只有极小的只读 Git 元数据查询可以留在该角色之外。
-- **Context Bootstrap/Refresh**：选择该职责时，使用独立或可复用的 **`claude-sonnet-5`** Worker 进行有界事实与 policy-routing capsule 物化，默认使用 `effort=high`。由于本 Profile 通过模型选择而不是 `medium`/`low` Sonnet effort 控制成本，确定性的 metadata/source-hash 或增量 refresh capsule 工作在仍可机械验证时，可以改用 **`claude-haiku-4-5-20251001`**。语义解释仍由 Input-side Reasoning 负责。
+- **Context Bootstrap/Refresh**：选择该职责时，使用独立或可复用的 **`claude-sonnet-5`** Worker 进行有界事实与 policy-routing capsule 物化，默认使用 `effort=medium`。确定性的 metadata/source-hash 或增量 refresh capsule 工作在仍可机械验证时，可以改用 **`claude-haiku-4-5-20251001`**；必须留在 Sonnet 上时使用 `effort=low`。语义解释仍由 Input-side Reasoning 负责。
 - **轻量 Output / 辅助 Worker**：严格有界、低语义风险、易机械验证的工作，在独立 Worker 具有明确 model-tiering 收益时，应优先使用 **`claude-haiku-4-5-20251001`**。
 - **Dual-role eligibility**：当前 Session 能明确确认自身为 `claude-sonnet-5`，并且 Host 能在同一 Session 满足当前任务要求的 Sonnet effort 时，本 Profile 声明该 Session 同时适配 Input-side Reasoning 与实质 Primary Output。通用 Runtime 因此进入 **Single-Session Coding Mode**，除非存在独立结构性拆分理由。
 - **正常双 Session 映射**：当前高级父 Session 不是 `claude-sonnet-5` 时，父 Session 只承担输入侧推理职责，并创建/复用独立 `claude-sonnet-5` Primary Output subagent 承担实质执行。
@@ -50,20 +50,27 @@ Haiku 是**有界执行器和证据 Worker**，不是更便宜的通用 Primary 
 
 ## Sonnet effort 分级
 
-Claude Code 当前对 Sonnet 5 支持 `low`、`medium`、`high`、`xhigh`、`max` effort。只有任务已经路由到 Sonnet 后，才应用 effort：
+Claude Code 当前对 Sonnet 5 支持 `low`、`medium`、`high`、`xhigh`、`max` effort。只有任务已经路由到 Sonnet 后，才应用 effort，并按任务实际难度选择档位：
 
-- **实质 Primary Output**：一般 feature implementation、非平凡 refactor/debug、实现反馈测试代码、已批准 Contract 内的 migration，以及其他需要在**已批准语义方案内进行较多执行判断**的事项使用 `effort=xhigh`。这一强度档位不会把问题定义、架构选择、未解决的语义权衡或验收 ownership 转移给 Primary Output；输出很长或项目规模很大本身不能作为继续提高强度的理由。
-- **Change Verification**：选择的 verifier 默认使用 `effort=xhigh`，因为它需要针对最终变更状态独立选择并解释整体检查。它只负责验证证据，不负责修复、架构决策或语义验收。
-- **Documentation/Comments & Git Operations**：选择的 Documentation/Comments & Git Operations Worker 对文档/注释物化和非简单仓库 Git 工作均默认使用 `effort=high`。其文档写入范围排除功能与测试；其 Git 范围限制为明确放行的仓库/worktree/ref/remote 操作。不得用来弥补验证失败或自行做未经批准的产品决策。
-- **其他辅助 Sonnet Worker**：默认使用 `high`，除非具体任务明确符合 `xhigh` 条件——例如 focused technical document、非平凡但局部的测试，或不适合安全下放 Haiku 的有界实现。
-- **更低 Sonnet effort**：`medium`/`low` 不再是那些本来可以安全交给 Haiku 的任务的默认降本手段。只有任务仍明确需要 Sonnet，但可以用较低推理深度换成本/延迟时才使用。
-- **定向升级**：`effort=max` 只用于某个范围严格收窄的任务已经让现有 Sonnet `high`/`xhigh` Worker 反复失败、振荡或明确阻塞时。
+- **`low`**：简单的文档修改和简单的代码编写——语义已经确定的文档/注释同步，以及推理深度需求很小的小范围明确代码修改。
+- **`medium`**：一般开发。这是常规 feature implementation、一般 refactor/debug 和实现反馈测试代码的默认档位。
+- **`high`**：困难任务——跨模块修改、非平凡调试、兼容性或安全敏感工作、已批准 migration、复杂 test/verification logic，以及已经在 `medium` 档位受阻的任务。
+
+`xhigh` 不是本 Profile 的默认档位。原本会使用 `xhigh` 的工作按 `high` 处理；只有 `high` 反复失败的任务才使用下方定向 `max` 升级。
+
+角色归属：
+
+- **实质 Primary Output**：一般开发使用 `medium`；已放行任务属于简单文档修改或简单代码编写时使用 `low`；任务确实困难时使用 `high`。这一档位阶梯不会把问题定义、架构选择、未解决的语义权衡或验收 ownership 转移给 Primary Output；输出很长或项目规模很大本身不能作为升档理由。
+- **Change Verification**：选择的 verifier 默认使用 `high`，因为它需要针对最终变更状态独立选择并解释整体检查。它只负责验证证据，不负责修复、架构决策或语义验收。
+- **Documentation/Comments & Git Operations**：文档/注释物化使用 `low`；非简单仓库 Git 操作使用 `medium`，因为它属于常规操作而不是简单编辑。其文档写入范围排除功能与测试；其 Git 范围限制为明确放行的仓库/worktree/ref/remote 操作。不得用来弥补验证失败或自行做未经批准的产品决策。
+- **其他辅助 Sonnet Worker**：默认使用 `medium`；只有具体任务确实困难时才升到 `high`，只有属于简单文档修改或简单代码编写时才降到 `low`。
+- **定向升级**：`effort=max` 只用于某个范围严格收窄的任务已经让现有 Sonnet `high` Worker 反复失败、振荡或明确阻塞时。
 
 Effort 名称只是宿主/Runtime 控制项，不是跨模型通用的能力单位；相同名称在不同模型上的标定不能直接等价比较。
 
 ## Haiku 推理控制边界
 
-**不得**把 Sonnet 的 `high`/`xhigh`/`max` 规则机械复制给 Haiku。当前 Claude Code effort 支持列表不包含 Haiku 4.5，因此本 Profile 主要通过**任务 eligibility + 模型选择**控制 Haiku 的成本与能力边界，不虚构 Haiku effort tier。
+**不得**把 Sonnet 的 `low`/`medium`/`high`/`max` 规则机械复制给 Haiku。当前 Claude Code effort 支持列表不包含 Haiku 4.5，因此本 Profile 主要通过**任务 eligibility + 模型选择**控制 Haiku 的成本与能力边界，不虚构 Haiku effort tier。
 
 Haiku 4.5 在 Anthropic API 层的 thinking 语义与 Sonnet 5 也不同。本 Profile 不要求固定 thinking budget，也不人为定义 Haiku 对应的 effort 等价物。一个有界任务如果需要明显更强推理，应改路由到 Sonnet，而不是在 Haiku 上模拟 Sonnet effort。
 
@@ -71,9 +78,9 @@ Haiku 4.5 在 Anthropic API 层的 thinking 语义与 Sonnet 5 也不同。本 P
 
 `effort=max` 是 Sonnet 的异常升级，不是普通 Primary Output 默认配置，也不是 Haiku 配置。
 
-只有现有 Sonnet `high`/`xhigh` Worker 已经对某个具体事项反复失败、来回振荡或明确阻塞时，才创建一个新的、范围严格收窄的 `claude-sonnet-5` max-effort Worker。条件允许时，前任 Worker 先按照 [`../../coding/context-exchange_zh_cn.md`](../../coding/context-exchange_zh_cn.md) 在 primary worktree 写好可复用 context/handoff 文档，新 max Worker 读取这些内容后接手，而不是从零探索项目。
+只有现有 Sonnet `high` Worker 已经对某个具体事项反复失败、来回振荡或明确阻塞时，才创建一个新的、范围严格收窄的 `claude-sonnet-5` max-effort Worker。条件允许时，前任 Worker 先按照 [`../../coding/context-exchange_zh_cn.md`](../../coding/context-exchange_zh_cn.md) 在 primary worktree 写好可复用 context/handoff 文档，新 max Worker 读取这些内容后接手，而不是从零探索项目。
 
-阻塞解除后，后续工作恢复常规 Sonnet `xhigh`/`high` 档位；如果新的后续任务独立满足 Haiku eligibility，也可以回到 Haiku 轻量层。
+阻塞解除后，后续工作恢复常规 Sonnet `medium`/`high` 档位；如果新的后续任务独立满足 Haiku eligibility，也可以回到 Haiku 轻量层。
 
 当前 Sonnet 5 Session 处于 Single-Session Coding Mode 时，只有初始选定的独立验证、验证后的文档/注释或非简单 Git 操作隔离、真正并行、当前上下文明显失效/膨胀、存在明确独立隔离收益、某个具体任务反复阻塞而需要定向 `max` 升级，**或有界 Haiku model tiering** 时才允许创建额外 Agent。后续验证 epoch 复用已选 verifier；额外 verifier Session 需要确实隔离的验证需求。仓库规模、长输出、build/test 工作或笼统“任务复杂”本身，不是把实质 Primary Output 再拆成另一个 Sonnet Session 的理由。
 
