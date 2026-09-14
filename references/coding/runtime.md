@@ -13,21 +13,20 @@ An active Coding runtime is composed of two independent deployment concerns:
 
 The Host Adapter answers **how the product instantiates work**. The Model Profile answers **which runtime should perform a responsibility**. A Flow rule must not infer one from the other.
 
-The registered deployment files are selected through [`../runtime/index.md`](../runtime/index.md). Load only the Host Adapter and Model Profile that match the current environment; do not preload every registered runtime document.
+The registered deployment documents are selected through [`../runtime/index.md`](../runtime/index.md). Each document covers both concerns for one product/provider pair, so load only the document that matches the current environment; do not preload every registered runtime document.
 
 ## Runtime identity and capability resolution
 
 Before substantive Coding execution that depends on Session topology or explicit model/runtime parameters:
 
 1. identify the current Host through facts exposed by the running environment rather than repository names, prompt wording, or guesswork;
-2. select the matching registered Host Adapter;
-3. select a Model Profile compatible with that Host and the intended deployment;
-4. obtain the current Session's model/runtime identity and relevant parameter capabilities through the Host when available;
-5. apply the selected Profile's role eligibility and unavailable-handling rules.
+2. select the registered deployment document whose Host Adapter matches that Host and whose Model Profile fits the intended deployment;
+3. obtain the current Session's model/runtime identity and relevant parameter capabilities through the Host when available;
+4. apply the selected deployment's role eligibility and unavailable-handling rules.
 
 Do not silently claim that the current Session satisfies a role merely because its model is generally capable of coding. Role eligibility is deployment policy: a model may be technically capable of a responsibility while the active Profile intentionally keeps that responsibility in a different Session to preserve Token I/O boundaries.
 
-If no registered Host Adapter/Profile pair matches the current environment, do not invent product-specific operations or silently reuse a different vendor's bindings. The runtime-specific part of Coding execution is blocked until a compatible deployment is provided. The runtime-neutral Semantic Contract and planning concepts may still be used for analysis, but that does not constitute physical Token I/O isolation or a supported runtime mapping.
+If no registered deployment document matches the current environment, do not invent product-specific operations or silently reuse a different vendor's bindings. The runtime-specific part of Coding execution is blocked until a compatible deployment is provided. The runtime-neutral Semantic Contract and planning concepts may still be used for analysis, but that does not constitute physical Token I/O isolation or a supported runtime mapping.
 
 ## Session mapping algorithm
 
@@ -67,7 +66,7 @@ When escalation replaces an existing independent Worker, preserve reusable state
 
 ## Portability boundary
 
-A new Code Agent product should normally be integrated by adding a Host Adapter and a compatible Model Profile entry without changing:
+A new Code Agent product should normally be integrated by adding one registered deployment document that covers both its host mechanics and a compatible model policy, without changing:
 
 - Input-side Reasoning, Primary Output, Change Verification, and Documentation/Comments & Git Operations role definitions;
 - Context Firewall semantics;

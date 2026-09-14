@@ -11,13 +11,13 @@ All Coding roles also follow [`shared-protocols.md`](shared-protocols.md).
 After Coding Flow is selected:
 
 1. Load [`coding/session-model.md`](coding/session-model.md) to establish role ownership, generic Session semantics for implementation and on-demand Workers, Context Firewall, and Primary Execution Session affinity.
-2. Load [`coding/runtime.md`](coding/runtime.md) to resolve the active Host Adapter and Model Profile and map those Session semantics to the current environment.
+2. Load [`coding/runtime.md`](coding/runtime.md) to resolve the registered deployment document for the current environment and map those Session semantics onto it.
 3. Load [`coding/execution-control.md`](coding/execution-control.md) before substantive implementation, refactoring, debugging, build/test work, or other execution that may cross semantic decision boundaries.
 4. Load [`coding/context-exchange.md`](coding/context-exchange.md) when the task uses multiple independent Coding Agents, needs reusable cross-Agent context, requires Worker replacement/escalation handoff, or needs parent-led multi-Worker rendezvous and slice synchronization.
 
 Purely bounded exploration may defer `execution-control.md` until execution begins. A Single-Session Coding task that never creates another Coding Agent does not need to load `context-exchange.md` unless file-backed recovery/context transport is actually useful.
 
-`runtime.md` loads only the registered Host Adapter and Model Profile that match the current environment. Do not preload every file under `references/runtime/`.
+`runtime.md` loads only the registered deployment document that matches the current environment. Do not preload every file under `references/runtime/`.
 
 If a relevant Coding module is already loaded and its rules remain valid, do not reread it. Load modules by responsibility rather than preloading the entire `references/coding/` directory.
 
@@ -32,7 +32,7 @@ Each Coding concern has one primary owning module:
 | Semantic Contract transport, file-backed Context Exchange, Worker handoff, multi-Worker rendezvous | [`coding/context-exchange.md`](coding/context-exchange.md) |
 | two-level planning, pre-dispatch/release gate, Interaction Slices, feedback, bounded stages, Decision Checkpoints, verification, Git-operation release, output discipline | [`coding/execution-control.md`](coding/execution-control.md) |
 
-Concrete product mechanics and concrete model/parameter policy do not belong to these Core ownership rows; the Runtime Contract selects their deployment files from the runtime registry.
+Concrete product mechanics and concrete model/parameter policy do not belong to these Core ownership rows; the Runtime Contract selects their deployment document from the runtime registry.
 
 Do not duplicate a module's normative rules in `SKILL.md`, this entry point, or another Coding module. Cross-reference the owning document instead. Change this file only when Coding routing, module ownership, or cross-module load conditions change.
 

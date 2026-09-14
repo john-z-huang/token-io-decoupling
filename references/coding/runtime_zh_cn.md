@@ -13,21 +13,20 @@
 
 Host Adapter 回答“**这个产品怎么实例化工作**”；Model Profile 回答“**哪个 Runtime 应承担这项职责**”。Flow 规则不得把两者混为一谈或相互推断。
 
-已登记的部署文件通过 [`../runtime/index_zh_cn.md`](../runtime/index_zh_cn.md) 选择。只加载当前环境匹配的 Host Adapter 与 Model Profile，不预加载全部 Runtime 文档。
+已登记的部署文档通过 [`../runtime/index_zh_cn.md`](../runtime/index_zh_cn.md) 选择。每份文档都覆盖一个产品/provider 组合的两个关注点，因此只加载当前环境匹配的那一份，不预加载全部 Runtime 文档。
 
 ## Runtime 身份与 capability 解析
 
 在需要依赖 Session 拓扑或显式模型/运行参数的实质性 Coding 执行前：
 
 1. 根据当前运行环境实际暴露的事实识别 Host，不根据仓库名称、提示词措辞或猜测判断；
-2. 选择匹配的已登记 Host Adapter；
-3. 选择与该 Host 和目标部署兼容的 Model Profile；
-4. 在宿主能够提供时，通过 Host 获取当前 Session 的模型/Runtime 身份以及相关参数 capability；
-5. 按所选 Profile 的角色 eligibility 与 unavailable 规则执行。
+2. 选择已登记部署文档：其 Host Adapter 与该 Host 匹配，且 Model Profile 与目标部署匹配；
+3. 在宿主能够提供时，通过 Host 获取当前 Session 的模型/Runtime 身份以及相关参数 capability；
+4. 按所选部署的角色 eligibility 与 unavailable 规则执行。
 
 不得仅因为某个模型“通常会写代码”，就静默认定当前 Session 满足某个角色。角色 eligibility 属于部署策略：某个模型即使技术上能够承担一项职责，active Profile 也可能为了保持 Token I/O 边界而明确要求把该职责放在另一 Session。
 
-若当前环境没有匹配的已登记 Host Adapter/Profile 组合，不得自行发明产品专属操作，也不得静默套用其他厂商的模型绑定。依赖 Runtime 的 Coding 执行应停止，直到存在兼容部署。仍可使用 Runtime 无关的 Semantic Contract 与规划概念做分析，但这不等于已经实现物理 Token I/O 隔离或获得受支持的 Runtime 映射。
+若当前环境没有匹配的已登记部署文档，不得自行发明产品专属操作，也不得静默套用其他厂商的模型绑定。依赖 Runtime 的 Coding 执行应停止，直到存在兼容部署。仍可使用 Runtime 无关的 Semantic Contract 与规划概念做分析，但这不等于已经实现物理 Token I/O 隔离或获得受支持的 Runtime 映射。
 
 ## Session 映射算法
 
@@ -67,7 +66,7 @@ Model Profile 可以为某个已经反复失败、来回振荡或明确阻塞的
 
 ## 可移植性边界
 
-新增 Code Agent 产品时，正常应通过新增 Host Adapter 和兼容 Model Profile 接入，而不修改：
+新增 Code Agent 产品时，正常应通过新增一份同时覆盖其宿主机制与兼容模型策略的已登记部署文档接入，而不修改：
 
 - Input-side Reasoning、Primary Output、Change Verification 与 Documentation/Comments & Git Operations 角色定义；
 - Context Firewall 语义；

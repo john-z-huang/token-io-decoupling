@@ -91,7 +91,7 @@ The exact Handoff fields and prohibited raw-state payloads are defined in `refer
 - If a relevant reference is already loaded and its rules remain valid, do not read it again.
 - When switching Flows, load only newly required references; do not reload unchanged shared protocols.
 - The main `SKILL.md` is the routing entry point, not a replacement for Flow, Runtime, or deployment details.
-- Coding-specific modules are loaded through [`references/coding-flow.md`](references/coding-flow.md); concrete Coding Host/Model deployment files are selected through the Runtime Contract rather than named in Core rules.
+- Coding-specific modules are loaded through [`references/coding-flow.md`](references/coding-flow.md); concrete Coding deployment documents are selected through the Runtime Contract rather than named in Core rules.
 - When correctness requires cross-Flow information, use a narrow Handoff or Evidence-on-Demand instead of loading all references and raw state at once.
 
 ## Runtime boundary
@@ -108,7 +108,7 @@ Host Adapter + Model Profile
 concrete Code Agent Sessions / models / parameters
 ```
 
-The Runtime Contract is loaded through Coding Flow and selects only the registered deployment that matches the current environment. Product-specific persistent-instruction paths, Agent/Session operations, model names, and execution-parameter values belong to runtime deployment files, not this root Skill or Coding Core modules.
+The Runtime Contract is loaded through Coding Flow and selects only the registered deployment that matches the current environment. Product-specific persistent-instruction paths, Agent/Session operations, model names, and execution-parameter values belong to that deployment document, not this root Skill or Coding Core modules.
 
 Multimodal Flow is currently kept outside that Coding runtime abstraction. Its existing deployment bindings are preserved in its own routed profile without attempting an untested portability redesign.
 
@@ -118,4 +118,4 @@ This Skill may be automatically discovered, but a normal Skill `description` onl
 
 References under `references/` are loaded on demand. Do not read all of them at task startup merely because they might become useful later.
 
-For the current verified Coding deployment's bootstrap, Session restart, validation, and adoption guidance, see [`BEST_PRACTICES.md`](BEST_PRACTICES.md). That guide is non-normative and does not replace the selected Flow, Runtime Contract, Host Adapter, or Model Profile.
+For the registered Coding deployments' bootstrap, Session restart, validation, and adoption guidance, see [`BEST_PRACTICES.md`](BEST_PRACTICES.md). That guide is non-normative and does not replace the selected Flow, Runtime Contract, or registered deployment document.

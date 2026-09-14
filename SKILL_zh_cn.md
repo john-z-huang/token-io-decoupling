@@ -91,7 +91,7 @@ Coding Flow
 - 如果当前会话已加载且相关规则仍然有效，不重复读取同一 reference。
 - 从一个 Flow 切换到另一个 Flow 时，只新增所需 reference，不重新加载无变化的共享协议。
 - 主 `SKILL_zh_cn.md` 是中文路由入口，不替代 Flow、Runtime 或部署细则。
-- Coding 专属模块通过 [`references/coding-flow_zh_cn.md`](references/coding-flow_zh_cn.md) 加载；具体 Coding Host/Model 部署文件由 Runtime Contract 选择，不在 Core 规则中写死。
+- Coding 专属模块通过 [`references/coding-flow_zh_cn.md`](references/coding-flow_zh_cn.md) 加载；具体 Coding 部署文档由 Runtime Contract 选择，不在 Core 规则中写死。
 - 当正确性需要跨 Flow 信息时使用窄 Handoff 或 Evidence-on-Demand，不通过一次性加载全部 reference 和原始状态规避上下文边界。
 
 ## Runtime 边界
@@ -108,7 +108,7 @@ Host Adapter + Model Profile
 具体 Code Agent Sessions / models / parameters
 ```
 
-Runtime Contract 通过 Coding Flow 加载，并只选择与当前环境匹配的已登记部署。产品专属持久指令路径、Agent/Session 操作、模型名称和执行参数值属于 Runtime 部署文件，不属于根 Skill 或 Coding Core 模块。
+Runtime Contract 通过 Coding Flow 加载，并只选择与当前环境匹配的已登记部署。产品专属持久指令路径、Agent/Session 操作、模型名称和执行参数值属于该部署文档，不属于根 Skill 或 Coding Core 模块。
 
 Multimodal Flow 当前不纳入这套 Coding Runtime 抽象；其现有部署绑定保存在自己的按需 Profile 中，不进行未经测试的可移植性重构。
 
@@ -118,4 +118,4 @@ Multimodal Flow 当前不纳入这套 Coding Runtime 抽象；其现有部署绑
 
 `references/` 中的文档采用按需加载，禁止因为“可能以后会用到”而在任务开始时全部读取。
 
-关于当前已验证 Coding 部署的 bootstrap、Session 重启、验证和采用建议，请参阅 [`BEST_PRACTICES_zh_cn.md`](BEST_PRACTICES_zh_cn.md)。该指南是非规范性说明，不能替代所选 Flow、Runtime Contract、Host Adapter 或 Model Profile。
+关于已登记 Coding 部署的 bootstrap、Session 重启、验证和采用建议，请参阅 [`BEST_PRACTICES_zh_cn.md`](BEST_PRACTICES_zh_cn.md)。该指南是非规范性说明，不能替代所选 Flow、Runtime Contract 或登记的部署文档。
