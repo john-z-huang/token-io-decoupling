@@ -10,13 +10,18 @@
 
 - **Input-side Reasoning**：当前高级 Claude 父 Session 负责高价值语义决策。本 Profile 假设主 Session 已选择适合高级推理的 Claude runtime；不得仅因为 Haiku-class 或其他轻量 runtime 也能写代码，就允许其自动承担 input-side responsibility。
 - **实质 Primary Output**：要求使用的 Anthropic 执行模型为 **`claude-sonnet-5`**。
+- **Change Verification**：选择该角色时，为该 task conversation 启动一个全新的独立 `claude-sonnet-5` Session 进行最终改动结果验证，然后复用该 verifier 执行后续验证 slice。每个新的最终状态 fingerprint/epoch 都必须独立重新评估；此前结论不能作为证据。只有确实存在独立隔离需求时才创建额外 verifier Session，例如不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
+- **Documentation/Comments & Git Operations**：选择该角色时，使用独立的 `claude-sonnet-5` Session 负责获准的验证后文档/代码注释物化，以及所有非简单仓库 Git 操作。它负责同步、分支/worktree 操作、暂存、提交、历史整合、reset/clean/stash、冲突处理、标签、远端、推送和适用的 Issue/PR 交付；只有极小的只读 Git 元数据查询可以留在该角色之外。
+- **Context Bootstrap/Refresh**：选择该职责时，使用独立或可复用的 **`claude-sonnet-5`** Worker 进行有界事实与 policy-routing capsule 物化，默认使用 `effort=high`。由于本 Profile 通过模型选择而不是 `medium`/`low` Sonnet effort 控制成本，确定性的 metadata/source-hash 或增量 refresh capsule 工作在仍可机械验证时，可以改用 **`claude-haiku-4-5-20251001`**。语义解释仍由 Input-side Reasoning 负责。
 - **轻量 Output / 辅助 Worker**：严格有界、低语义风险、易机械验证的工作，在独立 Worker 具有明确 model-tiering 收益时，应优先使用 **`claude-haiku-4-5-20251001`**。
 - **Dual-role eligibility**：当前 Session 能明确确认自身为 `claude-sonnet-5`，并且 Host 能在同一 Session 满足当前任务要求的 Sonnet effort 时，本 Profile 声明该 Session 同时适配 Input-side Reasoning 与实质 Primary Output。通用 Runtime 因此进入 **Single-Session Coding Mode**，除非存在独立结构性拆分理由。
 - **正常双 Session 映射**：当前高级父 Session 不是 `claude-sonnet-5` 时，父 Session 只承担输入侧推理职责，并创建/复用独立 `claude-sonnet-5` Primary Output subagent 承担实质执行。
 
 本绑定使用完整 model ID，而不是 `sonnet` / `haiku` alias。Claude Code alias 会因 provider 不同而解析到不同版本，也会随着产品更新指向新模型；本 Profile 有意要求显式 runtime identity，避免 alias 漂移静默改变部署语义。
 
-Single-Session Coding Mode 描述的是**实质 Primary Execution Session**，不是禁止有价值的辅助模型分层。当前 Session 本身就是 Sonnet 5 时，可以直接承担实质探索、实现、调试、机械验证与输出；同时，当某个有界任务适合低成本隔离并存在明确结构收益时，仍可创建 Haiku 辅助 Worker。该辅助派发不会把主执行拓扑变成“正常双 Session Primary Output 模式”。
+Single-Session Coding Mode 描述的是**实质 Primary Execution Session**，不是禁止有价值的辅助模型分层。当前 Sonnet 5 Session 直接完成源代码/项目探索、实现、调试、临时聚焦检查和实现输出，不为了维持双角色形式再把普通工作委派给另一个 Sonnet Session。它不承担非简单 Git 操作。当某个有界任务适合低成本隔离并存在明确结构收益时，仍可创建 Haiku 辅助 Worker；该辅助派发不会把主执行拓扑变成“正常双 Session Primary Output 模式”。
+
+Single-Session Coding Mode 不会取消验证与交付角色。对实质性功能改动，输入侧 Agent 仍会启动一个全新的独立 Change Verification Session，并在同一个 task conversation 的后续验证 epoch 中复用它；每个 epoch 都必须独立重新评估，不能沿用此前结论。只有确实存在独立隔离需求时才创建额外 verifier Session；需要文档或非简单 Git 工作时，还可创建独立的 Documentation/Comments & Git Operations Session。
 
 ## 先选模型层，再选 effort
 
@@ -47,8 +52,10 @@ Haiku 是**有界执行器和证据 Worker**，不是更便宜的通用 Primary 
 
 Claude Code 当前对 Sonnet 5 支持 `low`、`medium`、`high`、`xhigh`、`max` effort。只有任务已经路由到 Sonnet 后，才应用 effort：
 
-- **实质 Primary Output**：一般 feature implementation、非平凡 refactor/debug、复杂 test/verification code、已批准 Contract 内的 migration，以及其他需要较多实现判断的事项使用 `effort=xhigh`。
-- **有界 Sonnet support work**：任务仍需要 Sonnet 级判断，但比常规 Primary Output 更窄时使用 `effort=high`，例如 focused technical document、非平凡但局部的测试，或不适合安全下放 Haiku 的有界实现。
+- **实质 Primary Output**：一般 feature implementation、非平凡 refactor/debug、实现反馈测试代码、已批准 Contract 内的 migration，以及其他需要在**已批准语义方案内进行较多执行判断**的事项使用 `effort=xhigh`。这一强度档位不会把问题定义、架构选择、未解决的语义权衡或验收 ownership 转移给 Primary Output；输出很长或项目规模很大本身不能作为继续提高强度的理由。
+- **Change Verification**：选择的 verifier 默认使用 `effort=xhigh`，因为它需要针对最终变更状态独立选择并解释整体检查。它只负责验证证据，不负责修复、架构决策或语义验收。
+- **Documentation/Comments & Git Operations**：选择的 Documentation/Comments & Git Operations Worker 对文档/注释物化和非简单仓库 Git 工作均默认使用 `effort=high`。其文档写入范围排除功能与测试；其 Git 范围限制为明确放行的仓库/worktree/ref/remote 操作。不得用来弥补验证失败或自行做未经批准的产品决策。
+- **其他辅助 Sonnet Worker**：默认使用 `high`，除非具体任务明确符合 `xhigh` 条件——例如 focused technical document、非平凡但局部的测试，或不适合安全下放 Haiku 的有界实现。
 - **更低 Sonnet effort**：`medium`/`low` 不再是那些本来可以安全交给 Haiku 的任务的默认降本手段。只有任务仍明确需要 Sonnet，但可以用较低推理深度换成本/延迟时才使用。
 - **定向升级**：`effort=max` 只用于某个范围严格收窄的任务已经让现有 Sonnet `high`/`xhigh` Worker 反复失败、振荡或明确阻塞时。
 
@@ -68,7 +75,7 @@ Haiku 4.5 在 Anthropic API 层的 thinking 语义与 Sonnet 5 也不同。本 P
 
 阻塞解除后，后续工作恢复常规 Sonnet `xhigh`/`high` 档位；如果新的后续任务独立满足 Haiku eligibility，也可以回到 Haiku 轻量层。
 
-当前 Sonnet 5 Session 处于 Single-Session Coding Mode 时，可以因为 fresh verification、真正并行、当前上下文明显失效/膨胀、明确隔离收益、定向 max escalation，**或有界 Haiku model tiering** 创建额外 Agent。仓库规模、长输出、build/test 工作或笼统“任务复杂”本身，不是把实质 Primary Output 再拆成另一个 Sonnet Session 的理由。
+当前 Sonnet 5 Session 处于 Single-Session Coding Mode 时，只有初始选定的独立验证、验证后的文档/注释或非简单 Git 操作隔离、真正并行、当前上下文明显失效/膨胀、存在明确独立隔离收益、某个具体任务反复阻塞而需要定向 `max` 升级，**或有界 Haiku model tiering** 时才允许创建额外 Agent。后续验证 epoch 复用已选 verifier；额外 verifier Session 需要确实隔离的验证需求。仓库规模、长输出、build/test 工作或笼统“任务复杂”本身，不是把实质 Primary Output 再拆成另一个 Sonnet Session 的理由。
 
 ## Claude Code model substitution 边界
 
@@ -88,7 +95,7 @@ Claude Code 可能因为 organization `availableModels`、provider 限制、fall
 
 - 不得把实质 Primary Output `claude-sonnet-5` 静默替换成 Opus、Haiku、Fable、其他 Sonnet 版本或 inherited parent model。
 - 不得把 Haiku-tier Worker 静默换成 Sonnet 后仍宣称“低成本层成功执行”。Haiku 不可用时，父级可以在明确认识到低成本层不可用后，主动把这个有界任务 reroute 到 Sonnet；这属于显式策略选择，不是接受 Host fallback。
-- 需要独立实质 Primary Output 但无法选择或确认 `claude-sonnet-5` 时，停止对应实质 Coding 工作并简短报告 Runtime 阻塞。
+- 需要独立实质 Primary Output 但无法选择或确认 `claude-sonnet-5` 时，停止对应实质 Coding 或验证工作并简短报告 Runtime 阻塞。不得因为 verifier 绑定不可用就让 Primary Output 自行验证实质性改动。
 - Sonnet 所需 effort 因 provider/组织 cap 无法真实应用时，停止受影响的实质任务，不得假设请求值已经生效。
 - Haiku-eligible 任务无法使用准确 Haiku 绑定时，可以在不违反 Context Firewall / role policy 的前提下留在当前已授权 Session，显式 reroute 到 Sonnet，或报告 capability/cost-tier mismatch；不得把未知 substituted model 当成等价 Haiku。
 - 不得因为 Claude Code inherited/substituted 一个高级父模型，就把高体量实质项目状态工作重新放回父 Session。Token I/O 分离仍是有意部署策略。

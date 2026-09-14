@@ -41,16 +41,22 @@ For a sticky Primary Execution Session, use a resumable custom subagent or the r
 
 - each normal custom/general-purpose subagent invocation starts with a fresh isolated context;
 - a completed resumable subagent returns an agent ID; follow-up work should resume/message that same agent instead of spawning a new one when Session Affinity applies;
+- state the concrete assigned model name/identifier and effort level in each newly created subagent's instruction body in readable text, even when also setting them through host controls; the subagent must not be expected to infer this assignment from tool arguments or its runtime identity. When reusing a subagent with the same assignment already stated, do not repeat it mechanically; state it when the assignment changes or the prior instruction was missing or unclear;
+- reuse the established verifier subagent for subsequent verification slices in the same task conversation, passing the new final-state fingerprint/epoch and requiring independent re-evaluation; create another verifier only when the parent identifies a genuinely isolated verification requirement;
 - built-in Explore and Plan are one-shot and do not return a resumable agent ID, so they may perform bounded read-only research but must not become the long-lived Primary Execution Session;
 - the subagent does not automatically inherit the parent's conversation history or previously invoked Skills. The parent must provide the narrow task/Contract information required by Core rules, and the worker must load the relevant Skill references when its execution depends on them.
 
 A logical role change inside a compatible Single-Session Coding Mode is not a reason to spawn another substantive Primary Output subagent. However, an independent lower-cost auxiliary Worker can still be justified by concrete model-tiering benefit when the active Profile declares the task eligible.
+
+If the active Claude Code environment cannot create the required independent subagent context, cannot select the required model, or cannot satisfy a required runtime parameter, return that capability failure to the active Model Profile's unavailable-handling rule. The Adapter must not substitute another model on its own.
 
 ## Model selection and lightweight Haiku workers
 
 Claude Code custom subagents support explicit per-invocation or frontmatter model selection and can therefore implement the Model Profile's Sonnet/Haiku execution tiers. The Adapter owns the mechanism for requesting these controls; the selected Model Profile owns the exact model IDs and task eligibility.
 
 Prefer explicit runtime requests for Profile-bound work rather than relying on the subagent's inherited model. For persistent/reusable custom subagents, the same requirements may be encoded in the subagent definition, but a repository-specific custom agent file is not required by this Skill.
+
+A Claude Code surface may already display equivalent dispatch information. Shared `Dispatch Preview` rules determine whether an additional visible preview is necessary; this Adapter does not create a second, product-specific reporting protocol.
 
 ### One-shot read-only exploration
 

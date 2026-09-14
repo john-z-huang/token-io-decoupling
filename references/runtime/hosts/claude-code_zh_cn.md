@@ -41,16 +41,22 @@ Claude Code cloud session 不读取本机个人目录下的 `~/.claude/skills/`�
 
 - 普通 custom/general-purpose subagent 的首次调用会得到新的独立 context；
 - 可恢复 subagent 完成后会返回 agent ID；Session Affinity 适用时，后续工作应 resume/message 同一个 agent，而不是重新创建新的实例；
+- 创建 subagent 时，在指令正文中以可读文本写明本次指定的具体模型名称/标识和 effort 档位，即使也通过宿主控制项设置了这些值；不得要求 subagent 从工具参数或自身运行时身份推断本次指定。复用已明确写过相同指定的 subagent 时，不要机械重复；指定发生变化或先前指令缺失、不明确时再写明；
+- 在同一个 task conversation 的后续验证 slice 中复用已经建立的 verifier subagent，传入新的最终状态 fingerprint/epoch 并要求独立重新评估；只有父 Agent 指出确实隔离的验证需求时才创建额外 verifier；
 - built-in Explore 与 Plan 是 one-shot，不返回可 resume 的 agent ID，因此可以执行有界只读调查，但不能充当长期 Primary Execution Session；
 - 普通 subagent 不会自动继承父会话完整历史，也不会自动继承父会话已经调用过的 Skills。父级应按 Core 规则只传递必要 task / Contract 信息；Worker 的执行若依赖本 Skill 的细则，应在自身上下文中加载相应 Skill reference。
 
 兼容的 Single-Session Coding Mode 只是在同一 Session 内切换逻辑职责，不应因此创建新的实质 Primary Output subagent。但当 active Profile 明确声明某个有界任务适合低成本模型层时，独立轻量 Worker 仍可因为 model-tiering 的实际收益而成立。
+
+当前 Claude Code 环境若无法创建所需的独立 subagent context、无法选择所需模型，或不能满足所需运行参数，应把 capability failure 交给 active Model Profile 的 unavailable 规则处理；Host Adapter 不得自行换模型。
 
 ## Model 选择与轻量 Haiku Worker
 
 Claude Code custom subagent 支持在单次调用或 frontmatter 中显式指定 `model`，因此可以实现 Model Profile 定义的 Sonnet/Haiku 执行层。Adapter 只负责这些控制项“如何请求”；准确 model ID 与任务 eligibility 仍属于 Model Profile。
 
 Profile 明确绑定 Runtime 时，应显式请求对应参数，而不是依赖 subagent 的 inherited model。对于长期复用的 custom subagent，也可以把同类要求写进 subagent definition，但本 Skill 不强制要求仓库额外提交 Claude Code 专属 agent 文件。
+
+Claude Code 的宿主界面可能已经显示等价的派发信息；是否还需要额外用户可见预览由共享 `Dispatch Preview` 规则决定，本 Adapter 不创建第二套产品专属反馈协议。
 
 ### One-shot 只读 exploration
 
