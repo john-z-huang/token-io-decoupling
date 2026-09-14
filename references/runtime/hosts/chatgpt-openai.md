@@ -84,6 +84,20 @@ Standard ChatGPT chat may expose GitHub, Google Drive, code execution, file-proc
 3. When a tool lacks permission, write support, or filesystem isolation, do not bypass that limitation through another unauthorized channel.
 4. Multiple logical responsibilities may use the same connector, but changing responsibility does not create new verification independence.
 
+## Validation and execution-environment limits
+
+Standard ChatGPT chat must not be treated as having a general-purpose shell or Python environment comparable to Codex CLI or a normal local development environment. Even when a particular chat exposes a controlled code-execution tool, use only the capabilities actually available in that conversation; do not infer that repository scripts, Python, shell, Git CLI, or the project's full dependencies are available.
+
+Therefore, when the repository workflow requires `python3 scripts/...`, shell checks, test suites, lint, build, or other local validation commands and the current standard chat does not expose the required execution environment:
+
+- do not claim that those validations were run or passed;
+- do not treat GitHub, Drive, or other connector read/write capability as shell, Python, or test-execution capability;
+- diff review, document-structure inspection, and static evidence available through connectors may still be performed, but they do not replace validation that explicitly requires command execution;
+- record in the PR, Issue, or final delivery note that the validation was not run because the standard ChatGPT Host lacks the required execution environment, and leave the exact commands for a local, CI, or Code Agent environment that can run them;
+- if acceptance criteria require those commands to actually pass, this Host may complete the supported edits and static checks but must not mark execution validation as complete.
+
+Do not import ChatGPT Work capabilities merely to obtain shell, Python, or a cloud computer. Work remains a separately excluded Host.
+
 ## Model Profile
 
 This deployment does not hard-code that standard ChatGPT always runs a particular model. Model bindings may use only facts the current conversation can confirm.
@@ -119,13 +133,14 @@ Downgrade or block rather than inventing capabilities in these cases:
 - Current model cannot be confirmed: describe it as host-managed and do not claim an exact model binding.
 - Independent Session creation is unavailable: enter Single-Session responsibility isolation; independent Change Verification must not be fabricated.
 - Worker model selection is unavailable: do not claim cross-model output displacement.
+- Shell / Python / project execution environment is unavailable: do not claim repository validation scripts, tests, lint, or builds were run; explicitly record the missing validation and its reason.
 - Repository or file write capability is unavailable: return only plans, patch suggestions, or other artifacts the current tools really support.
 - User authorization is absent: stop the corresponding write operation.
 
-If acceptance criteria require an independent verifier, an explicitly lower-cost Worker, or real Session isolation and standard chat cannot provide those capabilities, state that the current Host does not satisfy that runtime requirement.
+If acceptance criteria require an independent verifier, an explicitly lower-cost Worker, real Session isolation, or repository validation that must actually execute, and standard chat cannot provide those capabilities, state that the current Host does not satisfy that runtime requirement.
 
 ## Validation status
 
 This deployment registers a **limited, capability-driven mapping for standard ChatGPT chat**. Its confirmed design target is to preserve Coding Core responsibilities and boundaries when independent subagent capability is absent while refusing to fabricate multi-Session or cross-model benefits.
 
-Until standard ChatGPT chat actually exposes and exercises independent Session creation, model routing, and isolated verification, those paths must remain marked unverified. Real use of ChatGPT Work must not be counted as validation evidence for this deployment.
+Until standard ChatGPT chat actually exposes and exercises independent Session creation, model routing, and isolated verification, those paths must remain marked unverified. When standard chat lacks the required shell / Python / project execution environment, repository validation scripts and tests must likewise remain marked not run rather than inferred to have passed from static inspection. Real use of ChatGPT Work must not be counted as validation evidence for this deployment.
