@@ -36,9 +36,12 @@ Codex 可以为派发工作暴露模型选择和 `reasoning_effort` 控制。本
 
 ## 文件系统与 worktree 映射
 
-多 Agent Coding 使用文件化 Context Exchange 时，应通过当前 Codex 环境能够提供的最强隔离机制实现 [`../../coding/context-exchange_zh_cn.md`](../../coding/context-exchange_zh_cn.md) 的 capability 要求：
+多个 Agent 处理同一个开发需求时，默认复用该 task 的 primary Git worktree。独立 Agent/Session、全新的 verifier 或 Worker 专属 Context Exchange 目录本身都不要求额外 worktree。遵循 [`../../coding/context-exchange_zh_cn.md`](../../coding/context-exchange_zh_cn.md) 中的验证与明确隔离例外；并发写入发生冲突时，优先分配互不重叠的路径范围或按依赖顺序执行 slice。
 
-- 宿主支持路径级限制时，每个 Worker 的 RW 范围只覆盖自己的代码 worktree 和 context 子目录；
+多 Agent Coding 使用文件化 Context Exchange 时，应通过当前 Codex 环境能够提供的最强隔离机制实现其中的 capability 要求：
+
+- 宿主支持路径级限制时，每个 Worker 的 RW 范围只覆盖明确列出的变更路径和自己的 context 子目录；verifier 对固定最终状态保持 RO，只有其获准 slice 明确授权的验证脚本/测试路径可以 RW；
+- 只有确有隔离需求时才创建独立验证 worktree，例如不兼容的快照/环境、无法重定向或隔离的验证写入、不同的权限/安全边界要求提供单独限定的文件系统视图，或明确要求隔离的审计；
 - 跨 Worker 上下文优先以定向 RO 路径暴露；
 - 宿主支持时，其他 Worker context 与父级独占的根索引保持不暴露或 DENY；
 - 无法安全提供 RO 共享时，先使用工具级机械复制，再考虑父 Agent 中转。

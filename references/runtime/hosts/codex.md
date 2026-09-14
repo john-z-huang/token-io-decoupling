@@ -36,9 +36,12 @@ A host UI or tool may already display equivalent dispatch information. Shared `D
 
 ## Filesystem and worktree mapping
 
-When multi-Agent Coding uses file-backed Context Exchange, apply the capability requirements from [`../../coding/context-exchange.md`](../../coding/context-exchange.md) through the strongest isolation available in the current Codex environment:
+When multiple Agents work on the same development request, reuse the task's primary Git worktree by default. A separate Agent/Session, a fresh verifier, or a Worker-specific Context Exchange directory does not itself require another worktree. Follow the validation and explicit-isolation exceptions in [`../../coding/context-exchange.md`](../../coding/context-exchange.md); for concurrent write conflicts, assign non-overlapping path scopes or sequence dependent slices first.
 
-- give each Worker RW access only to its own code worktree and context subdirectory when such path scoping is available;
+When multi-Agent Coding uses file-backed Context Exchange, apply its capability requirements through the strongest isolation available in the current Codex environment:
+
+- when path scoping is available, give each Worker RW access only to its named mutation paths and its own context subdirectory; give the verifier RO access to the fixed final state, with RW access limited to verification-script/test paths explicitly authorized in its released slice;
+- create a separate validation worktree only for a concrete isolation need, such as incompatible snapshots/environments, validation writes that cannot be redirected or contained, a separately scoped filesystem view required by a distinct permission/security boundary, or an explicitly isolated audit;
 - expose cross-Worker context as targeted RO paths when possible;
 - keep other Worker context and the parent-owned root index unexposed or denied when the host supports that boundary;
 - use tool-level mechanical copies before falling back to parent-generated context transport when safe RO sharing is unavailable.

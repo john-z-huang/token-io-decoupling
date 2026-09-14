@@ -34,9 +34,9 @@ Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 caps
 
 负责 Primary Output 实现 slice 完成后的最终、独立改动验证。它接收最终项目状态、当前有效 Semantic Contract、验收标准、变更范围证据和临时实现检查，然后渐进检查相关 diff 与周边行为，并执行适当的整体检查，例如集成、回归、跨模块、系统或端到端测试。它返回压缩后的证据、覆盖缺口、失败和剩余风险；不负责架构或产品决策、语义验收或修复工作。
 
-选择该角色时，Change Verification Agent 首先使用新的独立 Session，避免继承 Primary Output 的实现历史。其验证 slice 对产品代码、测试、文档、配置和 Git 状态保持只读。它消费 Documentation/Comments & Git Operations Agent 提供的变更范围清单和 Git 证据，然后独立验证内容与行为；也可以使用当前有界 Bootstrap capsule 作为事实/路由上下文，但必须独立判断所提供的最终状态和所需证据。不执行非简单 Git 查询或操作。临时测试/构建输出可由 Host 隔离。它不得递归委派。若发现需要实质修复，应由父级输入侧 Agent 将修复返回 Primary Output；修复后，父 Agent 应复用同一个 verifier，为新的验证 slice 和最终状态 fingerprint/epoch 重新独立评估验收矩阵，不能把此前结论作为证据。只有父 Agent 确认存在多个确实隔离的验证需求时，才创建额外 verifier，例如并发不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
+选择该角色时，Change Verification Agent 首先使用新的独立 Session，避免继承 Primary Output 的实现历史。其验证 slice 对产品代码/配置、文档和 Git 状态保持只读。父 Agent 可以明确授权它仅创建或更新点名的验证脚本/测试（或新增验证脚本的一个有界目录），以检查已批准的验收标准；这不授权产品修复、无关测试修改或大范围套件重构。它消费 Documentation/Comments & Git Operations Agent 提供的变更范围清单和 Git 证据，然后独立验证内容与行为；也可以使用当前有界 Bootstrap capsule 作为事实/路由上下文，但必须独立判断所提供的最终状态和所需证据。不执行非简单 Git 查询或操作。临时测试/构建输出可由 Host 隔离。它不得递归委派。若发现需要实质修复，应由父级输入侧 Agent 将修复返回 Primary Output；修复后，父 Agent 应复用同一个 verifier，为新的验证 slice 和最终状态 fingerprint/epoch 重新独立评估验收矩阵，不能把此前结论作为证据。只有父 Agent 确认存在多个确实隔离的验证需求时，才创建额外 verifier，例如并发不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
 
-当仓库提供累计的完整套件入口或等价 manifest 时，全新的 verifier 应先运行该入口，再做针对变更风险的定向分析；详细的验证资产、覆盖缺口和文档快路径规则由 Coding Verification Boundary 负责。verifier 报告缺口时仍保持只读，修复返回 Primary Output；针对修复后的 epoch 复用同一个 verifier，不要为每项检查创建新的 verifier。
+当仓库提供累计的完整套件入口或等价 manifest 时，全新的 verifier 应先运行该入口，再做针对变更风险的定向分析；详细的验证资产、覆盖缺口和文档快路径规则由 Coding Verification Boundary 负责。verifier 只能物化明确授权的验证资产；产品或文档修复及任何范围外覆盖工作都应报告给父 Agent，再由父 Agent 路由给相应 Worker。如果编写验证资产改变了跟踪状态，父 Agent 应提供更新后的范围证据和 fingerprint，然后复用同一个 verifier 独立复查该新 epoch，再接受验证结果。
 
 ### Documentation/Comments & Git Operations Agent
 
@@ -115,6 +115,8 @@ Single-Session Coding Mode 不存在跨 Session 的 Context Firewall；当前 Se
 
 - 正常双 Session 模式下，它是 active Runtime 分配给 Primary Output Role 的独立 Session；
 - Single-Session Coding Mode 下，它就是当前 Session；不得为了获得所谓 Primary Session Affinity 再创建一个 Session。
+
+Session 隔离与 Git worktree 隔离是两件事。创建独立 Worker 或 verifier 本身不要求使用单独的 worktree。同一开发需求中的 Worker 通常共享该需求的 primary worktree；必要验证或其他明确隔离所允许的有限例外由 [`context-exchange_zh_cn.md`](context-exchange_zh_cn.md) 负责定义。
 
 后续项目探索、实现、诊断、测试、修复和局部执行优先复用该 Primary Execution Session。复用的目的包括保留项目工作上下文、减少重复探索，并提高稳定 prompt prefix 的复用机会。不得宣称同一 Agent 必然命中 prompt cache，也不得宣称新 Agent 必然无法命中缓存。
 
