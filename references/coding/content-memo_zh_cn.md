@@ -1,6 +1,6 @@
 # Worker Content Memo
 
-本模块负责多 Agent Coding 中 Worker 执行内容总结文档的默认写入策略、工作语言与父级派发配置。它是 [`context-exchange_zh_cn.md`](context-exchange_zh_cn.md) 中 file-backed Context Exchange 的专项规则；若该文档中“仅在具有可复用价值时创建额外文档”等一般性表述与本模块的执行内容 memo 默认策略冲突，**本模块对 content memo 的专项规则优先**。
+本模块负责多 Agent Coding 中 Worker 执行内容总结文档的默认写入策略、工作语言与父级派发配置。它是 [`context-exchange_zh_cn.md`](context-exchange_zh_cn.md) 所定义 file-backed Context Exchange 中 content memo 的专项规则模块；目录 ownership、跨 Worker 传输、读写隔离与 handoff 机制仍由 Context Exchange 模块负责。
 
 本模块只约束 `<primary-worktree>/.token-io-decoupling/context/<worker-context-id>/` 中由 Worker 维护的执行上下文总结，不改变 Semantic Contract、Progress Signal、Control Checkpoint、Change Verification、Git 交付或项目正式文档的语言与行为规则。
 
