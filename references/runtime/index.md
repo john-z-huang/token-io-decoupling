@@ -10,10 +10,11 @@ Load this file only through [`../coding/runtime.md`](../coding/runtime.md) when 
 |---|---|
 | [`hosts/codex-openai.md`](hosts/codex-openai.md) | Verified deployment; preserves this Skill's existing Coding behavior |
 | [`hosts/claude-code-anthropic.md`](hosts/claude-code-anthropic.md) | In live use; the Haiku-tier auxiliary dispatch and the normal two-Session Sonnet Primary Output dispatch have now been exercised, with the remaining limits listed in the document |
+| [`hosts/chatgpt-openai.md`](hosts/chatgpt-openai.md) | Limited, capability-driven deployment for standard ChatGPT chat only; explicitly excludes ChatGPT Work and does not treat independent Sessions, model routing, or isolated verification as default standard-chat capabilities |
 
 Each document covers both deployment concerns for one product/provider pair: the **Host Adapter** (how the product instantiates work) and the **Model Profile** (which runtime should perform a responsibility). Select the document whose Host Adapter matches the current environment.
 
-The Codex/OpenAI entry preserves the existing verified Coding behavior of this Skill. The Claude Code/Anthropic entry is in live Coding use for this Skill's own development, with its host mapping backed by the official Claude Code documentation; the paths live use has exercised and the limits it still records are set out in that document, and anything that document or the host does not expose must keep being reported as unverified rather than assumed.
+The Codex/OpenAI entry preserves the existing verified Coding behavior of this Skill. The Claude Code/Anthropic entry is in live Coding use for this Skill's own development, with its host mapping backed by the official Claude Code documentation; the paths live use has exercised and the limits it still records are set out in that document, and anything that document or the host does not expose must keep being reported as unverified rather than assumed. The ChatGPT/OpenAI entry covers standard chat only and maps capabilities from what the current conversation actually exposes; it does not treat ChatGPT Work capabilities, unexposed subagent behavior, or cross-model token displacement as verified facts.
 
 A host or model family that is not listed here must not be treated as supported merely because it can parse Agent Skills or run coding tasks.
 
@@ -28,4 +29,4 @@ Do not modify an existing deployment entry to approximate another product or pro
 
 ## Multimodal boundary
 
-Multimodal Flow is not generalized through this Coding runtime registry. Its current deployment bindings remain isolated in [`../multimodal-openai-profile.md`](../multimodal-openai-profile.md). The Claude Code/Anthropic entry in this registry applies to Coding Flow only and makes no portability claim for Multimodal Flow.
+Multimodal Flow is not generalized through this Coding runtime registry. Its current deployment bindings remain isolated in [`../multimodal-openai-profile.md`](../multimodal-openai-profile.md). The Coding deployment entries in this registry apply to Coding Flow only and make no portability claim for Multimodal Flow.

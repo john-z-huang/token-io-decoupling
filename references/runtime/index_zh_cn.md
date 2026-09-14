@@ -10,10 +10,11 @@
 |---|---|
 | [`hosts/codex-openai_zh_cn.md`](hosts/codex-openai_zh_cn.md) | 已验证部署；保持本 Skill 既有 Coding 行为 |
 | [`hosts/claude-code-anthropic_zh_cn.md`](hosts/claude-code-anthropic_zh_cn.md) | 已投入真实使用；Haiku-tier 辅助派发与正常双 Session Sonnet Primary Output 派发现已执行，其余限制列在该文档中 |
+| [`hosts/chatgpt-openai_zh_cn.md`](hosts/chatgpt-openai_zh_cn.md) | 受限、能力驱动部署；仅适用于 ChatGPT 普通聊天，明确排除 ChatGPT Work；当前未把独立 Session、模型路由或独立验证视为普通聊天的默认能力 |
 
 每份文档覆盖一个产品/provider 组合的两个部署关注点：**Host Adapter**（这个产品如何实例化工作）与 **Model Profile**（哪个 Runtime 应承担某项职责）。应选择 Host Adapter 与当前环境匹配的那份文档。
 
-Codex/OpenAI 条目继续保持本 Skill 已验证的 Coding 行为。Claude Code/Anthropic 条目已投入本 Skill 自身的真实 Coding 使用，其宿主映射以 Claude Code 官方文档为依据；真实使用已经覆盖的路径与仍然记录的限制都写在该文档中，该文档或宿主未暴露的内容必须继续标记为未验证，而不是按已验证假设处理。
+Codex/OpenAI 条目继续保持本 Skill 已验证的 Coding 行为。Claude Code/Anthropic 条目已投入本 Skill 自身的真实 Coding 使用，其宿主映射以 Claude Code 官方文档为依据；真实使用已经覆盖的路径与仍然记录的限制都写在该文档中，该文档或宿主未暴露的内容必须继续标记为未验证，而不是按已验证假设处理。ChatGPT/OpenAI 条目只覆盖普通聊天环境，并按当前会话实际暴露的 capability 做映射；它不把 ChatGPT Work 的能力、未暴露的子 Agent 能力或跨模型 Token 转移当作已验证事实。
 
 没有列在这里的 Host 或模型族，不能仅因为能够解析 Agent Skills 或执行 Coding 任务，就被视为已经受到本 Skill 支持。
 
@@ -28,4 +29,4 @@ Codex/OpenAI 条目继续保持本 Skill 已验证的 Coding 行为。Claude Cod
 
 ## Multimodal 边界
 
-Multimodal Flow 当前不通过这套 Coding Runtime 注册表做通用化。它现有的部署绑定继续独立保存在 [`../multimodal-openai-profile_zh_cn.md`](../multimodal-openai-profile_zh_cn.md)。本注册表中的 Claude Code/Anthropic 条目只适用于 Coding Flow，不对 Multimodal Flow 的可移植性作承诺。
+Multimodal Flow 当前不通过这套 Coding Runtime 注册表做通用化。它现有的部署绑定继续独立保存在 [`../multimodal-openai-profile_zh_cn.md`](../multimodal-openai-profile_zh_cn.md)。本注册表中的 Coding 部署条目只适用于 Coding Flow，不对 Multimodal Flow 的可移植性作承诺。
