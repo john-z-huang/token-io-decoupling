@@ -73,7 +73,7 @@ This distinction keeps the Profile's cost policy explicit rather than depending 
 
 Claude Code custom subagents can support an `effort` override when the selected model supports Claude Code effort levels. The Adapter only owns how an effort request is applied; the Model Profile decides whether the selected model uses effort at all.
 
-Do not assume every Anthropic tier supports the same effort surface. In the current product the Sonnet tier accepts effort while the Haiku tier does not. A Haiku-tier Worker therefore must not inherit Sonnet's `low`/`medium`/`high`/`max` policy merely because the subagent schema has an `effort` field. Because tier aliases follow the host's current model versions, re-confirm this effort surface rather than treating it as fixed. If a Profile needs more reasoning than its Haiku tier can provide, reroute the task to the Profile's Sonnet tier.
+Do not assume every Anthropic tier supports the same effort surface. In the current product the Sonnet tier accepts effort while the Haiku tier does not. A Haiku-tier Worker therefore must not inherit Sonnet's `low`/`medium`/`high` policy merely because the subagent schema has an `effort` field. Because tier aliases follow the host's current model versions, re-confirm this effort surface rather than treating it as fixed. If a Profile needs more reasoning than its Haiku tier can provide, reroute the task to the Profile's Sonnet tier.
 
 Organization effort caps can clamp a requested Sonnet level. If the Profile requires a level that is not actually applied, return that fact to the Profile instead of assuming the requested value took effect.
 

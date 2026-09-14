@@ -73,7 +73,7 @@ Claude Code 的宿主界面可能已经显示等价的派发信息；是否还�
 
 Claude Code custom subagent 在所选模型支持 Claude Code effort 时可以使用 `effort` override。Adapter 只负责 effort 如何请求；Model Profile 决定所选模型是否应使用 effort。
 
-不得假设每个 Anthropic 层级都拥有相同 effort surface。当前产品中 Sonnet 层接受 effort，Haiku 层不接受。因此 Haiku-tier Worker 不能仅因为 subagent schema 存在 `effort` 字段，就继承 Sonnet 的 `low`/`medium`/`high`/`max` 策略。由于层级 alias 会跟随宿主当前的模型版本，应重新确认该 effort surface，而不是把它当作固定属性。若 Profile 判断任务需要超过 Haiku 层能力的推理，应直接 reroute 到 Sonnet。
+不得假设每个 Anthropic 层级都拥有相同 effort surface。当前产品中 Sonnet 层接受 effort，Haiku 层不接受。因此 Haiku-tier Worker 不能仅因为 subagent schema 存在 `effort` 字段，就继承 Sonnet 的 `low`/`medium`/`high` 策略。由于层级 alias 会跟随宿主当前的模型版本，应重新确认该 effort surface，而不是把它当作固定属性。若 Profile 判断任务需要超过 Haiku 层能力的推理，应直接 reroute 到 Sonnet。
 
 组织级 effort cap 可能把 Sonnet 请求档位向下 clamp。若 Profile 要求的 level 没有真实生效，应把该事实反馈给 Profile，而不是只根据请求值判断成功。
 
