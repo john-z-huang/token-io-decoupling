@@ -41,7 +41,7 @@ For a sticky Primary Execution Session, use a resumable custom subagent or the r
 
 - each normal custom/general-purpose subagent invocation starts with a fresh isolated context;
 - a completed resumable subagent returns an agent ID; follow-up work should resume/message that same agent instead of spawning a new one when Session Affinity applies;
-- state the concrete assigned model name/identifier and effort level in each newly created subagent's instruction body in readable text, even when also setting them through host controls; the subagent must not be expected to infer this assignment from tool arguments or its runtime identity. When reusing a subagent with the same assignment already stated, do not repeat it mechanically; state it when the assignment changes or the prior instruction was missing or unclear;
+- state the assigned model binding — the Profile's tier alias, plus the concrete version when the host has already resolved it — and effort level in each newly created subagent's instruction body in readable text, even when also setting them through host controls; the subagent must not be expected to infer this assignment from tool arguments or its runtime identity. When reusing a subagent with the same assignment already stated, do not repeat it mechanically; state it when the assignment changes or the prior instruction was missing or unclear;
 - reuse the established verifier subagent for subsequent verification slices in the same task conversation, passing the new final-state fingerprint/epoch and requiring independent re-evaluation; create another verifier only when the parent identifies a genuinely isolated verification requirement;
 - built-in Explore and Plan are one-shot and do not return a resumable agent ID, so they may perform bounded read-only research but must not become the long-lived Primary Execution Session;
 - the subagent does not automatically inherit the parent's conversation history or previously invoked Skills. The parent must provide the narrow task/Contract information required by Core rules, and the worker must load the relevant Skill references when its execution depends on them.
@@ -52,7 +52,7 @@ If the active Claude Code environment cannot create the required independent sub
 
 ## Model selection and lightweight Haiku workers
 
-Claude Code custom subagents support explicit per-invocation or frontmatter model selection and can therefore implement the Model Profile's Sonnet/Haiku execution tiers. The Adapter owns the mechanism for requesting these controls; the selected Model Profile owns the exact model IDs and task eligibility.
+Claude Code custom subagents support explicit per-invocation or frontmatter model selection and can therefore implement the Model Profile's Sonnet/Haiku execution tiers. The Adapter owns the mechanism for requesting these controls; the selected Model Profile owns the tier aliases and task eligibility.
 
 Prefer explicit runtime requests for Profile-bound work rather than relying on the subagent's inherited model. For persistent/reusable custom subagents, the same requirements may be encoded in the subagent definition, but a repository-specific custom agent file is not required by this Skill.
 
@@ -73,7 +73,7 @@ This distinction keeps the Profile's cost policy explicit rather than depending 
 
 Claude Code custom subagents can support an `effort` override when the selected model supports Claude Code effort levels. The Adapter only owns how an effort request is applied; the Model Profile decides whether the selected model uses effort at all.
 
-Do not assume every Anthropic model supports the same effort surface. Current Claude Code effort support includes Sonnet 5 but not Haiku 4.5. A Haiku-tier Worker therefore must not inherit Sonnet's `high`/`xhigh`/`max` policy merely because the subagent schema has an `effort` field. If a Profile needs more reasoning than its Haiku tier can provide, reroute the task to the Profile's Sonnet tier.
+Do not assume every Anthropic tier supports the same effort surface. In the current product the Sonnet tier accepts effort while the Haiku tier does not. A Haiku-tier Worker therefore must not inherit Sonnet's `low`/`medium`/`high`/`max` policy merely because the subagent schema has an `effort` field. Because tier aliases follow the host's current model versions, re-confirm this effort surface rather than treating it as fixed. If a Profile needs more reasoning than its Haiku tier can provide, reroute the task to the Profile's Sonnet tier.
 
 Organization effort caps can clamp a requested Sonnet level. If the Profile requires a level that is not actually applied, return that fact to the Profile instead of assuming the requested value took effect.
 
@@ -81,9 +81,11 @@ Organization effort caps can clamp a requested Sonnet level. If the Profile requ
 
 Claude Code can substitute or fail over a requested subagent model when organization `availableModels`, provider behavior, configured fallback chains, or other runtime restrictions prevent the exact request. Therefore a successful dispatch is not enough to prove Profile compliance:
 
-1. request the Profile-required model and any model-supported effort;
+1. request the tier alias the Profile binds for that role (`claude-sonnet` or `claude-haiku`) and any model-supported effort;
 2. inspect the effective subagent runtime when Claude Code exposes it, for example through task/result surfaces;
 3. if the actual runtime does not satisfy the selected Profile tier, treat it as a capability mismatch and follow the Profile's unavailable/rerouting rule.
+
+Because the Profile binds tier aliases rather than pinned versions, resolution to a newer model of the *same* tier is the alias working as intended rather than a substitution: continue and record the resolved version. A change of tier is the case that requires the unavailable rules.
 
 Do not reinterpret Claude Code's automatic model substitution or fallback chain as permission for this Skill to silently relax its Model Profile.
 
@@ -121,9 +123,9 @@ After installing or changing the Skill or Claude Code runtime configuration, val
 1. confirm the shared source exists at `~/.agents/skills/token-io-decoupling/` and Claude Code discovers the symlinked personal entry when personal installation is used;
 2. confirm the Skill is discoverable and Coding Flow loads the Runtime Registry;
 3. confirm this Host Adapter is selected because the actual Host is Claude Code;
-4. confirm the active Model Profile requests the intended Sonnet or Haiku runtime for each task class;
-5. when substantive two-Session mode is selected, confirm the Primary Output subagent actually runs on the Profile-bound Sonnet model/effort rather than a substituted runtime;
-6. when a Haiku-tier auxiliary is selected, confirm its actual model is the Profile-bound Haiku runtime and that no unsupported Sonnet-style effort assumption was applied;
+4. confirm the active Model Profile requests the intended Sonnet or Haiku tier for each task class;
+5. when substantive two-Session mode is selected, confirm the Primary Output subagent actually runs on the Profile-bound Sonnet tier/effort rather than a substituted runtime, and record which concrete version the tier alias resolved to;
+6. when a Haiku-tier auxiliary is selected, confirm its actual model belongs to the Profile-bound Haiku tier and that no unsupported Sonnet-style effort assumption was applied;
 7. confirm related follow-up work resumes the same Primary Execution subagent when Session Affinity applies;
 8. confirm Coding Core documents remain vendor-neutral.
 

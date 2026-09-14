@@ -41,7 +41,7 @@ Claude Code cloud session 不读取本机个人目录下的 `~/.claude/skills/`�
 
 - 普通 custom/general-purpose subagent 的首次调用会得到新的独立 context；
 - 可恢复 subagent 完成后会返回 agent ID；Session Affinity 适用时，后续工作应 resume/message 同一个 agent，而不是重新创建新的实例；
-- 创建 subagent 时，在指令正文中以可读文本写明本次指定的具体模型名称/标识和 effort 档位，即使也通过宿主控制项设置了这些值；不得要求 subagent 从工具参数或自身运行时身份推断本次指定。复用已明确写过相同指定的 subagent 时，不要机械重复；指定发生变化或先前指令缺失、不明确时再写明；
+- 创建 subagent 时，在指令正文中以可读文本写明本次指定的模型绑定——Profile 规定的层级 alias，宿主已经解析出具体版本时一并写明——以及 effort 档位，即使也通过宿主控制项设置了这些值；不得要求 subagent 从工具参数或自身运行时身份推断本次指定。复用已明确写过相同指定的 subagent 时，不要机械重复；指定发生变化或先前指令缺失、不明确时再写明；
 - 在同一个 task conversation 的后续验证 slice 中复用已经建立的 verifier subagent，传入新的最终状态 fingerprint/epoch 并要求独立重新评估；只有父 Agent 指出确实隔离的验证需求时才创建额外 verifier；
 - built-in Explore 与 Plan 是 one-shot，不返回可 resume 的 agent ID，因此可以执行有界只读调查，但不能充当长期 Primary Execution Session；
 - 普通 subagent 不会自动继承父会话完整历史，也不会自动继承父会话已经调用过的 Skills。父级应按 Core 规则只传递必要 task / Contract 信息；Worker 的执行若依赖本 Skill 的细则，应在自身上下文中加载相应 Skill reference。
@@ -52,7 +52,7 @@ Claude Code cloud session 不读取本机个人目录下的 `~/.claude/skills/`�
 
 ## Model 选择与轻量 Haiku Worker
 
-Claude Code custom subagent 支持在单次调用或 frontmatter 中显式指定 `model`，因此可以实现 Model Profile 定义的 Sonnet/Haiku 执行层。Adapter 只负责这些控制项“如何请求”；准确 model ID 与任务 eligibility 仍属于 Model Profile。
+Claude Code custom subagent 支持在单次调用或 frontmatter 中显式指定 `model`，因此可以实现 Model Profile 定义的 Sonnet/Haiku 执行层。Adapter 只负责这些控制项“如何请求”；层级 alias 与任务 eligibility 仍属于 Model Profile。
 
 Profile 明确绑定 Runtime 时，应显式请求对应参数，而不是依赖 subagent 的 inherited model。对于长期复用的 custom subagent，也可以把同类要求写进 subagent definition，但本 Skill 不强制要求仓库额外提交 Claude Code 专属 agent 文件。
 
@@ -73,7 +73,7 @@ Claude Code 的宿主界面可能已经显示等价的派发信息；是否还�
 
 Claude Code custom subagent 在所选模型支持 Claude Code effort 时可以使用 `effort` override。Adapter 只负责 effort 如何请求；Model Profile 决定所选模型是否应使用 effort。
 
-不得假设每个 Anthropic 模型都拥有相同 effort surface。当前 Claude Code effort 支持包括 Sonnet 5，但不包括 Haiku 4.5。因此 Haiku-tier Worker 不能仅因为 subagent schema 存在 `effort` 字段，就继承 Sonnet 的 `high`/`xhigh`/`max` 策略。若 Profile 判断任务需要超过 Haiku 层能力的推理，应直接 reroute 到 Sonnet。
+不得假设每个 Anthropic 层级都拥有相同 effort surface。当前产品中 Sonnet 层接受 effort，Haiku 层不接受。因此 Haiku-tier Worker 不能仅因为 subagent schema 存在 `effort` 字段，就继承 Sonnet 的 `low`/`medium`/`high`/`max` 策略。由于层级 alias 会跟随宿主当前的模型版本，应重新确认该 effort surface，而不是把它当作固定属性。若 Profile 判断任务需要超过 Haiku 层能力的推理，应直接 reroute 到 Sonnet。
 
 组织级 effort cap 可能把 Sonnet 请求档位向下 clamp。若 Profile 要求的 level 没有真实生效，应把该事实反馈给 Profile，而不是只根据请求值判断成功。
 
@@ -81,9 +81,11 @@ Claude Code custom subagent 在所选模型支持 Claude Code effort 时可以�
 
 Claude Code 可能因为 organization `availableModels`、provider 行为、配置的 fallback chain 或其他 Runtime 限制替换/切换 subagent model。因此“dispatch 成功”不等于 Profile 已满足：
 
-1. 请求 Profile 规定的 model 与该模型真实支持的 effort；
+1. 请求该角色对应的 Profile 层级 alias（`claude-sonnet` 或 `claude-haiku`）与该模型真实支持的 effort；
 2. Claude Code 能暴露实际 subagent Runtime 时检查真实生效值，例如 task/result 界面；
 3. 如果实际 Runtime 不符合所选 Profile execution tier，则把它视为 capability mismatch，并按 Profile unavailable/rerouting rule 处理。
+
+由于 Profile 绑定的是层级 alias 而不是固定版本，alias 解析到**同一层级**的更新版本属于其预期行为，而不是 substitution：继续执行并记录解析到的版本。层级发生变化才是需要走 unavailable 规则的情形。
 
 不得把 Claude Code automatic substitution 或 fallback chain 当成本 Skill 可以静默放宽 Model Profile 的授权。
 
@@ -121,9 +123,9 @@ Primary Output 或辅助 subagent 继续遵守 Core delegation boundary：即使
 1. 个人安装时确认 `~/.agents/skills/token-io-decoupling/` 共享源存在，且 Claude Code 能发现 symlinked personal entry；
 2. 确认 Skill 可发现，Coding Flow 能加载 Runtime Registry；
 3. 确认因为真实 Host 是 Claude Code 而选择了本 Adapter；
-4. 确认 active Model Profile 会按任务类别请求预期的 Sonnet 或 Haiku Runtime；
-5. 选择实质双 Session 模式时，确认 Primary Output subagent 的实际 Sonnet model/effort 符合 Profile，而不是 substituted Runtime；
-6. 选择 Haiku-tier auxiliary 时，确认实际 model 是 Profile 绑定的 Haiku，且没有套用不受支持的 Sonnet-style effort 假设；
+4. 确认 active Model Profile 会按任务类别请求预期的 Sonnet 或 Haiku 层；
+5. 选择实质双 Session 模式时，确认 Primary Output subagent 实际运行在 Profile 绑定的 Sonnet 层/effort 上，而不是 substituted Runtime，并记录该层级 alias 解析到的具体版本；
+6. 选择 Haiku-tier auxiliary 时，确认实际 model 属于 Profile 绑定的 Haiku 层，且没有套用不受支持的 Sonnet-style effort 假设；
 7. Session Affinity 适用时，确认后续相关工作 resume 同一个 Primary Execution subagent；
 8. 确认 Coding Core 文档仍保持 vendor-neutral。
 
