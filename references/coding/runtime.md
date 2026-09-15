@@ -24,7 +24,7 @@ Before substantive Coding execution that depends on Session topology or explicit
 3. obtain the current Session's model/runtime identity and relevant parameter capabilities through the Host when available;
 4. apply the selected deployment's role eligibility and unavailable-handling rules.
 
-Do not silently claim that the current Session satisfies a role merely because its model is generally capable of coding. Role eligibility is deployment policy: a model may be technically capable of a responsibility while the active Profile intentionally keeps that responsibility in a different Session to preserve Token I/O boundaries.
+Do not silently claim that the current Session satisfies a role merely because its model is generally capable of coding. Role eligibility is deployment policy: a model may be technically capable of a responsibility while the active Profile intentionally keeps that responsibility in a different Session to preserve Token I/O boundaries. Conversely, a model name, model tier, or reasoning-effort level alone is not a reason to split Sessions; the active Runtime and Host capabilities must establish a concrete constraint or benefit.
 
 If no registered deployment document matches the current environment, do not invent product-specific operations or silently reuse a different vendor's bindings. The runtime-specific part of Coding execution is blocked until a compatible deployment is provided. The runtime-neutral Semantic Contract and planning concepts may still be used for analysis, but that does not constitute physical Token I/O isolation or a supported runtime mapping.
 
@@ -33,12 +33,12 @@ If no registered deployment document matches the current environment, do not inv
 After the active runtime is resolved, map the logical responsibilities defined in `session-model.md` as follows:
 
 1. **Confirm input-side eligibility**: the current parent Session must satisfy the active Profile's requirements for the Input-side Reasoning responsibility. If it does not, follow the Profile's unavailable rule rather than silently reclassifying the Session.
-2. **Prefer compatible same-Session execution**: if the active Profile explicitly declares the current Session eligible for both Input-side Reasoning and Primary Output, the Host can satisfy the task's required runtime parameters in that Session, and no independent structural benefit exists, use **Single-Session Coding Mode**.
-3. **Use normal two-Session execution when required**: if the current Session is eligible for input-side reasoning but not for Primary Output under the active Profile, use the Host Adapter to create or reuse an independent Session that satisfies the Profile's Primary Output binding and parameters.
-4. **Split despite dual eligibility only for a concrete reason**: fresh verification, real parallelism, context-capacity recovery, explicit isolation, or a Profile-defined targeted escalation may justify another Session even when the current Session is otherwise dual-role eligible.
-5. **Block rather than silently substitute**: if the required independent Session, model binding, or runtime parameters cannot be satisfied, follow the active Profile's blocked/degraded-read-only rules. Do not silently move high-volume execution back into a Session that the Profile does not authorize for that role.
+2. **Prefer compatible same-Session execution**: the Input-side Reasoning Agent evaluates the task's complexity and difficulty, risk, expected context load, parallelism, and isolation needs. If it concludes that an independent Primary Output Session has no concrete structural benefit, the active Runtime permits the current Session to perform both responsibilities, the Host can satisfy the task's required runtime parameters in that Session, and no hard isolation or permission requirement applies, use **Single-Session Coding Mode**.
+3. **Use normal two-Session execution when required**: if the Input-side Agent identifies a concrete structural benefit for an independent Primary Output Session, or the active Runtime/Host imposes a hard eligibility, permission, security, or runtime-parameter requirement that prevents same-Session execution, use the Host Adapter to create or reuse an independent Session satisfying the active Profile's Primary Output binding and parameters.
+4. **Recognize concrete split reasons**: fresh verification, real parallelism, context-capacity recovery, explicit isolation, or a Profile-defined targeted escalation may justify another Session even when the current Session is otherwise dual-role eligible. Task complexity or model identity alone is not enough.
+5. **Block rather than silently substitute**: if a required independent Session, model binding, or runtime parameter cannot be satisfied, follow the active Profile's blocked/degraded-read-only rules. Do not silently move high-volume execution back into a Session that the Profile or Host does not authorize for that role.
 
-Repository size, long output, build/test work, or generic task complexity do not by themselves change this mapping.
+Repository size, long output, build/test work, generic task complexity, or the current model name/tier do not by themselves change this mapping.
 
 ## On-demand verification, documentation, and Git-operations mapping
 

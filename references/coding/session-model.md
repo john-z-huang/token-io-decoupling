@@ -48,11 +48,13 @@ The Documentation/Comments & Git Operations Agent is created and managed by the 
 
 ## Single-Session Coding Mode
 
-Coding Flow enters **Single-Session Coding Mode** when the active Runtime Contract confirms all of the following:
+Coding Flow enters **Single-Session Coding Mode** when the Input-side Reasoning Agent, using the active Runtime Contract, confirms all of the following:
 
-- the current Session is explicitly eligible for both the Input-side Reasoning and Primary Output responsibilities under the selected Model Profile;
-- the Host can satisfy the runtime parameters required for the current task in that Session;
-- no independent structural benefit requires another Session.
+- it has assessed the task's complexity and difficulty, semantic and operational risk, expected context load, parallelism, and isolation needs, and concludes that creating an independent Primary Output Session would provide no concrete structural benefit for this task;
+- the active Runtime permits the current Session to perform both the Input-side Reasoning and Primary Output responsibilities, and the Host can satisfy the runtime parameters required for the current task in that Session;
+- no explicit user, permission, security, or other hard isolation requirement mandates another Session.
+
+Model name, model tier, and reasoning-effort level alone neither trigger nor prohibit Single-Session Coding Mode. They matter only when the active Runtime or Host turns them into a concrete role-eligibility, capability, or parameter constraint.
 
 In this mode:
 
@@ -61,14 +63,14 @@ In this mode:
 - for a material functional change, the current Session does not act as the final Change Verification Agent. The Input-side Agent creates one fresh independent verifier Session after implementation and reuses that verifier for later verification slices in the same task conversation; each new final-state fingerprint/epoch requires independent re-evaluation, not reuse of the earlier verdict as evidence. Additional verifier Sessions require genuinely isolated verification requirements. The Input-side Agent may also create a separate Documentation/Comments & Git Operations Agent when documentation or non-trivial Git work is needed;
 - interaction slices and Continue/Amend/Stop decisions remain internal reasoning boundaries; do not simulate Progress Signal or Control Checkpoint messages to the same Session;
 - the current Agent's ordinary exploration, implementation, focused testing, fixing, and implementation output are same-Session self-execution, not a Dispatch; do not print a fake self-dispatch or construct a prompt addressed to the same Session;
-- large repository size, many changed files, long output, build/test/debug requirements, or generic “task complexity” are not reasons to create another Session.
+- repository size, many changed files, long output, build/test/debug requirements, or a generic label such as “complex task” are not automatic reasons to create another Session; the Input-side Agent must judge whether they create a concrete structural need in this task.
 
-Another Agent is allowed only when there is an independent structural benefit, for example:
+Another Agent is allowed only when the Input-side Agent identifies an independent structural benefit or a hard runtime/isolation requirement, for example:
 
 - one initial fresh verifier that should not inherit the current implementation history, then reuse it for later verification epochs;
 - real parallelism where tasks are independent and do not contend for the same write targets;
 - the current Session context is clearly stale, contradictory, or too overgrown to continue effectively;
-- explicit context, permission, or other isolation requirements whose benefit exceeds handoff cost.
+- explicit context, permission, security, or other isolation requirements whose benefit exceeds handoff cost;
 - post-verification documentation/comment isolation or non-trivial Git-operation isolation that prevents implementation context from owning those responsibilities.
 
 The selected Model Profile may also define a narrowly scoped escalation exception for a repeatedly blocked task. Follow [`runtime.md`](runtime.md) and the active Profile for that exception instead of treating a stronger model or runtime parameter as a general reason to split Sessions.
@@ -77,7 +79,7 @@ These exceptions must not restore same-runtime delegation as the default path fo
 
 ## Normal two-Session Coding Mode
 
-When the active Runtime Contract declares the current Session eligible for Input-side Reasoning but not for Primary Output, and the Host can create or reuse a compatible independent Primary Output Session, use the normal two-Session topology:
+When the Input-side Reasoning Agent judges that an independent Primary Output Session has a concrete structural benefit for the task, or when the active Runtime/Host imposes a hard eligibility, permission, security, or runtime-parameter requirement that prevents same-Session execution, and the Host can create or reuse a compatible independent Primary Output Session, use the normal two-Session topology:
 
 ```text
 current parent Session
@@ -93,7 +95,7 @@ optional Documentation/Comments & Git Operations Session
     └─ Documentation/Comments & Git Operations
 ```
 
-The first split exists because the active deployment requires different runtime eligibility or context ownership, not merely because two logical role names exist. The optional verifier split is selected for the independent fresh-review benefit of material changes; the Documentation/Comments & Git Operations split is selected when post-verification documentation isolation or non-trivial Git-operation isolation has concrete value. Concrete model selection and execution parameters remain outside this module.
+The first split exists because the Input-side Agent identified a concrete structural benefit or because the active deployment requires different runtime eligibility, parameters, permissions, security boundaries, or context ownership—not merely because two logical role names, a model name, or a model tier exist. The optional verifier split is selected for the independent fresh-review benefit of material changes; the Documentation/Comments & Git Operations split is selected when post-verification documentation isolation or non-trivial Git-operation isolation has concrete value. Concrete model selection and execution parameters remain outside this module.
 
 If the required independent Session cannot be instantiated according to the active Runtime, do not silently collapse into Single-Session Coding Mode. Follow the active Profile's unavailable-handling rule.
 

@@ -48,11 +48,13 @@ Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 caps
 
 ## Single-Session Coding Mode
 
-只有 active Runtime Contract 同时确认以下条件时，Coding Flow 才进入 **Single-Session Coding Mode**：
+只有 Input-side Reasoning Agent 依据 active Runtime Contract 确认以下条件时，Coding Flow 才进入 **Single-Session Coding Mode**：
 
-- 所选 Model Profile 明确声明当前 Session 同时可以承担 Input-side Reasoning 与 Primary Output；
-- Host 能在当前 Session 满足当前任务要求的运行参数；
-- 不存在需要另一个 Session 的独立结构性收益。
+- 已评估任务的复杂度和难度、语义与运行风险、预期上下文负载、并行性及隔离需求，并判断为该任务创建独立 Primary Output Session 不会带来具体结构性收益；
+- active Runtime 允许当前 Session 同时承担 Input-side Reasoning 与 Primary Output，且 Host 能在该 Session 满足当前任务要求的运行参数；
+- 不存在明确的用户、权限、安全或其他硬隔离要求，强制需要另一个 Session。
+
+模型名称、模型档位和 reasoning-effort 强度本身都不能单独触发或禁止 Single-Session Coding Mode。只有当 active Runtime 或 Host 将它们落实为具体的角色 eligibility、capability 或参数约束时，它们才会影响判断。
 
 此模式下：
 
@@ -61,14 +63,14 @@ Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 caps
 - 对有实质性的功能改动，当前 Session 不承担最终 Change Verification Agent 职责。实现完成后由输入侧 Agent 创建一个新的独立 verifier Session，并在同一个 task conversation 的后续验证 slice 中复用它；每个新的最终状态 fingerprint/epoch 都必须独立重新评估，不能把此前结论作为证据。额外 verifier Session 只能用于确实隔离的验证需求。验证通过后如有需要，还可创建独立 Documentation/Comments & Git Operations Agent；
 - interaction slice 与 Continue/Amend/Stop 决策作为内部推理边界保留；不得向同一 Session 模拟发送 Progress Signal 或 Control Checkpoint 消息；
 - 当前 Agent 自己的普通探索、实现、聚焦测试、修复和实现输出属于同 Session 自执行，不构成 Dispatch；不得打印虚构的 self-dispatch，也不得构造发给同一 Session 的提示词；
-- 仓库规模大、修改文件多、输出长、需要 build/test/debug 或笼统的“任务复杂”都不是创建额外 Session 的理由。
+- 仓库规模、修改文件数量、输出长度、build/test/debug 要求或笼统的“任务复杂”标签都不会自动成为创建额外 Session 的理由；Input-side Agent 必须判断它们是否在当前任务中形成具体的结构性需求。
 
-只有存在独立结构性收益时才允许额外 Agent，例如：
+只有 Input-side Agent 识别出独立结构性收益或硬性的 Runtime/隔离要求时，才允许额外 Agent，例如：
 
 - 首次需要不受当前实现历史影响的独立验证，之后在各验证 epoch 中复用该 verifier；
 - 需要真正并行，且各任务互不依赖、不会争用相同写入目标；
 - 当前 Session 的上下文明显失效、冲突严重或膨胀到不再适合继续工作；
-- 存在明确的独立上下文、权限或其他隔离需求，且收益高于 handoff 成本。
+- 存在明确的独立上下文、权限、安全或其他隔离需求，且收益高于 handoff 成本；
 - 需要在验证后隔离文档/注释物化，或隔离非简单 Git 操作，避免实现上下文继续承担这些职责。
 
 所选 Model Profile 还可以为“某个具体任务反复阻塞”定义严格收窄的 escalation 例外。该例外以 [`runtime_zh_cn.md`](runtime_zh_cn.md) 与 active Profile 为准，不得把“更强模型或运行参数”本身当成普遍拆分 Session 的理由。
@@ -77,7 +79,7 @@ Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 caps
 
 ## 正常双 Session Coding Mode
 
-当 active Runtime Contract 声明当前 Session 可以承担 Input-side Reasoning、但不能承担 Primary Output，并且 Host 能创建或复用兼容的独立 Primary Output Session 时，使用正常双 Session 拓扑：
+当 Input-side Reasoning Agent 判断独立 Primary Output Session 对当前任务具有具体结构性收益，或 active Runtime/Host 施加了阻止同 Session 执行的硬性 eligibility、权限、安全或运行参数要求，并且 Host 能创建或复用兼容的独立 Primary Output Session 时，使用正常双 Session 拓扑：
 
 ```text
 当前父 Session
@@ -93,7 +95,7 @@ Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 caps
     └─ Documentation/Comments & Git Operations
 ```
 
-第一个拆分的原因是 active deployment 对 Runtime eligibility 或上下文 ownership 的要求，而不是因为存在两个逻辑角色名称。可选的 verifier 拆分用于实质性改动的独立 fresh review 收益；Documentation/Comments & Git Operations 拆分用于验证后的文档隔离或非简单 Git 操作的明确隔离。具体模型选择和执行参数不属于本模块。
+第一个拆分的原因是 Input-side Agent 识别出的具体结构性收益，或 active deployment 对 Runtime eligibility、参数、权限、安全边界或上下文 ownership 的要求，而不是因为存在两个逻辑角色名称、模型名称或模型档位。可选的 verifier 拆分用于实质性改动的独立 fresh review 收益；Documentation/Comments & Git Operations 拆分用于验证后的文档隔离或非简单 Git 操作的明确隔离。具体模型选择和执行参数不属于本模块。
 
 若无法按 active Runtime 创建所需独立 Session，不得静默退化为 Single-Session Coding Mode；应执行 active Profile 的 unavailable 规则。
 
