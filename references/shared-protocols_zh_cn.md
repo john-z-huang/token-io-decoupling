@@ -27,6 +27,18 @@ Flow 中的 Decision、Input-side Reasoning、Primary Observation、Primary Outp
 
 这条规则不意味着所有同模型角色都必须合并。Multimodal Flow 中 Primary Observation 与 Optional Primary Output 即使某个部署使用同一模型，也可因视觉/时序原始状态与输出物化上下文具有不同 ownership 而保持独立 Session。
 
+## 根父级权限与 Worker 返回路径
+
+**根父 Agent** 是拥有当前用户请求 root Input-side Reasoning 职责的 Agent。Worker 即使拥有自己的 task 或 thread、`source_thread_id` 或聊天上下文，也不会因此成为编排父级。这些只是 Host 的上下文映射，不是权限授予。
+
+只有根父 Agent 可以创建、复用、fork、handoff、关闭或以其他方式重新编排 Agent 或 Session。这一规则适用于 Primary Output、Change Verification、Documentation/Comments & Git Operations、Context Bootstrap/Refresh 以及所有辅助 Worker。每个 Worker 都**必须**保持非递归：不得创建或重新分派其他 Worker，不得发起兄弟 Worker 的 handoff，也不得指导其他 Agent/Session。
+
+Worker 的反馈和结果**必须**使用 Host 提供的仅限父级返回通道、阻塞式 Control Checkpoint 或最终 Worker result。`Send a message to parent` 指向 Worker 的直接父级——即放行其当前 slice 的根父 Agent——这一条唯一反馈路径，不是通用聊天或 thread 寻址权限。Worker**不得**选择或联系兄弟 Worker 或任意 thread。`Need` 字段表示请求父级做决策或执行编排；不表示 Worker 已经执行、启动或选择了该编排。
+
+Worker 发现越界事项时，**必须**只向直接父级返回 `Status`、`Issue`、`Need` 和 `Parent action`（省略空字段）。不得把这份报告转化为新的派发、兄弟联系或目标 thread 选择。
+
+如果 Host 不能保证仅限父级路由，也不能把 Worker 工具面收窄到移除 Agent/Session 编排工具和任意跨 thread 通信，根父 Agent **必须**将该 Worker 视为 Runtime block，且**不得**派发它。仅靠自然语言指令不能建立这种隔离。
+
 ## Dispatch Preview
 
 每次实际创建子 Agent 或向既有独立 Worker 发送新的执行指令前，父会话必须先显示一条极简 `Dispatch` 预览，使用户能够知道本次具体派发了什么。它只是即将派发指令的可见摘要，不是完整子 Agent prompt，也不得暴露不可见内部推理。

@@ -20,7 +20,7 @@ Single-Session Coding Mode 继续使用 Semantic Contract 作为逻辑决策锚�
 
 ### 角色专属 handoff 与父级会合
 
-所有独立 Worker 都由父级 Input-side Reasoning Agent 创建和管理。每个 Worker 只接收其职责所需的上下文：
+所有独立 Worker 都由根父级 Input-side Reasoning Agent 创建和管理。Worker 自己的 task/thread、`source_thread_id` 或聊天上下文永远不会使其成为父级。Worker 生命周期操作仍仅限根父级，每个 Worker 只接收其职责所需的上下文：
 
 - **Primary Output** 接收已批准的实现 Contract、相关项目上下文、获准写入范围和当前 Interaction Slice。它的聚焦检查属于实现反馈，并以压缩摘要向后传递。
 - **Change Verification** 接收最终项目状态或隔离的验证快照、验证 slice/最终状态 fingerprint 或 epoch、Contract 与验收标准、变更范围证据、压缩的实现反馈摘要，以及任何明确授权的验证资产写入范围。初始 verifier Session 独立于 Primary Output 且为全新 Session；同一个 task conversation 中的后续验证 slice 复用该 verifier。Handoff 在可用时应指出累计的完整套件入口或等价 manifest 及其已知覆盖边界，使 verifier 能先运行它，再做针对变更风险的定向分析。它必须对每个所提供的 epoch 独立重新评估，不能把此前结论作为证据；只能在已放行的写入范围内创建或更新点名的验证脚本/测试，产品代码/配置、文档和 Git 状态均保持只读。如果有价值的重复检查超出授权资产范围或需要修复产品，应向父 Agent 报告准确的预期断言，由父 Agent 路由给相应 Worker。
@@ -33,6 +33,8 @@ Single-Session Coding Mode 继续使用 Semantic Contract 作为逻辑决策锚�
 当多个独立 Coding Worker 同时工作时，父 Agent 必须在派发前为每个 Worker 定义 Interaction Slice 和反馈边界。每个 Worker 都应收到自己的 `Objective`、`Authorized scope/mutations`、`Return conditions` 与 `Unreleased boundary`；并行执行不会授权 Worker 跨越未放行边界，也不能从其他 Worker 的进度推断自己已获许可。
 
 Worker 可以在已授权 slice 内发送压缩 Progress Signal，但所有阻塞式 Control Checkpoint 都由父 Agent 负责。到达 Control Checkpoint 后，父 Agent 分析证据并为该 Worker 选择 `Continue`、`Amend` 或 `Stop`，也可以先请求 Evidence-on-Demand。如果 Semantic Contract、架构、范围、权限、安全或公共接口假设发生变化，父 Agent 决定其他 Worker 是继续、接收修订后的 slice，还是停止；Worker 不得在过时指令下静默继续。每个 Worker 都向父 Agent 汇报，并在已放行边界处停止；不得自行派发或开始另一类任务。verifier 的通过/失败结论不会自行放行文档、修复或 Git 阶段；只有父 Agent 可以放行下一个存在依赖关系的 slice。
+
+Worker 的直接父级是放行其当前 slice 的根父 Agent。Worker 只通过仅限父级返回通道、Control Checkpoint 或最终 result 返回 `Status`、`Issue`、`Need` 以及必要时的 `Parent action`。`Need` 是请求父级协调或修订工作的信号，不是 Worker 已经协调其他 Worker 的证明。如果 Host 只有通用聊天工具，目标必须是固定且不可变的父级路由。Worker 不得选择兄弟或任意 thread；如果 Host 不能强制该路由边界，父级必须阻止派发。
 
 Context Exchange 文档只负责在 Worker 之间传输压缩发现、handoff 状态和可复用证据，不替代这个实时的父级 control loop。父 Agent 只在重大会合点更新根 routing index。Worker 自己生成的执行总结 memo 的工作语言、默认创建策略与刷新节奏由 [`content-memo_zh_cn.md`](content-memo_zh_cn.md) 负责，不再由本模块定义。
 

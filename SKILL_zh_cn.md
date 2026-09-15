@@ -19,6 +19,10 @@ description: "高体量 Agent Token I/O 解耦：Coding 将输入侧高价值推
 4. **混合任务使用窄 Handoff**：视觉分析与 Coding 之间只传递稳定目标、必要变更、约束、证据引用和验收标准，不跨 Flow 倾倒完整原始状态。
 5. **角色首先表示职责**：角色表示责任和上下文 ownership，不要求一对一对应独立 Agent 实例。Coding 的 Session 拓扑由 active runtime 推导；Multimodal 保留自己的上下文 ownership 规则。
 
+## 仅限父级的编排指针
+
+**根父 Agent** 是拥有当前用户请求 root Input-side Reasoning 职责的 Agent。Worker 即使拥有自己的 Codex task/thread、`source_thread_id` 或聊天上下文，也不会因此成为编排父级。只有根父 Agent 可以创建、复用、fork、handoff、关闭或重新编排 Agent/Session；所有 Worker 都不得递归委派，并必须通过 [`references/shared-protocols_zh_cn.md`](references/shared-protocols_zh_cn.md) 定义的仅限父级返回通道返回。
+
 ## Scenario Routing
 
 ### Coding Flow

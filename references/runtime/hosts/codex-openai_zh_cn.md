@@ -19,6 +19,14 @@
 
 普通 Skill description 影响发现，但不能保证每个新 run 都已经加载完整 Skill。因此 bootstrap 应指向已安装的 `token-io-decoupling` Skill，再由 `SKILL.md` 路由需要的 reference，而不是把规范性 Flow 文本复制进持久指令文件。bootstrap 应保持与宿主无关；共享的 bootstrap 文本维护在 [`../../../BEST_PRACTICES_zh_cn.md`](../../../BEST_PRACTICES_zh_cn.md)。
 
+## Worker 工具面与父级路由
+
+在 Codex 中，根父 Agent 是拥有当前用户请求 root Input-side Reasoning 职责的 Agent。Codex 为 Worker 暴露独立 task/thread、`source_thread_id` 或可见聊天上下文，不会因此使 Worker 成为父级；这些只是 Host 映射，不是编排权限。
+
+默认 Worker 工具面**必须**排除 Agent/Session 生命周期控制和任意跨 thread 通信工具。具体而言，Worker **不得**调用或使用 `create_thread`、`spawn_agent`、`fork_thread`、`handoff_thread` 或等价工具来创建、重新派发、handoff、关闭或指导其他 Agent。`send_message_to_thread` 同样禁止用于任意目标；只有在 Host 将其硬绑定到一个固定且不可变的父级目标并移除目标选择时才可暴露。Worker **不得**输出 `::created-thread` 或等价的线程创建指令。本规则同样适用于 Primary Output、Change Verification、Documentation/Comments & Git Operations、Context Bootstrap/Refresh 和辅助 Worker。
+
+正常 Worker 进度和结果必须使用 Codex 的仅限父级返回通道、Control Checkpoint 或最终 Worker result。通用聊天界面只有在父级路由不可变时才有效。如果 Codex 不能强制仅限父级路由，或不能收窄 Worker 工具面，根父 Agent 必须将该 Worker 视为 Runtime block，且不得派发它。可见的 Codex 聊天 task 只是 Host 映射，不授予 Worker 创建、重新分派或联系 Agent/Session 的权限。
+
 ## 角色绑定与 Session 选择
 
 启动 Coding Flow 时，在运行环境能够提供时记录当前 Session 的模型身份。使用该身份解析 Host capability 与需要委派的角色绑定；不得仅凭模型身份选择 Single-Session Coding Mode：

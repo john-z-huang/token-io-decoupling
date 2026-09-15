@@ -27,6 +27,18 @@ When the current Agent already satisfies the target role's active runtime requir
 
 This rule does not mean every same-model role must be merged. In Multimodal Flow, Primary Observation and Optional Primary Output may remain separate Sessions even when a deployment binds them to the same model because visual/temporal raw state and output materialization have different context ownership.
 
+## Root parent authority and Worker return path
+
+The **root parent Agent** is the Agent that owns the root Input-side Reasoning responsibility for the current user request. A Worker does not become an orchestration parent merely because it has its own task or thread, a `source_thread_id`, or a chat context. Those are Host context mappings, not authority grants.
+
+Only the root parent Agent may create, reuse, fork, handoff, close, or otherwise re-orchestrate an Agent or Session. This applies to Primary Output, Change Verification, Documentation/Comments & Git Operations, Context Bootstrap/Refresh, and every auxiliary Worker. Every Worker MUST remain non-recursive: it must not create or reassign another Worker, initiate a sibling handoff, or direct another Agent/Session.
+
+Worker feedback and results MUST use the Host's parent-only return channel, a blocking Control Checkpoint, or the final Worker result. `Send a message to parent` means that sole feedback path to the Worker’s direct parent—the root parent that released its slice—not a general chat or thread-addressing permission. A Worker MUST NOT select or contact a sibling or arbitrary thread. Its `Need` field requests a parent decision or orchestration action; it does not claim that the Worker has performed, started, or selected that orchestration.
+
+When a Worker discovers an out-of-scope matter, it MUST return only `Status`, `Issue`, `Need`, and `Parent action` to its direct parent (omitting empty fields). It must not turn that report into a new dispatch, sibling contact, or target-thread selection.
+
+If a Host cannot guarantee parent-only routing and cannot narrow the Worker tool surface to remove Agent/Session orchestration and arbitrary cross-thread communication, the root parent MUST treat the Worker as runtime-blocked and MUST NOT dispatch it. Natural-language instructions alone do not establish this isolation.
+
 ## Dispatch Preview
 
 Before actually creating a child Agent or sending a new execution instruction to an existing independent Worker, the parent conversation must first display an extremely short `Dispatch` preview so the user can see what is being delegated. It is a visible summary of the instruction about to be sent, not the complete child-Agent prompt, and it must not expose hidden reasoning.
