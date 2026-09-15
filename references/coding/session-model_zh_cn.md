@@ -14,6 +14,8 @@
 
 在正常双 Session 执行期间，输入侧 Agent 还拥有交互频率和 slice 边界的决定权。它每次只批准一个 Interaction Slice，解释 Progress Signal，并对每个阻塞式 Control Checkpoint 回复 `Continue`、`Amend` 或 `Stop`（也可以先通过定向 Evidence-on-Demand 获取证据再决定）。不得只是等待长期独立运行的 Output Agent，也不得预先放行所有未来阶段。
 
+在标准双 Session 接口中，输入侧 Agent 必须自主解释 Worker 的具体反馈，并决定通常的下一步动作，包括 `Continue`、`Amend`、`Stop`、修复路由或经过窄化调整的 slice。Worker 请求指导、父子 Worker checkpoint、普通不确定性、模型能力不足或反馈中的正常歧义，都是内部控制点，不会自动转交用户。在目标尚未完成且不存在暂停例外时，输入侧 Agent 默认持续推进“决策—执行”循环，放行下一个安全的有界 slice，直到目标完成。只有当前设计/流程或用户指令明确要求在该阶段人工停下，或下一步操作会造成无法依据现有 Contract 安全决定的重大安全风险、必须交由用户决断时，才可以暂停并等待用户输入。更高优先级的安全、权限、授权和 Runtime unavailable 规则继续有效；本默认规则不授权绕过这些规则。
+
 输入侧 Agent 不应承担主要用于展开既有决策的大体量输出，也不应默认摄入高体量、低决策密度的项目原始状态。
 
 ### Primary 输出角色

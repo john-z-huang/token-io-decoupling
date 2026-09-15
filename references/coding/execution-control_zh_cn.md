@@ -89,6 +89,8 @@ Unreleased boundary: ...
 
 每次 Control Checkpoint 后，输入侧 Agent 必须分析压缩证据并选择 `Continue`、`Amend` 或 `Stop`（也可以先通过 Evidence-on-Demand 获取证据再决定）。不得只确认收到，也不得预先放行后续所有阶段。`Continue` 只放行一个新说明的 slice；`Amend` 在恢复前修改 Contract 或 slice 边界；`Stop` 结束该方向。Single-Session Coding Mode 以内部推理边界执行同样顺序，不模拟父子消息。
 
+在标准双 Session 接口中，该 checkpoint 默认是内部决策点。输入侧 Agent 必须结合 Worker 反馈、当前 Contract 和可用证据，自主作出继续、修订、修复、路由或停止的通常决策；只要目标尚未完成，就持续推进“决策—执行”循环。Worker 请求指导、普通的发现歧义、模型能力不足或父子 Worker checkpoint，本身都不要求用户输入。只有设计/流程或用户指令明确要求在该阶段人工停下，或下一步操作存在无法依据现有 Contract 安全解决的重大安全风险时，才暂停等待用户。更高优先级的安全、权限、授权和 Runtime unavailable 规则继续有效；本默认规则不授权绕过这些规则。
+
 ## 有界 Coding 阶段与 Decision Checkpoint
 
 正常双 Session Coding 不得把“事件驱动进度反馈”理解成：复杂实现只派发一次，然后让独立 Primary Output Agent 一路跨过所有实质决策边界直至最终验证结束。对于存在明显语义不确定性的工作，输入侧 Agent 应在执行前或执行过程中划分少量 **有界 Coding 阶段**，并明确哪些阶段边界属于 **阻塞式 Decision Checkpoint**。
