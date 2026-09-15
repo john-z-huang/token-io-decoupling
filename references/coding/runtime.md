@@ -28,6 +28,8 @@ Do not silently claim that the current Session satisfies a role merely because i
 
 If no registered deployment document matches the current environment, do not invent product-specific operations or silently reuse a different vendor's bindings. The runtime-specific part of Coding execution is blocked until a compatible deployment is provided. The runtime-neutral Semantic Contract and planning concepts may still be used for analysis, but that does not constitute physical Token I/O isolation or a supported runtime mapping.
 
+Runtime resolution also includes the Host's Worker boundary: the Host must provide a parent-only return route (or a fixed, immutable parent target for a generic chat interface) and a Worker tool surface that excludes Agent/Session lifecycle control and arbitrary cross-thread communication. A task/thread mapping, `source_thread_id`, or visible chat context does not grant orchestration authority. If the Host cannot guarantee these capabilities, the root parent must treat the Worker dispatch as runtime-blocked rather than relying on natural-language instructions.
+
 ## Session mapping algorithm
 
 After the active runtime is resolved, map the logical responsibilities defined in `session-model.md` as follows:

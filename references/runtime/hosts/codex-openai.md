@@ -19,6 +19,14 @@ For a Codex deployment that needs the Skill's invariants at every new run, use C
 
 A normal Skill description affects discovery but does not guarantee that every new run has loaded the complete Skill. The bootstrap should therefore point to the installed `token-io-decoupling` Skill and let `SKILL.md` route into the required references rather than copying normative Flow text into the persistent instruction file. Keep the bootstrap host-independent; the shared bootstrap text is maintained in [`../../../BEST_PRACTICES.md`](../../../BEST_PRACTICES.md).
 
+## Worker tool surface and parent routing
+
+In Codex, the root parent Agent is the Agent that owns the root Input-side Reasoning responsibility for the current user request. A Worker does not become a parent because Codex exposes a separate task/thread, `source_thread_id`, or visible chat context for it; those are Host mappings, not orchestration authority.
+
+The default Worker tool surface MUST exclude Agent/Session lifecycle and arbitrary cross-thread communication tools. In particular, Workers MUST NOT call or use `create_thread`, `spawn_agent`, `fork_thread`, `handoff_thread`, or an equivalent tool to create, re-dispatch, hand off, close, or instruct another Agent. `send_message_to_thread` is also prohibited for arbitrary targets; it may be exposed only when the Host hard-binds it to one fixed, immutable parent target and removes target selection. A Worker MUST NOT emit `::created-thread` or an equivalent thread-creation directive. This applies equally to Primary Output, Change Verification, Documentation/Comments & Git Operations, Context Bootstrap/Refresh, and auxiliary Workers.
+
+Normal Worker progress and results must use Codex's parent-only return channel, a Control Checkpoint, or the final Worker result. A generic chat surface is valid only with an immutable parent route. If Codex cannot enforce parent-only routing or cannot narrow the Worker tool surface, the root parent must treat that Worker as runtime-blocked and must not dispatch it. A visible Codex chat task is only a Host mapping and does not grant the Worker permission to create, reassign, or contact Agents/Sessions.
+
 ## Role bindings and Session selection
 
 At Coding Flow startup, record the current Session's model identity through the facts the running environment exposes when available. Use that identity to resolve Host capabilities and any delegated-role bindings; do not use it alone to choose Single-Session Coding Mode:

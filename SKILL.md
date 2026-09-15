@@ -19,6 +19,10 @@ This Skill defines orchestration conventions only. It cannot bypass higher-prior
 4. **Use narrow Handoffs for mixed tasks**: visual analysis and Coding exchange only stable goals, required changes, constraints, evidence references, and acceptance criteria. Do not dump full raw state across Flows.
 5. **Treat roles as responsibilities first**: a role represents responsibility and context ownership, not a mandatory one-to-one Agent instance. Coding Session topology is derived from the active runtime; Multimodal keeps its own context-ownership rules.
 
+## Parent-only orchestration pointer
+
+The **root parent Agent** is the Agent that owns the root Input-side Reasoning responsibility for the current user request. A Worker does not become an orchestration parent by having its own Codex task/thread, `source_thread_id`, or chat context. Only the root parent may create, reuse, fork, handoff, close, or otherwise re-orchestrate Agents or Sessions; every Worker remains non-recursive and returns through the parent-only channel defined in [`references/shared-protocols.md`](references/shared-protocols.md).
+
 ## Scenario routing
 
 ### Coding Flow

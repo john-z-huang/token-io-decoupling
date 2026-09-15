@@ -28,6 +28,8 @@ Host Adapter 回答“**这个产品怎么实例化工作**”；Model Profile �
 
 若当前环境没有匹配的已登记部署文档，不得自行发明产品专属操作，也不得静默套用其他厂商的模型绑定。依赖 Runtime 的 Coding 执行应停止，直到存在兼容部署。仍可使用 Runtime 无关的 Semantic Contract 与规划概念做分析，但这不等于已经实现物理 Token I/O 隔离或获得受支持的 Runtime 映射。
 
+Runtime 解析还包括 Host 的 Worker 边界：Host 必须提供仅限父级的返回路由（或在通用聊天接口下提供固定且不可变的父级目标），并提供排除 Agent/Session 生命周期控制和任意跨 thread 通信的 Worker 工具面。task/thread 映射、`source_thread_id` 或可见聊天上下文不授予编排权限。如果 Host 不能保证这些能力，根父 Agent 必须将 Worker 派发视为 Runtime block，不得依赖自然语言指令。
+
 ## Session 映射算法
 
 解析 active runtime 后，按 `session-model_zh_cn.md` 定义的逻辑职责进行映射：

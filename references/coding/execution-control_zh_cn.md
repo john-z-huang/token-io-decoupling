@@ -85,6 +85,12 @@ Unreleased boundary: ...
 - **Progress Signal** 是已授权 slice 内的非阻塞、极简里程碑报告。只要边界和 Contract 未改变，Worker 可以不等待回复而继续。不使用固定间隔心跳，也不逐命令汇报。
 - **Control Checkpoint** 是 slice 结束或到达重大边界时的阻塞式会合点。Worker 必须在跨越边界前暂停，只返回与下一步决策有关的事实、变更、检查结果、问题和所需动作。
 
+### 仅限父级的反馈通道
+
+`Send a message to parent` 表示 Worker 唯一且仅有的反馈路径。这里的 parent 是放行当前 slice 的根父 Agent；兄弟 Worker、任意 thread 或 Worker 自己的 task/thread 都不是 parent。Worker **不得**选择目标 thread，也不得使用聊天/消息接口联系、指导、重新分派或协调其他 Agent。`Need` 请求根父 Agent 做决策或执行编排，不表示 Worker 已经创建、联系或重新路由任何对象。
+
+正常进度和结果必须使用 Host 的仅限父级返回通道、Control Checkpoint 或最终 Worker result。如果 Host 只提供通用聊天工具，只有在父级目标固定且不可变时才可使用。如果 Host 不能保证该路由或不能收窄 Worker 工具面，父 Agent 必须将 Worker 视为 Runtime block，且不得派发它。本反馈通道规则不替代也不削弱下述 Progress Signal 与 Control Checkpoint 的节奏规则。
+
 反馈频率是自适应的，不按固定墙钟间隔触发。至少在 reconnaissance 或 diagnosis 结束时、一个连贯行为/实现 slice 完成且下一步将进入另一个子系统或风险域前、验证产生重大结论时，以及出现任何 Contract、架构、范围、权限、安全或公共接口偏差时设置 Control Checkpoint。如果预计某个 slice 长时间没有自然里程碑，输入侧 Agent 必须在派发前定义中间 Progress Signal，或缩小该 slice。
 
 每次 Control Checkpoint 后，输入侧 Agent 必须分析压缩证据并选择 `Continue`、`Amend` 或 `Stop`（也可以先通过 Evidence-on-Demand 获取证据再决定）。不得只确认收到，也不得预先放行后续所有阶段。`Continue` 只放行一个新说明的 slice；`Amend` 在恢复前修改 Contract 或 slice 边界；`Stop` 结束该方向。Single-Session Coding Mode 以内部推理边界执行同样顺序，不模拟父子消息。
