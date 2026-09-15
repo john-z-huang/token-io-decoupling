@@ -1,0 +1,8 @@
+theme: jekyll-theme-minimal
+
+title: Token I/O Decoupling
+description: Agent orchestration Skill for separating semantic decisions, state consumption, and output execution.
+url: https://john-z-huang.github.io
+baseurl: /token-io-decoupling
+logo: /assets/favicon.svg
+show_downloads: false
