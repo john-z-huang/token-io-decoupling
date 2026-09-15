@@ -1,0 +1,16 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+/* Keep Minimal's typography and Markdown styling while removing its sidebar geometry. */
+.wrapper {
+  width: 860px;
+  max-width: 100%;
+}
+
+section {
+  width: 100%;
+  float: none;
+  padding-bottom: 50px;
+}

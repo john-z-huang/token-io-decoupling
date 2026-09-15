@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Token I/O Decoupling
+lang: en-US
 ---
 
 [English](./) | [简体中文]({{ '/zh-cn/' | relative_url }})
