@@ -19,21 +19,21 @@
 
 普通 Skill description 影响发现，但不能保证每个新 run 都已经加载完整 Skill。因此 bootstrap 应指向已安装的 `token-io-decoupling` Skill，再由 `SKILL.md` 路由需要的 reference，而不是把规范性 Flow 文本复制进持久指令文件。bootstrap 应保持与宿主无关；共享的 bootstrap 文本维护在 [`../../../BEST_PRACTICES_zh_cn.md`](../../../BEST_PRACTICES_zh_cn.md)。
 
-## 角色绑定与双角色 eligibility
+## 角色绑定与 Session 选择
 
-启动 Coding Flow 时，应先通过当前运行环境实际暴露的事实确认当前 Session 的模型身份，再应用这些绑定：
+启动 Coding Flow 时，在运行环境能够提供时记录当前 Session 的模型身份。使用该身份解析 Host capability 与需要委派的角色绑定；不得仅凭模型身份选择 Single-Session Coding Mode：
 
 - **Input-side Reasoning**：当前高级父模型/Session 负责高价值语义决策。
-- **Primary Output**：本部署要求的 OpenAI 执行模型为 `gpt-5.6-luna`。
+- **Primary Output**：当选择独立 Primary Output Session 时，本部署将其绑定到 OpenAI 执行模型 `gpt-5.6-luna`。该委派绑定本身不是进入 Single-Session Coding Mode 的条件。
 - **Change Verification**：选择该角色时，为该 task conversation 启动一个全新的独立 `gpt-5.6-luna` Session 进行最终改动结果验证，然后复用该 verifier 执行后续验证 slice。每个新的最终状态 fingerprint/epoch 都必须独立重新评估；此前结论不能作为证据。只有确实存在独立隔离需求时才创建额外 verifier Session，例如不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
 - **Documentation/Comments & Git Operations**：选择该角色时，使用独立的 `gpt-5.6-luna` Session 负责获准的验证后文档/代码注释物化，以及所有非简单仓库 Git 操作。它负责同步、分支/worktree 操作、暂存、提交、历史整合、reset/clean/stash、冲突处理、标签、远端、推送和适用的 Issue/PR 交付；只有极小的只读 Git 元数据查询可以留在该角色之外。
 - **Context Bootstrap/Refresh**：选择该职责时，使用独立或可复用的 `gpt-5.6-luna` Worker；有界事实与 policy-routing capsule 物化默认使用 `reasoning_effort=high`。只有在宿主明确支持时，确定性的 metadata/source-hash 或增量 refresh 工作才可使用 `reasoning_effort=medium`；语义解释仍由 Input-side Reasoning 负责。
-- **双角色 eligibility**：当前 Session 能明确确认自身为 `gpt-5.6-luna`，并且宿主能在该 Session 满足当前任务要求的 reasoning-effort 档位时，本部署声明当前 Session 同时可以承担 Input-side Reasoning 与 Primary Output；因此通用 Runtime 映射默认进入 **Single-Session Coding Mode**，除非存在需要额外 Session 的具体结构性理由。
-- **正常双 Session 映射**：当前 Agent 不能明确确认自己是 `gpt-5.6-luna` 时，当前 Agent 只承担输入侧推理职责，并使用独立 `gpt-5.6-luna` Session 承担 Primary Output。
+- **Single-Session 判断**：Input-side Reasoning Agent 根据每个任务的复杂度和难度、语义与运行风险、预期上下文负载、并行性、隔离要求以及当前上下文是否足够进行判断。如果独立 Primary Output Session 不会带来具体结构性收益，当前 Session 依据 active Runtime 可以承担两个职责，Host 能在该 Session 满足当前任务要求的运行参数，且不存在硬性的权限、安全或隔离要求，则使用 **Single-Session Coding Mode**。当前输入侧模型的名称、档位或 reasoning-effort 强度本身都不能单独触发或禁止该模式。
+- **正常双 Session 映射**：当 Input-side Agent 识别出独立 Primary Output Session 的具体结构性收益，或 active Runtime/Host 施加了硬性的同 Session eligibility、权限、安全或运行参数约束时，当前 Agent 继续承担 Input-side Reasoning，并在部署要求委派时使用独立的 `gpt-5.6-luna` Session 承担 Primary Output。
 
-Single-Session Coding Mode 保持本部署在实现方面的已有行为：当前 Luna 直接完成源代码/项目探索、实现、调试、临时聚焦检查和实现输出，不为了维持双角色形式再把普通工作委派给另一个 Luna。它不承担非简单 Git 操作，也不会取消验证与交付角色：对实质性功能改动，输入侧 Agent 仍会启动一个全新的独立 Change Verification Luna，并在同一个 task conversation 的后续验证 epoch 中复用它，需要文档或 Git 工作时还可创建独立的 Documentation/Comments & Git Operations Luna。由于当前 Session 同时承担高价值推理职责，其普通实质性实现使用 `reasoning_effort=xhigh`。
+Single-Session Coding Mode 保持本部署在实现方面的已有行为：当 Host 与 active Runtime 允许当前 Session 组合承担这些职责时，由当前 Session 直接完成源代码/项目探索、实现、调试、临时聚焦检查和实现输出，不为了维持双角色形式而委派普通工作。需要委派时，独立 Primary Output Session 仍绑定到 `gpt-5.6-luna`。Single-Session 不承担非简单 Git 操作，也不会取消验证与交付角色：对实质性功能改动，输入侧 Agent 仍会启动一个全新的独立 Change Verification Luna，并在同一个 task conversation 的后续验证 epoch 中复用它，需要文档或 Git 工作时还可创建独立的 Documentation/Comments & Git Operations Luna。当前任务 Profile 要求时，普通实质性实现使用 `reasoning_effort=xhigh`；无法满足要求的档位是运行时约束，不应反推成模型名称规则。
 
-处于 Single-Session Coding Mode 的 Session 只有在本轮初始选定的独立验证、验证后的文档/注释或非简单 Git 操作隔离、真正并行、当前上下文明显失效/膨胀、存在明确独立隔离收益，或某个具体任务反复阻塞而需要定向 `max` 升级时才允许创建额外 Agent。后续验证 epoch 复用已选 verifier；额外 verifier Session 需要确实隔离的验证需求。项目探索、实现、测试、长输出或笼统的“任务复杂”本身不是例外理由。
+处于 Single-Session Coding Mode 的 Session 只有在 Input-side Agent 识别出具体结构性收益或硬性的 Runtime/隔离要求时才允许创建额外 Agent，包括本轮初始选定的独立验证、验证后的文档/注释或非简单 Git 操作隔离、真正并行、当前上下文明显失效/膨胀、存在明确独立隔离收益，或某个具体任务反复阻塞而需要定向 `max` 升级。后续验证 epoch 复用已选 verifier；额外 verifier Session 需要确实隔离的验证需求。项目探索、实现、测试、长输出、笼统的“任务复杂”或当前模型名称/档位本身都不是例外理由。
 
 ## 独立 Agent 与 Session 操作
 
@@ -71,10 +71,11 @@ Codex 可以为派发工作暴露模型选择和 `reasoning_effort` 控制。这
 
 ## Unavailable handling
 
-- 不得把本部署绑定到 Luna 的 Coding 角色静默替换为其他模型。
-- 若需要独立 Luna 角色但无法确认 `gpt-5.6-luna` 身份、无法显式选择该模型，或宿主无法满足当前 dispatch 所要求的 reasoning-effort 档位，则停止对应实质性 Coding 或验证工作并简短报告阻塞。不得因为 verifier 绑定不可用就让 Primary Output 自行验证实质性改动。
-- 纯只读、严格有界的诊断，在能够确认 Luna 身份但宿主无法设置 reasoning effort 时可以继续；不得因此把复杂项目状态工作回退给高级父模型，也不得把原本要求 `high` 或 `xhigh` 的任务静默降级给轻量强度。
-- 不得仅因为高级父模型技术上也能实现代码，就推断其应吸收 Primary Output；上述绑定是为了 Token I/O 隔离而有意设置的部署策略。
+- 不得把本部署绑定到 Luna 的委派 Coding 角色静默替换为其他模型。
+- 如果 Input-side Agent 已选择独立 Luna 角色，或 active Runtime 强制要求拆分，但无法确认 `gpt-5.6-luna` 身份、无法显式选择该模型，或 Host 无法满足当前 dispatch 所要求的 reasoning-effort 档位，则停止对应实质性 Coding 或验证工作并简短报告阻塞。不得因为 verifier 绑定不可用就让 Primary Output 自行验证实质性改动。
+- 如果其他条件允许 Single-Session Coding Mode，且没有选择或强制要求独立 Luna 角色，那么无法确认当前输入侧模型是 `gpt-5.6-luna` 本身不构成阻塞；应改为依据 active Runtime 与 Host capability 要求评估当前 Session。
+- 如果已选定的委派 Luna 角色能够确认其身份，但 Host 无法设置 reasoning effort，则可以继续纯只读、严格有界的诊断。任何绑定要求 `high` 或 `xhigh` 的委派任务都不得静默降级到更轻档位；如果没有选择独立角色，则应根据当前 Session 的实际 Runtime 与 Host capability 检查处理，而不是把这个例外当作模型选择规则。
+- 不得仅因为高级父模型技术上也能实现代码，就推断它必须吸收 Primary Output，也不得仅因为它具备实现能力就推断必须委派。应遵循 Input-side 对结构性收益的判断以及 active Runtime/Host 的硬约束；上方 Luna 绑定只适用于选择独立委派角色的情况。
 
 ## 文件系统与 worktree 映射
 

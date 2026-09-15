@@ -24,7 +24,7 @@ Host Adapter 回答“**这个产品怎么实例化工作**”；Model Profile �
 3. 在宿主能够提供时，通过 Host 获取当前 Session 的模型/Runtime 身份以及相关参数 capability；
 4. 按所选部署的角色 eligibility 与 unavailable 规则执行。
 
-不得仅因为某个模型“通常会写代码”，就静默认定当前 Session 满足某个角色。角色 eligibility 属于部署策略：某个模型即使技术上能够承担一项职责，active Profile 也可能为了保持 Token I/O 边界而明确要求把该职责放在另一 Session。
+不得仅因为某个模型“通常会写代码”，就静默认定当前 Session 满足某个角色。角色 eligibility 属于部署策略：某个模型即使技术上能够承担一项职责，active Profile 也可能为了保持 Token I/O 边界而明确要求把该职责放在另一 Session。反过来，模型名称、模型档位或 reasoning-effort 强度本身也不是拆分 Session 的理由；必须由 active Runtime 与 Host capability 建立具体约束或收益。
 
 若当前环境没有匹配的已登记部署文档，不得自行发明产品专属操作，也不得静默套用其他厂商的模型绑定。依赖 Runtime 的 Coding 执行应停止，直到存在兼容部署。仍可使用 Runtime 无关的 Semantic Contract 与规划概念做分析，但这不等于已经实现物理 Token I/O 隔离或获得受支持的 Runtime 映射。
 
@@ -33,12 +33,12 @@ Host Adapter 回答“**这个产品怎么实例化工作**”；Model Profile �
 解析 active runtime 后，按 `session-model_zh_cn.md` 定义的逻辑职责进行映射：
 
 1. **确认输入侧 eligibility**：当前父 Session 必须满足 active Profile 对 Input-side Reasoning 职责的要求；不满足时执行 Profile 的 unavailable 规则，不得静默重新分类当前 Session。
-2. **优先复用兼容的同一 Session**：如果 active Profile 明确声明当前 Session 同时可以承担 Input-side Reasoning 与 Primary Output，Host 能在该 Session 满足当前任务要求的运行参数，且不存在独立结构性收益，则使用 **Single-Session Coding Mode**。
-3. **需要时进入正常双 Session**：如果当前 Session 可以承担输入侧推理，但 active Profile 不允许它承担 Primary Output，则通过 Host Adapter 创建或复用满足 Profile 的 Primary Output 模型绑定与参数要求的独立 Session。
-4. **双角色均兼容时也只有具体理由才能拆分**：fresh verification、真正并行、上下文容量恢复、明确隔离，或 Profile 明确定义的定向升级，才可以在当前 Session 已具备双角色 eligibility 时仍创建额外 Session。
-5. **无法满足时阻塞，不静默替换**：所需独立 Session、模型绑定或运行参数无法满足时，遵循 active Profile 的阻塞/只读降级规则；不得把高体量执行静默移回一个 Profile 未授权承担该角色的 Session。
+2. **优先复用兼容的同一 Session**：Input-side Reasoning Agent 评估任务的复杂度和难度、风险、预期上下文负载、并行性及隔离需求。如果判断独立 Primary Output Session 不会带来具体结构性收益，active Runtime 允许当前 Session 同时承担两个职责，Host 能在该 Session 满足当前任务要求的运行参数，且不存在硬性的隔离或权限要求，则使用 **Single-Session Coding Mode**。
+3. **需要时进入正常双 Session**：如果 Input-side Agent 识别出独立 Primary Output Session 的具体结构性收益，或 active Runtime/Host 施加了阻止同 Session 执行的硬性 eligibility、权限、安全或运行参数要求，则通过 Host Adapter 创建或复用满足 active Profile 的 Primary Output 绑定与参数要求的独立 Session。
+4. **识别具体拆分理由**：fresh verification、真正并行、上下文容量恢复、明确隔离，或 Profile 明确定义的定向升级，才可以在当前 Session 已具备双角色 eligibility 时仍创建额外 Session。任务复杂度或模型身份本身不够构成理由。
+5. **无法满足时阻塞，不静默替换**：所需独立 Session、模型绑定或运行参数无法满足时，遵循 active Profile 的阻塞/只读降级规则；不得把高体量执行静默移回一个 Profile 或 Host 未授权承担该角色的 Session。
 
-仓库规模、长输出、build/test 工作或笼统的“任务复杂”本身不会改变上述映射。
+仓库规模、长输出、build/test 工作、笼统的“任务复杂”标签或当前模型名称/档位本身都不会改变上述映射。
 
 ## 按需验证、文档与 Git 操作映射
 
