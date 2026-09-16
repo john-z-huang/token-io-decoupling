@@ -1,8 +1,8 @@
 # Multimodal OpenAI Deployment Profile
 
-This file preserves the current concrete OpenAI bindings for Multimodal Flow after those deployment details were removed from the root `SKILL.md`. It is intentionally a small deployment-specific document, not a generalized Multimodal runtime abstraction.
+This file preserves legacy concrete OpenAI bindings for Multimodal Flow after those deployment details were removed from the root `SKILL.md`. It is intentionally a small deployment-specific document, not a generalized Multimodal runtime abstraction, and is outside the currently maintained Coding workflow.
 
-The Multimodal architecture, working modes, Observation Firewall, visual checkpoints, and handoff behavior remain normative in [`multimodal-flow.md`](multimodal-flow.md).
+This profile is self-contained for the concrete OpenAI bindings listed below. It does not select a visual workflow or import architecture rules from another document.
 
 ## Current bindings
 
@@ -16,7 +16,7 @@ Coding Flow's Single-Session Coding Mode changes only Coding role mapping. It do
 ## Deployment constraints
 
 - Do not silently replace a Multimodal role that this profile requires to use Luna with another model.
-- If an independent Luna role is required but `gpt-5.6-luna` identity cannot be confirmed, the model cannot be selected explicitly, or the host cannot satisfy the reasoning-effort tier required for that dispatch, stop the corresponding substantive Multimodal work and briefly report the capability block.
-- Purely read-only, strictly bounded diagnosis or observation may continue when Luna identity is confirmed but the host cannot set reasoning effort. Do not use that exception to move complex high-volume Observation/materialization back to the advanced parent model or to silently assign a lighter tier to work whose profile requires `xhigh`.
+- If an independent Luna role is required but `gpt-5.6-luna` identity cannot be confirmed, the model cannot be selected explicitly, or the runtime environment cannot satisfy the reasoning-effort tier required for that dispatch, stop the corresponding substantive Multimodal work and briefly report the capability block.
+- Purely read-only, strictly bounded diagnosis or observation may continue when Luna identity is confirmed but the runtime environment cannot set reasoning effort. Do not use that exception to move complex high-volume Observation/materialization back to the advanced parent model or to silently assign a lighter tier to work whose profile requires `xhigh`.
 
 This profile is preserved without claiming portability to other Code Agent products or model families. Future Multimodal portability work should be based on actual testing rather than inferred from the Coding runtime architecture.

@@ -8,8 +8,8 @@
 
 - 英文是默认文档语言。
 - 简体中文镜像在 `.md` 前使用 `_zh_cn` 后缀。
-- 英文 canonical 示例：`README.md`、`SKILL.md`、`MULTI_LINGUAL.md`、`references/coding-flow.md`。
-- 简体中文示例：`README_zh_cn.md`、`SKILL_zh_cn.md`、`MULTI_LINGUAL_zh_cn.md`、`references/coding-flow_zh_cn.md`。
+- 英文 canonical 示例：`README.md`、`SKILL.md`、`MULTI_LINGUAL.md`、`workflows/coding.md`。
+- 简体中文示例：`README_zh_cn.md`、`SKILL_zh_cn.md`、`MULTI_LINGUAL_zh_cn.md`、`workflows/coding_zh_cn.md`。
 - `AGENTS.md` 是仓库指令入口；`AGENTS_zh_cn.md` 是其简体中文语义镜像。两者必须分别引用同语言的规则文件，而不是重复维护这些规则。
 - 配置、代码、生成文件和非 Markdown 资源默认不要求语言镜像，除非任务明确提出要求。
 - `agents/openai.yaml` 是明确例外：面向用户的描述文本必须在同一个标量值中同时包含英文和简体中文，英文在前、中文在后，并使用 ` | ` 分隔。
@@ -31,8 +31,8 @@
 - 简体中文 Markdown 只能链接对应的 `_zh_cn.md` 文件。
 - 语言切换链接是预期存在的唯一跨语言 Markdown 链接。
 - `AGENTS.md` 必须加载 `MULTI_LINGUAL.md`；`AGENTS_zh_cn.md` 必须加载 `MULTI_LINGUAL_zh_cn.md`。
-- 英文运行入口 `SKILL.md` 只能加载 `references/` 下的英文文件。
-- 简体中文运行入口 `SKILL_zh_cn.md` 只能加载 `references/` 下的 `_zh_cn.md` 文件。
+- 英文指令入口 `SKILL.md` 只能加载 `references/` 下的英文文件。
+- 简体中文指令入口 `SKILL_zh_cn.md` 只能加载 `references/` 下的 `_zh_cn.md` 文件。
 - 英文 reference 不得加载或依赖中文 reference；中文 reference 不得加载或依赖英文 reference。
 
 ## 语言切换链接
@@ -43,7 +43,7 @@
 [English](example.md) | [简体中文](example_zh_cn.md)
 ```
 
-具体相对路径可根据目录调整。该跨语言例外不能用于运行时依赖引用。
+具体相对路径可根据目录调整。该跨语言例外不能用于模块依赖引用。
 
 ## `agents/openai.yaml` 双语文本
 

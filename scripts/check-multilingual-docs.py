@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate bilingual Markdown structure, link isolation, and runtime-neutral Core docs."""
+"""Validate bilingual Markdown structure, link isolation, and product-neutral core docs."""
 
 from __future__ import annotations
 
@@ -17,19 +17,31 @@ PAIR_ROOTS = [
     Path("SKILL.md"),
     Path("AGENTS.md"),
     Path("MULTI_LINGUAL.md"),
-    Path("BEST_PRACTICES.md"),
+    Path("workflows/coding.md"),
+    Path("workflows/exist-workflow/coding-multi-agent.md"),
+    Path("workflows/exist-workflow/coding-single-agent.md"),
+    Path("workflows/checkpoint/acceptance.md"),
+    Path("workflows/checkpoint/context.md"),
+    Path("workflows/checkpoint/contract.md"),
+    Path("workflows/checkpoint/control.md"),
+    Path("workflows/checkpoint/decision.md"),
+    Path("workflows/checkpoint/documentation.md"),
+    Path("workflows/checkpoint/environment.md"),
+    Path("workflows/checkpoint/git.md"),
+    Path("workflows/checkpoint/implementation.md"),
+    Path("workflows/checkpoint/mode.md"),
+    Path("workflows/checkpoint/repair.md"),
+    Path("workflows/checkpoint/verification.md"),
 ]
 
-RUNTIME_NEUTRAL_CORE = [
-    PurePosixPath("references/shared-protocols.md"),
-    PurePosixPath("references/coding-flow.md"),
+CORE_DOCS = [
+    PurePosixPath("references/share/shared-protocols.md"),
     PurePosixPath("references/coding/session-model.md"),
-    PurePosixPath("references/coding/runtime.md"),
     PurePosixPath("references/coding/execution-control.md"),
     PurePosixPath("references/coding/context-exchange.md"),
 ]
 
-RUNTIME_LEAK_PATTERNS = {
+PRODUCT_SPECIFIC_PATTERNS = {
     "Luna": re.compile(r"\bLuna\b", re.IGNORECASE),
     "concrete GPT model": re.compile(r"\bgpt-[a-z0-9_.-]+", re.IGNORECASE),
     "Codex": re.compile(r"\bCodex\b", re.IGNORECASE),
@@ -89,6 +101,14 @@ def main() -> int:
     known_pairs = bilingual_set | {zh_peer(p) for p in bilingual_set}
 
     for rel in sorted(known_pairs, key=str):
+        if not rel.parts or rel.parts[0] != "references" or not (ROOT / rel).exists():
+            continue
+        text_without_code = FENCED_CODE_RE.sub("", (ROOT / rel).read_text(encoding="utf-8"))
+        for raw_target in LINK_RE.findall(text_without_code):
+            if normalize_target(rel, raw_target) is not None:
+                errors.append(f"reference documents must not link to Markdown modules: {rel} -> {raw_target}")
+
+    for rel in sorted(known_pairs, key=str):
         file_path = ROOT / rel
         if not file_path.exists():
             continue
@@ -104,16 +124,16 @@ def main() -> int:
             if source_is_zh != target_is_zh and target != counterpart:
                 errors.append(f"cross-language Markdown link: {rel} -> {raw_target}")
 
-    for english in RUNTIME_NEUTRAL_CORE:
+    for english in CORE_DOCS:
         for rel in (english, zh_peer(english)):
             file_path = ROOT / rel
             if not file_path.exists():
-                errors.append(f"missing runtime-neutral Core document: {rel}")
+                errors.append(f"missing product-neutral core document: {rel}")
                 continue
             text = file_path.read_text(encoding="utf-8")
-            for label, pattern in RUNTIME_LEAK_PATTERNS.items():
+            for label, pattern in PRODUCT_SPECIFIC_PATTERNS.items():
                 if pattern.search(text):
-                    errors.append(f"runtime-specific term in Core ({label}): {rel}")
+                    errors.append(f"product-specific term in core ({label}): {rel}")
 
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     if "MULTI_LINGUAL.md" not in agents or "MULTI_LINGUAL_zh_cn.md" in agents:
@@ -125,12 +145,12 @@ def main() -> int:
 
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     if "references/" in skill and re.search(r"references/[^)\s`]*_zh_cn\.md", skill):
-        errors.append("SKILL.md must not reference _zh_cn runtime references")
+        errors.append("SKILL.md must not reference _zh_cn references")
 
     skill_zh = (ROOT / "SKILL_zh_cn.md").read_text(encoding="utf-8")
     for match in re.findall(r"references/[^)\s`]+\.md", skill_zh):
         if not match.endswith(ZH_SUFFIX):
-            errors.append(f"SKILL_zh_cn.md references English runtime file: {match}")
+            errors.append(f"SKILL_zh_cn.md references an English file: {match}")
 
     openai_yaml = (ROOT / "agents/openai.yaml").read_text(encoding="utf-8")
     short_description = re.search(r'^\s*short_description:\s*["\'](.+)["\']\s*$', openai_yaml, re.MULTILINE)

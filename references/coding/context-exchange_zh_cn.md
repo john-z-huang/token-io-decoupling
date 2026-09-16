@@ -1,8 +1,8 @@
 # Coding Context Exchange
 
-本模块负责 Coding Flow 的上下文共享、Semantic Contract 传输边界、文件化多 Agent Context Exchange 与 Worker 替换接力。
+本模块负责 Coding 的文件化多 Agent Context Exchange、有界上下文传输和 Worker 替换接力。它是自包含模块，假定当前工作流已经提供 Contract、角色和执行控制上下文。
 
-Semantic Contract 字段与 amendment、上下文阻塞规则、Dispatch Preview、事件驱动反馈和 Evidence-on-Demand 等共享原语继续遵循 [`../shared-protocols_zh_cn.md`](../shared-protocols_zh_cn.md)。
+本模块负责传输上下文，不重新定义 Semantic Contract、Dispatch Preview、进度反馈或 Evidence-on-Demand 原语；组合这些原语时由当前工作流提供。
 
 ## 上下文共享与 Semantic Contract
 
@@ -34,9 +34,9 @@ Single-Session Coding Mode 继续使用 Semantic Contract 作为逻辑决策锚�
 
 Worker 可以在已授权 slice 内发送压缩 Progress Signal，但所有阻塞式 Control Checkpoint 都由父 Agent 负责。到达 Control Checkpoint 后，父 Agent 分析证据并为该 Worker 选择 `Continue`、`Amend` 或 `Stop`，也可以先请求 Evidence-on-Demand。如果 Semantic Contract、架构、范围、权限、安全或公共接口假设发生变化，父 Agent 决定其他 Worker 是继续、接收修订后的 slice，还是停止；Worker 不得在过时指令下静默继续。每个 Worker 都向父 Agent 汇报，并在已放行边界处停止；不得自行派发或开始另一类任务。verifier 的通过/失败结论不会自行放行文档、修复或 Git 阶段；只有父 Agent 可以放行下一个存在依赖关系的 slice。
 
-Worker 的直接父级是放行其当前 slice 的根父 Agent。Worker 只通过仅限父级返回通道、Control Checkpoint 或最终 result 返回 `Status`、`Issue`、`Need` 以及必要时的 `Parent action`。`Need` 是请求父级协调或修订工作的信号，不是 Worker 已经协调其他 Worker 的证明。如果 Host 只有通用聊天工具，目标必须是固定且不可变的父级路由。Worker 不得选择兄弟或任意 thread；如果 Host 不能强制该路由边界，父级必须阻止派发。
+Worker 的直接父级是放行其当前 slice 的根父 Agent。Worker 只通过仅限父级返回通道、Control Checkpoint 或最终 result 返回 `Status`、`Issue`、`Need` 以及必要时的 `Parent action`。`Need` 是请求父级协调或修订工作的信号，不是 Worker 已经协调其他 Worker 的证明。如果运行环境只有通用聊天工具，目标必须是固定且不可变的父级路由。Worker 不得选择兄弟或任意 thread；如果运行环境不能强制该路由边界，父级必须阻止派发。
 
-Context Exchange 文档只负责在 Worker 之间传输压缩发现、handoff 状态和可复用证据，不替代这个实时的父级 control loop。父 Agent 只在重大会合点更新根 routing index。Worker 自己生成的执行总结 memo 的工作语言、默认创建策略与刷新节奏由 [`content-memo_zh_cn.md`](content-memo_zh_cn.md) 负责，不再由本模块定义。
+Context Exchange 文档只负责在 Worker 之间传输压缩发现、handoff 状态和可复用证据，不替代实时的父级 control loop。父 Agent 只在重大会合点更新自己的 routing 状态。Worker 自己生成的执行总结 memo 的工作语言、默认创建策略与刷新节奏不属于本模块。
 
 ### 按需 Context Bootstrap/Refresh
 
@@ -48,7 +48,7 @@ Freshness 必须对照 `HEAD`/tree、tracked-delta fingerprint、列出的 sourc
 
 ## 多 Agent Coding 的文件化 Context Exchange
 
-当 Coding Flow 使用多个独立执行 Agent 时，可复用的跨 Agent 上下文应优先物化为小型工作区文档，而不是反复经过父 Agent 重新生成摘要。该机制只用于补充 Semantic Contract、Decision Checkpoint、Evidence-on-Demand 与各 Agent 自身的活跃上下文，不替代这些既有机制。这个工作区中的 Worker 执行内容 memo 遵循 [`content-memo_zh_cn.md`](content-memo_zh_cn.md)；本模块继续负责工作区布局、ownership、隔离、传输与 handoff 机制。
+多个独立执行 Agent 需要复用状态时，应优先物化为小型工作区文档，而不是反复经过父 Agent 重新生成摘要。该机制只用于补充当前 Contract、Decision Checkpoint、证据请求与各 Agent 自身的活跃上下文，不替代这些既有机制。当前工作流可以额外加入单独治理的执行内容 memo；本模块继续负责工作区布局、ownership、隔离、传输与 handoff 机制。
 
 ### 工作区布局与 ownership
 
@@ -80,7 +80,7 @@ Freshness 必须对照 `HEAD`/tree、tracked-delta fingerprint、列出的 sourc
 
 ### 有界文档集合
 
-每个活跃 Worker 在自己的专属子目录内维护一个精简 `INDEX.md`。这个**Worker 本地索引**与父 Agent 维护的根 `INDEX.md` 是两个不同层级的文件。Worker 本地索引只保存该 Worker 上下文路由所需信息：当前 `Task`、`Scope`、`Status`、最近一次实质更新、各上下文文档的一行用途，以及当前 blocker 或 handoff 目标。默认执行内容 memo 与 `write_content_memo` 策略由 [`content-memo_zh_cn.md`](content-memo_zh_cn.md) 负责。`findings.md`、`changes.md`、`verification.md`、`handoff.md` 等其他专项文档只有在能够提供不同于 content memo 的明确复用价值时才创建；不要机械创建全部文件，也不要把目录变成逐命令执行日志。
+每个活跃 Worker 在自己的专属子目录内维护一个精简 `INDEX.md`。这个**Worker 本地索引**与父 Agent 维护的根 `INDEX.md` 是两个不同层级的文件。Worker 本地索引只保存该 Worker 上下文路由所需信息：当前 `Task`、`Scope`、`Status`、最近一次实质更新、各上下文文档的一行用途，以及当前 blocker 或 handoff 目标。`findings.md`、`changes.md`、`verification.md`、`handoff.md` 等其他专项文档只有在能够提供不同用途的明确复用价值时才创建；不要机械创建全部文件，也不要把目录变成逐命令执行日志。
 
 Context 文档可以记录稳定调查结论、相关路径或 symbol、执行级假设与局部选择、已尝试方案及失败原因、精简 changed-file 摘要、准确的验证命令与结果、剩余工作以及证据引用。优先引用项目文件或日志位置，而不是复制原始内容。
 
@@ -88,7 +88,7 @@ Context 文档可以记录稳定调查结论、相关路径或 symbol、执行�
 
 ### 同步与 handoff
 
-Content memo 的创建与刷新节奏由 [`content-memo_zh_cn.md`](content-memo_zh_cn.md) 负责。其他可复用 Context Exchange 文档只在自身的路由、证据或 handoff 状态发生实质变化时更新；不要在每个命令或 tool call 后写一条记录。
+其他可复用 Context Exchange 文档只在自身的路由、证据或 handoff 状态发生实质变化时更新；不要在每个命令或 tool call 后写一条记录。任何单独的 memo 策略都由当前工作流提供。
 
 父 Agent 使用根 `INDEX.md` 跟踪“哪个 Worker 对应哪个专属子目录”，并决定其他 Worker 是否需要接收其中的某些上下文。其他 Agent 需要复用前序工作时，父 Agent 应优先授予被点名原文档的只读 capability，并只在 Dispatch 中传递准确路径与权限边界，例如 `Own Context RW: <path>; Read-only Context: <specific paths>`。接收 Agent 只能读取父 Agent 已授权的 Worker 本地索引和被明确点名的文档，以及当前任务直接需要的项目文件；不得自行发现、遍历或递归加载其他 Worker 目录。
 

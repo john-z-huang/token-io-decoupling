@@ -1,6 +1,6 @@
 # Shared Orchestration Protocols
 
-This file defines only the protocols shared by Coding Flow and Multimodal Flow. Scenario-specific roles, context firewalls, execution loops, runtime mappings, and acceptance boundaries are defined by the individual Flow documents. Do not copy a Flow-specific role or raw state into another Flow merely to produce a “unified architecture.”
+This file defines reusable orchestration primitives for Coding. It is not an execution workflow and does not select, load, or compose other modules. Role-specific topology, execution loops, runtime mappings, and acceptance boundaries are supplied by the active workflow.
 
 ## Semantic Contract baseline
 
@@ -11,33 +11,27 @@ The Decision / Input-side Reasoning Agent is responsible for stabilizing high-va
 - `Decisions`: approved architecture and key trade-offs;
 - `Acceptance`: acceptance criteria.
 
-A Semantic Contract is a decision anchor, not a replacement for complete context or raw Observation. Relevant context that the host can safely share may be provided directly to the corresponding responsible Worker. Subsequent communication should normally contain only new goals, decision changes, and necessary constraints rather than periodically rewriting the full background.
+A Semantic Contract is a decision anchor, not a replacement for complete context or raw Observation. Relevant context that the runtime environment can safely share may be provided directly to the corresponding responsible Worker. Subsequent communication should normally contain only new goals, decision changes, and necessary constraints rather than periodically rewriting the full background.
 
 Prefer amendments when updating a Contract. Send one explicit authoritative decision snapshot only when historical revisions conflict so badly that the currently effective state cannot be determined; rebuild the corresponding Worker when necessary.
 
-If context required for safe execution is neither present in the current responsible Worker nor shareable by the host, and a short Contract cannot compensate for it, stop and report a context block. Do not make the high-value decision Agent re-encode the entire history as long output to work around the limitation.
+If context required for safe execution is neither present in the current responsible Worker nor shareable by the runtime environment, and a short Contract cannot compensate for it, stop and report a context block. Do not make the high-value decision Agent re-encode the entire history as long output to work around the limitation.
 
-## Role and Session mapping
+## Responsibility labels
 
-Decision, Input-side Reasoning, Primary Observation, Primary Output, and similar names represent responsibility and context ownership first. They do not require every role to map to a separate Agent or Session.
-
-Creating another Session requires an independent structural benefit, such as runtime capability tiering, distinct high-volume context ownership, real parallelism, fresh verification, context-capacity management, or an explicit isolation requirement. Do not perform same-runtime delegation merely because of role names, workflow topology, long output, ordinary project exploration, implementation, testing, or generic “task complexity.”
-
-When the current Agent already satisfies the target role's active runtime requirements and no independent benefit exists, reuse the current Session by default. Coding Flow's concrete Single-Session and normal two-Session semantics are defined in [`coding/session-model.md`](coding/session-model.md) and mapped to a deployment by [`coding/runtime.md`](coding/runtime.md).
-
-This rule does not mean every same-model role must be merged. In Multimodal Flow, Primary Observation and Optional Primary Output may remain separate Sessions even when a deployment binds them to the same model because visual/temporal raw state and output materialization have different context ownership.
+Role names identify responsibility and context ownership; they do not by themselves require a separate Agent or Session. Session creation, reuse, isolation, and runtime eligibility are supplied by the active workflow and its selected deployment context. This module does not select a Session topology.
 
 ## Root parent authority and Worker return path
 
-The **root parent Agent** is the Agent that owns the root Input-side Reasoning responsibility for the current user request. A Worker does not become an orchestration parent merely because it has its own task or thread, a `source_thread_id`, or a chat context. Those are Host context mappings, not authority grants.
+The **root parent Agent** is the Agent that owns the root Input-side Reasoning responsibility for the current user request. A Worker does not become an orchestration parent merely because it has its own task or thread, a `source_thread_id`, or a chat context. Those are runtime-environment context mappings, not authority grants.
 
 Only the root parent Agent may create, reuse, fork, handoff, close, or otherwise re-orchestrate an Agent or Session. This applies to Primary Output, Change Verification, Documentation/Comments & Git Operations, Context Bootstrap/Refresh, and every auxiliary Worker. Every Worker MUST remain non-recursive: it must not create or reassign another Worker, initiate a sibling handoff, or direct another Agent/Session.
 
-Worker feedback and results MUST use the Host's parent-only return channel, a blocking Control Checkpoint, or the final Worker result. `Send a message to parent` means that sole feedback path to the Worker’s direct parent—the root parent that released its slice—not a general chat or thread-addressing permission. A Worker MUST NOT select or contact a sibling or arbitrary thread. Its `Need` field requests a parent decision or orchestration action; it does not claim that the Worker has performed, started, or selected that orchestration.
+Worker feedback and results MUST use the runtime environment's parent-only return channel, a blocking Control Checkpoint, or the final Worker result. `Send a message to parent` means that sole feedback path to the Worker’s direct parent—the root parent that released its slice—not a general chat or thread-addressing permission. A Worker MUST NOT select or contact a sibling or arbitrary thread. Its `Need` field requests a parent decision or orchestration action; it does not claim that the Worker has performed, started, or selected that orchestration.
 
 When a Worker discovers an out-of-scope matter, it MUST return only `Status`, `Issue`, `Need`, and `Parent action` to its direct parent (omitting empty fields). It must not turn that report into a new dispatch, sibling contact, or target-thread selection.
 
-If a Host cannot guarantee parent-only routing and cannot narrow the Worker tool surface to remove Agent/Session orchestration and arbitrary cross-thread communication, the root parent MUST treat the Worker as runtime-blocked and MUST NOT dispatch it. Natural-language instructions alone do not establish this isolation.
+If a runtime environment cannot guarantee parent-only routing and cannot narrow the Worker tool surface to remove Agent/Session orchestration and arbitrary cross-thread communication, the root parent MUST treat the Worker as runtime-blocked and MUST NOT dispatch it. Natural-language instructions alone do not establish this isolation.
 
 ## Dispatch Preview
 
@@ -54,12 +48,11 @@ Keep only the minimum information needed to identify the delegated task:
 
 Default to **1–3 lines** and target **about 80 tokens or less**. If it is clearly approaching or exceeding **about 120 tokens**, compress it before dispatching. Do not mechanically fill empty fields, and do not print the full acceptance checklist, full Contract, or explanatory prose.
 
-When reusing an independent Worker, preview only the new delta; do not repeat information already visible from earlier dispatches. If the host already clearly displays an equivalent task summary in the same parent conversation, do not duplicate it. A message such as “Agent created” or “working” without task semantics is not equivalent.
+When reusing an independent Worker, preview only the new delta; do not repeat information already visible from earlier dispatches. If the runtime environment already clearly displays an equivalent task summary in the same parent conversation, do not duplicate it. A message such as “Agent created” or “working” without task semantics is not equivalent.
 
 Scenario-specific restrictions:
 
-- Coding Flow: do not expand the Dispatch Preview into a file-by-file, line-by-line, or command-by-command execution plan.
-- Multimodal Flow: do not enumerate large image/frame sets, copy OCR/DOM, output click sequences or screen coordinates, or replay full visual history.
+- Coding workflow: do not expand the Dispatch Preview into a file-by-file, line-by-line, or command-by-command execution plan.
 
 Recommended forms:
 
@@ -85,7 +78,7 @@ Include only what the parent Agent needs for the next decision. Meaningful field
 
 At task completion, return only a compressed delivery summary: primary result, mechanical/visual verification conclusion, and remaining risks or boundary changes.
 
-Same-Session execution has no independent parent/child Session and does not simulate Agent-to-parent progress messages. The current Agent reports necessary progress to the user using the host's normal interaction rules.
+Same-Session execution has no independent parent/child Session and does not simulate Agent-to-parent progress messages. The current Agent reports necessary progress to the user using the runtime environment's normal interaction rules.
 
 ## Evidence-on-Demand
 
@@ -97,7 +90,7 @@ If the high-value decision responsibility and Primary responsibility are in the 
 
 Within one workflow, prefer `stable prefix + small delta`: preserve stable Sessions, project history, visual-state ownership, and approved decisions, then append only new goals, amendments, or verification requirements. Do not periodically resummarize the entire task merely to “synchronize state,” and do not repeatedly regenerate highly overlapping complete Contracts.
 
-Cache friendliness is a context-organization goal only. Actual cache keys, hit conditions, and quota accounting are host-defined and must not be presented as guaranteed benefits. If stable history begins to impair correct understanding, prioritize correctness and perform one state compression or Agent rebuild.
+Cache friendliness is a context-organization goal only. Actual cache keys, hit conditions, and quota accounting are runtime-environment-defined and must not be presented as guaranteed benefits. If stable history begins to impair correct understanding, prioritize correctness and perform one state compression or Agent rebuild.
 
 ## Delegation boundary
 

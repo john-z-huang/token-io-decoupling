@@ -1,6 +1,6 @@
 # Worker Content Memo
 
-This module owns the default write policy, working language, and parent-dispatch configuration for Worker execution-content summary documents in multi-Agent Coding. It is the specialized policy module for content memos within the file-backed Context Exchange defined in [`context-exchange.md`](context-exchange.md); directory ownership, cross-Worker transport, read/write isolation, and handoff mechanics remain owned by that Context Exchange module.
+This module owns the default write policy, working language, and parent-dispatch configuration for Worker execution-content summary documents in multi-Agent Coding. It is self-contained: it defines memo behavior only and does not define directory layout, cross-Worker transport, read/write isolation, or handoff mechanics.
 
 This module applies only to execution-context summaries maintained by Workers under `<primary-worktree>/.token-io-decoupling/context/<worker-context-id>/`. It does not change the language or behavior rules for the Semantic Contract, Progress Signals, Control Checkpoints, Change Verification, Git delivery, or formal project documentation.
 

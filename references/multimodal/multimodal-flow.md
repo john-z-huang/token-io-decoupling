@@ -2,9 +2,7 @@
 
 This Flow covers Computer Use, continuous GUI Observation, large image/screenshot collections, video or large frame sets, visual-design analysis, reference-design comparison, high-volume OCR / DOM / accessibility state, and other tasks where visual or temporal world state dominates Input Token volume.
 
-This Flow is independent from Coding Flow. Do not introduce an Observation Agent into ordinary Coding merely to unify role models, and do not pass high-volume visual history directly into Coding Flow.
-
-All roles also follow [`shared-protocols.md`](shared-protocols.md).
+This is a standalone visual capability module. It does not select or load other modules, and it does not transfer visual state into a Coding workflow. The current maintained workflow surface is Coding; this module is retained only as independently readable reference material.
 
 ## Architecture roles
 
@@ -37,7 +35,7 @@ Create this role only when a Multimodal task still requires substantial non-Codi
 
 It receives only the Decision Agent's Semantic Contract, the Observation Agent's compressed Digest, and necessary Evidence-on-Demand. It does not receive the full visual history by default.
 
-If subsequent work is repository modification, code implementation, debugging, build, or test work, do not duplicate Coding execution rules here. Use the narrow handoff defined below and enter [`coding-flow.md`](coding-flow.md).
+If subsequent work is repository modification, code implementation, debugging, build, or test work, do not duplicate Coding execution rules here. Return a narrow handoff payload to the caller; the active workflow decides whether that work is in scope.
 
 ## Observation Firewall
 
@@ -78,7 +76,7 @@ Creative mode is neither click-by-click remote control nor “Observation design
 
 Curated checkpoints are a narrow exception to the Observation Firewall. Pass only selected screenshots/crops, necessary reference comparison, and minimal status. Do not pass continuous screenshots, click/coordinate sequences, complete GUI history, full layer state, or repeated intermediate evidence.
 
-If the host cannot actually provide curated screenshots/crops or equivalent visual evidence to the Decision Agent, open-ended Creative Visual Authoring must stop and report a capability block. Do not fall back to Routine Interaction and let the Observation Agent independently finish the creative work. Routine Interaction may continue normally when Creative review is not required.
+If the runtime environment cannot actually provide curated screenshots/crops or equivalent visual evidence to the Decision Agent, open-ended Creative Visual Authoring must stop and report a capability block. Do not fall back to Routine Interaction and let the Observation Agent independently finish the creative work. Routine Interaction may continue normally when Creative review is not required.
 
 Recommended minimum message form:
 
@@ -100,7 +98,7 @@ For large image/screenshot collections, increase analysis density progressively 
 5. `Focused Inspection`: increase detail only for candidates;
 6. `Local Evidence`: use crops, zoom, OCR, or other targeted methods only where needed.
 
-Thumbnail strategy, detail level, clustering method, and image tools are chosen by the Primary Observation Agent according to host capability. This Skill does not prescribe a particular implementation.
+Thumbnail strategy, detail level, clustering method, and image tools are chosen by the Primary Observation Agent according to runtime-environment capability. This Skill does not prescribe a particular implementation.
 
 Do not high-detail summarize an entire large image set to the Decision Agent merely for “complete analysis.”
 
@@ -163,7 +161,7 @@ Observation Agent → Decision Agent → Output Agent → Observation Agent
 
 That pattern creates synchronization cost, visual information loss, and stale-state risk. Creative mode instead uses bounded visual pass → curated checkpoint → Decision critique/amendment without escalating every click.
 
-Every action still follows the host tool's own confirmation, permission, and safety requirements; this Skill does not override them.
+Every action still follows the runtime-environment tool's own confirmation, permission, and safety requirements; this Skill does not override them.
 
 ## Semantic Checkpoints
 
@@ -179,7 +177,7 @@ Typical Semantic Checkpoints include:
 - creating or modifying real external resources;
 - actions the user explicitly requested to confirm before execution.
 
-If the Semantic Contract explicitly authorizes the specific side effect and the host tool requires no additional confirmation, the Primary Observation Agent may proceed. Otherwise pause before the action and escalate only the current state, expected effect, and decision needed.
+If the Semantic Contract explicitly authorizes the specific side effect and the runtime-environment tool requires no additional confirmation, the Primary Observation Agent may proceed. Otherwise pause before the action and escalate only the current state, expected effect, and decision needed.
 
 Do not skip a semantic boundary because the interaction is mechanically simple, and do not request approval for every ordinary navigation action merely because Semantic Checkpoints exist.
 
@@ -211,7 +209,7 @@ Need: whether to submit
 
 Do not narrate the full observation history image by image, frame by frame, screenshot by screenshot, or action by action. Compress further when the parent only needs a binary conclusion or a few facts.
 
-A Creative checkpoint Digest may additionally include curated screenshots/crops while remaining minimal: current pass and milestone, one directional status, a few `Evidence` references, and the `Need` for Decision review. Long prose is not a substitute when the host cannot provide actual visual evidence.
+A Creative checkpoint Digest may additionally include curated screenshots/crops while remaining minimal: current pass and milestone, one directional status, a few `Evidence` references, and the `Need` for Decision review. Long prose is not a substitute when the runtime environment cannot provide actual visual evidence.
 
 ## Multimodal Verification Boundary
 
