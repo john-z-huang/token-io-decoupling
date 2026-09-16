@@ -1,3 +1,4 @@
+sed: --: No such file or directory
 # Multimodal OpenAI Deployment Profile
 
 This file preserves legacy concrete OpenAI bindings for Multimodal Flow after those deployment details were removed from the root `SKILL.md`. It is intentionally a small deployment-specific document, not a generalized Multimodal runtime abstraction, and is outside the currently maintained Coding workflow.
@@ -10,8 +11,6 @@ This profile is self-contained for the concrete OpenAI bindings listed below. It
 - **Primary Observation Agent**: `gpt-5.6-luna`; substantive large image/video/Computer Use Observation analysis uses `reasoning_effort=xhigh`.
 - **Optional Primary Output Agent**: `gpt-5.6-luna`; substantive long output and other high-volume materialization use `reasoning_effort=xhigh`.
 - Primary Observation and Optional Primary Output are different responsibilities with different Session Affinity. Even when both are bound to Luna, do not merge their high-volume contexts by default.
-
-Coding Flow's Single-Session Coding Mode changes only Coding role mapping. It does not weaken Multimodal Observation ownership or imply that Observation and Output should share one Session.
 
 ## Deployment constraints
 

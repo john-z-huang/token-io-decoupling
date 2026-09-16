@@ -1,127 +1,55 @@
+sed: --: No such file or directory
 # Coding Session Model
 
-本模块负责 Coding 角色定义、Session 拓扑、Context Firewall 与 Primary Execution Session Affinity。它独立于具体运行环境/模型 eligibility 与执行参数；当前工作流负责提供部署上下文。
-
-本模块不定义共享 dispatch、反馈或证据协议；需要时由当前工作流组合这些职责。
+本模块定义 Coding 的职责 ownership、Session 语义、Context Firewall 和 Primary Execution Session Affinity。它独立于运行环境/模型 eligibility、执行参数、dispatch 格式、上下文文件传输和验收流程。
 
 ## 架构角色
 
 ### 输入侧推理 Agent
 
-负责高信息密度工作：理解用户意图与业务语义，定义和拆解问题，识别假设与未知项，提出决策问题，按明确标准比较候选方向，做架构和风险判断，形成或修订 Semantic Contract，设计有界阶段、Interaction Slice 与阻塞式 checkpoint，设置自适应反馈频率，逐个放行 slice，处理重大决策升级，执行语义验收，并向用户解释必要的推理级决策。
-
-在派发实质性执行前，输入侧 Agent 始终拥有问题模型、证据含义、未解决的语义权衡、批准的解决方案范围以及放行实现的决定权。项目证据体量大并不会改变这些职责。输入侧 Agent 可以要求收集证据和生成候选项，但必须由输入侧决定证据对用户目标意味着什么，以及某个方向是否已获批准。
-
-在正常双 Session 执行期间，输入侧 Agent 还拥有交互频率和 slice 边界的决定权。它每次只批准一个 Interaction Slice，解释 Progress Signal，并对每个阻塞式 Control Checkpoint 回复 `Continue`、`Amend` 或 `Stop`（也可以先通过定向 Evidence-on-Demand 获取证据再决定）。不得只是等待长期独立运行的 Output Agent，也不得预先放行所有未来阶段。
-
-在标准双 Session 接口中，输入侧 Agent 必须自主解释 Worker 的具体反馈，并决定通常的下一步动作，包括 `Continue`、`Amend`、`Stop`、修复路由或经过窄化调整的 slice。Worker 请求指导、父子 Worker checkpoint、普通不确定性、模型能力不足或反馈中的正常歧义，都是内部控制点，不会自动转交用户。在目标尚未完成且不存在暂停例外时，输入侧 Agent 默认持续推进“决策—执行”循环，放行下一个安全的有界 slice，直到目标完成。只有当前设计/流程或用户指令明确要求在该阶段人工停下，或下一步操作会造成无法依据现有 Contract 安全决定的重大安全风险、必须交由用户决断时，才可以暂停并等待用户输入。更高优先级的安全、权限、授权和能力不可用规则继续有效；本默认规则不授权绕过这些规则。
-
-输入侧 Agent 不应承担主要用于展开既有决策的大体量输出，也不应默认摄入高体量、低决策密度的项目原始状态。
+负责用户意图与业务语义分析、Semantic Contract、架构和风险决策、未解决的权衡、阶段与 slice 边界、放行决定、checkpoint 结果、用户交互和最终语义验收。它可以请求证据和候选项，但必须解释其含义，不得摄入高体量项目原始状态，也不得把已批准的决定展开成长篇输出。
 
 ### Primary 输出角色
 
-负责高体量项目探索、原始工具输出处理、证据收集与语义压缩、在已批准语义方案内的执行级规划、代码/配置物化、实现修复以及临时的实现反馈检查。
-
-承担 Primary Output Role 的 Agent 对源代码和项目原始信息采用渐进式读取：优先先看摘要、统计和相关路径，再按需展开具体文件或日志。它可以分析证据、提出有证据支持的候选项，也可以在当前 Interaction Slice 内决定如何执行已批准的方向，但不能自行批准或改变未解决的语义/架构决策、用户/业务权衡、目标、约束或验收标准。它执行的编译、lint、单元测试或窄范围集成检查只是用于指导局部修复的实现反馈，不是最终改动结果验证。它不执行非简单的仓库 Git 检查或操作；这些职责属于独立的 Documentation/Comments & Git Operations 角色。
-
-每个独立 Coding Worker 都必须在已授权 slice 内发送极简 Progress Signal，在 slice 的 return conditions 或重大强制边界处返回压缩 Control Checkpoint，并在跨越 `Unreleased boundary` 前暂停。并行不会扩大 Worker 的 slice，也不会自动放行未来工作。
+负责高体量项目探索、证据压缩、在已批准方向内执行、代码/配置物化、已放行 slice 内的修复和临时实现检查。它采用渐进式读取，不能改变未解决的目标、约束、架构或验收标准，也不负责最终验收或非简单 Git 工作。
 
 ### Context Bootstrap/Refresh 职责
 
-Context Bootstrap/Refresh 是按需的辅助职责，不是第五个核心角色，也不是强制的 Session 拓扑。只有达到 `execution-control_zh_cn.md` 中的选择阈值时，父级 Input-side Reasoning Agent 才创建或复用一个 Bootstrap Worker。该 Worker 构建或增量刷新有界、带 fingerprint 的 capsule，其中包含中性项目事实、准确 source pointer、policy-routing pointer 以及 freshness/invalidation 数据。它不负责问题定义、Semantic Contract 决策、实现、验证结论或文档物化，也不得递归委派。
-
-Bootstrap Worker 独立读取完整的强制 Skill 与仓库指令；它的 capsule 只能补充这些指令，不能替代它们。下游 Worker（包括初始 verifier）可以通过定向只读暴露接收 capsule，然后直接读取点名的权威文件。独立验证意味着独立判断，不能把此前的 verifier 结论当作证据；不要求 verifier 从零重新发现稳定的项目布局和 policy routing。项目或 Skill 发生实质相关变化后，复用同一个 Bootstrap Worker 做增量 refresh。在同一个 task conversation 中，后续验证 slice 复用一个独立 verifier，并要求它针对每个新的实质性最终状态 fingerprint/epoch 独立重新评估；只有确实存在独立隔离需求时才创建额外 verifier，例如不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
+被分配时，构建或刷新包含中性项目事实、准确 source pointer、policy-routing pointer 和 freshness 数据的有界 fingerprint capsule。它不定义任务、不修改 Contract、不实现、不验证、不物化文档，也不得递归委派。Capsule 只能补充强制指令，不能替代直接读取权威文件。
 
 ### Change Verification Agent
 
-负责 Primary Output 实现 slice 完成后的最终、独立改动验证。它接收最终项目状态、当前有效 Semantic Contract、验收标准、变更范围证据和临时实现检查，然后渐进检查相关 diff 与周边行为，并执行适当的整体检查，例如集成、回归、跨模块、系统或端到端测试。它返回压缩后的证据、覆盖缺口、失败和剩余风险；不负责架构或产品决策、语义验收或修复工作。
-
-选择该角色时，Change Verification Agent 首先使用新的独立 Session，避免继承 Primary Output 的实现历史。其验证 slice 对产品代码/配置、文档和 Git 状态保持只读。父 Agent 可以明确授权它仅创建或更新点名的验证脚本/测试（或新增验证脚本的一个有界目录），以检查已批准的验收标准；这不授权产品修复、无关测试修改或大范围套件重构。它消费 Documentation/Comments & Git Operations Agent 提供的变更范围清单和 Git 证据，然后独立验证内容与行为；也可以使用当前有界 Bootstrap capsule 作为事实/路由上下文，但必须独立判断所提供的最终状态和所需证据。不执行非简单 Git 查询或操作。临时测试/构建输出可由运行环境隔离。它不得递归委派。若发现需要实质修复，应由父级输入侧 Agent 将修复返回 Primary Output；修复后，父 Agent 应复用同一个 verifier，为新的验证 slice 和最终状态 fingerprint/epoch 重新独立评估验收矩阵，不能把此前结论作为证据。只有父 Agent 确认存在多个确实隔离的验证需求时，才创建额外 verifier，例如并发不兼容的环境/快照、不同的权限或安全域，或明确要求的独立审计。
-
-当仓库提供累计的完整套件入口或等价 manifest 时，全新的 verifier 应先运行该入口，再做针对变更风险的定向分析；详细的验证资产、覆盖缺口和文档快路径规则由 Coding Verification Boundary 负责。verifier 只能物化明确授权的验证资产；产品或文档修复及任何范围外覆盖工作都应报告给父 Agent，再由父 Agent 路由给相应 Worker。如果编写验证资产改变了跟踪状态，父 Agent 应提供更新后的范围证据和 fingerprint，然后复用同一个 verifier 独立复查该新 epoch，再接受验证结果。
+被分配时，独立依据 Contract 和验收标准验证实质性改动的最终状态。它消费范围证据，执行适当的整体和定向检查，针对每个最终状态 fingerprint/epoch 重新评估，并报告证据、缺口、失败和风险。除明确点名的验证资产外，它对产品代码/配置、文档和 Git 保持只读；不修复、不作语义决策、不委派。
 
 ### Documentation/Comments & Git Operations Agent
 
-负责两类彼此独立的职责。第一类是验证通过后的、按需开发文档和代码注释物化：它接收最终已验证项目状态、当前有效 Contract、明确的文档/注释范围和压缩后的验证结论，只修改获准的文档与注释位置。第二类是所有非简单的项目级 Git 职责，包括仓库同步（`fetch`/`pull`）、分支和 worktree 生命周期、暂存、提交、历史整合（`rebase`/`merge`/`cherry-pick`）、冲突处理、reset/clean/stash、标签、远端配置、推送以及适用的 Issue/PR 交付。它只能在父 Agent 放行的 Git Interaction Slice 内检查或修改 Git 元数据与远端状态。
+被分配时，只物化获准的文档/注释，或只执行明确放行的非简单 Git slice。它不得修改产品行为、测试或语义决策；如果冲突需要新的内容或含义，必须返回父级。文档与 Git 工作保持为彼此独立的执行范围。
 
-文档/注释 slice 与 Git slice 分别放行。只有在使用已批准内容完成明确获准的 Git 操作时，才允许进行 Git 冲突解决编辑；如果解决冲突需要新的产品、行为或语义决策，必须暂停，并将该决策或修复返回父级 Input-side Agent 与 Primary Output。除这一狭窄例外，它不得修改功能、测试、fixture、schema、生成行为或其他实现逻辑；也不负责最终改动验证或语义验收。英文与简体中文 Markdown 必须遵守仓库双语规则保持语义镜像。
+## Session 语义
 
-当任一职责需要执行时，父级 Input-side Reasoning Agent 才创建和管理 Documentation/Comments & Git Operations Agent。它使用独立的有界上下文，对文档/注释和复杂 Git 工作均采用选定部署分支已确认的 `high` effort 档位；不得递归委派。父 Agent 可以在实现前为同步或分支/worktree 准备放行 Git slice，在实现后为历史整合或冲突处理放行，也可以在最终语义验收后为提交、推送和 Issue/PR 交付放行。角色、Contract 或 Session Affinity 都不会授予授权：每个 slice 必须明确仓库/worktree/ref/remote 范围、允许的变更与外部副作用，以及 return conditions。
+模式、拓扑、职责分配、生命周期、复用、替换、例外和不可用处理由当前工作流提供。职责名称本身不能授权新建 Session 或改变拓扑。
 
-## Single-Session Coding Mode
-
-只有 Input-side Reasoning Agent 依据当前工作流的部署和能力检查确认以下条件时，Coding Flow 才进入 **Single-Session Coding Mode**：
-
-- 已评估任务的复杂度和难度、语义与运行风险、预期上下文负载、并行性及隔离需求，并判断为该任务创建独立 Primary Output Session 不会带来具体结构性收益；
-- 选定部署允许当前 Session 同时承担 Input-side Reasoning 与 Primary Output，且运行环境能在该 Session 满足当前任务要求的执行参数；
-- 不存在明确的用户、权限、安全或其他硬隔离要求，强制需要另一个 Session。
-
-模型名称、模型档位和 reasoning-effort 强度本身都不能单独触发或禁止 Single-Session Coding Mode。只有当选定部署或运行环境将它们落实为具体的角色 eligibility、capability 或参数约束时，它们才会影响判断。
-
-此模式下：
-
-- 当前 Session 同时承担 Input-side Reasoning 与 Primary Output 的实现/临时检查；不得仅为了维持双角色形式而创建、handoff 到或要求存在额外 Primary Output Agent；
-- 角色边界仍作为逻辑执行纪律存在：先固化高价值目标、约束、决策和验收，再渐进读取项目状态、实现、运行临时反馈检查，在需要时取得独立改动验证，最后进行语义验收；
-- 对有实质性的功能改动，当前 Session 不承担最终 Change Verification Agent 职责。实现完成后由输入侧 Agent 创建一个新的独立 verifier Session，并在同一个 task conversation 的后续验证 slice 中复用它；每个新的最终状态 fingerprint/epoch 都必须独立重新评估，不能把此前结论作为证据。额外 verifier Session 只能用于确实隔离的验证需求。验证通过后如有需要，还可创建独立 Documentation/Comments & Git Operations Agent；
-- interaction slice 与 Continue/Amend/Stop 决策作为内部推理边界保留；不得向同一 Session 模拟发送 Progress Signal 或 Control Checkpoint 消息；
-- 当前 Agent 自己的普通探索、实现、聚焦测试、修复和实现输出属于同 Session 自执行，不构成 Dispatch；不得打印虚构的 self-dispatch，也不得构造发给同一 Session 的提示词；
-- 仓库规模、修改文件数量、输出长度、build/test/debug 要求或笼统的“任务复杂”标签都不会自动成为创建额外 Session 的理由；Input-side Agent 必须判断它们是否在当前任务中形成具体的结构性需求。
-
-只有 Input-side Agent 识别出独立结构性收益或硬性的能力/隔离要求时，才允许额外 Agent，例如：
-
-- 首次需要不受当前实现历史影响的独立验证，之后在各验证 epoch 中复用该 verifier；
-- 需要真正并行，且各任务互不依赖、不会争用相同写入目标；
-- 当前 Session 的上下文明显失效、冲突严重或膨胀到不再适合继续工作；
-- 存在明确的独立上下文、权限、安全或其他隔离需求，且收益高于 handoff 成本；
-- 需要在验证后隔离文档/注释物化，或隔离非简单 Git 操作，避免实现上下文继续承担这些职责。
-
-所选部署可以为“某个具体任务反复阻塞”定义严格收窄的 escalation 例外。只有当前工作流已提供并确认对应部署分支时才能应用该例外，不得把“更强模型或执行参数”本身当成普遍拆分 Session 的理由。
-
-这些例外不得把 same-deployment delegation 恢复成普通 Coding 的默认路径。
-
-## 正常双 Session Coding Mode
-
-当 Input-side Reasoning Agent 判断独立 Primary Output Session 对当前任务具有具体结构性收益，或选定部署/运行环境施加了阻止同 Session 执行的硬性 eligibility、权限、安全或执行参数要求，并且运行环境能创建或复用兼容的独立 Primary Output Session 时，使用正常双 Session 拓扑：
+单代理 Coding 中，当前 Session 执行逻辑上的决策、实现、文档、Git 和允许的检查阶段；逻辑职责不表示存在独立 Agent。多代理 Coding 中，只使用当前工作流明确提供的独立 Session：
 
 ```text
-当前父 Session
-    └─ Input-side Reasoning
-
-独立 Primary Execution Session
-    └─ Primary Output
-
-可选的独立 Change Verification Session（跨验证 epoch 复用）
-    └─ Change Verification
-
-可选的 Documentation/Comments & Git Operations Session
-    └─ Documentation/Comments & Git Operations
+根父 Session → Input-side Reasoning
+已分配 Primary Session → Primary Output
+已分配 verifier Session → Change Verification
+已分配文档/Git Session → Documentation/Comments & Git Operations
 ```
 
-第一个拆分的原因是 Input-side Agent 识别出的具体结构性收益，或 active deployment 对角色 eligibility、参数、权限、安全边界或上下文 ownership 的要求，而不是因为存在两个逻辑角色名称、模型名称或模型档位。可选的 verifier 拆分用于实质性改动的独立 fresh review 收益；Documentation/Comments & Git Operations 拆分用于验证后的文档隔离或非简单 Git 操作的明确隔离。具体模型选择和执行参数不属于本模块。
-
-若无法按选定部署创建所需独立 Session，不得静默退化为 Single-Session Coding Mode；应执行当前工作流中的 unavailable 规则。
+未分配的职责在独立 Session 层面不可用。不得通过给同一 Session 的工作改名来模拟独立性。
 
 ## Context Firewall
 
-在正常双 Session Coding Flow 中，输入侧 Agent 不直接执行可能把大量项目原始状态带入自身上下文的开放式检查。非简单 Git 检查（`status`、`diff`、日志、历史、远端状态）、同步、分支/worktree 变更、暂存、提交、rebase/merge、冲突处理、推送和远端/PR 操作都交给 Documentation/Comments & Git Operations Agent。Primary Output 处理源代码/配置探索和实现反馈，不执行非简单 Git 工作。Change Verification 消费新角色提供的变更范围清单和 Git 证据，并独立验证内容与行为。每个 Agent 都只读取、筛选并返回父 Agent 下一步决策所需事实。
+在多 Session Coding 中，输入侧 Session 不执行开放式项目检查。Primary Output 消费源代码/配置状态；Change Verification 消费最终状态证据；Documentation/Comments & Git Operations 消费 Git 状态和获准的文档范围。各自只返回下一步决策所需的事实。
 
-Context Firewall 限制的是项目原始状态进入输入侧上下文，并不限制输入侧推理，也不转移决策 ownership。输入侧 Agent 仍必须定义问题、确定所需证据、解释压缩后的发现、在重大方向之间做选择，并放行下一阶段。
+只有严格有界的只读元数据可由输入侧直接检查。边界由潜在输出体积和仓库状态影响决定，而不是由命令名称决定。单 Session 没有跨 Session Firewall，但仍须渐进读取并压缩原始状态。
 
-Single-Session Coding Mode 不存在跨 Session 的 Context Firewall；当前 Session 直接承担 Primary Output Role 并消费必要项目状态，但仍必须使用渐进式读取和语义压缩，避免无目的地一次性倾倒整个项目、完整日志或无关 diff 到活跃上下文。
+Firewall 限制原始状态进入输入侧上下文，不限制语义推理。输入侧仍拥有含义、权衡、放行决定和验收；临时的 UI/项目定位状态留在观察它的 Session 中，不提升为长期 Contract 状态。
 
-只有输出严格有界、明显很小的只读元数据查询可由正常双 Session 模式的输入侧直接执行，例如 `pwd`、`git branch --show-current`、`git rev-parse --show-toplevel`、单个文件存在性检查等。任何读取 diff、状态集合、历史、远端状态或其他非简单仓库状态的 Git 查询，都属于 Documentation/Comments & Git Operations Agent。判断依据是潜在原始输出体积和仓库状态影响，而不是命令名称本身。
+## Primary Execution Session 与 Affinity
 
-独立 Primary Output 或 Change Verification Agent 返回诊断时默认进行语义压缩，不回传完整命令输出。只报告父 Agent 做下一步判断所需的事实、异常、相关路径和必要的小段证据；需要更多证据时按 Evidence-on-Demand 定向展开。Documentation/Comments & Git Operations Agent 同样只返回其文档/注释变更范围、变更范围清单、Git 操作结果和相关检查。
+维持一个 Primary Execution Session：多代理模式下是已分配的 Primary Output Session，否则是当前 Session。相关探索、实现、诊断、测试、修复和局部执行优先复用它，以保留稳定上下文。Session 应保持 sticky but not immortal；生命周期变化遵循当前工作流的已记录状态。
 
-## Primary Execution Session 与 Session Affinity
-
-同一连续 Coding 工作流默认维持一个 **Primary Execution Session**：
-
-- 正常双 Session 模式下，它是选定部署分支分配给 Primary Output Role 的独立 Session；
-- Single-Session Coding Mode 下，它就是当前 Session；不得为了获得所谓 Primary Session Affinity 再创建一个 Session。
-
-Session 隔离与 Git worktree 隔离是两件事。创建独立 Worker 或 verifier 本身不要求使用单独的 worktree。同一开发需求中的 Worker 通常共享该需求的 primary worktree；任何例外都必须由当前工作流作为明确范围提供。
-
-后续项目探索、实现、诊断、测试、修复和局部执行优先复用该 Primary Execution Session。复用的目的包括保留项目工作上下文、减少重复探索，并提高稳定 prompt prefix 的复用机会。不得宣称同一 Agent 必然命中 prompt cache，也不得宣称新 Agent 必然无法命中缓存。
-
-为选定的独立改动验证创建初始执行 Session，或因真正并行、上下文失效/容量恢复、明确的文档/注释或非简单 Git 操作隔离，或当前工作流明确允许的定向 escalation 场景才新建执行 Session。在同一个 task conversation 中，后续验证 epoch 复用选定的 verifier；只有确实隔离的验证需求才创建额外 verifier。Primary Execution Session 应保持 sticky but not immortal：默认复用于实现和临时反馈，但允许在正确性、上下文容量或隔离需求要求时重建。选定的 verifier 与 Documentation/Comments & Git Operations Worker 均独立于 Primary Execution，不替代 Primary Execution Session。
+Session 隔离与 Git worktree 隔离不同。同一开发需求的 Worker 通常共享 primary worktree；隔离 worktree 必须有明确放行的隔离范围。不得仅因复用 Session 就宣称一定命中缓存或获得其他运行时收益。

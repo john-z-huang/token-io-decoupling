@@ -1,18 +1,18 @@
+sed: --: No such file or directory
 # Execution Mode Checkpoint
 
 [English](mode.md) | [简体中文](mode_zh_cn.md)
 
 ## Actions
 
-1. Select **Single-Agent Coding** when the user forbids subagents, child tasks, independent Sessions, or parallel delegation.
-2. Select **Multi-Agent Coding** only when the user explicitly requests multiple agents, or a concrete structural, isolation, or capability requirement makes separation necessary and allowed.
-3. Select Single-Agent Coding by default when neither condition is present.
-4. If the selected mode matches a pre-composed workflow, read only that complete workflow. Otherwise record the mode and continue with the checkpoint composition in the Coding index. If the mode conditions become false, stop the current slice, amend the Contract, and reselect.
+1. Load and follow [`../../references/coding/agent-delegation-control.md`](../../references/coding/agent-delegation-control.md), the sole authority for mode confirmation and delegation state.
+2. Record that authority document's current gate outcome before route selection. If it has not released the route, stop at this checkpoint and do not proceed.
+3. If a new root directive changes delegation, return to the authority document and record its new outcome before continuing. This checkpoint does not restate or replace that document's creation, allocation, reuse, exception, or count rules.
 
 ## Pass condition
 
-Exactly one mode is recorded, and the mode's required capabilities and prohibitions are satisfied.
+The authority document has recorded exactly one valid mode outcome and any required delegation state; the selected route's required capabilities and prohibitions are satisfied.
 
 ## Boundary
 
-This checkpoint chooses the execution route only. It does not decide task architecture, grant delegation authority, or create a Session.
+This checkpoint only navigates to and records the outcome of the delegation authority document. It does not independently decide mode, topology, creation, allocation, reuse, exceptions, or count.
