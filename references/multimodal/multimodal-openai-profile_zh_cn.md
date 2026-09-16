@@ -1,8 +1,8 @@
 # Multimodal OpenAI Deployment Profile
 
-本文件用于在根 `SKILL_zh_cn.md` 移除具体部署细节后，继续保留 Multimodal Flow 当前的 OpenAI 模型绑定。它有意保持为小型部署专属文档，不尝试建立通用 Multimodal Runtime 抽象。
+本文件用于在根 `SKILL_zh_cn.md` 移除具体部署细节后，继续保留 Multimodal Flow 的历史 OpenAI 模型绑定。它有意保持为小型部署专属文档，不尝试建立通用 Multimodal Runtime 抽象，也不属于当前维护的 Coding 工作流。
 
-Multimodal 架构、工作模式、Observation Firewall、视觉 checkpoint 与 handoff 行为继续以 [`multimodal-flow_zh_cn.md`](multimodal-flow_zh_cn.md) 为规范来源。
+本 Profile 对下面列出的具体 OpenAI 绑定保持自包含。它不选择视觉工作流，也不从其他文档导入架构规则。
 
 ## 当前绑定
 

@@ -2,7 +2,7 @@
 
 本模块负责 Coding Flow 的规划职责、有界实现阶段、阻塞式 Decision Checkpoint、实现/最终验证边界、Documentation/Comments & Git Operations 放行门槛与输入侧输出纪律。
 
-角色与 Session 语义来自 [`session-model_zh_cn.md`](session-model_zh_cn.md)；Semantic Contract 与 Evidence-on-Demand 等共享原语来自 [`../shared-protocols_zh_cn.md`](../shared-protocols_zh_cn.md)。
+本模块假定调用方已经提供角色/Session 上下文和当前 Semantic Contract。它只定义执行控制，不定义角色拓扑、部署绑定或上下文传输。
 
 ## 两级规划与执行
 
@@ -12,7 +12,7 @@
 
 Single-Session Coding Mode 在同一 Session 内按上述职责顺序工作，不制造角色间消息传递；发现重大新事实时直接修订当前有效 Contract 后继续。
 
-并行只用于互不依赖且不会争用相同写入目标的任务；存在依赖、共享文件或前后结果关系时顺序执行。多个独立 Agent 需要复用状态时，应使用 [`context-exchange_zh_cn.md`](context-exchange_zh_cn.md)，而不是由父 Agent 重新生成长篇摘要。
+并行只用于互不依赖且不会争用相同写入目标的任务；存在依赖、共享文件或前后结果关系时顺序执行。多个独立 Agent 需要复用状态时，应使用当前工作流选定的有界工作区交换，而不是由父 Agent 重新生成长篇摘要。
 
 ### Context Bootstrap/Refresh 选择
 
@@ -43,7 +43,7 @@ reconnaissance 完成后，输入侧 Agent 综合证据，确认或推翻假设�
 
 ### 分析完成后的三类任务输出
 
-输入侧分析以及所需的 reconnaissance 完成后，父 Agent 必须将批准的工作组织为且仅组织为三个任务部分：**开发**、**文档**和**验证**。这些部分是精简的任务指令，不是第二套计划或逐命令操作方案。每个适用部分只说明对应职责、目标、授权范围/变更、返回条件和未放行边界。某一类没有具体工作时，标记为 `不适用` 并简述原因；不得创建无实际任务的 Worker。具体职责是否使用独立 Session，仍由 Runtime eligibility 决定。
+输入侧分析以及所需的 reconnaissance 完成后，父 Agent 必须将批准的工作组织为且仅组织为三个任务部分：**开发**、**文档**和**验证**。这些部分是精简的任务指令，不是第二套计划或逐命令操作方案。每个适用部分只说明对应职责、目标、授权范围/变更、返回条件和未放行边界。某一类没有具体工作时，标记为 `不适用` 并简述原因；不得创建无实际任务的 Worker。具体职责是否使用独立 Session，仍由部署检查决定。
 
 每个适用任务都必须包含以下四个字段。标记为 `不适用` 的部分只需说明原因：
 
@@ -67,7 +67,7 @@ Unreleased boundary: ...
 - **文档任务**对应现有 Documentation/Comments & Git Operations 职责中的文档/注释 slice：只更新获准的开发文档或注释，并保持双语镜像一致。该任务本身不授权 Git 工作；任何 Git 操作都必须由父 Agent 按既有门槛单独放行。不负责实现、测试或验证脚本。
 - **验证任务**对应 Change Verification：独立依据已批准的验收标准检查最终状态，并将所有可确定性检查的标准脚本化。若存在累计完整套件入口，应先运行该入口；随后先运行相关的现有验证脚本，再考虑新增覆盖。如果没有现有资产能够充分检查某项可确定性验证的标准，验证 slice 应授权所需的最小确定性脚本，由 verifier 仅创建或更新该范围内的资产并运行它。无法客观脚本化的标准应报告最小相关证据，不得因此设计通用框架。verifier 不修复产品行为或文档，不作语义决策，也不执行 Git 工作。
 
-任务输出必须始终包含以上三个标题，即使某一部分不适用。只派发有具体内容的工作，并且每次只放行一个 slice；标题的展示顺序不改变依赖关系或放行门槛。对于实质性实现，先到达实现 checkpoint，再进行验证；验证通过后才进行文档任务，纯文档快路径沿用既有规则。每个 Worker 都向父 Agent 返回压缩结果，并在自己的边界处停止。只有父 Agent 可以放行修复、另一类别或后续 slice。Worker 不得执行分配给其他类别的任务，也不得根据其他 Worker 的进展推断自己已获授权。每次派发独立 Worker 前，仍须遵循 [`../shared-protocols_zh_cn.md`](../shared-protocols_zh_cn.md) 要求的精简 Dispatch Preview。
+任务输出必须始终包含以上三个标题，即使某一部分不适用。只派发有具体内容的工作，并且每次只放行一个 slice；标题的展示顺序不改变依赖关系或放行门槛。对于实质性实现，先到达实现 checkpoint，再进行验证；验证通过后才进行文档任务，纯文档快路径沿用既有规则。每个 Worker 都向父 Agent 返回压缩结果，并在自己的边界处停止。只有父 Agent 可以放行修复、另一类别或后续 slice。Worker 不得执行分配给其他类别的任务，也不得根据其他 Worker 的进展推断自己已获授权。所需的精简 Dispatch Preview 格式由当前工作流提供。
 
 ## Interaction Slice 与自适应反馈
 
@@ -89,13 +89,13 @@ Unreleased boundary: ...
 
 `Send a message to parent` 表示 Worker 唯一且仅有的反馈路径。这里的 parent 是放行当前 slice 的根父 Agent；兄弟 Worker、任意 thread 或 Worker 自己的 task/thread 都不是 parent。Worker **不得**选择目标 thread，也不得使用聊天/消息接口联系、指导、重新分派或协调其他 Agent。`Need` 请求根父 Agent 做决策或执行编排，不表示 Worker 已经创建、联系或重新路由任何对象。
 
-正常进度和结果必须使用 Host 的仅限父级返回通道、Control Checkpoint 或最终 Worker result。如果 Host 只提供通用聊天工具，只有在父级目标固定且不可变时才可使用。如果 Host 不能保证该路由或不能收窄 Worker 工具面，父 Agent 必须将 Worker 视为 Runtime block，且不得派发它。本反馈通道规则不替代也不削弱下述 Progress Signal 与 Control Checkpoint 的节奏规则。
+正常进度和结果必须使用运行环境的仅限父级返回通道、Control Checkpoint 或最终 Worker result。如果运行环境只提供通用聊天工具，只有在父级目标固定且不可变时才可使用。如果运行环境不能保证该路由或不能收窄 Worker 工具面，父 Agent 必须将 Worker 视为 Runtime block，且不得派发它。本反馈通道规则不替代也不削弱下述 Progress Signal 与 Control Checkpoint 的节奏规则。
 
 反馈频率是自适应的，不按固定墙钟间隔触发。至少在 reconnaissance 或 diagnosis 结束时、一个连贯行为/实现 slice 完成且下一步将进入另一个子系统或风险域前、验证产生重大结论时，以及出现任何 Contract、架构、范围、权限、安全或公共接口偏差时设置 Control Checkpoint。如果预计某个 slice 长时间没有自然里程碑，输入侧 Agent 必须在派发前定义中间 Progress Signal，或缩小该 slice。
 
 每次 Control Checkpoint 后，输入侧 Agent 必须分析压缩证据并选择 `Continue`、`Amend` 或 `Stop`（也可以先通过 Evidence-on-Demand 获取证据再决定）。不得只确认收到，也不得预先放行后续所有阶段。`Continue` 只放行一个新说明的 slice；`Amend` 在恢复前修改 Contract 或 slice 边界；`Stop` 结束该方向。Single-Session Coding Mode 以内部推理边界执行同样顺序，不模拟父子消息。
 
-在标准双 Session 接口中，该 checkpoint 默认是内部决策点。输入侧 Agent 必须结合 Worker 反馈、当前 Contract 和可用证据，自主作出继续、修订、修复、路由或停止的通常决策；只要目标尚未完成，就持续推进“决策—执行”循环。Worker 请求指导、普通的发现歧义、模型能力不足或父子 Worker checkpoint，本身都不要求用户输入。只有设计/流程或用户指令明确要求在该阶段人工停下，或下一步操作存在无法依据现有 Contract 安全解决的重大安全风险时，才暂停等待用户。更高优先级的安全、权限、授权和 Runtime unavailable 规则继续有效；本默认规则不授权绕过这些规则。
+在标准双 Session 接口中，该 checkpoint 默认是内部决策点。输入侧 Agent 必须结合 Worker 反馈、当前 Contract 和可用证据，自主作出继续、修订、修复、路由或停止的通常决策；只要目标尚未完成，就持续推进“决策—执行”循环。Worker 请求指导、普通的发现歧义、模型能力不足或父子 Worker checkpoint，本身都不要求用户输入。只有设计/流程或用户指令明确要求在该阶段人工停下，或下一步操作存在无法依据现有 Contract 安全解决的重大安全风险时，才暂停等待用户。更高优先级的安全、权限、授权和能力不可用规则继续有效；本默认规则不授权绕过这些规则。
 
 ## 有界 Coding 阶段与 Decision Checkpoint
 
@@ -159,7 +159,7 @@ Documentation/Comments & Git Operations 职责负责验证通过后、已批准�
 
 ### 文档、注释与 Git 操作边界
 
-文档/注释工作属于验证完成后的 Interaction Slice。非简单 Git 工作同样由该角色负责，但当需要同步、分支/worktree 准备、历史整合或冲突处理时，可以在更早阶段放行对应 slice。对于提交、推送、远端或 Issue/PR 交付，只有在最终工作树已验证并完成输入侧语义验收、任何文档 slice 已通过且无范围漂移、存在明确的用户/任务授权允许请求的仓库或 GitHub 副作用，并且 Host 能提供所需能力边界时，输入侧 Agent 才能放行 Git slice。验证失败、修复未解决、文档检查失败、缺少授权或能力不可用都会阻塞依赖该条件的 slice。
+文档/注释工作属于验证完成后的 Interaction Slice。非简单 Git 工作同样由该角色负责，但当需要同步、分支/worktree 准备、历史整合或冲突处理时，可以在更早阶段放行对应 slice。对于提交、推送、远端或 Issue/PR 交付，只有在最终工作树已验证并完成输入侧语义验收、任何文档 slice 已通过且无范围漂移、存在明确的用户/任务授权允许请求的仓库或 GitHub 副作用，并且运行环境能提供所需能力边界时，输入侧 Agent 才能放行 Git slice。验证失败、修复未解决、文档检查失败、缺少授权或能力不可用都会阻塞依赖该条件的 slice。
 
 每个 Documentation/Comments & Git Operations slice 都必须写明目标、准确的文档/注释或仓库/worktree/ref/remote 范围、允许的变更与外部副作用、Return conditions 和 Unreleased boundary。Git slice 可以按授权检查或修改 Git 元数据，同步仓库，管理分支/worktree，暂存、提交、rebase/merge/cherry-pick，执行 reset/clean/stash，管理标签，处理明确获准的冲突，配置远端，推送并执行适用的 Issue/PR 交付；不得编辑已跟踪的功能、测试或其他内容，冲突解决例外仅限使用已批准内容。它不得做产品决策、执行语义验收，也不得从自身角色、Contract 或 Session Affinity 推断外部授权。具体操作和检查以适用的仓库开发流程为准；本模块不复制 provider 专属命令或私有流程细节。
 
@@ -177,7 +177,7 @@ Documentation/Comments & Git Operations 职责负责验证通过后、已批准�
 2. 输入侧 Reasoning 使用最终状态、其 fingerprint/epoch、Contract、验收标准、变更范围证据和临时检查摘要，创建一个全新的独立 Change Verification Agent/Session。verifier 独立运行整体检查，并在压缩验证 checkpoint 暂停。
 3. 输入侧 Reasoning 将每项验收标准映射到 verifier 证据，并选择 `Continue`、`Amend` 或 `Stop`。验证失败时，只向 Primary Output 放行有界修复 slice，之后复用同一个 verifier，针对修复后的新最终状态 fingerprint/epoch 开启验证 slice。verifier 必须独立重新评估修复后的状态，不能把此前结论作为证据；只有确实隔离的验证需求才创建额外 verifier。实质性验证问题解决前不得启动文档/注释或依赖验证的远端 Git slice。
 4. 验证通过后，输入侧 Reasoning 执行语义验收；如有需要，创建带有明确文档/注释范围的 Documentation/Comments & Git Operations Agent/Session。该 Agent 返回其变更范围和文档专属检查。如其他阶段需要 Git 同步、分支/worktree 准备或历史整合，父 Agent 为同一角色放行独立 Git 范围并设置自己的 checkpoint。
-5. 最终工作树和文档 checkpoint 通过后，如果存在明确的用户/任务授权且 Host 具备所需能力，输入侧 Reasoning 可以向同一角色放行提交、推送、远端或 Issue/PR Git slice。Git slice 返回压缩后的本地与远端证据；不得做产品决策或执行语义验收。
+5. 最终工作树和文档 checkpoint 通过后，如果存在明确的用户/任务授权且运行环境具备所需能力，输入侧 Reasoning 可以向同一角色放行提交、推送、远端或 Issue/PR Git slice。Git slice 返回压缩后的本地与远端证据；不得做产品决策或执行语义验收。
 6. 输入侧 Reasoning 执行最终语义验收，并确认文档/注释阶段没有引入功能或测试变更、冲突处理始终使用已批准内容，且请求的 Git/远端交付证据与已批准改动一致。
 
 对于行为保持不变的简单任务或纯文档任务，输入侧 Reasoning 可以明确跳过 Change Verification Agent；但必须记录独立审查没有具体收益的原因，并运行适用的文档/静态检查。不改变已跟踪内容的纯 Git 操作可以使用记录的前后 Git 证据而不创建 verifier；冲突解决或任何已跟踪内容变化都需要独立验证，若已有该任务的 verifier 则应复用它。Primary Output 的自我汇报永远不能替代明确要求的 verifier。
@@ -205,6 +205,6 @@ Acceptance criterion → evidence → input-side judgment
 - 大量项目现状复述、完整 diff/测试报告；
 - 可以由获准物化 Worker 直接物化的长最终答复。
 
-Single-Session Coding Mode 不存在可供用户跳转的独立实现 Session 或上下文汇总。当前 Agent 已经承担 Primary Output Role，因此直接完成实现物化；任务或用户确有需要时，可以直接提供必要的详细汇报。如果选择 Documentation/Comments & Git Operations，则由该 Worker 负责文档/注释物化和非简单 Git 证据/输出。本节关于双 Session 的“压缩并引导查看”规则不要求当前 Agent 模拟独立的输出侧汇报，也不得仅为了委派长实现输出而创建另一个 same-runtime Session。
+Single-Session Coding Mode 不存在可供用户跳转的独立实现 Session 或上下文汇总。当前 Agent 已经承担 Primary Output Role，因此直接完成实现物化；任务或用户确有需要时，可以直接提供必要的详细汇报。如果选择 Documentation/Comments & Git Operations，则由该 Worker 负责文档/注释物化和非简单 Git 证据/输出。本节关于双 Session 的“压缩并引导查看”规则不要求当前 Agent 模拟独立的输出侧汇报，也不得仅为了委派长实现输出而创建另一个 same-deployment Session。
 
 当正常双 Session 模式的最终答复本身很长且宿主不能直接复用输出侧结果时，优先让获准承担物化的 Worker 把完整内容写入用户指定文件或工作区，输入侧 Agent 只返回极简摘要和位置，不重新生成长文。

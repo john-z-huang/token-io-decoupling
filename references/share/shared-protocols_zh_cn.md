@@ -1,6 +1,6 @@
 # 共享调度协议
 
-本文件只定义 Coding Flow 与 Multimodal Flow 共同遵守的协议。场景角色、上下文防火墙、执行循环、Runtime 映射和验收边界由各自 Flow 文档定义；不要为了“统一架构”把某一 Flow 的专属角色或原始状态复制到另一 Flow。
+本文件为 Coding 提供可复用的调度原语，不是执行工作流，也不选择、加载或组合其他模块。角色拓扑、执行循环、Runtime 映射和验收边界由当前工作流提供。
 
 ## Semantic Contract 基线
 
@@ -17,27 +17,21 @@ Contract 更新优先使用 amendment。只有历史修订已冲突到无法判�
 
 若安全执行所需上下文既不在当前职责 Worker 中、宿主又无法共享，而短 Contract 也不足以弥补，则停止并报告上下文阻塞；不要由高价值决策 Agent 用长篇输出重新编码整段历史来绕过限制。
 
-## Role 与 Session 映射
+## 职责标签
 
-Flow 中的 Decision、Input-side Reasoning、Primary Observation、Primary Output 等名称首先表示职责和上下文 ownership，不要求每个角色都映射为独立 Agent / Session。
-
-创建额外 Session 必须有独立结构性收益，例如 Runtime capability 分层、不同高体量上下文 ownership、真正并行、fresh verification、上下文容量管理或明确隔离需求。不得仅为了角色命名、流程拓扑、长输出、普通项目探索、实现、测试或笼统的“任务复杂”而进行 same-runtime delegation。
-
-当当前 Agent 已经满足目标角色的 active runtime 要求，且不存在上述独立收益时，默认复用当前 Session。Coding Flow 的具体 Single-Session 与正常双 Session 语义由 [`coding/session-model_zh_cn.md`](coding/session-model_zh_cn.md) 定义，并由 [`coding/runtime_zh_cn.md`](coding/runtime_zh_cn.md) 映射到具体部署。
-
-这条规则不意味着所有同模型角色都必须合并。Multimodal Flow 中 Primary Observation 与 Optional Primary Output 即使某个部署使用同一模型，也可因视觉/时序原始状态与输出物化上下文具有不同 ownership 而保持独立 Session。
+角色名称用于标识职责和上下文 ownership；它们本身不要求创建独立 Agent 或 Session。Session 的创建、复用、隔离和 Runtime eligibility 由当前工作流及其选定的部署上下文提供。本模块不选择 Session 拓扑。
 
 ## 根父级权限与 Worker 返回路径
 
-**根父 Agent** 是拥有当前用户请求 root Input-side Reasoning 职责的 Agent。Worker 即使拥有自己的 task 或 thread、`source_thread_id` 或聊天上下文，也不会因此成为编排父级。这些只是 Host 的上下文映射，不是权限授予。
+**根父 Agent** 是拥有当前用户请求 root Input-side Reasoning 职责的 Agent。Worker 即使拥有自己的 task 或 thread、`source_thread_id` 或聊天上下文，也不会因此成为编排父级。这些只是运行环境的上下文映射，不是权限授予。
 
 只有根父 Agent 可以创建、复用、fork、handoff、关闭或以其他方式重新编排 Agent 或 Session。这一规则适用于 Primary Output、Change Verification、Documentation/Comments & Git Operations、Context Bootstrap/Refresh 以及所有辅助 Worker。每个 Worker 都**必须**保持非递归：不得创建或重新分派其他 Worker，不得发起兄弟 Worker 的 handoff，也不得指导其他 Agent/Session。
 
-Worker 的反馈和结果**必须**使用 Host 提供的仅限父级返回通道、阻塞式 Control Checkpoint 或最终 Worker result。`Send a message to parent` 指向 Worker 的直接父级——即放行其当前 slice 的根父 Agent——这一条唯一反馈路径，不是通用聊天或 thread 寻址权限。Worker**不得**选择或联系兄弟 Worker 或任意 thread。`Need` 字段表示请求父级做决策或执行编排；不表示 Worker 已经执行、启动或选择了该编排。
+Worker 的反馈和结果**必须**使用运行环境提供的仅限父级返回通道、阻塞式 Control Checkpoint 或最终 Worker result。`Send a message to parent` 指向 Worker 的直接父级——即放行其当前 slice 的根父 Agent——这一条唯一反馈路径，不是通用聊天或 thread 寻址权限。Worker**不得**选择或联系兄弟 Worker 或任意 thread。`Need` 字段表示请求父级做决策或执行编排；不表示 Worker 已经执行、启动或选择了该编排。
 
 Worker 发现越界事项时，**必须**只向直接父级返回 `Status`、`Issue`、`Need` 和 `Parent action`（省略空字段）。不得把这份报告转化为新的派发、兄弟联系或目标 thread 选择。
 
-如果 Host 不能保证仅限父级路由，也不能把 Worker 工具面收窄到移除 Agent/Session 编排工具和任意跨 thread 通信，根父 Agent **必须**将该 Worker 视为 Runtime block，且**不得**派发它。仅靠自然语言指令不能建立这种隔离。
+如果运行环境不能保证仅限父级路由，也不能把 Worker 工具面收窄到移除 Agent/Session 编排工具和任意跨 thread 通信，根父 Agent **必须**将该 Worker 视为 Runtime block，且**不得**派发它。仅靠自然语言指令不能建立这种隔离。
 
 ## Dispatch Preview
 
@@ -58,8 +52,7 @@ Worker 发现越界事项时，**必须**只向直接父级返回 `Status`、`Is
 
 场景特例：
 
-- Coding Flow：禁止在 Dispatch Preview 中展开逐文件、逐行、逐命令执行计划。
-- Multimodal Flow：禁止枚举大批图片/帧、复制 OCR/DOM、输出 click sequence、屏幕坐标、完整视觉历史或逐帧计划。
+- Coding 工作流：禁止在 Dispatch Preview 中展开逐文件、逐行、逐命令执行计划。
 
 推荐形式：
 

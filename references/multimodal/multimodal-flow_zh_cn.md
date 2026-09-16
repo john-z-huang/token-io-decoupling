@@ -2,9 +2,7 @@
 
 本 Flow 用于 Computer Use、连续 GUI Observation、大量图片/截图、视频或大量视频帧、视觉设计分析、reference design 对比、高体量 OCR / DOM / accessibility state，以及其他以大量视觉或时序世界状态为主要 Input Token 来源的任务。
 
-本 Flow 与 Coding Flow 独立。不要为了统一角色模型而把 Observation Agent 引入普通 Coding 任务，也不要把高体量视觉历史直接交给 Coding Flow。
-
-所有角色同时遵循 [`shared-protocols_zh_cn.md`](shared-protocols_zh_cn.md)。
+这是一个独立的视觉能力模块。它不选择或加载其他模块，也不把视觉状态传入 Coding 工作流。当前维护的工作流范围是 Coding；本模块仅作为可独立阅读的 reference 保留。
 
 ## 架构角色
 
@@ -37,7 +35,7 @@ Creative 模式下，Primary Observation Agent 可以做完成当前 pass 所需
 
 它只接收 Decision Agent 的 Semantic Contract、Observation Agent 的压缩 Digest 和必要的 Evidence-on-Demand 证据，不默认接收完整视觉历史。
 
-如果后续工作属于 repo 修改、代码实现、调试或构建测试，则不要在 Multimodal Flow 内复制 Coding 执行规则；改用本文件定义的窄 Handoff 进入 [`coding-flow_zh_cn.md`](coding-flow_zh_cn.md)。
+如果后续工作属于 repo 修改、代码实现、调试或构建测试，则不要在 Multimodal Flow 内复制 Coding 执行规则。向调用方返回窄 handoff 载荷；是否属于范围由当前工作流决定。
 
 ## Observation Firewall
 
