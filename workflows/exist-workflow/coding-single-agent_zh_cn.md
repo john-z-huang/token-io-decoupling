@@ -1,28 +1,33 @@
+sed: --: No such file or directory
 # Coding 工作流——单代理模式
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
 
-先读取 [`../coding_zh_cn.md`](../coding_zh_cn.md)。用户禁止委派、任务没有拆分到另一个 Session 的具体结构收益，或当前运行环境无法满足多代理 Coding 要求时，使用此已组合工作流。
+先读取 [`../coding_zh_cn.md`](../coding_zh_cn.md)，再读取 `../../references/coding/agent-delegation-control_zh_cn.md` 获取权威委派状态。只有该文档记录单代理结果时，才使用此已组合工作流。
 
 ## 模式 Contract
 
 - 所有工作保留在当前 Session 中。将 Input-side Reasoning、Primary Output、文档和适用检查视为逻辑阶段，而不是独立代理。
-- 不得创建、fork、handoff、消息联系或模拟 Worker，也不要打印虚假的 Dispatch Preview。
+- 所有 Agent/Session 的创建、复用、例外和生命周期决策均遵循权威文档；本路线不重复这些规则。
 - 保留下方检查点序列中的 Contract、上下文、决策、控制边界、验证边界、文档边界、Git 授权和完成检查。
 - “不要创建子代理”或“不要使用浏览器”等任务级禁止事项在整个任务期间持续有效。
+
+## 组合输入
+
+本路线在执行检查点序列前组合独立的 Coding references：`shared-protocols`、`agent-delegation-control`、`session-model` 和 `execution-control`。权威文档记录模式/委派状态；其他 reference 提供共享原语、Session 语义和执行规划。下方检查点列表是完整的路线组合；检查点模块不会互相导入。
 
 ## 当前 Session 中的职责边界
 
 - Input-side Reasoning 负责 Semantic Contract、实质性决策、授权、检查点结果和语义验收。
 - Primary Output 负责获批准的实现和临时聚焦检查。
 - Documentation/Comments & Git Operations 负责验证后的获批准文档或注释，以及明确发布下的非简单 Git 工作。
-- 即使本路线只使用一个 Session，Contract 要求的独立 Change Verification 仍然有效；不得把同一 Session 的检查标记为独立验证。
+- 即使本路线只使用一个 Session，Contract 要求的独立 Change Verification 仍然有效；不得把同一 Session 的检查标记为独立验证。是否存在独立 verifier 遵循权威文档。
 
 ## 本路线的运行环境要求
 
 按照运行环境检查点产生的能力清单执行：
 
-- 所有阶段保留在当前 Session 中。本路线不要求创建独立 Session、Worker 返回路径或按角色绑定模型。
+- 按权威文档要求，将各阶段保留在当前 Session 中。本路线不定义独立 Session 创建、Worker 返回路径或按角色绑定模型。
 - 在本地 Codex 中，从 `~/.codex/AGENTS.md` 读取全局指令；同级的 `~/.codex/AGENTS.override.md` 优先，但仓库指令仍然负责仓库策略。修改这些指令、活动覆盖指令、Skill 或仓库指令后，必须启动新的 Codex 运行或 Session，再判断修改是否生效。
 - 在 ChatGPT Work 中，只使用当前任务明确暴露的模型、推理控制、文件、连接器和执行工具。附件或连接器不代表拥有本地执行、仓库修改、凭据或跨线程控制能力。
 - 在标准 ChatGPT 中，不要假设拥有 Shell、Python、Git、测试、沙箱、worktree、连接器或独立 Session。如果没有本地执行能力，不得声称已经运行测试、构建、Git 操作或文件系统校验。
@@ -52,12 +57,7 @@
 
 ## 验证限制
 
-实质性修改的 Contract 或风险评估可能要求独立的 Change Verification Session。单代理限制使其不可用时：
-
-- 在当前 Session 中运行允许的最强整体检查和定向检查；
-- 明确说明结果是同一 Session 的逻辑验证，不是独立验证；
-- 将独立性不可用报告为限制；
-- 必需的验证边界未解决时，不发布依赖该验证的外部 Git 影响。
+实质性修改的 Contract 或风险评估可能要求独立的 Change Verification Session。可用拓扑遵循权威文档；如果独立验证不可用，则在当前 Session 中运行允许的最强检查，明确说明结果不是独立验证，并在必需边界未解决时不发布依赖该验证的外部 Git 影响。
 
 对于保持行为不变的简单修改或仅文档修改，使用适用的快速路径，并运行过期引用、Markdown/链接、空白/差异、多语言和受影响 Contract 检查。
 

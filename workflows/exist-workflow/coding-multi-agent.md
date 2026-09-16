@@ -1,14 +1,19 @@
+sed: --: No such file or directory
 # Coding Workflow — Multi-Agent Mode
 
 [English](coding-multi-agent.md) | [简体中文](coding-multi-agent_zh_cn.md)
 
-Read [`../coding.md`](../coding.md) first. Use this pre-composed workflow only when the user explicitly requests multiple agents, or the Input-side Agent identifies a concrete structural benefit, hard isolation, or capability requirement and no higher-priority constraint forbids delegation.
+Read [`../coding.md`](../coding.md) first, then read `../../references/coding/agent-delegation-control.md` for the authoritative delegation state. Use this pre-composed workflow only when that document records the Multi-Agent outcome.
 
 ## Mode contract
 
 - A Worker receives one released Interaction Slice and returns only through the parent-controlled channel. A Worker never creates a recursive execution hierarchy or treats another Worker's progress as permission.
-- Role names describe responsibilities. Create a separate Session only when the selected runtime environment and this mode's criteria establish concrete structural value or a hard capability or isolation requirement.
-- If the user forbids subagents, child tasks, independent Sessions, or parallel delegation, stop this route and use the Single-Agent route; do not simulate multi-agent behavior.
+- Follow the authority document for mode confirmation, child count, role allocation, creation, reuse, replacement, and lifecycle. Role names describe responsibilities and do not independently authorize a Session.
+- If the user forbids subagents, child tasks, independent Sessions, or parallel delegation, stop this route and return to route selection; do not simulate multi-agent behavior.
+
+## Composed inputs
+
+This route combines the independent Coding references before executing the checkpoint sequence: `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control`. When the released slices need them, also load `context-exchange` and `content-memo`. The authority records mode/count/lifecycle state; the other references provide message primitives, Session semantics, execution planning, and bounded context mechanics. The checkpoint list below is the complete route composition; checkpoint modules are not imported into one another.
 
 ## Responsibility boundary
 
@@ -21,7 +26,7 @@ Read [`../coding.md`](../coding.md) first. Use this pre-composed workflow only w
 
 Use the capability inventory produced by the Environment checkpoint as follows:
 
-- Continue this route only when the current runtime environment exposes the Session, model, parameter, filesystem, tool, authentication, and parent-controlled return capabilities required by the released slice.
+- Continue this route only when the current runtime environment exposes the capabilities required by the delegation state recorded in the authority document and by the released slice.
 - A Worker must return only to its direct parent and must not create or manage Agents/Sessions or contact arbitrary threads. If the runtime environment cannot guarantee these restrictions, do not dispatch a Worker.
 - On local Codex, read global instructions from `~/.codex/AGENTS.md`; same-level `~/.codex/AGENTS.override.md` takes precedence, while repository instructions remain authoritative. When independent Session creation and model controls are exposed, use the current Skill's bindings: Primary Output `gpt-5.6-luna` with `reasoning_effort=xhigh`; Change Verification `gpt-5.6-luna` with `xhigh`; Documentation/Comments & Git Operations `gpt-5.6-luna` with `high`; Context Bootstrap/Refresh `gpt-5.6-luna` with `high`, or `medium` only for deterministic metadata, hash, or delta refreshes.
 - Use `reasoning_effort=max` only as a narrow escalation after a repeated failure or blocker, then return to the normal tier. After changing global instructions, an active override, the Skill, or repository instructions, start a new Codex run/Session before judging whether the change was adopted.
@@ -49,8 +54,8 @@ The common workflow already establishes shared protocols, Session rules, environ
 
 1. Read [`../../references/coding/context-exchange.md`](../../references/coding/context-exchange.md) when Workers need reusable state, bounded handoff, or replacement recovery.
 2. Read [`../../references/coding/content-memo.md`](../../references/coding/content-memo.md) when the dispatch enables Worker-authored content memos.
-3. Use Context Bootstrap or Refresh only when its reuse criteria are met. Keep the capsule factual and routing-only; it never replaces the Contract, mandatory source loading, or independent verification.
-4. Keep each Worker's context-exchange subdirectory separate, and grant each Worker only the named code and context paths it needs.
+3. Use Context Bootstrap or Refresh only when it is assigned in the active delegation state. Keep the capsule factual and routing-only; it never replaces the Contract, mandatory source loading, or independent verification.
+4. Keep each Worker's context-exchange subdirectory separate, and grant each Worker only the named code and context paths it needs. Follow the authority document for Worker allocation.
 
 Before the first substantive dispatch, form a concise Decision Brief unless the task is simple, local, low-risk, obvious, reversible, and mechanically verifiable. If material facts are missing, release bounded reconnaissance only, then synthesize the result on the input side before releasing implementation.
 
@@ -64,11 +69,11 @@ Return conditions: ...
 Unreleased boundary: ...
 ```
 
-Mark a section `Not applicable` with a reason instead of creating a no-op Worker. Release one Interaction Slice at a time unless independent, non-conflicting parallel work has been explicitly approved. Use Progress Signals inside a slice and a Control boundary at material boundaries.
+Mark a section `Not applicable` with a reason instead of creating a no-op Worker. Release one Interaction Slice at a time unless independent, non-conflicting parallel work is allowed by the authority document. Use Progress Signals inside a slice and a Control boundary at material boundaries.
 
 ## Verification and repair
 
-- For a material change, create one fresh independent Change Verification Session after implementation reaches its checkpoint, provide the final-state fingerprint or epoch and acceptance criteria, and require holistic plus targeted evidence.
+- For a material change, perform independent Change Verification only when the authority document records an allocated verifier. Otherwise perform the allowed final checks with the current or already allocated Agent and report independent verification as unavailable; do not alter the delegation state.
 - Reuse that verifier for later Evidence-on-Demand and repaired epochs. Every changed final-state fingerprint requires independent re-evaluation; an earlier verdict is not evidence for a new state.
 - On failure, release only the narrow repair scope, then send the new epoch to the same verifier. Do not begin post-verification documentation or dependent remote Git work while a material issue remains unresolved.
 - After verification passes, release documentation/comment work and any Git work as separate bounded slices with explicit authorization.

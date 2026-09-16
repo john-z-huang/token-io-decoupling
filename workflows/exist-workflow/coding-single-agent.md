@@ -1,28 +1,33 @@
+sed: --: No such file or directory
 # Coding Workflow — Single-Agent Mode
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
 
-Read [`../coding.md`](../coding.md) first. Use this pre-composed workflow when the user forbids delegation, when the task has no concrete structural benefit from another Session, or when the active runtime environment cannot provide the requirements for Multi-Agent Coding.
+Read [`../coding.md`](../coding.md) first, then read `../../references/coding/agent-delegation-control.md` for the authoritative delegation state. Use this pre-composed workflow only when that document records the Single-Agent outcome.
 
 ## Mode contract
 
 - Keep all work in the current Session. Treat Input-side Reasoning, Primary Output, documentation, and applicable checks as logical phases, not separate agents.
-- Never create, fork, hand off to, message, or simulate a Worker. Do not print a fake Dispatch Preview.
+- Follow the authority document for all Agent/Session creation, reuse, exception, and lifecycle decisions; this route does not restate them.
 - Keep the Contract, Context, Decision, Control boundary, verification boundary, documentation boundary, Git authorization, and completion gate from the checkpoint sequence below.
 - A task-level prohibition such as “do not create subagents” or “do not use a browser” remains active for the entire task.
+
+## Composed inputs
+
+This route combines the independent Coding references before executing the checkpoint sequence: `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control`. The authority records mode/delegation state; the other references provide shared primitives, Session semantics, and execution planning. The checkpoint list below is the complete route composition; checkpoint modules are not imported into one another.
 
 ## Responsibility boundary in the current Session
 
 - Input-side Reasoning owns the Semantic Contract, material decisions, authorization, checkpoint outcomes, and semantic acceptance.
 - Primary Output owns approved implementation and provisional focused checks.
 - Documentation/Comments & Git Operations owns approved post-verification documentation or comments and non-trivial Git work under an explicit release.
-- Any independent Change Verification requirement remains a requirement even though the route uses one Session; never label same-Session checks as independent.
+- Any independent Change Verification requirement remains a requirement even though the route uses one Session; never label same-Session checks as independent. Follow the authority document for whether an independent verifier is available.
 
 ## Route-specific environment requirements
 
 Use the capability inventory produced by the Environment checkpoint as follows:
 
-- Keep all phases in the current Session. This route does not require independent Session creation, Worker return paths, or role-specific model bindings.
+- Keep the phases required by the authority document in the current Session. This route does not define independent Session creation, Worker return paths, or role-specific model bindings.
 - On local Codex, read global instructions from `~/.codex/AGENTS.md`; same-level `~/.codex/AGENTS.override.md` takes precedence, while repository instructions remain authoritative. After changing those instructions, the active override, the Skill, or repository instructions, start a new Codex run/Session before judging whether the change was adopted.
 - On ChatGPT Work, use only the model, reasoning controls, files, connectors, and execution tools explicitly exposed by the current task. An attachment or connector does not imply local execution, repository mutation, credentials, or cross-thread control.
 - On standard ChatGPT, do not assume shell, Python, Git, tests, sandbox, worktree, connectors, or independent Sessions. If local execution is unavailable, do not claim that tests, builds, Git operations, or filesystem validation ran.
@@ -52,12 +57,7 @@ Run the checkpoints in this order, skipping only conditional checkpoints with a 
 
 ## Verification limitation
 
-For a material change, the Contract or risk assessment may require an independent Change Verification Session. If Single-Agent constraints make that unavailable:
-
-- run the strongest allowed holistic and targeted checks in the current Session;
-- state clearly that the result is same-Session logical verification, not independent verification;
-- report unavailable independence as a limitation;
-- do not release dependent external Git effects while a required verification boundary remains unresolved.
+For a material change, the Contract or risk assessment may require an independent Change Verification Session. Follow the authority document for the available topology; if independent verification is unavailable, run the strongest allowed checks in the current Session, report that the result is not independent verification, and do not release dependent external Git effects while the required boundary remains unresolved.
 
 For trivial behavior-preserving or documentation-only work, use the applicable fast path and run stale-reference, Markdown/link, whitespace/diff, multilingual, and affected-contract checks.
 

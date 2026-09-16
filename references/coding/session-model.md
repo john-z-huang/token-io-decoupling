@@ -1,127 +1,55 @@
 # Coding Session Model
 
-This module owns Coding role definitions, Session topology, Context Firewall rules, and Primary Execution Session affinity. It is independent of concrete runtime-environment/model eligibility and execution parameters; the active workflow supplies that deployment context.
-
-This module does not define shared dispatch, reporting, or evidence protocols. The active workflow composes those concerns when needed.
+This module defines Coding role ownership, Session semantics, the Context Firewall, and Primary Execution Session affinity. It is independent of runtime/model eligibility, execution parameters, dispatch formatting, context-file transport, and acceptance procedures.
 
 ## Architecture roles
 
 ### Input-side Reasoning Agent
 
-Owns high-information-density work: understanding user intent and business semantics, formulating and decomposing the problem, identifying assumptions and unknowns, defining decision questions, comparing candidate directions against explicit criteria, making architecture and risk judgments, creating or amending the Semantic Contract, designing bounded stages, Interaction Slices, and blocking checkpoints, setting adaptive feedback cadence, releasing one slice at a time, handling major decision escalations, performing semantic acceptance, and explaining necessary reasoning-level decisions to the user.
-
-Before substantive execution is dispatched, the input-side Agent retains ownership of the problem model, the meaning of evidence, unresolved semantic trade-offs, the approved solution envelope, and the decision to release implementation. These responsibilities are not delegated merely because repository evidence is high-volume. The input-side Agent may request evidence collection and candidate generation, but it must decide what the evidence means for the user's goal and whether a direction is approved.
-
-During normal two-Session execution, the input-side Agent also owns the interaction cadence and slice boundaries. It authorizes one Interaction Slice at a time, interprets Progress Signals, and responds to each blocking Control Checkpoint with `Continue`, `Amend`, or `Stop` (or targeted Evidence-on-Demand before deciding). It must not merely wait for a long-running Output Agent or pre-release all future stages.
-
-In the standard two-Session interface, the input-side Agent must autonomously interpret concrete Worker feedback and decide the ordinary next action, including `Continue`, `Amend`, `Stop`, repair routing, or a narrowly revised slice. A Worker request for guidance, a parent/worker checkpoint, ordinary uncertainty, model weakness, or a normal ambiguity in feedback is an internal control point, not an automatic handoff to the user. While the goal remains incomplete, the input-side Agent continues the decision-execution loop by default and releases the next safe bounded slice until the goal is complete. It may pause and wait for user input only when the current design/process or the user's instruction explicitly requires a manual stop at that stage, or when the next operation creates a substantial security or safety risk that cannot be safely decided from the existing Contract and must be presented to the user. Higher-priority safety, permission, authorization, and unavailable-capability rules remain in force; this default does not authorize bypassing them.
-
-The input-side role should not perform large-volume output whose main purpose is to expand an already-made decision, and it should not ingest high-volume, low-decision-density raw project state by default.
+Owns user-intent and business-semantic analysis, the Semantic Contract, architecture and risk decisions, unresolved trade-offs, stage and slice boundaries, release decisions, checkpoint outcomes, user interaction, and final semantic acceptance. It may request evidence and candidate options, but decides what they mean and must not absorb high-volume raw project state or expand already-approved decisions into long output.
 
 ### Primary Output Role
 
-Owns high-volume project exploration, raw tool-output handling, evidence collection and semantic compression, execution-level planning within an approved semantic plan, code/config materialization, implementation fixes, and provisional implementation-feedback checks.
-
-The Agent performing the Primary Output Role reads source and project state progressively: inspect summaries, statistics, and relevant paths first, then expand specific files or logs only when needed. It may analyze evidence and surface evidence-backed candidate options, and it may decide **how** to execute an approved direction inside the current Interaction Slice, but it must not approve or independently change unresolved semantic or architecture decisions, user/business trade-offs, goals, constraints, or acceptance criteria. Its compile, lint, unit, or narrow integration checks are implementation feedback used to guide local fixes; they are not the final change-result verification. It does not perform non-trivial repository Git inspection or operations; those belong to the separate Documentation/Comments & Git Operations role.
-
-Each independent Coding Worker must send minimal Progress Signals within an authorized slice, return a compressed Control Checkpoint at the slice's return conditions or a mandatory material boundary, and pause before crossing its `Unreleased boundary`. Parallelism does not widen a Worker's slice or release future work.
+Owns high-volume project exploration, evidence compression, execution inside an approved direction, code/configuration materialization, repairs within the released slice, and provisional implementation checks. It reads progressively, cannot change unresolved goals, constraints, architecture, or acceptance criteria, and does not own final acceptance or non-trivial Git work.
 
 ### Context Bootstrap/Refresh Responsibility
 
-Context Bootstrap/Refresh is an on-demand auxiliary responsibility, not a fifth core role or a mandatory Session topology. The parent Input-side Reasoning Agent creates or reuses one Bootstrap Worker only when the selection thresholds in `execution-control.md` are met. That Worker builds or delta-refreshes a bounded, fingerprinted capsule containing neutral project facts, exact source pointers, policy-routing pointers, and freshness/invalidation data. It does not own problem formulation, Semantic Contract decisions, implementation, verification conclusions, or documentation materialization, and it does not recursively delegate.
-
-The Bootstrap Worker reads the complete mandatory Skill and repository instructions independently; its capsule supplements but never replaces them. A downstream Worker, including the initial verifier, may receive the capsule through targeted read-only exposure and then read the named authoritative files directly. Independent verification means independent judgment and no reliance on a prior verdict as evidence; it does not require rediscovering stable project layout and policy routing from zero. After a material relevant project or Skill change, reuse the same Bootstrap Worker for a delta refresh. Within one task conversation, reuse one independent verifier for each subsequent verification slice, requiring it to independently re-evaluate every new material final-state fingerprint/epoch; create an additional verifier only for a genuinely isolated requirement such as incompatible environments/snapshots, distinct permission or security domains, or an explicit independent audit.
+When assigned, builds or refreshes a bounded, fingerprinted capsule of neutral project facts, exact source pointers, policy-routing pointers, and freshness data. It does not decide the task, change the Contract, implement, verify, materialize documentation, or delegate recursively. The capsule supplements mandatory instructions and never replaces direct reading of authoritative files.
 
 ### Change Verification Agent
 
-Owns the final, independent verification of a material change after the Primary Output implementation slice. It receives the final project state, the effective Semantic Contract, acceptance criteria, changed-scope evidence, and provisional implementation checks, then progressively inspects the relevant diff and surrounding behavior and runs the appropriate holistic checks, such as integration, regression, cross-module, system, or end-to-end tests. It reports compressed evidence, coverage gaps, failures, and residual risks; it does not own architecture or product decisions, semantic acceptance, or repair work.
-
-When selected, the Change Verification Agent starts in a fresh independent Session so it does not inherit the Primary Output implementation history. Its authorized verification slice is read-only with respect to product code/configuration, documentation, and Git state. The parent may explicitly authorize it to create or update only named verification scripts/tests (or one bounded directory for a new verification script) needed to check the approved acceptance criteria; this does not authorize product repairs, unrelated test changes, or broad suite refactoring. It consumes the changed-scope manifest and Git evidence supplied by the Documentation/Comments & Git Operations Agent, then verifies the resulting content and behavior; it may use a current, bounded Bootstrap capsule as factual/routing context, but must independently judge the supplied final state and required evidence. It does not perform non-trivial Git queries or operations. Disposable test/build outputs may be isolated by the runtime environment. It must not recursively delegate. A material repair returns to Primary Output through the parent Input-side Agent; after repair, the parent reuses the same verifier for a new verification slice and final-state fingerprint/epoch. The verifier must re-evaluate the acceptance matrix independently and must not carry forward its earlier verdict as evidence. Create another verifier only when the parent identifies genuinely multiple isolated verification requirements, such as concurrent incompatible environments/snapshots, distinct permission or security domains, or an explicit independent audit.
-
-When the repository provides an accumulated full-suite entrypoint or equivalent manifest, the fresh verifier starts with it before targeted changed-risk analysis; the detailed verification-asset, coverage-gap, and documentation fast-path rules are owned by the Coding Verification Boundary. The verifier may materialize only explicitly authorized verification assets; product or documentation repairs and any out-of-scope coverage work are reported to the parent and routed to the appropriate Worker. If authoring a verification asset changes tracked state, the parent supplies the updated scope evidence and fingerprint, then reuses the same verifier to independently recheck that new epoch before accepting its verification result.
+When assigned, independently verifies the final state of a material change against the Contract and acceptance criteria. It uses the supplied scope evidence, runs relevant holistic and targeted checks, re-evaluates every final-state fingerprint/epoch, and reports evidence, gaps, failures, and risks. It is read-only for product code/configuration, documentation, and Git, except for explicitly named verification assets; it does not repair, make semantic decisions, or delegate.
 
 ### Documentation/Comments & Git Operations Agent
 
-Owns two separately scoped responsibilities. First, it performs optional post-verification materialization of developer documentation and code comments. It receives the final verified project state, the effective Contract, the explicit documentation/comment scope, and the compressed verification conclusion, and changes only approved documentation and comment locations. Second, it owns every non-trivial project-level Git responsibility, including repository synchronization (`fetch`/`pull`), branch and worktree lifecycle, staging, commits, history integration (`rebase`/`merge`/`cherry-pick`), conflict resolution, reset/clean/stash, tags, remote configuration, pushes, and applicable Issue/PR delivery. It may inspect or mutate Git metadata and remote state only inside a parent-released Git Interaction Slice.
+When assigned, materializes only approved documentation/comments or performs only the explicitly released non-trivial Git slice. It does not change product behavior, tests, or semantic decisions; a conflict requiring new content or meaning returns to the parent. Documentation and Git work remain separate execution scopes.
 
-Documentation/comment and Git slices are released independently. A Git conflict-resolution edit is allowed only to complete an explicitly authorized operation using already approved content; if resolution requires a new product, behavioral, or semantic decision, the Agent must stop and return that decision or repair to the parent Input-side Agent and Primary Output. Outside that narrow exception, it must not modify functionality, tests, fixtures, schemas, generated behavior, or other implementation logic. It does not perform final change verification or semantic acceptance. English and Simplified Chinese Markdown must remain semantically mirrored according to the repository's multilingual rules.
+## Session semantics
 
-The Documentation/Comments & Git Operations Agent is created and managed by the parent Input-side Reasoning Agent when either responsibility is needed. It uses its own bounded context and the selected deployment branch's confirmed `high` effort tier for both documentation/comments and complex Git work; it must not recursively delegate. The parent may release a Git slice before implementation for synchronization or branch/worktree preparation, after implementation for history integration or conflict handling, or after final semantic acceptance for commit, push, and Issue/PR delivery. The role, Contract, or Session affinity grants no authorization: every slice must name its exact repository/worktree/ref/remote scope, allowed mutations and external effects, and return conditions.
+The active workflow supplies mode, topology, role allocation, lifecycle, reuse, replacement, exceptions, and unavailable handling. A role label never authorizes a new Session or topology change.
 
-## Single-Session Coding Mode
-
-Coding Flow enters **Single-Session Coding Mode** when the Input-side Reasoning Agent, using the deployment and capability checks in the active workflow, confirms all of the following:
-
-- it has assessed the task's complexity and difficulty, semantic and operational risk, expected context load, parallelism, and isolation needs, and concludes that creating an independent Primary Output Session would provide no concrete structural benefit for this task;
-- the selected deployment permits the current Session to perform both the Input-side Reasoning and Primary Output responsibilities, and the runtime environment can satisfy the execution parameters required for the current task in that Session;
-- no explicit user, permission, security, or other hard isolation requirement mandates another Session.
-
-Model name, model tier, and reasoning-effort level alone neither trigger nor prohibit Single-Session Coding Mode. They matter only when the selected deployment or runtime environment turns them into a concrete role-eligibility, capability, or parameter constraint.
-
-In this mode:
-
-- the current Session performs Input-side Reasoning and Primary Output implementation/provisional checks; do not create, hand off to, or require an additional Primary Output Agent merely to preserve a two-role topology;
-- role boundaries still exist as logical execution discipline: stabilize high-value goals, constraints, decisions, and acceptance first; then progressively inspect project state, implement, run provisional feedback checks, obtain independent change verification when selected, and perform final semantic acceptance;
-- for a material functional change, the current Session does not act as the final Change Verification Agent. The Input-side Agent creates one fresh independent verifier Session after implementation and reuses that verifier for later verification slices in the same task conversation; each new final-state fingerprint/epoch requires independent re-evaluation, not reuse of the earlier verdict as evidence. Additional verifier Sessions require genuinely isolated verification requirements. The Input-side Agent may also create a separate Documentation/Comments & Git Operations Agent when documentation or non-trivial Git work is needed;
-- interaction slices and Continue/Amend/Stop decisions remain internal reasoning boundaries; do not simulate Progress Signal or Control Checkpoint messages to the same Session;
-- the current Agent's ordinary exploration, implementation, focused testing, fixing, and implementation output are same-Session self-execution, not a Dispatch; do not print a fake self-dispatch or construct a prompt addressed to the same Session;
-- repository size, many changed files, long output, build/test/debug requirements, or a generic label such as “complex task” are not automatic reasons to create another Session; the Input-side Agent must judge whether they create a concrete structural need in this task.
-
-Another Agent is allowed only when the Input-side Agent identifies an independent structural benefit or a hard capability/isolation requirement, for example:
-
-- one initial fresh verifier that should not inherit the current implementation history, then reuse it for later verification epochs;
-- real parallelism where tasks are independent and do not contend for the same write targets;
-- the current Session context is clearly stale, contradictory, or too overgrown to continue effectively;
-- explicit context, permission, security, or other isolation requirements whose benefit exceeds handoff cost;
-- post-verification documentation/comment isolation or non-trivial Git-operation isolation that prevents implementation context from owning those responsibilities.
-
-The selected deployment may define a narrowly scoped escalation exception for a repeatedly blocked task. Apply that exception only when the active workflow has supplied and confirmed the corresponding deployment branch; do not treat a stronger model or execution parameter as a general reason to split Sessions.
-
-These exceptions must not restore same-deployment delegation as the default path for ordinary Coding.
-
-## Normal two-Session Coding Mode
-
-When the Input-side Reasoning Agent judges that an independent Primary Output Session has a concrete structural benefit for the task, or when the selected deployment/runtime environment imposes a hard eligibility, permission, security, or execution-parameter requirement that prevents same-Session execution, and the runtime environment can create or reuse a compatible independent Primary Output Session, use the normal two-Session topology:
+In Single-Agent Coding, the current Session performs the logical decision, implementation, documentation, Git, and allowed-check phases; logical roles do not imply independent Agents. In Multi-Agent Coding, use only the independent Sessions explicitly supplied by the active workflow:
 
 ```text
-current parent Session
-    └─ Input-side Reasoning
-
-independent Primary Execution Session
-    └─ Primary Output
-
-optional independent Change Verification Session (reused across verification epochs)
-    └─ Change Verification
-
-optional Documentation/Comments & Git Operations Session
-    └─ Documentation/Comments & Git Operations
+root parent Session → Input-side Reasoning
+assigned Primary Session → Primary Output
+assigned verifier Session → Change Verification
+assigned docs/Git Session → Documentation/Comments & Git Operations
 ```
 
-The first split exists because the Input-side Agent identified a concrete structural benefit or because the active deployment requires different role eligibility, parameters, permissions, security boundaries, or context ownership—not merely because two logical role names, a model name, or a model tier exist. The optional verifier split is selected for the independent fresh-review benefit of material changes; the Documentation/Comments & Git Operations split is selected when post-verification documentation isolation or non-trivial Git-operation isolation has concrete value. Concrete model selection and execution parameters remain outside this module.
-
-If the required independent Session cannot be instantiated under the selected deployment, do not silently collapse into Single-Session Coding Mode. Follow the unavailable-handling rule in the active workflow.
+An unassigned role is unavailable as an independent Session. Do not simulate independence by relabeling same-Session work.
 
 ## Context Firewall
 
-In normal two-Session Coding, the input-side Agent does not perform open-ended inspections that may bring large volumes of raw project state into its own context. Non-trivial Git inspection (`status`, `diff`, logs, history, remote state), synchronization, branch/worktree changes, staging, commits, rebases/merges, conflict handling, pushes, and remote/PR operations go to the Documentation/Comments & Git Operations Agent. Primary Output handles source/configuration exploration and implementation feedback; it does not perform non-trivial Git work. Change Verification consumes the new role's changed-scope manifest and Git evidence while independently verifying content and behavior. Each Agent reads, filters, and returns only the facts required for the parent's next decision.
+In a multi-Session Coding run, the input-side Session does not perform open-ended project inspection. Primary Output consumes source/configuration state; Change Verification consumes final-state evidence; Documentation/Comments & Git Operations consumes Git state and approved documentation scope. Each returns only the facts needed for the next decision.
 
-The Context Firewall limits raw project-state ingress; it does not limit input-side reasoning or transfer decision ownership. The input-side Agent must still formulate the problem, define what evidence is needed, interpret compressed findings, choose among material directions, and release the next approved stage.
+Only strictly bounded, read-only metadata may be inspected directly by the input-side Session. Potential output volume and repository-state impact determine the boundary, not the command name. A single Session has no cross-Session firewall, but still reads progressively and compresses raw state.
 
-Single-Session Coding Mode has no cross-Session Context Firewall. The current Session directly performs the Primary Output Role and consumes necessary project state, but it must still use progressive reading and semantic compression rather than dumping an entire project, full logs, or unrelated diffs into active context without purpose.
+The firewall limits raw-state ingress, not semantic reasoning. The input-side role retains ownership of meaning, trade-offs, release decisions, and acceptance. Ephemeral UI/project localization belongs to the Session that observes it and is not promoted to long-lived Contract state.
 
-Only strictly bounded, obviously small read-only metadata queries may be executed directly by the input-side Agent in normal two-Session mode—for example `pwd`, `git branch --show-current`, `git rev-parse --show-toplevel`, or checking existence of one file. Any Git query that reads a diff, status set, history, remote state, or other non-trivial repository state belongs to the Documentation/Comments & Git Operations Agent. The criterion is potential raw-output volume and repository-state impact, not the command name itself.
+## Primary Execution Session and affinity
 
-An independent Primary Output or Change Verification Agent semantically compresses diagnostics by default rather than returning complete command output. It reports only facts, anomalies, relevant paths, and small evidence snippets needed for the parent's next decision; more evidence is expanded through Evidence-on-Demand. The Documentation/Comments & Git Operations Agent likewise returns only its changed documentation/comment scope, changed-scope manifest, Git-operation result, and relevant checks.
+Maintain one Primary Execution Session: the assigned Primary Output Session in multi-agent mode, otherwise the current Session. Reuse it for related exploration, implementation, diagnosis, tests, repairs, and local execution to preserve stable context. A Session is sticky but not immortal; lifecycle changes use the active workflow's recorded state.
 
-## Primary Execution Session and Session Affinity
-
-A continuous Coding workflow maintains one **Primary Execution Session** by default:
-
-- in normal two-Session mode, it is the independent Session assigned the Primary Output Role by the selected deployment branch;
-- in Single-Session Coding Mode, it is the current Session itself. Do not create another Session merely to obtain “Primary Session Affinity.”
-
-Session separation and Git worktree separation are distinct. Creating an independent Worker or verifier does not by itself require a separate worktree. Workers handling the same development request normally share its primary worktree; any exception must be supplied as an explicit scope by the active workflow.
-
-Subsequent project exploration, implementation, diagnosis, testing, fixing, and local execution should preferentially reuse that Primary Execution Session. Reuse preserves project working context, reduces repeated exploration, and may improve stable prompt-prefix reuse opportunities. Do not claim that the same Agent is guaranteed to hit prompt cache, or that a new Agent is guaranteed not to.
-
-Create a new execution Session for the initial independent change verifier when selected, or for real parallelism, context-degradation/capacity recovery, explicit documentation/comment or non-trivial Git-operation isolation, or a targeted escalation explicitly allowed by the active workflow. Reuse the selected verifier across later verification epochs in the same task conversation; create another verifier only for genuinely isolated verification requirements. The Primary Execution Session is sticky but not immortal: reuse it for implementation and provisional feedback by default, and rebuild it when correctness, capacity, or isolation requires it. The selected verifier and Documentation/Comments & Git Operations Worker are independent from Primary Execution and do not replace the Primary Execution Session.
+Session separation and Git worktree separation are distinct. Workers for one development request normally share its primary worktree; an isolated worktree requires an explicitly released isolation scope. Do not claim cache hits or other runtime savings merely from Session reuse.
+sed: --: No such file or directory

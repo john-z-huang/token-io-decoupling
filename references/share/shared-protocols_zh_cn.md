@@ -1,99 +1,45 @@
 # 共享调度协议
 
-本文件为 Coding 提供可复用的调度原语，不是执行工作流，也不选择、加载或组合其他模块。角色拓扑、执行循环、Runtime 映射和验收边界由当前工作流提供。
+本模块定义可复用的 Coding 消息与上下文原语，不选择路线、Session 拓扑、Runtime 或 Agent 数量。
 
-## Semantic Contract 基线
+## Semantic Contract
 
-Decision / Input-side Reasoning Agent 负责固化高价值决策信息。Contract 只包含执行方安全工作所需的最小稳定语义：
+Decision/Input-side 职责负责固化安全执行所需的最小语义：
 
 - `Goal`：最终目标；
-- `Constraints`：不能破坏的业务、兼容性、安全或用户边界；
-- `Decisions`：已批准的架构与关键取舍；
-- `Acceptance`：验收标准。
+- `Constraints`：不可破坏的业务、兼容性、安全或用户边界；
+- `Decisions`：已批准的架构与取舍；
+- `Acceptance`：成功标准。
 
-Semantic Contract 是决策锚点，不是完整上下文或原始 Observation 的替代品。宿主能够安全共享的相关上下文可直接提供给对应职责 Worker；后续默认只发送新增目标、决策变化和必要约束，不周期性重写完整背景。
+Contract 是决策锚点，不替代原始上下文。相关上下文直接提供给负责的职责，后续只发送新增目标、变化和必要约束。更新优先使用 amendment；只有修订冲突到无法判断当前状态时才发送一次 authoritative snapshot。所需上下文无法安全共享或表达时，停止并报告上下文阻塞。
 
-Contract 更新优先使用 amendment。只有历史修订已冲突到无法判断当前有效状态时，才发送一次明确的 authoritative decision snapshot；必要时重建对应 Worker。
+## 父级返回路径
 
-若安全执行所需上下文既不在当前职责 Worker 中、宿主又无法共享，而短 Contract 也不足以弥补，则停止并报告上下文阻塞；不要由高价值决策 Agent 用长篇输出重新编码整段历史来绕过限制。
-
-## 职责标签
-
-角色名称用于标识职责和上下文 ownership；它们本身不要求创建独立 Agent 或 Session。Session 的创建、复用、隔离和 Runtime eligibility 由当前工作流及其选定的部署上下文提供。本模块不选择 Session 拓扑。
-
-## 根父级权限与 Worker 返回路径
-
-**根父 Agent** 是拥有当前用户请求 root Input-side Reasoning 职责的 Agent。Worker 即使拥有自己的 task 或 thread、`source_thread_id` 或聊天上下文，也不会因此成为编排父级。这些只是运行环境的上下文映射，不是权限授予。
-
-只有根父 Agent 可以创建、复用、fork、handoff、关闭或以其他方式重新编排 Agent 或 Session。这一规则适用于 Primary Output、Change Verification、Documentation/Comments & Git Operations、Context Bootstrap/Refresh 以及所有辅助 Worker。每个 Worker 都**必须**保持非递归：不得创建或重新分派其他 Worker，不得发起兄弟 Worker 的 handoff，也不得指导其他 Agent/Session。
-
-Worker 的反馈和结果**必须**使用运行环境提供的仅限父级返回通道、阻塞式 Control Checkpoint 或最终 Worker result。`Send a message to parent` 指向 Worker 的直接父级——即放行其当前 slice 的根父 Agent——这一条唯一反馈路径，不是通用聊天或 thread 寻址权限。Worker**不得**选择或联系兄弟 Worker 或任意 thread。`Need` 字段表示请求父级做决策或执行编排；不表示 Worker 已经执行、启动或选择了该编排。
-
-Worker 发现越界事项时，**必须**只向直接父级返回 `Status`、`Issue`、`Need` 和 `Parent action`（省略空字段）。不得把这份报告转化为新的派发、兄弟联系或目标 thread 选择。
-
-如果运行环境不能保证仅限父级路由，也不能把 Worker 工具面收窄到移除 Agent/Session 编排工具和任意跨 thread 通信，根父 Agent **必须**将该 Worker 视为 Runtime block，且**不得**派发它。仅靠自然语言指令不能建立这种隔离。
+根父 Agent 负责当前请求的父级控制通道。每个 Worker 都必须非递归，只能通过运行环境的仅限父级通道、控制边界或最终 result 返回。越界事项只返回非空的 `Status`、`Issue`、`Need` 和 `Parent action`。Worker 不得选择兄弟、任意 thread 或其他编排路径。运行环境不能强制该边界时，Worker 视为阻塞。
 
 ## Dispatch Preview
 
-每次实际创建子 Agent 或向既有独立 Worker 发送新的执行指令前，父会话必须先显示一条极简 `Dispatch` 预览，使用户能够知道本次具体派发了什么。它只是即将派发指令的可见摘要，不是完整子 Agent prompt，也不得暴露不可见内部推理。
+工作流已经授权创建子 Agent 或向独立 Worker 发送新指令后、执行动作前，先显示极简预览。预览是可见摘要，不是完整 prompt 或隐藏推理，也不能替代必要的用户确认。
 
-当前 Session 在同一 Agent 内切换逻辑职责、执行自己的探索/实现/验证或维护 Semantic Contract 不属于 Dispatch。同 Session Coding 不得为了满足 Dispatch Preview 规则打印虚构 self-dispatch、构造 self-prompt 或创建无必要子 Agent。
-
-预览只保留足以识别本次任务的最小信息：
-
-- `Task`：一句话说明目标或增量目标；
-- `Scope`：仅在必要时列出关键路径、模块、视觉集合或处理范围；
-- `Constraints`：仅保留会直接改变执行方式的关键约束；
-- `Runtime`：仅在本次需要显式模型、执行参数或类似 Runtime 要求时简写。
-
-默认输出 **1–3 行**，以 **约 80 tokens 以内**为目标；如果明显接近或超过 **约 120 tokens**，必须继续压缩后再派发。不要为了格式机械补齐没有内容的字段，也不要输出完整验收清单、完整 Contract 或解释性长文。
-
-复用独立 Worker 时只显示本次新增 delta，不重复此前已经可见的派发内容。若宿主已在同一父会话中自动、清晰地显示等价任务摘要，可不重复打印；仅显示“已创建 Agent”“正在工作”等无任务语义的信息不算等价。
-
-场景特例：
-
-- Coding 工作流：禁止在 Dispatch Preview 中展开逐文件、逐行、逐命令执行计划。
-
-推荐形式：
+只使用有意义的字段：
 
 ```text
-Dispatch → Primary Output | Task: 修复认证中间件刷新逻辑；Scope: auth/*；Constraints: 保持 API 兼容
+Dispatch → <role> | Task: <objective>; Scope: <needed paths>; Constraints: <direct execution limits>; Runtime: <only if required>
 ```
 
-```text
-Dispatch → Observation | Task: 对比 checkout 设计稿与当前 UI；Scope: checkout；Constraints: 先粗筛再定向检查
-```
+目标为 1–3 行和约 80 tokens 以内，接近 120 tokens 时继续压缩。复用 Worker 时只显示新 delta。同 Session 的职责切换和本地工作不属于 Dispatch，不得打印虚构的 self-dispatch。
 
-## 事件驱动进度反馈
+## 事件驱动反馈
 
-独立 Worker 不持续发送工作日志。普通文件读取、grep、截图变化、滚动、局部分析、编译错误修复、下一条命令等低决策密度步骤留在该 Worker 自身上下文。
-
-只在以下事件主动向父 Agent 发送极简消息：
-
-- 关键里程碑发生，例如实现完成、视觉筛选完成、开始验证；
-- 出现需要高价值语义、架构或风险决策的问题；
-- 发生阻塞、重大偏差或已批准 Contract 无法继续满足。
-
-消息只包含父 Agent 下一步判断所需内容，可使用 `Status`、`Issue`、`Need` 等有意义字段；没有内容的字段不要机械补齐。不要附完整日志、diff、截图序列、OCR 全文或其他高体量原始状态。
-
-任务完成时只返回压缩交付摘要：主要结果、机械/视觉验证结论、仍需关注的风险或边界变化。
-
-同 Session 执行没有独立父子 Session，不要求模拟 Agent-to-parent 进度消息；当前 Agent 按宿主正常交互规则向用户报告必要进度即可。
+Worker 将普通读取、局部分析、常规编辑、重复检查和原始日志保留在自身上下文中。只有发生实质里程碑、需要父级判断的决策、阻塞、重大偏差或无法满足 Contract 时，才向父级发送简短信号。只返回下一步决策所需事实、证据指针和所需动作；不得附完整日志、diff、截图、OCR 或历史。完成时返回压缩结果、验证结论和剩余风险。
 
 ## Evidence-on-Demand
 
-高价值决策 Agent 默认不重新读取完整原始证据。需要确认某项结论时，向持有原始状态的独立 Worker 提出定向问题，由后者返回最小必要证据、相关路径、图片/帧引用或小段事实。
+决策职责向持有原始状态的职责提出定向证据请求。只返回最小的相关路径、图片/帧引用或事实摘录。不得为了同步上下文重新读取或生成完整证据。每个新的最终状态 epoch 都必须重新评估；此前结论只能作为上下文，不能作为证明。
 
-如果高价值决策职责与 Primary 职责位于同一 Session，则直接定向检查当前上下文或工具状态，不为了 Evidence-on-Demand 创建 self-handoff。当独立审查具有具体收益时，为该 task conversation 创建一个独立 verifier，并在后续验证 slice 中复用它。每个 slice 都必须根据所提供的最终状态 fingerprint/epoch 独立评估；此前的结论只能作为上下文，永远不能作为证据。只有确实存在独立隔离需求时才创建额外 verifier，例如不兼容的快照/环境、不同的权限或安全域，或明确要求的独立审计。
+## 缓存感知的稳定性
 
-## Cache-Aware Context Stability
+优先使用 `stable prefix + small delta`：保留稳定决策和工作上下文，只追加新目标、amendment 或验证要求。不要周期性重写完整 Contract 或任务历史。缓存 key、命中条件、quota、latency 和质量影响由 Runtime 决定，不得擅自保证。稳定历史妨碍正确理解时，执行一次压缩或重建。
 
-同一工作流优先保持 `stable prefix + small delta`：稳定已有 Session、项目历史、视觉状态 ownership 和已批准决策，只在尾部追加新的目标、amendment 或验证要求。不要为了“同步状态”周期性重新总结整个任务，也不要反复生成高度重叠的 Contract 全文。
-
-缓存友好性只是组织上下文的设计目标；实际缓存键、命中条件和额度折算由宿主决定，不得把缓存收益描述为保证结果。若稳定历史已妨碍正确理解当前状态，应优先正确性，执行一次状态压缩或重建 Agent。
-
-## 委派边界
-
-任何 Primary Observation Agent、独立 Primary Output Agent 或其他独立 Worker 都不得递归委派。初始独立 verifier、任何因例外需要的额外 verifier 以及跨 Flow handoff，都由当前父级高价值决策 Agent 统一调度；同 Session Coding 需要触发例外 Agent 时，也由当前 Agent 直接创建，不先构造虚拟 Primary 层级。
-
-本 Skill 不能绕过更高优先级的权限、用户授权、产品限制或安全规则。角色分工、Semantic Contract 或已建立 Session Affinity 都不构成额外授权。
+本模块不能绕过用户授权、权限、产品限制、仓库规则、安全限制或 Runtime capability 检查。
+sed: --: No such file or directory

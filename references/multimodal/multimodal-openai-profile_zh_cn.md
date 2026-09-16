@@ -1,3 +1,4 @@
+sed: --: No such file or directory
 # Multimodal OpenAI Deployment Profile
 
 本文件用于在根 `SKILL_zh_cn.md` 移除具体部署细节后，继续保留 Multimodal Flow 的历史 OpenAI 模型绑定。它有意保持为小型部署专属文档，不尝试建立通用 Multimodal Runtime 抽象，也不属于当前维护的 Coding 工作流。
@@ -10,8 +11,6 @@
 - **Primary Observation Agent**：`gpt-5.6-luna`；承担大量图片、视频帧、Computer Use Observation 或其他实质性高体量分析时使用 `reasoning_effort=xhigh`。
 - **Optional Primary Output Agent**：`gpt-5.6-luna`；实质性长输出与其他高体量物化使用 `reasoning_effort=xhigh`。
 - Primary Observation 与 Optional Primary Output 是不同职责和不同 Session Affinity；即使两者都绑定到 Luna，也不默认合并各自的高体量上下文。
-
-Coding Flow 的 Single-Session Coding Mode 只改变 Coding 的角色映射，不削弱 Multimodal Observation ownership，也不意味着 Observation 与 Output 应共享同一 Session。
 
 ## 部署约束
 
