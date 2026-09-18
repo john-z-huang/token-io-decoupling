@@ -44,6 +44,12 @@ After the user confirms the positive integer:
 - Reuse only the already created and assigned child Agents or Sessions for later slices when the active workflow authorizes the work. Reuse does not create a new slot and must not expand the assigned scope.
 - A replacement, fork, handoff to a new child, or additional verifier is a new child creation for this policy. It is not an automatic reuse or exception. Once the locked count has been created, it is forbidden for the current root directive; a later root directive must pass a new mode and count gate.
 
+### Required child-Agent creation path
+
+Creating a child Agent means creating a real delegated Agent, not opening a peer chat or generic task. The root parent must use the runtime's **MultiAgentV1** or **MultiAgentV2** spawn method. It must not use `create_thread`, `fork_thread`, `handoff_thread`, or another generic chat/thread creation API to simulate a child Agent. Those APIs may be used only for their separately authorized user-facing task or Session purposes, never as a child-Agent substitute.
+
+The spawned child must be complete as a delegation unit: it has a distinct child-Agent identity, an explicit parent-controlled return path, a released role and Interaction Slice, authorized scope and mutations, return conditions, and the context required to execute that slice. If MultiAgentV1/MultiAgentV2 or any of these child-Agent capabilities is unavailable or cannot be verified, the root parent must stop and report the blocked capability; it must not fall back to a chat-created child.
+
 If the locked allocation does not include an independent verifier, documentation/Git Worker, bootstrap Worker, recovery Worker, or another required role, the root parent uses the current or already allocated Agent within its authorized scope when that is safe, or reports the role/capability as unavailable. Independent verification remains independent when assigned; it must not be simulated by relabeling a same-Session check. If the missing role makes acceptance impossible, report a blocking limitation rather than bypassing the count.
 
 ### Auxiliary-role assignment
@@ -55,6 +61,8 @@ Context Bootstrap/Refresh may be assigned only when reuse is likely to outweigh 
 Only after the mode is confirmed and, for Multi-Agent Coding, the count is confirmed and locked, may the root parent issue a Dispatch Preview and create the approved child Agents. The Dispatch Preview is a concise summary of the already authorized slice; it is not a substitute for either user confirmation.
 
 Every child receives only the role and slice authorized by the root parent. A child Agent must remain non-recursive: it may not create, fork, hand off to, message, replace, or coordinate another Agent or Session. Worker findings, checkpoints, and requests return only through the parent-controlled path and never change the mode or count.
+
+The child-Agent lifecycle is intentionally persistent for this workflow. The root parent must not close, shut down, archive, delete, or otherwise remove a created child Agent from the visible task panel. A child may reach the terminal state **completed** only after it has returned its final result and evidence; do not intentionally set or leave it in a closed/shutdown state. While it is pending or running, wait or send only authorized follow-up input. If it errors or is interrupted, use the same child for an authorized repair or report the blocker; do not close it as cleanup. If the runtime cannot preserve a completed child as an open, visible Agent, the required lifecycle capability is unavailable and the route is blocked.
 
 The root parent records at least: gate status, confirmed mode, confirmed and locked count when applicable, child-to-role allocation, and any unavailable capability or blocked requirement. This record is control state, not permission to exceed the count.
 
