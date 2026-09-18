@@ -44,6 +44,12 @@ sed: --: No such file or directory
 - 后续 slice 只能在当前工作流授权的范围内复用已经创建并分配的子 Agent 或 Session。复用不会创建新名额，也不得扩大已分配范围。
 - 替换、fork、handoff 到新的子 Agent 或增加 verifier 都属于本政策下的新建子 Agent，不是自动复用或例外。锁定数量已经创建后，当前根指令禁止这些动作；必须由后续根指令重新通过模式和数量门禁。
 
+### 必需的子 Agent 创建路径
+
+创建子 Agent 是创建一个真实的委派 Agent，而不是打开一个平级聊天或普通 task。根父级必须使用运行环境提供的 **MultiAgentV1** 或 **MultiAgentV2** spawn 方法。不得使用 `create_thread`、`fork_thread`、`handoff_thread` 或其他普通聊天/线程创建 API 来伪造子 Agent。这些 API 只有在另有明确授权的用户任务或 Session 用途中才能使用，绝不能替代子 Agent 创建。
+
+创建出的子 Agent 必须是完整的委派单元：具有独立的子 Agent 身份、由父级控制的返回路径、已发布的职责和 Interaction Slice、获授权的范围与修改、返回条件，以及执行该 slice 所需的上下文。如果 MultiAgentV1/MultiAgentV2 或上述任一子 Agent 能力不可用或无法核验，根父级必须停止并报告阻塞能力；不得退回使用聊天方式创建的子 Agent。
+
 如果锁定的分配中没有独立 verifier、文档/Git Worker、bootstrap Worker、恢复 Worker 或其他所需职责，根父级应在安全且获准时让当前或已分配的 Agent 在其授权范围内承担，或者报告该职责/能力不可用。已分配的独立验证必须保持独立；不能通过给同一 Session 的检查改名来模拟。如果缺少该职责使验收无法完成，应报告阻塞限制，而不是绕过数量锁定。
 
 ### 辅助职责分配
@@ -55,6 +61,8 @@ sed: --: No such file or directory
 只有在模式确认完成，并且多代理 Coding 的数量确认和锁定完成后，根父级才能发布 Dispatch Preview 和创建获准的子 Agent。Dispatch Preview 只是已获授权 slice 的精简摘要，不能替代任一项用户确认。
 
 每个子 Agent 只能接收根父级授权的角色和 slice。子 Agent 必须保持非递归：不得创建、fork、handoff、消息联系、替换或协调其他 Agent 或 Session。Worker 的发现、checkpoint 和请求只能通过父级控制的通道返回，不能改变模式或数量。
+
+本工作流的子 Agent 生命周期必须保持可见和持久。根父级不得关闭、shutdown、归档、删除或以其他方式将已创建的子 Agent 从当前任务面板移除。子 Agent 只有在返回最终结果和证据后才能进入终态**已完成**；不得主动设置或留下关闭/ shutdown 状态。子 Agent 处于 pending 或 running 时，只能等待或发送已授权的后续输入。如果发生错误或中断，应复用同一个子 Agent 执行获授权的修复，或报告阻塞；不得把关闭它作为清理动作。如果运行环境无法让已完成的子 Agent 以打开且可见的 Agent 状态保留，则所需生命周期能力不可用，该路线必须阻塞。
 
 根父级至少记录：门禁状态、确认的模式、适用时确认并锁定的数量、子 Agent 到职责的分配，以及不可用能力或阻塞要求。这些记录是控制状态，不是超过数量的授权。
 
