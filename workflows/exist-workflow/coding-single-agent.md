@@ -31,17 +31,7 @@ Use the capability inventory produced by the Environment checkpoint as follows:
 
 ## Composed checkpoint sequence
 
-Run the checkpoints in this order, skipping only conditional checkpoints with a recorded reason:
-
-1. [Contract](../checkpoint/contract.md), [Environment](../checkpoint/environment.md), and [Mode](../checkpoint/mode.md).
-2. [Context](../checkpoint/context.md) only when bounded reconnaissance, reusable file-backed state, or recovery context is needed.
-3. [Decision](../checkpoint/decision.md) before each material implementation direction.
-4. [Implementation](../checkpoint/implementation.md) for one approved slice at a time, with [Control boundary](../checkpoint/control.md) before the next slice or a material change.
-5. [Verification](../checkpoint/verification.md) against the current final-state fingerprint or epoch.
-6. [Repair](../checkpoint/repair.md) only after a concrete failure, followed by Verification for the new state.
-7. [Documentation](../checkpoint/documentation.md) after the required verification decision.
-8. [Git](../checkpoint/git.md) only for explicitly authorized Git effects.
-9. [Acceptance](../checkpoint/acceptance.md) before reporting completion.
+Follow the common catalog in the Coding workflow. Single-Agent deltas: load Context only for bounded reconnaissance or recovery; make a Decision before each material direction; implement one approved slice with a Control boundary; verify the current final-state fingerprint; use Repair only after a concrete failure and re-run Verification for the new epoch; then continue to Documentation, Git, and Acceptance in the current Session.
 
 ## Single-Session execution rules
 

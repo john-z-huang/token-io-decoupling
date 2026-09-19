@@ -31,17 +31,7 @@
 
 ## 已组合的检查点顺序
 
-按以下顺序执行检查点；只有记录了原因的条件不适用检查点才能跳过：
-
-1. [Contract](../checkpoint/contract_zh_cn.md)、[运行环境](../checkpoint/environment_zh_cn.md) 和 [执行模式](../checkpoint/mode_zh_cn.md)。
-2. 只有需要有界侦察、可复用文件状态或恢复上下文时，才执行[上下文](../checkpoint/context_zh_cn.md)。
-3. 每个实质性实现方向确定前执行[决策](../checkpoint/decision_zh_cn.md)。
-4. 每次只对一个获批准切片执行[实现](../checkpoint/implementation_zh_cn.md)，在进入下一切片或发生实质性变化前执行[控制边界](../checkpoint/control_zh_cn.md)。
-5. 针对当前最终状态指纹或 epoch 执行[验证](../checkpoint/verification_zh_cn.md)。
-6. 只有出现具体失败时才执行[修复](../checkpoint/repair_zh_cn.md)，然后针对新状态重新验证。
-7. 必需的验证决定完成后执行[文档](../checkpoint/documentation_zh_cn.md)。
-8. 只有明确授权 Git 影响时才执行 [Git](../checkpoint/git_zh_cn.md)。
-9. 报告完成前执行[验收](../checkpoint/acceptance_zh_cn.md)。
+遵循 Coding 工作流中的公共目录。单代理差异：仅在需要有界侦察或恢复时加载上下文；每个实质性方向前执行决策；每次只实现一个获批准切片并设置控制边界；针对当前最终状态指纹验证；只有具体失败时才修复，并针对新的 epoch 重新验证；然后在当前 Session 中进入文档、Git 和验收。
 
 ## 单 Session 执行规则
 

@@ -32,17 +32,7 @@
 
 ## 已组合的检查点顺序
 
-按以下顺序执行检查点；只有记录了原因的条件不适用检查点才能跳过：
-
-1. [Contract](../checkpoint/contract_zh_cn.md)、[运行环境](../checkpoint/environment_zh_cn.md) 和 [执行模式](../checkpoint/mode_zh_cn.md)。
-2. Worker 需要有界可复用状态或替换恢复时执行[上下文](../checkpoint/context_zh_cn.md)。
-3. 发布实质性方向或派发前执行[决策](../checkpoint/decision_zh_cn.md)。
-4. 每个已发布切片执行[实现](../checkpoint/implementation_zh_cn.md)，在实质性边界执行[控制边界](../checkpoint/control_zh_cn.md)。
-5. 对实质性修改，在运行环境暴露该能力时，于新的独立 Change Verification Session 中执行[验证](../checkpoint/verification_zh_cn.md)。
-6. 失败结果执行窄范围[修复](../checkpoint/repair_zh_cn.md)，然后针对新 epoch 重新验证。
-7. 验证通过后执行[文档](../checkpoint/documentation_zh_cn.md)。
-8. 只有明确授权影响时才执行 [Git](../checkpoint/git_zh_cn.md)。
-9. 完成前执行[验收](../checkpoint/acceptance_zh_cn.md)。
+遵循 Coding 工作流中的公共目录。多代理差异：Worker 需要可复用状态时加载上下文；实质性派发前执行决策；每个已发布实现切片配套控制边界；分配了 verifier 时使用新的独立验证 Session；失败经过修复和新的验证 epoch 后，再进入文档、Git 和验收。
 
 ## 上下文与派发
 
