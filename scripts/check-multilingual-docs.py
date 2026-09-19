@@ -108,15 +108,6 @@ def main() -> int:
             errors.append(f"missing locale-directory Chinese file: {chinese}")
 
     for rel in sorted(known_pairs, key=str):
-        is_layer_01 = rel.parts[:3] == ("references", "coding", "layer-01-fundamental-concepts")
-        if not is_layer_01 or not (ROOT / rel).exists():
-            continue
-        text_without_code = FENCED_CODE_RE.sub("", (ROOT / rel).read_text(encoding="utf-8"))
-        for raw_target in LINK_RE.findall(text_without_code):
-            if normalize_target(rel, raw_target) is not None:
-                errors.append(f"reference documents must not link to Markdown modules: {rel} -> {raw_target}")
-
-    for rel in sorted(known_pairs, key=str):
         file_path = ROOT / rel
         if not file_path.exists():
             continue

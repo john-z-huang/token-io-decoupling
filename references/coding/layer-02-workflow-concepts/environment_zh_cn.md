@@ -13,18 +13,18 @@
    - **ChatGPT Work**：任务暴露 Work Session、连接器或文件能力，但不代表拥有本地执行能力。
    - **标准 ChatGPT**：除非明确暴露，否则不假设拥有本地执行或独立 Session 能力。
 6. 如果运行环境不属于任何分支，将运行环境标记为不受支持，并停止依赖该环境的工作。
-7. 只记录当前界面直接暴露的能力：模型身份和参数控制、Session 拓扑、文件系统与沙箱访问、工具、连接器、认证，以及委派工作可用的返回路径。
-8. 未观察到的能力标记为未知。不得替换成其他运行环境、模型、参数、Session、工具、权限或推断出的能力。
-9. 如果证据仍不足以唯一判断运行环境，停止依赖该环境的工作，并将以下原问题返回给用户：`无法根据当前元数据确定当前运行环境。请在下一条指令中明确说明当前运行环境是“本地 Codex”“ChatGPT Work”还是“标准 ChatGPT”，然后继续。`
+7. 如果证据仍不足以唯一判断运行环境，停止依赖该环境的工作，并将以下原问题返回给用户：`无法根据当前元数据确定当前运行环境。请在下一条指令中明确说明当前运行环境是“本地 Codex”“ChatGPT Work”还是“标准 ChatGPT”，然后继续。`
 
 ## 通过条件
 
-真实运行环境已根据明确元数据唯一分类，或用户已提供兜底说明；下一工作流拥有一份当前有效的能力清单可供判断。本检查点不判断这份清单是否满足单代理或多代理 Coding 的要求。
-
-## 共用运行规则
-
-路线消费这份能力清单，只记录拓扑差异。在本地 Codex 中使用当前暴露的模型/Session 控制；修改全局指令、覆盖指令、Skill 或仓库指令后重新启动。在 ChatGPT Work 中只使用明确暴露的模型、Session、文件、连接器和执行工具。在标准 ChatGPT 中不假设拥有本地执行、Git、worktree 或独立 Session。所需能力缺失或未知时，阻塞依赖该能力的切片。
+真实运行环境已根据明确元数据唯一分类，或用户已提供兜底说明。
 
 ## 边界
 
-本检查点不选择执行模式，不将模型绑定到角色，不授权委派，不要求独立验证者，不决定运行环境专属工具的使用方式，不实现修改，也不声称已经执行未观察到的操作。
+本检查点不选择执行模式，不将模型绑定到角色，不授权委派，不实现修改，也不声称已经执行未观察到的操作。
+
+## 相关概念
+
+- [Coding Session Model](../layer-01-fundamental-concepts/session-model_zh_cn.md) — 定位 Session 拓扑归属。
+- [Coding Context Exchange 工作区边界](../layer-01-fundamental-concepts/context-exchange-workspace-boundary_zh_cn.md) — 定位文件系统和 worktree 能力归属。
+- [Coding Delegation Mode Confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md) — 定位模式门禁能力消费者。

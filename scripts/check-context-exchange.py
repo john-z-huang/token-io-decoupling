@@ -16,7 +16,7 @@ from pathlib import PurePosixPath
 from typing import NamedTuple
 
 
-IGNORE_RULE = "/.token-io-decoupling/"
+IGNORE_RULE = ".token-io-decoupling"
 EXCHANGE_DIR = Path(".token-io-decoupling")
 CAPSULE_DIR = EXCHANGE_DIR / "context" / "context-bootstrap"
 MAX_CONTEXT_BYTES = 64 * 1024
@@ -126,7 +126,7 @@ def check_ignore_policy(root: Path, errors: list[str], write_sentinel: bool) -> 
 
     rules = [line.strip() for line in gitignore.read_text(encoding="utf-8").splitlines()]
     if IGNORE_RULE not in rules:
-        errors.append(f"root .gitignore must contain the anchored rule {IGNORE_RULE!r}")
+        errors.append(f"root .gitignore must contain the Context Exchange ignore rule {IGNORE_RULE!r}")
 
     probe = EXCHANGE_DIR / "context" / ".context-exchange-validator-probe"
     ignored = run_git(root, "check-ignore", "-q", "--", probe.as_posix())

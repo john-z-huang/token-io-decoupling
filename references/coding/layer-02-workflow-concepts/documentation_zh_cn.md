@@ -16,3 +16,9 @@
 ## 边界
 
 本检查点不替代实现验证，不授权产品决策，也不授权 Git 影响。
+
+## 相关概念
+
+- [Coding Content Memo](../layer-01-fundamental-concepts/content-memo_zh_cn.md) — 定位可复用 memo 内容契约归属。
+- [Coding Content Memo Lifecycle](../layer-01-fundamental-concepts/content-memo-lifecycle_zh_cn.md) — 定位 memo 生命周期归属。
+- [Coding Execution Control](../layer-01-fundamental-concepts/execution-control_zh_cn.md) — 定位获准文档范围归属。

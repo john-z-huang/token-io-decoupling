@@ -16,3 +16,9 @@ Approved documentation is accurate for the verified state, stays within scope, a
 ## Boundary
 
 This checkpoint does not replace implementation verification, authorize product decisions, or authorize Git effects.
+
+## Related concepts
+
+- [Coding Content Memo](../layer-01-fundamental-concepts/content-memo.md) — locate reusable memo content-contract ownership.
+- [Coding Content Memo Lifecycle](../layer-01-fundamental-concepts/content-memo-lifecycle.md) — locate memo lifecycle ownership.
+- [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate approved documentation-scope ownership.

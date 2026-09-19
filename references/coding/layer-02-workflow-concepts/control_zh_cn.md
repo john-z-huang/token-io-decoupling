@@ -16,3 +16,9 @@
 ## 边界
 
 本检查点控制发布和权限，不静默批准范围扩大，不替代验证，也不授予 Git 或外部影响授权。
+
+## 相关概念
+
+- [Coding Execution Control](../layer-01-fundamental-concepts/execution-control_zh_cn.md) — 定位 Interaction Slice 和控制边界归属。
+- [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md) — 定位决策和放行条件归属。
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary_zh_cn.md) — 定位父级控制的 Worker 放行边界。
