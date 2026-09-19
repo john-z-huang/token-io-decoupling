@@ -1,6 +1,8 @@
 # Coding Delegation State Record
 
-This module owns the task-control record used by Coding delegation. It defines state shape, ownership, and Worker read/write boundaries. It does not decide the mode, create children, allocate roles, or define lifecycle transitions.
+[English](delegation-state-record.md) | [简体中文](delegation-state-record_zh_cn.md)
+
+This module owns the task-control record used by Coding delegation. It defines the record's canonical location, ownership, shape, and field constraints. It does not decide the mode, define Worker read/write boundaries, create children, allocate roles, or define lifecycle transitions.
 
 ## Ownership
 
@@ -22,6 +24,11 @@ unavailable_capabilities: [<capability names>]
 
 `child_count` is zero for Single-Agent Coding and a locked positive integer for Multi-Agent Coding. Allocation lifecycle values may differ from the top-level record while children progress.
 
-## Worker boundary
+## Related concepts
 
-Workers receive only the relevant released snapshot in the parent Dispatch. They must not infer, mutate, or replace the root record. After release, a Worker enters through the parent-provided Dispatch Preview; it does not reopen the root-user mode or count gates. If the runtime cannot persist or return the record, the dependent route is blocked.
+- [Coding Delegation State Record Worker Boundary](delegation-state-record-worker-boundary.md) — locate Worker snapshot and record access boundaries.
+- [Coding Delegation Mode Confirmation](delegation-mode-confirmation.md) — locate root mode confirmation ownership.
+- [Coding Delegation Count Gate](delegation-mode-count-gate.md) — locate child-count gate ownership.
+- [Coding Delegation Re-entry](delegation-mode-reentry.md) — locate mode/count re-entry ownership.
+- [Coding Execution Control](execution-control.md) — locate Interaction Slice field ownership.
+- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle.md) — locate child lifecycle field ownership.
