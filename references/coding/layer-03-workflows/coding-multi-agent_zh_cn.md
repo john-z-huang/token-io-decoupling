@@ -24,7 +24,7 @@
 
 ## 已组合的检查点顺序
 
-遵循 Coding 工作流，并组合[Contract](../layer-02-workflow-concepts/contract_zh_cn.md)、[Environment](../layer-02-workflow-concepts/environment_zh_cn.md)、[Mode](../layer-02-workflow-concepts/mode_zh_cn.md)、[Context](../layer-02-workflow-concepts/context_zh_cn.md)、[Decision](../layer-02-workflow-concepts/decision_zh_cn.md)、[Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)、[Control](../layer-02-workflow-concepts/control_zh_cn.md)、[Verification](../layer-02-workflow-concepts/verification_zh_cn.md)、[Repair](../layer-02-workflow-concepts/repair_zh_cn.md)、[Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)、[Git](../layer-02-workflow-concepts/git_zh_cn.md)和[Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)。多代理差异：Worker 需要可复用状态时加载上下文；实质性派发前执行决策；每个已发布实现切片配套控制边界；分配了 verifier 时使用新的独立验证 Session；失败经过修复和新的验证 epoch 后，再进入文档、Git 和验收。
+Coding 选择器已经将 Environment 和 Mode 检查点作为路线前门禁执行；本路线不得重复执行。遵循 Coding 工作流，并组合[Contract](../layer-02-workflow-concepts/contract_zh_cn.md)、[Context](../layer-02-workflow-concepts/context_zh_cn.md)、[Decision](../layer-02-workflow-concepts/decision_zh_cn.md)、[Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)、[Control](../layer-02-workflow-concepts/control_zh_cn.md)、[Verification](../layer-02-workflow-concepts/verification_zh_cn.md)、[Repair](../layer-02-workflow-concepts/repair_zh_cn.md)、[Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)、[Git](../layer-02-workflow-concepts/git_zh_cn.md)和[Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)。多代理差异：Worker 需要可复用状态时加载上下文；实质性派发前执行决策；每个已发布实现切片配套控制边界；分配了 verifier 时使用新的独立验证 Session；失败经过修复和新的验证 epoch 后，再进入文档、Git 和验收。
 
 ## 上下文与派发
 

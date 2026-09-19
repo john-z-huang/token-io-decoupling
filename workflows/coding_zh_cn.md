@@ -25,7 +25,7 @@
 | --- | --- | --- |
 | [`layer-01-fundamental-concepts`](../references/coding/layer-01-fundamental-concepts/) | 基础原子概念 | 仅其语言镜像 |
 | [`layer-02-workflow-concepts`](../references/coding/layer-02-workflow-concepts/) | 工作流检查点 | `layer-01-fundamental-concepts`；不得链接 layer-03 |
-| [`layer-03-workflows`](../references/coding/layer-03-workflows/) | 可直接使用的工作流模板 | layer-01 和 layer-02；不得回链本选择器 |
+| [`layer-03-workflows`](../references/coding/layer-03-workflows/) | 可直接使用的工作流模板 | layer-01、layer-02 和共享协议；不得回链本选择器 |
 | `workflows/coding_zh_cn.md` | 路线选择器和三层索引 | 三个层级；只负责导航，不拥有策略 |
 
 如果低层文档需要由高层拥有的概念，应将其视为原子化失败：拆分低层文档，并把组合关系上移到高层。`SKILL.md`、`README.md` 和 `docs/` 等根入口文档可以向下链接到入口。使用 `python3 scripts/check-doc-layer-links.py` 检查边界；语言切换链接是唯一有意保留的跨语言链接。

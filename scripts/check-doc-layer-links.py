@@ -21,6 +21,8 @@ def layer(path: PurePosixPath) -> str:
         return "layer-02"
     if parts[:3] == ("references", "coding", "layer-03-workflows"):
         return "layer-03"
+    if parts[:2] == ("references", "share"):
+        return "shared-protocols"
     if parts and parts[0] == "references":
         return "references"
     if parts[:2] == ("workflows", "checkpoint"):
@@ -58,7 +60,7 @@ def allowed(source: str, target: str, is_navigation: bool) -> bool:
     if source in {"checkpoint", "layer-02"}:
         return is_navigation or target in {"references", "layer-01"}
     if source in {"exist-workflow", "layer-03"}:
-        return is_navigation or target in {"references", "layer-01", "layer-02"}
+        return is_navigation or target in {"shared-protocols", "layer-01", "layer-02"}
     if source == "coding-selector":
         return is_navigation or target in {"exist-workflow", "layer-01", "layer-02", "layer-03"}
     return True
