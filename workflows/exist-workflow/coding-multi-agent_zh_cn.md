@@ -20,15 +20,7 @@
 
 ## 本路线的运行环境要求
 
-按照运行环境检查点产生的能力清单执行：
-
-- 只有当前运行环境暴露了任务控制记录中的委派状态及已发布切片所需的能力时，才能继续本路线。
-- Worker 必须只能向直接父级返回结果，不能创建或管理其他 Agent/Session，也不能联系任意线程。如果运行环境无法保证这些限制，不要派发 Worker。
-- 在本地 Codex 中，从 `~/.codex/AGENTS.md` 读取全局指令；同级的 `~/.codex/AGENTS.override.md` 优先，但仓库指令仍然负责仓库策略。确实暴露独立 Session 创建和模型控制时，使用当前 Skill 的绑定：Primary Output 使用 `gpt-5.6-luna` 与 `reasoning_effort=xhigh`；Change Verification 使用 `gpt-5.6-luna` 与 `xhigh`；Documentation/Comments & Git Operations 使用 `gpt-5.6-luna` 与 `high`；Context Bootstrap/Refresh 使用 `gpt-5.6-luna` 与 `high`，只有确定性元数据、哈希或差异刷新可以使用 `medium`。
-- 只有在重复失败或遇到阻塞时，才将 `reasoning_effort=max` 作为窄范围升级；随后回到正常档位。修改全局指令、活动覆盖指令、Skill 或仓库指令后，必须启动新的 Codex 运行或 Session，再判断修改是否生效。
-- 在 ChatGPT Work 中，只使用当前任务明确暴露的模型身份、推理控制、独立 Session、连接器、文件和执行工具。这里没有固定模型绑定；连接器或附件也不代表拥有本地执行、仓库修改、凭据或跨线程控制能力。
-- 在标准 ChatGPT 中，只有聊天明确暴露所需的独立 Session、委派路径、工具和验证能力时，才使用多代理 Coding。不要假设拥有 Shell、Python、Git、测试、沙箱、worktree、连接器或跨线程控制，也不得替换成其他运行环境或模型。
-- 如果所需模型、参数、Session、返回路径、文件系统、工具、连接器或认证能力缺失或未知，应在该边界停止并报告阻塞能力。
+使用运行环境检查点提供的能力清单和共用运行规则。只有任务记录和已发布切片所需能力均暴露时才能继续。Worker 只能向直接父级返回，不能创建/管理其他 Agent 或联系任意线程。在本地 Codex 中使用 Skill 绑定：Primary Output 为 `gpt-5.6-luna`/`xhigh`；Change Verification 为 `gpt-5.6-luna`/`xhigh`；Documentation/Git 为 `gpt-5.6-luna`/`high`；Context Bootstrap 为 `gpt-5.6-luna`/`high`，确定性刷新可用 `medium`。重复失败或阻塞时才窄范围升级到 `max`，随后恢复正常档位。
 
 ## 已组合的检查点顺序
 

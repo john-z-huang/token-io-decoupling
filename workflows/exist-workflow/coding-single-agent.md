@@ -21,13 +21,7 @@ Use the role ownership defined in `session-model`; this route runs those roles a
 
 ## Route-specific environment requirements
 
-Use the capability inventory produced by the Environment checkpoint as follows:
-
-- Keep the phases required by the authority document in the current Session. This route does not define independent Session creation, Worker return paths, or role-specific model bindings.
-- On local Codex, read global instructions from `~/.codex/AGENTS.md`; same-level `~/.codex/AGENTS.override.md` takes precedence, while repository instructions remain authoritative. After changing those instructions, the active override, the Skill, or repository instructions, start a new Codex run/Session before judging whether the change was adopted.
-- On ChatGPT Work, use only the model, reasoning controls, files, connectors, and execution tools explicitly exposed by the current task. An attachment or connector does not imply local execution, repository mutation, credentials, or cross-thread control.
-- On standard ChatGPT, do not assume shell, Python, Git, tests, sandbox, worktree, connectors, or independent Sessions. If local execution is unavailable, do not claim that tests, builds, Git operations, or filesystem validation ran.
-- If a capability required by the current slice is missing or unknown, stop that slice and report it; do not replace the runtime environment, model, Session, tool, permission, or authentication path.
+Use the inventory and shared runtime rules from the Environment checkpoint. This route keeps all phases in the current Session; it does not create independent Sessions or Worker return paths. If a required capability is unavailable, stop the slice and report it.
 
 ## Composed checkpoint sequence
 

@@ -21,6 +21,10 @@
 
 The actual runtime environment is uniquely classified from explicit metadata or the user has supplied the fallback clarification, and the next workflow has a current capability inventory to evaluate. This checkpoint does not decide whether that inventory is sufficient for Single-Agent or Multi-Agent Coding.
 
+## Shared runtime rules
+
+Routes consume this inventory and state only their topology-specific deltas. On Local Codex, use the exposed model/session controls and restart after changing global instructions, overrides, the Skill, or repository instructions. On ChatGPT Work, use only explicitly exposed models, Sessions, files, connectors, and execution tools. On Standard ChatGPT, do not assume local execution, Git, worktrees, or independent Sessions. Any required capability that is missing or unknown blocks the dependent slice.
+
 ## Boundary
 
 This checkpoint does not choose an execution mode, bind a model to a role, authorize delegation, require an independent verifier, decide how a runtime-environment-specific tool may be used, implement changes, or claim that an unobserved operation was performed.

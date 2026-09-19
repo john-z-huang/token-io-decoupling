@@ -20,15 +20,7 @@ Use the role ownership defined in `session-model`; this route adds only the Mult
 
 ## Route-specific environment requirements
 
-Use the capability inventory produced by the Environment checkpoint as follows:
-
-- Continue this route only when the current runtime environment exposes the capabilities required by the delegation state in the task control record and by the released slice.
-- A Worker must return only to its direct parent and must not create or manage Agents/Sessions or contact arbitrary threads. If the runtime environment cannot guarantee these restrictions, do not dispatch a Worker.
-- On local Codex, read global instructions from `~/.codex/AGENTS.md`; same-level `~/.codex/AGENTS.override.md` takes precedence, while repository instructions remain authoritative. When independent Session creation and model controls are exposed, use the current Skill's bindings: Primary Output `gpt-5.6-luna` with `reasoning_effort=xhigh`; Change Verification `gpt-5.6-luna` with `xhigh`; Documentation/Comments & Git Operations `gpt-5.6-luna` with `high`; Context Bootstrap/Refresh `gpt-5.6-luna` with `high`, or `medium` only for deterministic metadata, hash, or delta refreshes.
-- Use `reasoning_effort=max` only as a narrow escalation after a repeated failure or blocker, then return to the normal tier. After changing global instructions, an active override, the Skill, or repository instructions, start a new Codex run/Session before judging whether the change was adopted.
-- On ChatGPT Work, use only the model identity, reasoning controls, independent Sessions, connectors, files, and execution tools explicitly exposed by the current task. There is no fixed model binding, and a connector or attachment does not imply local execution, repository mutation, credentials, or cross-thread control.
-- On standard ChatGPT, use Multi-Agent Coding only if the chat explicitly exposes the required independent Sessions, delegation route, tools, and verification capability. Do not assume shell, Python, Git, tests, sandbox, worktree, connectors, or cross-thread control, and do not substitute another runtime environment or model.
-- If any required model, parameter, Session, return path, filesystem, tool, connector, or authentication capability is missing or unknown, stop at that boundary and report the blocked capability.
+Use the inventory and shared runtime rules from the Environment checkpoint. Continue only when it exposes the capabilities required by the task record and released slice. A Worker returns only to its direct parent and cannot create/manage Agents or contact arbitrary threads. On Local Codex, use the Skill bindings: Primary Output `gpt-5.6-luna`/`xhigh`; Change Verification `gpt-5.6-luna`/`xhigh`; Documentation/Git `gpt-5.6-luna`/`high`; Context Bootstrap `gpt-5.6-luna`/`high` or `medium` for deterministic refreshes. Escalate to `max` only after repeated failure or blockage, then return to the normal tier.
 
 ## Composed checkpoint sequence
 
