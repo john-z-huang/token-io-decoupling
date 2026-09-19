@@ -1,29 +1,24 @@
-# Coding 委派模式与数量门禁
+# Coding 委派数量门禁
 
-本文档负责根指令模式确认、单代理限制、多代理数量确认/锁定和重新进入。它消费并更新状态记录，不创建子 Agent，也不定义其生命周期。
+[English](delegation-mode-count-gate.md) | [简体中文](delegation-mode-count-gate_zh_cn.md)
 
-## 根指令门禁
+本文档负责多代理子 Agent 数量的建议、确认、锁定和数量预算边界。它消费已确认的模式和状态记录；不定义根模式确认、重新进入、子 Agent 创建或生命周期。
 
-每个新的根用户指令到达后，根父级必须：
-
-1. 分析任务到足以形成有用建议的程度。
-2. 建议单代理 Coding 或多代理 Coding，并给出简短理由。
-3. 询问用户选择并等待明确确认。
-
-根指令中写明的模式不能替代确认。在确认前不得创建/管理 Agent 或 Session、发布 Dispatch，或开始实质性侦察、实现、验证、文档和 Git 工作。为形成问题所需的强制指令加载和能力检查可以执行。
-
-将确认模式记录到任务控制记录。新的根指令即使继续同一项目也会重新打开门禁；含糊或未回答不能放行。
-
-## 单代理 Coding
-
-确认后所有工作保留在当前 Session。不得创建、fork、handoff、消息联系、替换或管理子 Agent 或额外 Session。结构收益、验证、文档/Git、bootstrap、恢复或运行便利都不是例外。独立验证仍是语义要求，但该路线不可用。
-
-## 多代理 Coding 与数量
+## 数量建议和确认
 
 确认多代理后，根父级建议准确的正整数子 Agent 数量，询问确认并等待。该数量是根指令的总预算，不是阶段或职责数量。
 
+## 数量锁定
+
 数量确认后，在第一次 Dispatch 前锁定。运行时能够安全创建时必须创建恰好该数量，否则阻塞而不能默默改变数量。每个独立职责消耗一个名额；复用不创建新名额。替换、fork、handoff 到新子 Agent 或增加 verifier 都属于新建，当前指令锁定后禁止。
 
-## 更高优先级限制与重新进入
+能力不可用时阻塞数量路线，不能据此默默改变已确认的数量。
 
-用户、权限、安全、产品、运行环境、能力、仓库和安全限制始终有效。能力不可用时阻塞路线，不能默默改变模式或数量。后续指令实质性改变委派时，必须先重新通过模式和数量门禁。
+## 相关概念
+
+- [Coding Delegation Mode Confirmation](delegation-mode-confirmation_zh_cn.md) — 定位根模式确认归属。
+- [Coding Delegation Count Gate](delegation-mode-count-gate_zh_cn.md) — 定位数量锁定归属。
+- [Coding Delegation Re-entry](delegation-mode-reentry_zh_cn.md) — 定位门禁重新进入归属。
+- [Coding Delegation State Record](delegation-state-record_zh_cn.md) — 定位状态记录归属。
+- [Coding Child Creation](delegation-child-creation_zh_cn.md) — 定位子 Agent 创建归属。
+- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle_zh_cn.md) — 定位子 Agent 生命周期归属。
