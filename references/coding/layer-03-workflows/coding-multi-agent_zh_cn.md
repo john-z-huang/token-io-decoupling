@@ -12,7 +12,7 @@
 
 ## 组合输入
 
-本路线组合[共享协议](../../share/shared-protocols_zh_cn.md)、[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[子代理派发/生命周期](../layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle_zh_cn.md)、[Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)和[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)；只有已发布切片需要时才加载[上下文交换](../layer-01-fundamental-concepts/context-exchange_zh_cn.md)或[内容 memo](../layer-01-fundamental-concepts/content-memo_zh_cn.md)。模式检查点已经验证任务记录；下方检查点列表是完整的路线组合。
+本路线组合[共享协议](../../share/shared-protocols_zh_cn.md)、[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[子代理创建](../layer-01-fundamental-concepts/delegation-child-creation_zh_cn.md)、[子代理职责分配](../layer-01-fundamental-concepts/delegation-child-role-allocation_zh_cn.md)、[子代理派发](../layer-01-fundamental-concepts/delegation-child-dispatch_zh_cn.md)、[子代理复用/替换](../layer-01-fundamental-concepts/delegation-child-reuse-replacement_zh_cn.md)、[子代理生命周期](../layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle_zh_cn.md)、[Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)和[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)；只有已发布切片需要时才加载[上下文交换](../layer-01-fundamental-concepts/context-exchange_zh_cn.md)或[内容 memo](../layer-01-fundamental-concepts/content-memo_zh_cn.md)。模式检查点已经验证任务记录；下方检查点列表是完整的路线组合。
 
 ## 职责边界
 
@@ -33,7 +33,7 @@ Coding 选择器已经将 Environment 和 Mode 检查点作为路线前门禁执
 1. Worker 需要可复用状态、有界交接或替换恢复时，读取[上下文交换](../layer-01-fundamental-concepts/context-exchange_zh_cn.md)。
 2. 派发启用 Worker 编写内容 memo 时，读取[内容 memo](../layer-01-fundamental-concepts/content-memo_zh_cn.md)。
 3. 只有当前委派状态已经分配时才使用 Context Bootstrap 或 Refresh。保持 capsule 只包含事实和路由信息；它不能替代 Contract、必需的源文档或独立验证。
-4. 每个 Worker 使用独立的 context-exchange 子目录，并且只授予它所需的命名代码路径和上下文路径。Worker 分配遵循子代理派发/生命周期 reference。
+4. 每个 Worker 使用独立的 context-exchange 子目录，并且只授予它所需的命名代码路径和上下文路径。Worker 分配和边界遵循子代理职责分配与派发 reference。
 
 第一次实质性派发前，除非任务简单、局部、低风险、明显、可逆且可机械验证，否则先形成简洁的 Decision Brief。实质性事实不足时只发布有界侦察，随后在输入侧综合结果，再发布实现。
 

@@ -12,7 +12,7 @@ This route is selected by the Coding workflow and is valid only after the Mode c
 
 ## Composed inputs
 
-Compose [shared protocols](../../share/shared-protocols.md), [delegation state](../layer-01-fundamental-concepts/delegation-state-record.md), [the mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [child dispatch/lifecycle](../layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle.md), [session model](../layer-01-fundamental-concepts/session-model.md), and [execution control](../layer-01-fundamental-concepts/execution-control.md) for this route; load [context exchange](../layer-01-fundamental-concepts/context-exchange.md) or [content memo](../layer-01-fundamental-concepts/content-memo.md) only when the released slice needs them. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
+Compose [shared protocols](../../share/shared-protocols.md), [delegation state](../layer-01-fundamental-concepts/delegation-state-record.md), [the mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [child creation](../layer-01-fundamental-concepts/delegation-child-creation.md), [child role allocation](../layer-01-fundamental-concepts/delegation-child-role-allocation.md), [child dispatch](../layer-01-fundamental-concepts/delegation-child-dispatch.md), [child reuse/replacement](../layer-01-fundamental-concepts/delegation-child-reuse-replacement.md), [child lifecycle](../layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle.md), [session model](../layer-01-fundamental-concepts/session-model.md), and [execution control](../layer-01-fundamental-concepts/execution-control.md) for this route; load [context exchange](../layer-01-fundamental-concepts/context-exchange.md) or [content memo](../layer-01-fundamental-concepts/content-memo.md) only when the released slice needs them. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
 
 ## Responsibility boundary
 
@@ -33,7 +33,7 @@ The common workflow already establishes shared protocols, Session rules, environ
 1. Read [context exchange](../layer-01-fundamental-concepts/context-exchange.md) when Workers need reusable state, bounded handoff, or replacement recovery.
 2. Read [content memo](../layer-01-fundamental-concepts/content-memo.md) when the dispatch enables Worker-authored content memos.
 3. Use Context Bootstrap or Refresh only when it is assigned in the active delegation state. Keep the capsule factual and routing-only; it never replaces the Contract, mandatory source loading, or independent verification.
-4. Keep each Worker's context-exchange subdirectory separate, and grant each Worker only the named code and context paths it needs. Follow the child dispatch/lifecycle reference for Worker allocation.
+4. Keep each Worker's context-exchange subdirectory separate, and grant each Worker only the named code and context paths it needs. Follow the child role-allocation and dispatch references for Worker allocation and boundaries.
 
 Before the first substantive dispatch, form a concise Decision Brief unless the task is simple, local, low-risk, obvious, reversible, and mechanically verifiable. If material facts are missing, release bounded reconnaissance only, then synthesize the result on the input side before releasing implementation.
 
