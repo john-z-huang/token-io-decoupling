@@ -15,3 +15,11 @@
 ## 边界
 
 本检查点负责组合并验证状态记录、模式/数量和按条件加载的子代理派发/生命周期 reference，不独立决定模式、拓扑、创建、分配、复用、例外、生命周期或数量。
+
+## 相关概念
+
+- [Coding Delegation Mode Confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md) — 定位根模式确认归属。
+- [Coding Delegation Count Gate](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md) — 定位子 Agent 数量门禁归属。
+- [Coding Delegation Re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md) — 定位模式/数量重新进入归属。
+- [Coding Delegation State Record](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md) — 定位任务控制记录归属。
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary_zh_cn.md) — 定位已放行 Worker 记录访问边界。

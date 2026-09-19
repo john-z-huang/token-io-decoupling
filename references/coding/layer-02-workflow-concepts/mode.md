@@ -15,3 +15,11 @@ The task control record contains exactly one valid released mode outcome and the
 ## Boundary
 
 This checkpoint composes and validates the state-record, mode/count, and conditional child-dispatch references. It does not independently decide mode, topology, creation, allocation, reuse, exceptions, lifecycle, or count.
+
+## Related concepts
+
+- [Coding Delegation Mode Confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md) — locate root mode confirmation ownership.
+- [Coding Delegation Count Gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md) — locate child-count gate ownership.
+- [Coding Delegation Re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md) — locate mode/count re-entry ownership.
+- [Coding Delegation State Record](../layer-01-fundamental-concepts/delegation-state-record.md) — locate task-control record ownership.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate released Worker record access boundaries.
