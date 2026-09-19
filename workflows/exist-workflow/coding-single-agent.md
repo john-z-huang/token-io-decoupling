@@ -2,7 +2,7 @@
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
 
-Read [Coding workflow](../coding.md) first, then the delegation policy. Use this route only when the task record has released Single-Agent Coding.
+This route is selected by the Coding workflow and is valid only when the task record has released Single-Agent Coding. Load the delegation policy before execution.
 
 ## Mode contract
 
@@ -59,4 +59,4 @@ For trivial behavior-preserving or documentation-only work, use the applicable f
 
 ## Completion
 
-Return to [Coding workflow](../coding.md) for the root completion gate. The final report must identify the work as Single-Agent, distinguish provisional checks from final checks, state any unavailable independent verification, and map every acceptance criterion to current evidence.
+Apply the root Coding completion gate. The final report must identify the work as Single-Agent, distinguish provisional checks from final checks, state any unavailable independent verification, and map every acceptance criterion to current evidence.

@@ -2,7 +2,7 @@
 
 [English](coding-multi-agent.md) | [简体中文](coding-multi-agent_zh_cn.md)
 
-先读取 [Coding 工作流](../coding_zh_cn.md)，再读取委派 policy。只有任务记录放行多代理 Coding 时，才使用此路线。
+本路线由 Coding 工作流选择；只有任务记录放行多代理 Coding 时才有效。执行前加载委派 policy。
 
 ## 模式 Contract
 
@@ -76,4 +76,4 @@ Unreleased boundary: ...
 
 ## 完成
 
-回到 [Coding 工作流](../coding_zh_cn.md) 执行文档、Git 和最终验收。最终报告必须区分真实独立 Session 与同一 Session 的逻辑阶段，并把每个验收条件映射到当前证据。
+执行根 Coding 完成门禁，处理文档、Git 和最终验收。最终报告必须区分真实独立 Session 与同一 Session 的逻辑阶段，并把每个验收条件映射到当前证据。

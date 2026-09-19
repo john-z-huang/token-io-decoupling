@@ -17,6 +17,19 @@ Use this workflow when repository text, developer-tool output, implementation, t
 
 Do not load both routes. If a later material fact invalidates the selected route, stop the current slice, amend the Contract as needed, and return to route selection.
 
+## Document layers
+
+These layers define composition direction, not policy ownership. Each document may keep its language-switch link; dependency links must remain same-language.
+
+| Layer | Role | Allowed dependency targets |
+| --- | --- | --- |
+| `references/` | Atomic policy modules | Its language mirror only; never `workflows/` |
+| `workflows/checkpoint/` | Execution checkpoints | `references/`; never `workflows/exist-workflow/` |
+| `workflows/exist-workflow/` | Final composed routes | `references/` and `workflows/checkpoint/`; never the selector |
+| `workflows/coding.md` | Route selector and checkpoint catalog | `workflows/exist-workflow/`; owns navigation, not policy |
+
+If a lower layer needs a concept owned by a higher layer, treat that upward dependency as an atomicity failure: split the lower document and move the composition to the higher layer. Root entry documents such as `SKILL.md`, `README.md`, and `docs/` may link downward to entry points. Validate the boundaries with `python3 scripts/check-doc-layer-links.py`; language-switch links are the only intentional cross-language links.
+
 ## Checkpoint catalog
 
 The route may compose these independent action boundaries as conditions require:

@@ -17,6 +17,19 @@
 
 不要同时加载两条路线。如果后续实质事实使路线失效，停止当前切片，按需修改 Contract，并返回路线选择。
 
+## 文档层级
+
+这些层级规定组合方向，不改变策略归属。每个文档可以保留语言切换链接；依赖链接必须保持同语言。
+
+| 层级 | 作用 | 允许依赖的目标 |
+| --- | --- | --- |
+| `references/` | 原子策略模块 | 仅其语言镜像；不得链接 `workflows/` |
+| `workflows/checkpoint/` | 执行检查点 | `references/`；不得链接 `workflows/exist-workflow/` |
+| `workflows/exist-workflow/` | 最终组合路线 | `references/` 和 `workflows/checkpoint/`；不得回链选择器 |
+| `workflows/coding_zh_cn.md` | 路线选择器和检查点目录 | `workflows/exist-workflow/`；只负责导航，不拥有策略 |
+
+如果低层文档需要由高层拥有的概念，应将其视为原子化失败：拆分低层文档，并把组合关系上移到高层。`SKILL.md`、`README.md` 和 `docs/` 等根入口文档可以向下链接到入口。使用 `python3 scripts/check-doc-layer-links.py` 检查边界；语言切换链接是唯一有意保留的跨语言链接。
+
 ## 检查点目录
 
 路线可以按条件组合以下独立动作边界：

@@ -2,7 +2,7 @@
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
 
-先读取 [Coding 工作流](../coding_zh_cn.md)，再读取委派 policy。只有任务记录放行单代理 Coding 时，才使用此路线。
+本路线由 Coding 工作流选择；只有任务记录放行单代理 Coding 时才有效。执行前加载委派 policy。
 
 ## 模式 Contract
 
@@ -59,4 +59,4 @@
 
 ## 完成
 
-回到 [Coding 工作流](../coding_zh_cn.md) 执行根完成检查。最终报告必须说明这是单代理工作，区分临时检查和最终检查，说明不可用的独立验证，并把每个验收条件映射到当前证据。
+执行根 Coding 完成门禁。最终报告必须说明这是单代理工作，区分临时检查和最终检查，说明不可用的独立验证，并把每个验收条件映射到当前证据。

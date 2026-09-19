@@ -2,7 +2,7 @@
 
 [English](coding-multi-agent.md) | [简体中文](coding-multi-agent_zh_cn.md)
 
-Read [Coding workflow](../coding.md) first, then the delegation policy. Use this route only when the task record has released Multi-Agent Coding.
+This route is selected by the Coding workflow and is valid only when the task record has released Multi-Agent Coding. Load the delegation policy before execution.
 
 ## Mode contract
 
@@ -76,4 +76,4 @@ Mark a section `Not applicable` with a reason instead of creating a no-op Worker
 
 ## Completion
 
-Return to [Coding workflow](../coding.md) for documentation, Git, and final acceptance. The final report must distinguish real independent Sessions from same-Session logical phases and map every acceptance criterion to current evidence.
+Apply the root Coding completion gate for documentation, Git, and final acceptance. The final report must distinguish real independent Sessions from same-Session logical phases and map every acceptance criterion to current evidence.
