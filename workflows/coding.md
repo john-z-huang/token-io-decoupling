@@ -23,7 +23,7 @@ These layers define composition direction, not policy ownership. Each document m
 
 | Layer | Role | Allowed dependency targets |
 | --- | --- | --- |
-| [`layer-01-fundamental-concepts`](../references/coding/layer-01-fundamental-concepts/) | Foundational atomic concepts | Its language mirror only |
+| [`layer-01-fundamental-concepts`](../references/coding/layer-01-fundamental-concepts/) | Foundational atomic concepts | Same-language layer-01 concepts and its language mirror |
 | [`layer-02-workflow-concepts`](../references/coding/layer-02-workflow-concepts/) | Workflow checkpoints | `layer-01-fundamental-concepts`; never layer-03 |
 | [`layer-03-workflows`](../references/coding/layer-03-workflows/) | Ready-to-use workflow templates | layer-01, layer-02, and shared protocols; never this selector |
 | `workflows/coding.md` | Route selector and three-layer index | All three layers; owns navigation, not policy |

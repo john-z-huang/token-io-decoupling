@@ -56,7 +56,7 @@ def counterpart(path: PurePosixPath) -> PurePosixPath:
 
 def allowed(source: str, target: str, is_navigation: bool) -> bool:
     if source in {"references", "layer-01"}:
-        return is_navigation
+        return is_navigation or target == "layer-01"
     if source in {"checkpoint", "layer-02"}:
         return is_navigation or target in {"references", "layer-01"}
     if source in {"exist-workflow", "layer-03"}:
