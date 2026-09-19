@@ -17,3 +17,8 @@ The final report is evidence-backed, scope-accurate, and explicit about limitati
 ## Boundary
 
 This checkpoint does not hide failures, convert assumptions into facts, or authorize new implementation, documentation, or Git work.
+
+## Related concepts
+
+- [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate decision and acceptance-condition ownership.
+- [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate released-scope and return-boundary ownership.

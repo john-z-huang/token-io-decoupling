@@ -17,3 +17,8 @@ The next slice has bounded, current context, or the exact missing context is rec
 ## Boundary
 
 This checkpoint gathers and qualifies context. It does not make material decisions, authorize implementation, or declare verification complete.
+
+## Related concepts
+
+- [Coding Context Exchange](../layer-01-fundamental-concepts/context-exchange.md) — locate file-backed capsule and freshness ownership.
+- [Coding Session Context Firewall](../layer-01-fundamental-concepts/session-context-firewall.md) — locate raw-state ingress and fact-return ownership.

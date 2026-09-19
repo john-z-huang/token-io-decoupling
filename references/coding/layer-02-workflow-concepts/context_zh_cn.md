@@ -17,3 +17,8 @@
 ## 边界
 
 本检查点只收集和判断上下文，不作实质性决策，不授权实现，也不宣布验证完成。
+
+## 相关概念
+
+- [Coding Context Exchange](../layer-01-fundamental-concepts/context-exchange_zh_cn.md) — 定位文件化 capsule 和 freshness 归属。
+- [Coding Session Context Firewall](../layer-01-fundamental-concepts/session-context-firewall_zh_cn.md) — 定位原始状态进入和事实返回归属。
