@@ -1,5 +1,7 @@
 # Worker Content Memo
 
+[English](content-memo.md) | [简体中文](content-memo_zh_cn.md)
+
 This module defines the reusable content contract for a Worker's file-backed execution memo: its purpose, language and format rules, recordable state, and prohibited material. It does not define the dispatch switch or memo lifecycle.
 
 ## Purpose and language
@@ -19,3 +21,8 @@ Use `content-memo.md`, or an existing equivalent document identified as the memo
 ## Prohibited material
 
 Do not write a per-command journal or record complete logs, complete diffs, large source copies, secrets, private reasoning, or unrelated history.
+
+## Related concepts
+
+- [Worker Content Memo Dispatch](content-memo-dispatch.md) — locate the memo dispatch switch.
+- [Worker Content Memo Lifecycle](content-memo-lifecycle.md) — locate memo lifecycle rules.

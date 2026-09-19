@@ -1,5 +1,7 @@
 # Worker Content Memo Dispatch
 
+[English](content-memo-dispatch.md) | [简体中文](content-memo-dispatch_zh_cn.md)
+
 This module defines the parent-controlled `write_content_memo` dispatch switch for a Worker's file-backed execution memo. It does not define memo content, memo lifecycle, context transport, or child lifecycle.
 
 ## Dispatch switch
@@ -15,3 +17,8 @@ write_content_memo: true
 ## Parent authority
 
 The Worker cannot change or reinterpret the switch. Only the parent may choose a value for a later slice. This authority controls memo file materialization only; it does not grant any other scope or capability.
+
+## Related concepts
+
+- [Worker Content Memo](content-memo.md) — locate the memo content contract.
+- [Worker Content Memo Lifecycle](content-memo-lifecycle.md) — locate memo lifecycle rules.

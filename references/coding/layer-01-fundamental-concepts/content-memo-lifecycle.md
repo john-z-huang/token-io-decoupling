@@ -1,5 +1,7 @@
 # Worker Content Memo Lifecycle
 
+[English](content-memo-lifecycle.md) | [简体中文](content-memo-lifecycle_zh_cn.md)
+
 This module defines creation, update, cleanup, and local-index discoverability for a Worker's file-backed execution memo. It does not define memo content, the dispatch switch, handoff or replacement strategy, or task acceptance.
 
 ## Creation and update
@@ -9,3 +11,8 @@ Create or update `content-memo.md`, or an existing equivalent document identifie
 ## Cleanup and discoverability
 
 Cleanup and compaction must preserve the `content-memo.md` content contract rather than turn the memo into a command journal. The memo must remain discoverable from the Worker's local index.
+
+## Related concepts
+
+- [Worker Content Memo](content-memo.md) — locate the memo content contract.
+- [Worker Content Memo Dispatch](content-memo-dispatch.md) — locate the memo dispatch switch.

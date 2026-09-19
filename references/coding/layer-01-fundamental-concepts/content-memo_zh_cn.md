@@ -1,5 +1,7 @@
 # Worker Content Memo
 
+[English](content-memo.md) | [简体中文](content-memo_zh_cn.md)
+
 本文档只定义 Worker 文件化执行 memo 的可复用内容契约：用途、语言与格式规则、可记录状态和禁止材料。不定义 dispatch 开关或 memo 生命周期。
 
 ## 用途与语言
@@ -19,3 +21,8 @@ Memo 是用于保存稳定、可复用事实的精简执行状态文档。Worker
 ## 禁止材料
 
 不要写成逐命令日志，也不要记录完整日志、完整 diff、大段源码副本、秘密、私有推理或无关历史。
+
+## 相关概念
+
+- [Worker Content Memo Dispatch](content-memo-dispatch_zh_cn.md) — 定位 memo dispatch 开关。
+- [Worker Content Memo Lifecycle](content-memo-lifecycle_zh_cn.md) — 定位 memo 生命周期规则。
