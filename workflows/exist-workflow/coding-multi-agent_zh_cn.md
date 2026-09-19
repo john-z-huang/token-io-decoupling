@@ -2,24 +2,21 @@
 
 [English](coding-multi-agent.md) | [简体中文](coding-multi-agent_zh_cn.md)
 
-先读取 [`../coding_zh_cn.md`](../coding_zh_cn.md)，再读取 `../../references/coding/agent-delegation-control_zh_cn.md` 获取权威委派状态。只有该文档记录多代理结果时，才使用此已组合工作流。
+先读取 [Coding 工作流](../coding_zh_cn.md)，再读取委派 policy。只有任务记录放行多代理 Coding 时，才使用此路线。
 
 ## 模式 Contract
 
-- Worker 接收一个已发布的 Interaction Slice，只能通过父级控制的通道返回。Worker 不得创建递归执行层级，也不能把其他 Worker 的进度当作权限。
-- 模式确认、子 Agent 数量、职责分配、创建、复用、替换和生命周期均遵循权威文档。角色名称只描述职责，不能独立授权 Session。
+- Worker 接收一个已发布的 Interaction Slice，只能通过父级控制的通道返回；不得递归创建层级，也不得把其他 Worker 的进度当作授权。
+- 委派 policy 负责模式、数量、分配、创建、复用、替换和生命周期；职责名称不能独立授权 Session。
 - 如果用户禁止子代理、子任务、独立 Session 或并行委派，应停止本路线并返回路线选择，不得模拟多代理行为。
 
 ## 组合输入
 
-本路线在执行检查点序列前组合独立的 Coding references：`shared-protocols`、`agent-delegation-control`、`session-model` 和 `execution-control`。已发布切片需要时，再加载 `context-exchange` 和 `content-memo`。policy 定义模式/数量/生命周期规则；任务控制记录保存当前状态；其他 reference 提供消息原语、Session 语义、执行规划和有界上下文机制。下方检查点列表是完整的路线组合；检查点模块不会互相导入。
+本路线加载 `shared-protocols`、`agent-delegation-control`、`session-model` 和 `execution-control`；只有已发布切片需要时才加载 `context-exchange` 或 `content-memo`。下方检查点列表是完整的路线组合。
 
 ## 职责边界
 
-- 根父级负责 Semantic Contract、实质性决策、授权、检查点结果、Worker 生命周期和语义验收。
-- Primary Output 负责获批准的实现和临时聚焦检查，不负责最终验收或非简单 Git 工作。
-- Contract 要求时，Change Verification 负责最终变更结果验证。
-- Documentation/Comments & Git Operations 负责验证后的获批准文档或注释，以及明确发布下的非简单 Git 工作。
+职责 ownership 见 `session-model`；本路线只增加下方的多代理条件。
 
 ## 本路线的运行环境要求
 
@@ -51,8 +48,8 @@
 
 公共工作流已经建立共享协议、Session 规则、运行环境检查和执行控制规则。此外：
 
-1. Worker 需要可复用状态、有界交接或替换恢复时，读取 [`../../references/coding/context-exchange_zh_cn.md`](../../references/coding/context-exchange_zh_cn.md)。
-2. 派发启用 Worker 编写内容 memo 时，读取 [`../../references/coding/content-memo_zh_cn.md`](../../references/coding/content-memo_zh_cn.md)。
+1. Worker 需要可复用状态、有界交接或替换恢复时，读取[上下文交换](../../references/coding/context-exchange_zh_cn.md)。
+2. 派发启用 Worker 编写内容 memo 时，读取[内容 memo](../../references/coding/content-memo_zh_cn.md)。
 3. 只有当前委派状态已经分配时才使用 Context Bootstrap 或 Refresh。保持 capsule 只包含事实和路由信息；它不能替代 Contract、必需的源文档或独立验证。
 4. 每个 Worker 使用独立的 context-exchange 子目录，并且只授予它所需的命名代码路径和上下文路径。Worker 分配遵循权威文档。
 
@@ -79,4 +76,4 @@ Unreleased boundary: ...
 
 ## 完成
 
-回到 [`../coding_zh_cn.md`](../coding_zh_cn.md) 执行文档、Git 和最终验收。最终报告必须区分真实独立 Session 与同一 Session 的逻辑阶段，并把每个验收条件映射到当前证据。
+回到 [Coding 工作流](../coding_zh_cn.md) 执行文档、Git 和最终验收。最终报告必须区分真实独立 Session 与同一 Session 的逻辑阶段，并把每个验收条件映射到当前证据。

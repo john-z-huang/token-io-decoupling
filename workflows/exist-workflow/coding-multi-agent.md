@@ -2,24 +2,21 @@
 
 [English](coding-multi-agent.md) | [简体中文](coding-multi-agent_zh_cn.md)
 
-Read [`../coding.md`](../coding.md) first, then read `../../references/coding/agent-delegation-control.md` for the authoritative delegation state. Use this pre-composed workflow only when that document records the Multi-Agent outcome.
+Read [Coding workflow](../coding.md) first, then the delegation policy. Use this route only when the task record has released Multi-Agent Coding.
 
 ## Mode contract
 
-- A Worker receives one released Interaction Slice and returns only through the parent-controlled channel. A Worker never creates a recursive execution hierarchy or treats another Worker's progress as permission.
-- Follow the authority document for mode confirmation, child count, role allocation, creation, reuse, replacement, and lifecycle. Role names describe responsibilities and do not independently authorize a Session.
+- A Worker receives one released Interaction Slice and returns only through the parent-controlled channel; it never creates a recursive hierarchy or treats another Worker's progress as permission.
+- The delegation policy owns mode, count, allocation, creation, reuse, replacement, and lifecycle; role names do not independently authorize a Session.
 - If the user forbids subagents, child tasks, independent Sessions, or parallel delegation, stop this route and return to route selection; do not simulate multi-agent behavior.
 
 ## Composed inputs
 
-This route combines the independent Coding references before executing the checkpoint sequence: `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control`. When the released slices need them, also load `context-exchange` and `content-memo`. The policy defines mode/count/lifecycle rules; the task control record carries the current state; the other references provide message primitives, Session semantics, execution planning, and bounded context mechanics. The checkpoint list below is the complete route composition; checkpoint modules are not imported into one another.
+Load `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control` for this route; load `context-exchange` or `content-memo` only when the released slice needs them. The checkpoint list below is the complete route composition.
 
 ## Responsibility boundary
 
-- The root parent owns the Semantic Contract, material decisions, authorization, checkpoint outcomes, Worker lifecycle, and semantic acceptance.
-- Primary Output owns approved implementation and provisional focused checks; it does not perform final acceptance or non-trivial Git work.
-- Change Verification owns final change-result verification when the Contract requires it.
-- Documentation/Comments & Git Operations owns approved post-verification documentation or comments and non-trivial Git work under an explicit release.
+Use the role ownership defined in `session-model`; this route adds only the Multi-Agent conditions below.
 
 ## Route-specific environment requirements
 
@@ -51,8 +48,8 @@ Run the checkpoints in this order, skipping only conditional checkpoints with a 
 
 The common workflow already establishes shared protocols, Session rules, environment checks, and execution-control rules. Additionally:
 
-1. Read [`../../references/coding/context-exchange.md`](../../references/coding/context-exchange.md) when Workers need reusable state, bounded handoff, or replacement recovery.
-2. Read [`../../references/coding/content-memo.md`](../../references/coding/content-memo.md) when the dispatch enables Worker-authored content memos.
+1. Read [context exchange](../../references/coding/context-exchange.md) when Workers need reusable state, bounded handoff, or replacement recovery.
+2. Read [content memo](../../references/coding/content-memo.md) when the dispatch enables Worker-authored content memos.
 3. Use Context Bootstrap or Refresh only when it is assigned in the active delegation state. Keep the capsule factual and routing-only; it never replaces the Contract, mandatory source loading, or independent verification.
 4. Keep each Worker's context-exchange subdirectory separate, and grant each Worker only the named code and context paths it needs. Follow the authority document for Worker allocation.
 
@@ -79,4 +76,4 @@ Mark a section `Not applicable` with a reason instead of creating a no-op Worker
 
 ## Completion
 
-Return to [`../coding.md`](../coding.md) for documentation, Git, and final acceptance. The final report must distinguish real independent Sessions from same-Session logical phases and map every acceptance criterion to current evidence.
+Return to [Coding workflow](../coding.md) for documentation, Git, and final acceptance. The final report must distinguish real independent Sessions from same-Session logical phases and map every acceptance criterion to current evidence.

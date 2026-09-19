@@ -2,25 +2,22 @@
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
 
-先读取 [`../coding_zh_cn.md`](../coding_zh_cn.md)，再读取 `../../references/coding/agent-delegation-control_zh_cn.md` 获取权威委派状态。只有该文档记录单代理结果时，才使用此已组合工作流。
+先读取 [Coding 工作流](../coding_zh_cn.md)，再读取委派 policy。只有任务记录放行单代理 Coding 时，才使用此路线。
 
 ## 模式 Contract
 
 - 所有工作保留在当前 Session 中。将 Input-side Reasoning、Primary Output、文档和适用检查视为逻辑阶段，而不是独立代理。
-- 所有 Agent/Session 的创建、复用、例外和生命周期决策均遵循权威文档；本路线不重复这些规则。
+- Agent/Session 的创建、复用、例外和生命周期由委派 policy 负责；本路线不重复这些规则。
 - 保留下方检查点序列中的 Contract、上下文、决策、控制边界、验证边界、文档边界、Git 授权和完成检查。
 - “不要创建子代理”或“不要使用浏览器”等任务级禁止事项在整个任务期间持续有效。
 
 ## 组合输入
 
-本路线在执行检查点序列前组合独立的 Coding references：`shared-protocols`、`agent-delegation-control`、`session-model` 和 `execution-control`。policy 定义模式/委派规则；任务控制记录保存当前状态；其他 reference 提供共享原语、Session 语义和执行规划。下方检查点列表是完整的路线组合；检查点模块不会互相导入。
+本路线加载 `shared-protocols`、`agent-delegation-control`、`session-model` 和 `execution-control`。下方检查点列表是完整的路线组合。
 
 ## 当前 Session 中的职责边界
 
-- Input-side Reasoning 负责 Semantic Contract、实质性决策、授权、检查点结果和语义验收。
-- Primary Output 负责获批准的实现和临时聚焦检查。
-- Documentation/Comments & Git Operations 负责验证后的获批准文档或注释，以及明确发布下的非简单 Git 工作。
-- 即使本路线只使用一个 Session，Contract 要求的独立 Change Verification 仍然有效；不得把同一 Session 的检查标记为独立验证。本路线无法提供独立 verifier。
+职责 ownership 见 `session-model`；本路线在一个 Session 中执行逻辑阶段，无法提供独立 verifier。
 
 ## 本路线的运行环境要求
 
@@ -62,4 +59,4 @@
 
 ## 完成
 
-回到 [`../coding_zh_cn.md`](../coding_zh_cn.md) 执行根完成检查。最终报告必须说明这是单代理工作，区分临时检查和最终检查，说明不可用的独立验证，并把每个验收条件映射到当前证据。
+回到 [Coding 工作流](../coding_zh_cn.md) 执行根完成检查。最终报告必须说明这是单代理工作，区分临时检查和最终检查，说明不可用的独立验证，并把每个验收条件映射到当前证据。

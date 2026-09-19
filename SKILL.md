@@ -15,9 +15,9 @@ The Skill defines orchestration conventions only. It cannot bypass higher-priori
 
 ## Start here
 
-1. Read [`workflows/coding.md`](workflows/coding.md), then load and follow `references/coding/agent-delegation-control.md` before substantive work. Load exactly one mode workflow according to that authority:
-   - [`workflows/exist-workflow/coding-single-agent.md`](workflows/exist-workflow/coding-single-agent.md) when the task control record contains `mode: Single-Agent Coding`;
-   - [`workflows/exist-workflow/coding-multi-agent.md`](workflows/exist-workflow/coding-multi-agent.md) when it contains `mode: Multi-Agent Coding` and a locked positive `child_count`.
+1. Read [Coding workflow](workflows/coding.md), then load and follow `references/coding/agent-delegation-control.md` before substantive work. Load exactly one mode workflow according to that authority:
+   - [Single-Agent route](workflows/exist-workflow/coding-single-agent.md) when the task control record contains `mode: Single-Agent Coding`;
+   - [Multi-Agent route](workflows/exist-workflow/coding-multi-agent.md) when it contains `mode: Multi-Agent Coding` and a locked positive `child_count`.
 2. Load only the references required by the selected workflow and current step.
 3. Return to `workflows/coding.md` only when the task changes direction or before final acceptance.
 
@@ -36,4 +36,4 @@ Use Coding for repository or project exploration, implementation, refactoring, d
 
 ## Completion
 
-Follow the selected Coding workflow and return `COMPLETE` only after the final acceptance gate in [`workflows/coding.md`](workflows/coding.md) has explicit evidence. Report skipped or unavailable checks, assumptions, residual risks, and unauthorized effects clearly.
+Follow the selected Coding workflow and return `COMPLETE` only after its final acceptance gate has explicit evidence. Report skipped or unavailable checks, assumptions, residual risks, and unauthorized effects clearly.

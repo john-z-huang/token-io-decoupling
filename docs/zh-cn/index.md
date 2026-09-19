@@ -42,7 +42,7 @@ Coding Flow 覆盖仓库和开发任务：
 - 视觉状态验证；
 - 当需要修改仓库时，向 Coding 进行窄范围移交。
 
-这些 reference 不定义独立的可执行路线。Coding 路由入口分别是英文 [`SKILL.md`](../../SKILL.md) 和中文 [`SKILL_zh_cn.md`](../../SKILL_zh_cn.md)。
+这些 reference 不定义独立的可执行路线。请从 [Coding 入口](../../SKILL_zh_cn.md) 开始。
 
 ## 职责
 
@@ -63,6 +63,6 @@ Coding Flow 覆盖仓库和开发任务：
 
 ## 仓库 reference
 
-- [`references/`](https://github.com/john-z-huang/token-io-decoupling/tree/main/references) 包含 Flow、Coding、runtime、session 和 execution 的详细 reference。
-- [`MULTI_LINGUAL_zh_cn.md`](https://github.com/john-z-huang/token-io-decoupling/blob/main/MULTI_LINGUAL_zh_cn.md) 定义仓库的双语文档规则。
+- [Reference library](https://github.com/john-z-huang/token-io-decoupling/tree/main/references) 包含 Coding、runtime、session 和 execution 的详细 reference。
+- [多语言规则](https://github.com/john-z-huang/token-io-decoupling/blob/main/MULTI_LINGUAL_zh_cn.md) 定义仓库的双语文档规则。
 - [GitHub 仓库](https://github.com/john-z-huang/token-io-decoupling)

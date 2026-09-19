@@ -42,7 +42,7 @@ The repository retains reference material for tasks that consume visual or tempo
 - visual-state verification;
 - a narrow handoff to Coding when repository changes are required.
 
-These references do not define a separately executable route. Start with the English [`SKILL.md`](../SKILL.md) or the Chinese [`SKILL_zh_cn.md`](../SKILL_zh_cn.md) Coding routing entry point.
+These references do not define a separately executable route. Start with the [Coding entry](../SKILL.md).
 
 ## Responsibilities
 
@@ -63,6 +63,6 @@ These references do not define a separately executable route. Start with the Eng
 
 ## Repository references
 
-- [`references/`](https://github.com/john-z-huang/token-io-decoupling/tree/main/references) contains the detailed Flow, Coding, runtime, session, and execution references.
-- [`MULTI_LINGUAL.md`](https://github.com/john-z-huang/token-io-decoupling/blob/main/MULTI_LINGUAL.md) defines the repository's bilingual documentation rules.
+- [Reference library](https://github.com/john-z-huang/token-io-decoupling/tree/main/references) contains the detailed Coding, runtime, session, and execution references.
+- [Multilingual rules](https://github.com/john-z-huang/token-io-decoupling/blob/main/MULTI_LINGUAL.md) define the repository's bilingual documentation rules.
 - [GitHub repository](https://github.com/john-z-huang/token-io-decoupling)

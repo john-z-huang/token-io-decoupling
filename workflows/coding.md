@@ -2,7 +2,7 @@
 
 [English](coding.md) | [简体中文](coding_zh_cn.md)
 
-Use this workflow when repository text, developer-tool output, implementation, tests, documentation, or Git state is the main work state. This file is only the Coding route selector and completion index. The selected `exist-workflow` document composes the references and checkpoints needed for execution. Root-directive mode and delegation decisions are owned exclusively by `references/coding/agent-delegation-control.md`.
+Use this workflow when repository text, developer-tool output, implementation, tests, documentation, or Git state is the main work state. This file is only the Coding route selector and completion index. The selected `exist-workflow` document composes the references and checkpoints needed for execution. Root-directive mode and delegation rules are owned exclusively by the delegation policy; the task control record stores the current state.
 
 ## Entry
 
@@ -12,8 +12,8 @@ Use this workflow when repository text, developer-tool output, implementation, t
 
 ## Routes
 
-- [Single-Agent Coding](exist-workflow/coding-single-agent.md): use only for the recorded Single-Agent outcome.
-- [Multi-Agent Coding](exist-workflow/coding-multi-agent.md): use only for the recorded Multi-Agent outcome and available delegation state.
+- [Single-Agent Coding](exist-workflow/coding-single-agent.md): use only when the task record says `mode: Single-Agent Coding`.
+- [Multi-Agent Coding](exist-workflow/coding-multi-agent.md): use only when it says `mode: Multi-Agent Coding` with a locked positive `child_count`.
 
 Do not load both routes. If a later material fact invalidates the selected route, stop the current slice, amend the Contract as needed, and return to route selection.
 

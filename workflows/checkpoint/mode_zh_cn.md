@@ -4,7 +4,7 @@
 
 ## 动作
 
-1. 读取并遵循 [`../../references/coding/agent-delegation-control_zh_cn.md`](../../references/coding/agent-delegation-control_zh_cn.md)，该文件是模式确认和委派规则的唯一权威。
+1. 读取并遵循[委派 policy](../../references/coding/agent-delegation-control_zh_cn.md)，该文件是模式确认和委派规则的唯一权威。
 2. 路线选择前读取父级控制的任务记录，并确认当前 `gate_status`、`mode`、`child_count`、分配、生命周期和不可用能力。如果记录尚未放行，则停留在本检查点，不得继续。
 3. 新的根用户指令改变委派要求时，重新应用 policy 并替换任务记录后再继续。本检查点不重述或替代 policy 中的创建、分配、复用、例外或数量规则。
 

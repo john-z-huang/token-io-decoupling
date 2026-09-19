@@ -2,25 +2,22 @@
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
 
-Read [`../coding.md`](../coding.md) first, then read `../../references/coding/agent-delegation-control.md` for the authoritative delegation state. Use this pre-composed workflow only when that document records the Single-Agent outcome.
+Read [Coding workflow](../coding.md) first, then the delegation policy. Use this route only when the task record has released Single-Agent Coding.
 
 ## Mode contract
 
 - Keep all work in the current Session. Treat Input-side Reasoning, Primary Output, documentation, and applicable checks as logical phases, not separate agents.
-- Follow the authority document for all Agent/Session creation, reuse, exception, and lifecycle decisions; this route does not restate them.
+- The delegation policy owns Agent/Session creation, reuse, exceptions, and lifecycle; this route does not restate them.
 - Keep the Contract, Context, Decision, Control boundary, verification boundary, documentation boundary, Git authorization, and completion gate from the checkpoint sequence below.
 - A task-level prohibition such as “do not create subagents” or “do not use a browser” remains active for the entire task.
 
 ## Composed inputs
 
-This route combines the independent Coding references before executing the checkpoint sequence: `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control`. The policy defines mode/delegation rules; the task control record carries the current state; the other references provide shared primitives, Session semantics, and execution planning. The checkpoint list below is the complete route composition; checkpoint modules are not imported into one another.
+Load `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control` for this route. The checkpoint list below is the complete route composition.
 
 ## Responsibility boundary in the current Session
 
-- Input-side Reasoning owns the Semantic Contract, material decisions, authorization, checkpoint outcomes, and semantic acceptance.
-- Primary Output owns approved implementation and provisional focused checks.
-- Documentation/Comments & Git Operations owns approved post-verification documentation or comments and non-trivial Git work under an explicit release.
-- Any independent Change Verification requirement remains a requirement even though the route uses one Session; never label same-Session checks as independent. This route cannot provide an independent verifier.
+Use the role ownership defined in `session-model`; this route runs those roles as logical phases in one Session and cannot provide an independent verifier.
 
 ## Route-specific environment requirements
 
@@ -62,4 +59,4 @@ For trivial behavior-preserving or documentation-only work, use the applicable f
 
 ## Completion
 
-Return to [`../coding.md`](../coding.md) for the root completion gate. The final report must identify the work as Single-Agent, distinguish provisional checks from final checks, state any unavailable independent verification, and map every acceptance criterion to current evidence.
+Return to [Coding workflow](../coding.md) for the root completion gate. The final report must identify the work as Single-Agent, distinguish provisional checks from final checks, state any unavailable independent verification, and map every acceptance criterion to current evidence.
