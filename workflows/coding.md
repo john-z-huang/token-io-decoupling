@@ -2,11 +2,11 @@
 
 [English](coding.md) | [简体中文](coding_zh_cn.md)
 
-Use this workflow when repository text, developer-tool output, implementation, tests, documentation, or Git state is the main work state. This file is only the Coding route selector and completion index. The selected `exist-workflow` document composes the references and checkpoints needed for execution. Root-directive mode and delegation rules are owned exclusively by the delegation policy; the task control record stores the current state.
+Use this workflow when repository text, developer-tool output, implementation, tests, documentation, or Git state is the main work state. This file is only the Coding route selector and completion index. The selected `exist-workflow` document composes the references and checkpoints needed for execution. Root-directive mode and delegation rules are owned by the atomic delegation references composed by the Mode checkpoint; the task control record stores the current state.
 
 ## Entry
 
-1. Load the delegation authority needed for the root-directive mode gate.
+1. Pass the Mode checkpoint, which composes the delegation references needed for the root-directive mode gate.
 2. Identify the actual runtime environment and complete the Environment checkpoint.
 3. Select exactly one complete route after the mode gate and environment check. That route loads its own references and checkpoints.
 

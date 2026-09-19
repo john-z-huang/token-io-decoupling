@@ -9,13 +9,13 @@ description: "High-volume Agent Token I/O decoupling for Coding. Coding separate
 
 This Skill maintains one executable workflow: Coding. It separates high-value semantic decisions from high-volume project-state consumption and output materialization. Multimodal and Mixed concepts are not maintained as executable workflows in this repository.
 
-Coding delegation and Session-topology rules are defined exclusively by `references/coding/agent-delegation-control.md`; the task control record stores the confirmed per-task state. The Coding workflow loads the policy together with the other Coding references before route selection.
+Coding delegation and Session-topology rules are split into atomic references: the state record, mode/count gate, and conditional child dispatch/lifecycle policy. The Mode checkpoint composes and validates them before route selection; the task control record stores the confirmed per-task state.
 
 The Skill defines orchestration conventions only. It cannot bypass higher-priority permissions, user authorization, product limitations, repository instructions, or safety rules, and it must not present unmeasured claims about price, cache hits, quota savings, latency, or runtime quality as facts.
 
 ## Start here
 
-1. Read [Coding workflow](workflows/coding.md), then load and follow `references/coding/agent-delegation-control.md` before substantive work. Load exactly one mode workflow according to that authority:
+1. Read [Coding workflow](workflows/coding.md), then pass the Mode checkpoint before substantive work. It composes the delegation references and releases exactly one mode workflow:
    - [Single-Agent route](workflows/exist-workflow/coding-single-agent.md) when the task control record contains `mode: Single-Agent Coding`;
    - [Multi-Agent route](workflows/exist-workflow/coding-multi-agent.md) when it contains `mode: Multi-Agent Coding` and a locked positive `child_count`.
 2. Load only the references required by the selected workflow and current step.
@@ -29,7 +29,7 @@ Use Coding for repository or project exploration, implementation, refactoring, d
 
 - Record hard user, runtime environment, repository, permission, safety, and Session constraints before acting.
 - A task-level prohibition, such as “do not create subagents” or “do not use a browser,” remains active for the whole task.
-- Before route selection or any delegation/Session-topology work, the Coding workflow must load and follow `references/coding/agent-delegation-control.md`; it is the sole authority for root-directive mode confirmation, child counts, creation, allocation, reuse, replacement, exceptions, and limits.
+- Before route selection or any delegation/Session-topology work, the Mode checkpoint must compose and validate the delegation references; those references own root-directive mode confirmation, child counts, creation, allocation, reuse, replacement, exceptions, and limits at their respective atomic boundaries.
 - Never invent authorization, capability, evidence, product support, or an executable route for an unmaintained scenario.
 - Keep Core rules independent of product details; the Coding workflow supports only local Codex, ChatGPT Work, and standard ChatGPT, and contains the checks for their exposed capabilities.
 - Read references on demand. Do not preload the entire Skill, `references/`, or raw project state merely because it may become useful.

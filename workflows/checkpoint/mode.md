@@ -4,14 +4,14 @@
 
 ## Actions
 
-1. Load and follow [delegation policy](../../references/coding/agent-delegation-control.md), the sole authority for mode confirmation and delegation rules.
-2. Read the parent-controlled task record and confirm its current `gate_status`, `mode`, `child_count`, allocations, lifecycle, and unavailable capabilities before route selection. If the record has not released the route, stop at this checkpoint and do not proceed.
-3. If a new root directive changes delegation, apply the policy again and replace the task record before continuing. This checkpoint does not restate or replace the policy's creation, allocation, reuse, exception, or count rules.
+1. Load [the state-record reference](../../references/coding/layer-01-fundamental-concepts/delegation-state-record.md) and [the mode/count-gate reference](../../references/coding/layer-01-fundamental-concepts/delegation-mode-count-gate.md). When the released mode allocates children, also load [the child dispatch/lifecycle reference](../../references/coding/layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle.md).
+2. Read the parent-controlled task record and validate its current `gate_status`, `mode`, `child_count`, allocations, lifecycle, and unavailable capabilities before route selection. If the record has not released the route, stop at this checkpoint and do not proceed.
+3. If a new root directive changes delegation, re-apply the mode/count gate and replace the task record before continuing. This checkpoint composes and validates the references; it does not decide mode, count, creation, allocation, reuse, exceptions, or lifecycle itself.
 
 ## Pass condition
 
-The task control record contains exactly one valid mode outcome and any required delegation state; the selected route's required capabilities and prohibitions are satisfied.
+The task control record contains exactly one valid released mode outcome and the required delegation state: `child_count: 0` for Single-Agent, or a locked positive count with valid allocations and lifecycle for Multi-Agent. The selected route's required capabilities and prohibitions are satisfied.
 
 ## Boundary
 
-This checkpoint only reads and validates the task record against the delegation policy. It does not independently decide mode, topology, creation, allocation, reuse, exceptions, or count.
+This checkpoint composes and validates the state-record, mode/count, and conditional child-dispatch references. It does not independently decide mode, topology, creation, allocation, reuse, exceptions, lifecycle, or count.

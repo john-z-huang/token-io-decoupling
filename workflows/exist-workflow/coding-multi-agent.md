@@ -2,17 +2,17 @@
 
 [English](coding-multi-agent.md) | [简体中文](coding-multi-agent_zh_cn.md)
 
-This route is selected by the Coding workflow and is valid only when the task record has released Multi-Agent Coding. Load the delegation policy before execution.
+This route is selected by the Coding workflow and is valid only after the Mode checkpoint releases Multi-Agent Coding. The checkpoint composes all three delegation references before execution.
 
 ## Mode contract
 
 - A Worker receives one released Interaction Slice and returns only through the parent-controlled channel; it never creates a recursive hierarchy or treats another Worker's progress as permission.
-- The delegation policy owns mode, count, allocation, creation, reuse, replacement, and lifecycle; role names do not independently authorize a Session.
+- The mode/count and child dispatch/lifecycle references own mode, count, allocation, creation, reuse, replacement, and lifecycle; role names do not independently authorize a Session.
 - If the user forbids subagents, child tasks, independent Sessions, or parallel delegation, stop this route and return to route selection; do not simulate multi-agent behavior.
 
 ## Composed inputs
 
-Load `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control` for this route; load `context-exchange` or `content-memo` only when the released slice needs them. The checkpoint list below is the complete route composition.
+Load `shared-protocols`, `delegation-state-record`, `delegation-mode-count-gate`, `delegation-child-dispatch-lifecycle`, `session-model`, and `execution-control` for this route; load `context-exchange` or `content-memo` only when the released slice needs them. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
 
 ## Responsibility boundary
 
@@ -30,10 +30,10 @@ Follow the common catalog in the Coding workflow. Multi-Agent deltas: load Conte
 
 The common workflow already establishes shared protocols, Session rules, environment checks, and execution-control rules. Additionally:
 
-1. Read [context exchange](../../references/coding/context-exchange.md) when Workers need reusable state, bounded handoff, or replacement recovery.
-2. Read [content memo](../../references/coding/content-memo.md) when the dispatch enables Worker-authored content memos.
+1. Read [context exchange](../../references/coding/layer-01-fundamental-concepts/context-exchange.md) when Workers need reusable state, bounded handoff, or replacement recovery.
+2. Read [content memo](../../references/coding/layer-01-fundamental-concepts/content-memo.md) when the dispatch enables Worker-authored content memos.
 3. Use Context Bootstrap or Refresh only when it is assigned in the active delegation state. Keep the capsule factual and routing-only; it never replaces the Contract, mandatory source loading, or independent verification.
-4. Keep each Worker's context-exchange subdirectory separate, and grant each Worker only the named code and context paths it needs. Follow the authority document for Worker allocation.
+4. Keep each Worker's context-exchange subdirectory separate, and grant each Worker only the named code and context paths it needs. Follow the child dispatch/lifecycle reference for Worker allocation.
 
 Before the first substantive dispatch, form a concise Decision Brief unless the task is simple, local, low-risk, obvious, reversible, and mechanically verifiable. If material facts are missing, release bounded reconnaissance only, then synthesize the result on the input side before releasing implementation.
 
@@ -47,7 +47,7 @@ Return conditions: ...
 Unreleased boundary: ...
 ```
 
-Mark a section `Not applicable` with a reason instead of creating a no-op Worker. Release one Interaction Slice at a time unless independent, non-conflicting parallel work is allowed by the authority document. Use Progress Signals inside a slice and a Control boundary at material boundaries.
+Mark a section `Not applicable` with a reason instead of creating a no-op Worker. Release one Interaction Slice at a time unless independent, non-conflicting parallel work is allowed by the child dispatch/lifecycle reference. Use Progress Signals inside a slice and a Control boundary at material boundaries.
 
 ## Verification and repair
 

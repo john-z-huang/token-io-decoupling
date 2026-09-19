@@ -2,18 +2,18 @@
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
 
-This route is selected by the Coding workflow and is valid only when the task record has released Single-Agent Coding. Load the delegation policy before execution.
+This route is selected by the Coding workflow and is valid only after the Mode checkpoint releases Single-Agent Coding. The checkpoint composes the state-record and mode/count references before execution.
 
 ## Mode contract
 
 - Keep all work in the current Session. Treat Input-side Reasoning, Primary Output, documentation, and applicable checks as logical phases, not separate agents.
-- The delegation policy owns Agent/Session creation, reuse, exceptions, and lifecycle; this route does not restate them.
+- The state-record and mode/count references own the root state and Single-Agent gate; child dispatch/lifecycle does not apply to this route.
 - Keep the Contract, Context, Decision, Control boundary, verification boundary, documentation boundary, Git authorization, and completion gate from the checkpoint sequence below.
 - A task-level prohibition such as “do not create subagents” or “do not use a browser” remains active for the entire task.
 
 ## Composed inputs
 
-Load `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control` for this route. The checkpoint list below is the complete route composition.
+Load `shared-protocols`, `delegation-state-record`, `delegation-mode-count-gate`, `session-model`, and `execution-control` for this route. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
 
 ## Responsibility boundary in the current Session
 

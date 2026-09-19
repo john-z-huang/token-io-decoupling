@@ -36,9 +36,9 @@ PAIR_ROOTS = [
 
 CORE_DOCS = [
     PurePosixPath("references/share/shared-protocols.md"),
-    PurePosixPath("references/coding/session-model.md"),
-    PurePosixPath("references/coding/execution-control.md"),
-    PurePosixPath("references/coding/context-exchange.md"),
+    PurePosixPath("references/coding/layer-01-fundamental-concepts/session-model.md"),
+    PurePosixPath("references/coding/layer-01-fundamental-concepts/execution-control.md"),
+    PurePosixPath("references/coding/layer-01-fundamental-concepts/context-exchange.md"),
 ]
 
 LOCALE_DIRECTORY_PAIRS = [

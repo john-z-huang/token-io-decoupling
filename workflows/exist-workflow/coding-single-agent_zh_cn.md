@@ -2,18 +2,18 @@
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
 
-本路线由 Coding 工作流选择；只有任务记录放行单代理 Coding 时才有效。执行前加载委派 policy。
+本路线由 Coding 工作流选择；只有模式检查点放行单代理 Coding 后才有效。该检查点在执行前组合状态记录和模式/数量 reference。
 
 ## 模式 Contract
 
 - 所有工作保留在当前 Session 中。将 Input-side Reasoning、Primary Output、文档和适用检查视为逻辑阶段，而不是独立代理。
-- Agent/Session 的创建、复用、例外和生命周期由委派 policy 负责；本路线不重复这些规则。
+- 根状态和单代理门禁由状态记录与模式/数量 reference 负责；子代理派发/生命周期不适用于本路线。
 - 保留下方检查点序列中的 Contract、上下文、决策、控制边界、验证边界、文档边界、Git 授权和完成检查。
 - “不要创建子代理”或“不要使用浏览器”等任务级禁止事项在整个任务期间持续有效。
 
 ## 组合输入
 
-本路线加载 `shared-protocols`、`agent-delegation-control`、`session-model` 和 `execution-control`。下方检查点列表是完整的路线组合。
+本路线加载 `shared-protocols`、`delegation-state-record`、`delegation-mode-count-gate`、`session-model` 和 `execution-control`。模式检查点已经验证任务记录；下方检查点列表是完整的路线组合。
 
 ## 当前 Session 中的职责边界
 
