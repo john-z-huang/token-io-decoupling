@@ -16,7 +16,7 @@ Keep each Worker's context-exchange directory separate and grant only named path
 
 - [Coding Child Creation](delegation-child-creation.md) — locate child creation capability.
 - [Coding Child Role Allocation](delegation-child-role-allocation.md) — locate slot and role allocation.
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle.md) — locate child state and recovery ownership.
+- [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state and recovery ownership.
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.md) — locate authorized reuse and replacement.
 - [Coding Context Exchange](context-exchange.md) — locate named-path context transport ownership.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice boundary controls.

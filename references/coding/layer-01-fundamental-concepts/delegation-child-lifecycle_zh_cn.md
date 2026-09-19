@@ -1,6 +1,6 @@
 # Coding 子 Agent 生命周期
 
-[English](delegation-child-dispatch-lifecycle.md) | [简体中文](delegation-child-dispatch-lifecycle_zh_cn.md)
+[English](delegation-child-lifecycle.md) | [简体中文](delegation-child-lifecycle_zh_cn.md)
 
 本文档负责已创建多代理子 Agent 的持久性和生命周期状态。它消费已由各自 owner 概念处理创建、分配和派发的子 Agent；不定义创建、职责分配、Dispatch Preview、Worker 边界、复用/替换或上下文传输。
 

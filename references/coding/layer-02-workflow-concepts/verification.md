@@ -22,4 +22,4 @@ This checkpoint does not define independent verification Sessions, classify or r
 - [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate acceptance-condition and release-decision ownership.
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate released scope and return-boundary ownership.
 - [Coding Session Role Ownership](../layer-01-fundamental-concepts/session-role-ownership.md) — locate Change Verification role ownership.
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate final-state evidence access boundaries.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary.md) — locate final-state evidence access boundaries.

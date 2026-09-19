@@ -22,4 +22,4 @@ This checkpoint does not authorize or execute repairs, run repair checks, define
 
 - [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate material decision and release-condition ownership.
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate approved slice and return-boundary ownership.
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate named-path Worker access boundaries.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary.md) — locate named-path Worker access boundaries.

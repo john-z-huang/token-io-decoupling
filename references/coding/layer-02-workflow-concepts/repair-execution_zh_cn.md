@@ -22,4 +22,4 @@
 
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control_zh_cn.md) — 定位已放行路径和修改边界。
 - [Coding Execution Planning](../layer-01-fundamental-concepts/execution-planning_zh_cn.md) — 定位有界实现 slice 归属。
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary_zh_cn.md) — 定位命名路径的 Worker 访问边界。
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary_zh_cn.md) — 定位命名路径的 Worker 访问边界。

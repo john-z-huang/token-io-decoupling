@@ -29,4 +29,4 @@ At a material boundary, use a compressed Control Checkpoint with the status, fin
 - [Coding Execution Decision Gate](execution-decision-gate.md) — locate Decision Brief and decision-release rules.
 - [Coding Execution Stage Feedback](execution-stage-feedback.md) — locate bounded-stage feedback rules.
 - [Coding Context Exchange](context-exchange.md) — locate context transport ownership.
-- [Coding Child Dispatch and Lifecycle](delegation-child-dispatch-lifecycle.md) — locate delegation lifecycle ownership for released slices.
+- [Coding Child Dispatch and Lifecycle](delegation-child-lifecycle.md) — locate delegation lifecycle ownership for released slices.

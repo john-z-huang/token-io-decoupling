@@ -29,4 +29,4 @@ Slice 是控制单元，不是逐命令脚本。只要 Contract 和边界未变�
 - [Coding Execution Decision Gate](execution-decision-gate_zh_cn.md) — 定位 Decision Brief 和决策放行规则。
 - [Coding Execution Stage Feedback](execution-stage-feedback_zh_cn.md) — 定位有界阶段反馈规则。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位上下文传输归属。
-- [Coding 子 Agent Dispatch 与生命周期](delegation-child-dispatch-lifecycle_zh_cn.md) — 定位已放行 slice 的委派生命周期归属。
+- [Coding 子 Agent Dispatch 与生命周期](delegation-child-lifecycle_zh_cn.md) — 定位已放行 slice 的委派生命周期归属。

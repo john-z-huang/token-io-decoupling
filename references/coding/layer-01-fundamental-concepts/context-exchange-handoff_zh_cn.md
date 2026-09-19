@@ -18,4 +18,4 @@
 - [Coding Context Exchange Workspace Boundary](context-exchange-workspace-boundary_zh_cn.md) — 定位目录和 capability 边界。
 - [Coding Session Context Firewall](session-context-firewall_zh_cn.md) — 定位原始状态进入归属。
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement_zh_cn.md) — 定位复用和替换授权归属。
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle_zh_cn.md) — 定位子 Agent 状态和恢复归属。
+- [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态和恢复归属。

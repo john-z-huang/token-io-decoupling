@@ -1,6 +1,6 @@
-# Coding Delegation State Record Worker Boundary
+# Coding Delegation Worker Boundary
 
-[English](delegation-state-record-worker-boundary.md) | [简体中文](delegation-state-record-worker-boundary_zh_cn.md)
+[English](delegation-worker-boundary.md) | [简体中文](delegation-worker-boundary_zh_cn.md)
 
 This module owns released Worker snapshots, Worker read/write boundaries, parent-controlled Dispatch entry, and the block that applies when the task-control record cannot be persisted or returned. It consumes the record defined by [the delegation state record](delegation-state-record.md); it does not define record shape, mode/count policy, child lifecycle, or Dispatch Preview strategy.
 

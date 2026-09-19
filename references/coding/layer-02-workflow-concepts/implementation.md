@@ -23,4 +23,4 @@ This checkpoint does not expand scope, change a material decision, perform final
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate authorized paths, mutations, and return-boundary ownership.
 - [Coding Execution Planning](../layer-01-fundamental-concepts/execution-planning.md) — locate bounded plan and released-slice ownership.
 - [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate direction and implementation-release ownership.
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate named-path Worker access boundaries.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary.md) — locate named-path Worker access boundaries.

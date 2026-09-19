@@ -17,5 +17,5 @@ Replacement is distinct from ordinary same-child reuse and follows the parent-co
 - [Coding Child Creation](delegation-child-creation.md) — locate child creation capability.
 - [Coding Child Role Allocation](delegation-child-role-allocation.md) — locate slot and role allocation.
 - [Coding Child Dispatch](delegation-child-dispatch.md) — locate material dispatch boundaries.
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle.md) — locate child state and recovery ownership.
+- [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state and recovery ownership.
 - [Coding Context Exchange](context-exchange.md) — locate handoff and context transport ownership.

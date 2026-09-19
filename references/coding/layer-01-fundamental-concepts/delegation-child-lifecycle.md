@@ -1,6 +1,6 @@
 # Coding Child Lifecycle
 
-[English](delegation-child-dispatch-lifecycle.md) | [简体中文](delegation-child-dispatch-lifecycle_zh_cn.md)
+[English](delegation-child-lifecycle.md) | [简体中文](delegation-child-lifecycle_zh_cn.md)
 
 This module owns persistence and lifecycle states for created Multi-Agent children. It consumes a child whose creation, allocation, and dispatch have already been handled by their owner concepts; it does not define creation, role allocation, Dispatch Preview, Worker boundaries, reuse/replacement, or context transport.
 

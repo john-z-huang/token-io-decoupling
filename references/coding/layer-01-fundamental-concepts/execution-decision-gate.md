@@ -31,4 +31,4 @@ If material decisions remain open, release reconnaissance only. After it returns
 - [Coding Execution Planning](execution-planning.md) — locate the bounded planning relationship.
 - [Coding Execution Stage Feedback](execution-stage-feedback.md) — locate stage-internal feedback signals.
 - [Coding Session Model](session-model.md) — locate role and Session ownership.
-- [Coding Child Dispatch and Lifecycle](delegation-child-dispatch-lifecycle.md) — locate delegation release lifecycle ownership.
+- [Coding Child Dispatch and Lifecycle](delegation-child-lifecycle.md) — locate delegation release lifecycle ownership.

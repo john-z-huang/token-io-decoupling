@@ -21,5 +21,5 @@ This checkpoint does not diagnose failures, authorize or execute repairs, define
 
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate material-boundary and return-condition ownership.
 - [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate dependent-release ownership.
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate final-state evidence access boundaries.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary.md) — locate final-state evidence access boundaries.
 - [Coding Child Reuse and Replacement](../layer-01-fundamental-concepts/delegation-child-reuse-replacement.md) — locate repaired-epoch reuse ownership.

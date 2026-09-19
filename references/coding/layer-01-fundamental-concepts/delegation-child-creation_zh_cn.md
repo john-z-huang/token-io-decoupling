@@ -10,7 +10,7 @@
 
 ## 相关概念
 
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle_zh_cn.md) — 定位子 Agent 状态归属。
+- [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态归属。
 - [Coding Child Role Allocation](delegation-child-role-allocation_zh_cn.md) — 定位名额和职责分配。
 - [Coding Child Dispatch](delegation-child-dispatch_zh_cn.md) — 定位实际派发边界。
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement_zh_cn.md) — 定位获准的复用和替换。

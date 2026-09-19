@@ -17,5 +17,5 @@
 - [Coding Child Creation](delegation-child-creation_zh_cn.md) — 定位子 Agent 创建能力。
 - [Coding Child Role Allocation](delegation-child-role-allocation_zh_cn.md) — 定位名额和职责分配。
 - [Coding Child Dispatch](delegation-child-dispatch_zh_cn.md) — 定位实际派发边界。
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle_zh_cn.md) — 定位子 Agent 状态和恢复归属。
+- [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态和恢复归属。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位 handoff 和上下文传输归属。

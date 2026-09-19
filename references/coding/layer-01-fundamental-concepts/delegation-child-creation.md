@@ -10,7 +10,7 @@ Creating a child means using a real MultiAgentV1 or MultiAgentV2 spawn operation
 
 ## Related concepts
 
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle.md) — locate child state ownership.
+- [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state ownership.
 - [Coding Child Role Allocation](delegation-child-role-allocation.md) — locate slot and role allocation.
 - [Coding Child Dispatch](delegation-child-dispatch.md) — locate material dispatch boundaries.
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.md) — locate authorized reuse and replacement.

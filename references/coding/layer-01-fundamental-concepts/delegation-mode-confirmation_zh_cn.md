@@ -27,4 +27,4 @@
 - [Coding Delegation Re-entry](delegation-mode-reentry_zh_cn.md) — 定位门禁重新进入归属。
 - [Coding Delegation State Record](delegation-state-record_zh_cn.md) — 定位状态记录归属。
 - [Coding Child Creation](delegation-child-creation_zh_cn.md) — 定位子 Agent 创建归属。
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle_zh_cn.md) — 定位子 Agent 生命周期归属。
+- [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 生命周期归属。

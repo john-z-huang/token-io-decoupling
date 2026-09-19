@@ -19,4 +19,4 @@ Higher-priority user, permission, security, product, runtime, capability, reposi
 - [Coding Delegation Re-entry](delegation-mode-reentry.md) — locate gate re-entry ownership.
 - [Coding Delegation State Record](delegation-state-record.md) — locate state record ownership.
 - [Coding Child Creation](delegation-child-creation.md) — locate child creation ownership.
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle.md) — locate child lifecycle ownership.
+- [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child lifecycle ownership.

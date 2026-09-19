@@ -21,5 +21,5 @@
 
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control_zh_cn.md) — 定位实质性边界和返回条件归属。
 - [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md) — 定位依赖路线放行归属。
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary_zh_cn.md) — 定位最终状态证据访问边界。
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary_zh_cn.md) — 定位最终状态证据访问边界。
 - [Coding Child Reuse and Replacement](../layer-01-fundamental-concepts/delegation-child-reuse-replacement_zh_cn.md) — 定位修复 epoch 复用归属。

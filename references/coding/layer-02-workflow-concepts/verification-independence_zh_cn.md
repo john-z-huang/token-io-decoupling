@@ -21,5 +21,5 @@
 
 - [Coding Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md) — 定位 Change Verification 职责归属。
 - [Coding Session Context Firewall](../layer-01-fundamental-concepts/session-context-firewall_zh_cn.md) — 定位 Session 状态进入边界。
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary_zh_cn.md) — 定位 verifier 证据访问边界。
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary_zh_cn.md) — 定位 verifier 证据访问边界。
 - [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md) — 定位依赖 Contract 的验证条件。

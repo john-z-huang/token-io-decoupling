@@ -22,4 +22,4 @@ This checkpoint does not choose checks, capture final-state fingerprints, define
 - [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate acceptance-condition ownership.
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate report scope and return-boundary ownership.
 - [Coding Session Role Ownership](../layer-01-fundamental-concepts/session-role-ownership.md) — locate Change Verification responsibility.
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate evidence access boundaries.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary.md) — locate evidence access boundaries.

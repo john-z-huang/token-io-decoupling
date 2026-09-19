@@ -22,4 +22,4 @@
 - [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md) — 定位验收条件和放行决策归属。
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control_zh_cn.md) — 定位已放行范围和返回边界归属。
 - [Coding Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md) — 定位 Change Verification 职责归属。
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary_zh_cn.md) — 定位最终状态证据访问边界。
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary_zh_cn.md) — 定位最终状态证据访问边界。

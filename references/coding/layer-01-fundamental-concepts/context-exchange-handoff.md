@@ -18,4 +18,4 @@ An authorized successor receives a new Context ID and directory. It may read onl
 - [Coding Context Exchange Workspace Boundary](context-exchange-workspace-boundary.md) — locate directory and capability boundaries.
 - [Coding Session Context Firewall](session-context-firewall.md) — locate raw-state ingress ownership.
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.md) — locate reuse and replacement authorization ownership.
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle.md) — locate child state and recovery ownership.
+- [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state and recovery ownership.

@@ -21,4 +21,4 @@ This checkpoint does not diagnose failure evidence, choose repair content, execu
 
 - [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate material decision and release-condition ownership.
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate approved scope and mutation boundaries.
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate parent-controlled authorization boundaries.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary.md) — locate parent-controlled authorization boundaries.

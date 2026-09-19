@@ -22,4 +22,4 @@
 - [Coding Context Exchange 工作区边界](../layer-01-fundamental-concepts/context-exchange-workspace-boundary_zh_cn.md) — 定位 worktree、权限和路径边界。
 - [Coding Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md) — 定位 Documentation/Comments & Git Operations 归属。
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control_zh_cn.md) — 定位授权范围和未发布边界归属。
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary_zh_cn.md) — 定位父级控制路径和 Worker 访问边界。
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary_zh_cn.md) — 定位父级控制路径和 Worker 访问边界。

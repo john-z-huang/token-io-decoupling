@@ -20,6 +20,6 @@ This checkpoint does not capture fingerprints, choose checks, define independent
 ## Related concepts
 
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate material state-boundary ownership.
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate final-state evidence access.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary.md) — locate final-state evidence access.
 - [Coding Child Reuse and Replacement](../layer-01-fundamental-concepts/delegation-child-reuse-replacement.md) — locate repaired-epoch reuse ownership.
 - [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate dependent-release conditions.

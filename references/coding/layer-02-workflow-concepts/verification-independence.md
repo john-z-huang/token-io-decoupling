@@ -21,5 +21,5 @@ This checkpoint does not choose holistic or targeted checks, capture fingerprint
 
 - [Coding Session Role Ownership](../layer-01-fundamental-concepts/session-role-ownership.md) — locate Change Verification role ownership.
 - [Coding Session Context Firewall](../layer-01-fundamental-concepts/session-context-firewall.md) — locate Session state-ingress boundaries.
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate verifier evidence access boundaries.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary.md) — locate verifier evidence access boundaries.
 - [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate Contract-dependent verification conditions.

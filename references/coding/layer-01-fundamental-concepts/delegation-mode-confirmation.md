@@ -27,4 +27,4 @@ After confirmation, keep all work in the current Session. Do not create, fork, h
 - [Coding Delegation Re-entry](delegation-mode-reentry.md) — locate gate re-entry ownership.
 - [Coding Delegation State Record](delegation-state-record.md) — locate state record ownership.
 - [Coding Child Creation](delegation-child-creation.md) — locate child creation ownership.
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle.md) — locate child lifecycle ownership.
+- [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child lifecycle ownership.

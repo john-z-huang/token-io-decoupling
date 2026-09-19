@@ -1,6 +1,6 @@
-# Coding 委派状态记录 Worker 边界
+# Coding 委派 Worker 边界
 
-[English](delegation-state-record-worker-boundary.md) | [简体中文](delegation-state-record-worker-boundary_zh_cn.md)
+[English](delegation-worker-boundary.md) | [简体中文](delegation-worker-boundary_zh_cn.md)
 
 本文档负责已放行的 Worker 快照、Worker 读写边界、父级控制的 Dispatch 进入路径，以及任务控制记录无法持久化或返回时的阻断。它消费[委派状态记录](delegation-state-record_zh_cn.md)定义的记录；不定义记录结构、模式/数量策略、子 Agent 生命周期或 Dispatch Preview 策略。
 

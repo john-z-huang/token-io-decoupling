@@ -22,4 +22,4 @@ This checkpoint does not diagnose failures, authorize scope changes, define fina
 
 - [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate released paths and mutation boundaries.
 - [Coding Execution Planning](../layer-01-fundamental-concepts/execution-planning.md) — locate bounded implementation-slice ownership.
-- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate named-path Worker access boundaries.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary.md) — locate named-path Worker access boundaries.

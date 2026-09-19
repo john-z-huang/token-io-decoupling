@@ -31,4 +31,4 @@
 - [Coding Execution Planning](execution-planning_zh_cn.md) — 定位有界规划关系。
 - [Coding Execution Stage Feedback](execution-stage-feedback_zh_cn.md) — 定位阶段内反馈信号。
 - [Coding Session Model](session-model_zh_cn.md) — 定位角色和 Session 归属。
-- [Coding 子 Agent Dispatch 与生命周期](delegation-child-dispatch-lifecycle_zh_cn.md) — 定位委派放行生命周期归属。
+- [Coding 子 Agent Dispatch 与生命周期](delegation-child-lifecycle_zh_cn.md) — 定位委派放行生命周期归属。

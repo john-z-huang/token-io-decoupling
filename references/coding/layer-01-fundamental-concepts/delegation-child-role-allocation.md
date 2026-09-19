@@ -16,6 +16,6 @@ Assign Context Bootstrap/Refresh only when reuse is likely to outweigh setup: at
 
 - [Coding Child Creation](delegation-child-creation.md) — locate the child creation owner.
 - [Coding Child Dispatch](delegation-child-dispatch.md) — locate material dispatch boundaries.
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle.md) — locate child state ownership.
+- [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state ownership.
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.md) — locate authorized reuse and replacement.
 - [Coding Context Exchange](context-exchange.md) — locate context transport ownership.

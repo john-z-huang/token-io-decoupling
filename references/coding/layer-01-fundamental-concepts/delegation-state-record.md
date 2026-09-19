@@ -26,9 +26,9 @@ unavailable_capabilities: [<capability names>]
 
 ## Related concepts
 
-- [Coding Delegation State Record Worker Boundary](delegation-state-record-worker-boundary.md) — locate Worker snapshot and record access boundaries.
+- [Coding Delegation State Record Worker Boundary](delegation-worker-boundary.md) — locate Worker snapshot and record access boundaries.
 - [Coding Delegation Mode Confirmation](delegation-mode-confirmation.md) — locate root mode confirmation ownership.
 - [Coding Delegation Count Gate](delegation-mode-count-gate.md) — locate child-count gate ownership.
 - [Coding Delegation Re-entry](delegation-mode-reentry.md) — locate mode/count re-entry ownership.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice field ownership.
-- [Coding Child Lifecycle](delegation-child-dispatch-lifecycle.md) — locate child lifecycle field ownership.
+- [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child lifecycle field ownership.
