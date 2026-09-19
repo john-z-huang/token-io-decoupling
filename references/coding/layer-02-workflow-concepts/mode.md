@@ -4,7 +4,7 @@
 
 ## Actions
 
-1. Load [the state-record reference](../../references/coding/layer-01-fundamental-concepts/delegation-state-record.md) and [the mode/count-gate reference](../../references/coding/layer-01-fundamental-concepts/delegation-mode-count-gate.md). When the released mode allocates children, also load [the child dispatch/lifecycle reference](../../references/coding/layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle.md).
+1. Load [the state-record reference](../layer-01-fundamental-concepts/delegation-state-record.md) and [the mode/count-gate reference](../layer-01-fundamental-concepts/delegation-mode-count-gate.md). When the released mode allocates children, also load [the child dispatch/lifecycle reference](../layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle.md).
 2. Read the parent-controlled task record and validate its current `gate_status`, `mode`, `child_count`, allocations, lifecycle, and unavailable capabilities before route selection. If the record has not released the route, stop at this checkpoint and do not proceed.
 3. If a new root directive changes delegation, re-apply the mode/count gate and replace the task record before continuing. This checkpoint composes and validates the references; it does not decide mode, count, creation, allocation, reuse, exceptions, or lifecycle itself.
 
