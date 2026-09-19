@@ -17,3 +17,10 @@
 ## 边界
 
 本检查点不扩大范围，不改变实质性决策，不执行最终验证，不写入验证后的文档，也不产生未授权的 Git 影响。
+
+## 相关概念
+
+- [Coding Execution Control](../layer-01-fundamental-concepts/execution-control_zh_cn.md) — 定位授权路径、修改和返回边界归属。
+- [Coding Execution Planning](../layer-01-fundamental-concepts/execution-planning_zh_cn.md) — 定位有界规划和已放行 slice 归属。
+- [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md) — 定位方向和实现放行归属。
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary_zh_cn.md) — 定位命名路径的 Worker 访问边界。

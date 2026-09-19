@@ -16,3 +16,10 @@ The authorized Git operation completes against the exact target, or the unavaila
 ## Boundary
 
 This checkpoint does not grant product decision authority, permit unrequested cleanup, or turn a possible Git effect into an authorized one.
+
+## Related concepts
+
+- [Coding Context Exchange Workspace Boundary](../layer-01-fundamental-concepts/context-exchange-workspace-boundary.md) — locate worktree, permission, and path boundaries.
+- [Coding Session Role Ownership](../layer-01-fundamental-concepts/session-role-ownership.md) — locate Documentation/Comments & Git Operations ownership.
+- [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate authorized scope and unreleased-boundary ownership.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate parent-controlled path and Worker access boundaries.

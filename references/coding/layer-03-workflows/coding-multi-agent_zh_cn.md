@@ -20,7 +20,7 @@
 
 ## 本路线的运行环境要求
 
-使用运行环境检查点提供的能力清单和共用运行规则。只有任务记录和已发布切片所需能力均暴露时才能继续。Worker 只能向直接父级返回，不能创建/管理其他 Agent 或联系任意线程。在本地 Codex 中使用 Skill 绑定：Primary Output 为 `gpt-5.6-luna`/`xhigh`；Change Verification 为 `gpt-5.6-luna`/`xhigh`；Documentation/Git 为 `gpt-5.6-luna`/`high`；Context Bootstrap 为 `gpt-5.6-luna`/`high`，确定性刷新可用 `medium`。重复失败或阻塞时才窄范围升级到 `max`，随后恢复正常档位。
+使用[运行环境能力清单](../layer-02-workflow-concepts/environment-capability-inventory_zh_cn.md)提供的能力清单和共用运行规则。只有任务记录和已发布切片所需能力均暴露时才能继续。Worker 只能向直接父级返回，不能创建/管理其他 Agent 或联系任意线程。在本地 Codex 中使用 Skill 绑定：Primary Output 为 `gpt-5.6-luna`/`xhigh`；Change Verification 为 `gpt-5.6-luna`/`xhigh`；Documentation/Git 为 `gpt-5.6-luna`/`high`；Context Bootstrap 为 `gpt-5.6-luna`/`high`，确定性刷新可用 `medium`。重复失败或阻塞时才窄范围升级到 `max`，随后恢复正常档位。
 
 ## 已组合的检查点顺序
 

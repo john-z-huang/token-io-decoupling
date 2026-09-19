@@ -13,15 +13,15 @@ This route is selected by the Coding workflow and is valid only after the Mode c
 
 ## Composed inputs
 
-Compose [shared protocols](../../share/shared-protocols.md), [delegation state](../layer-01-fundamental-concepts/delegation-state-record.md), [the mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [session model](../layer-01-fundamental-concepts/session-model.md), and [execution control](../layer-01-fundamental-concepts/execution-control.md) for this route. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
+Compose [shared protocols](../../share/shared-protocols.md), [delegation state](../layer-01-fundamental-concepts/delegation-state-record.md), [the mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [session model](../layer-01-fundamental-concepts/session-model.md), [session role ownership](../layer-01-fundamental-concepts/session-role-ownership.md), and [execution control](../layer-01-fundamental-concepts/execution-control.md) for this route. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
 
 ## Responsibility boundary in the current Session
 
-Use the role ownership defined in `session-model`; this route runs those roles as logical phases in one Session and cannot provide an independent verifier.
+Use the role ownership defined in [session role ownership](../layer-01-fundamental-concepts/session-role-ownership.md); this route runs those roles as logical phases in one Session and cannot provide an independent verifier.
 
 ## Route-specific environment requirements
 
-Use the inventory and shared runtime rules from the Environment checkpoint. This route keeps all phases in the current Session; it does not create independent Sessions or Worker return paths. If a required capability is unavailable, stop the slice and report it.
+Use the inventory and shared runtime rules from the [Environment capability inventory](../layer-02-workflow-concepts/environment-capability-inventory.md). This route keeps all phases in the current Session; it does not create independent Sessions or Worker return paths. If a required capability is unavailable, stop the slice and report it.
 
 ## Composed checkpoint sequence
 

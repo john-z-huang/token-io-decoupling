@@ -7,7 +7,7 @@
 ## 入口
 
 1. 通过模式检查点组合根指令模式门禁所需的委派 references。
-2. 识别真实运行环境并完成运行环境检查点。
+2. 识别真实运行环境，完成运行环境检查点，并加载[运行环境能力清单](../references/coding/layer-02-workflow-concepts/environment-capability-inventory_zh_cn.md)进行能力检查。
 3. 在模式门禁和运行环境检查完成后，只选择一条完整路线。该路线自行加载 references 并组合检查点。
 
 ## 路线

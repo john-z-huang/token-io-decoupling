@@ -20,7 +20,7 @@ Use the role ownership defined in [session role ownership](../layer-01-fundament
 
 ## Route-specific environment requirements
 
-Use the inventory and shared runtime rules from the Environment checkpoint. Continue only when it exposes the capabilities required by the task record and released slice. A Worker returns only to its direct parent and cannot create/manage Agents or contact arbitrary threads. On Local Codex, use the Skill bindings: Primary Output `gpt-5.6-luna`/`xhigh`; Change Verification `gpt-5.6-luna`/`xhigh`; Documentation/Git `gpt-5.6-luna`/`high`; Context Bootstrap `gpt-5.6-luna`/`high` or `medium` for deterministic refreshes. Escalate to `max` only after repeated failure or blockage, then return to the normal tier.
+Use the inventory and shared runtime rules from the [Environment capability inventory](../layer-02-workflow-concepts/environment-capability-inventory.md). Continue only when it exposes the capabilities required by the task record and released slice. A Worker returns only to its direct parent and cannot create/manage Agents or contact arbitrary threads. On Local Codex, use the Skill bindings: Primary Output `gpt-5.6-luna`/`xhigh`; Change Verification `gpt-5.6-luna`/`xhigh`; Documentation/Git `gpt-5.6-luna`/`high`; Context Bootstrap `gpt-5.6-luna`/`high` or `medium` for deterministic refreshes. Escalate to `max` only after repeated failure or blockage, then return to the normal tier.
 
 ## Composed checkpoint sequence
 
