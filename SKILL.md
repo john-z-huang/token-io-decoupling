@@ -16,8 +16,8 @@ The Skill defines orchestration conventions only. It cannot bypass higher-priori
 ## Start here
 
 1. Read [Coding workflow](workflows/coding.md), then pass the Mode checkpoint before substantive work. It composes the delegation references and releases exactly one mode workflow:
-   - [Single-Agent route](workflows/exist-workflow/coding-single-agent.md) when the task control record contains `mode: Single-Agent Coding`;
-   - [Multi-Agent route](workflows/exist-workflow/coding-multi-agent.md) when it contains `mode: Multi-Agent Coding` and a locked positive `child_count`.
+   - [Single-Agent route](references/coding/layer-03-workflows/coding-single-agent.md) when the task control record contains `mode: Single-Agent Coding`;
+   - [Multi-Agent route](references/coding/layer-03-workflows/coding-multi-agent.md) when it contains `mode: Multi-Agent Coding` and a locked positive `child_count`.
 2. Load only the references required by the selected workflow and current step.
 3. Return to `workflows/coding.md` only when the task changes direction or before final acceptance.
 

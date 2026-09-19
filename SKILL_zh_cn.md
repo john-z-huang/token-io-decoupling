@@ -16,8 +16,8 @@ Coding 的委派和 Session 拓扑规则拆分为原子 reference：状态记录
 ## 从这里开始
 
 1. 读取 [Coding 工作流](workflows/coding_zh_cn.md)，再通过模式检查点完成委派 reference 的组合和根指令模式确认门禁，然后只加载一个模式工作流：
-   - 任务控制记录包含 `mode: Single-Agent Coding` 时，读取[单代理路线](workflows/exist-workflow/coding-single-agent_zh_cn.md)；
-   - 任务控制记录包含 `mode: Multi-Agent Coding` 且已锁定正整数 `child_count` 时，读取[多代理路线](workflows/exist-workflow/coding-multi-agent_zh_cn.md)。
+   - 任务控制记录包含 `mode: Single-Agent Coding` 时，读取[单代理路线](references/coding/layer-03-workflows/coding-single-agent_zh_cn.md)；
+   - 任务控制记录包含 `mode: Multi-Agent Coding` 且已锁定正整数 `child_count` 时，读取[多代理路线](references/coding/layer-03-workflows/coding-multi-agent_zh_cn.md)。
 2. 只按选定工作流和当前步骤加载所需 reference。
 3. 只有任务改变方向或进行最终验收前才回到 `workflows/coding_zh_cn.md`。
 

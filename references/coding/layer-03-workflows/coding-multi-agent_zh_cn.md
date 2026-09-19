@@ -30,8 +30,8 @@
 
 公共工作流已经建立共享协议、Session 规则、运行环境检查和执行控制规则。此外：
 
-1. Worker 需要可复用状态、有界交接或替换恢复时，读取[上下文交换](../../references/coding/layer-01-fundamental-concepts/context-exchange_zh_cn.md)。
-2. 派发启用 Worker 编写内容 memo 时，读取[内容 memo](../../references/coding/layer-01-fundamental-concepts/content-memo_zh_cn.md)。
+1. Worker 需要可复用状态、有界交接或替换恢复时，读取[上下文交换](../layer-01-fundamental-concepts/context-exchange_zh_cn.md)。
+2. 派发启用 Worker 编写内容 memo 时，读取[内容 memo](../layer-01-fundamental-concepts/content-memo_zh_cn.md)。
 3. 只有当前委派状态已经分配时才使用 Context Bootstrap 或 Refresh。保持 capsule 只包含事实和路由信息；它不能替代 Contract、必需的源文档或独立验证。
 4. 每个 Worker 使用独立的 context-exchange 子目录，并且只授予它所需的命名代码路径和上下文路径。Worker 分配遵循子代理派发/生命周期 reference。
 

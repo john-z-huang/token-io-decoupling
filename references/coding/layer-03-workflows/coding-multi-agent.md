@@ -30,8 +30,8 @@ Follow the common catalog in the Coding workflow. Multi-Agent deltas: load Conte
 
 The common workflow already establishes shared protocols, Session rules, environment checks, and execution-control rules. Additionally:
 
-1. Read [context exchange](../../references/coding/layer-01-fundamental-concepts/context-exchange.md) when Workers need reusable state, bounded handoff, or replacement recovery.
-2. Read [content memo](../../references/coding/layer-01-fundamental-concepts/content-memo.md) when the dispatch enables Worker-authored content memos.
+1. Read [context exchange](../layer-01-fundamental-concepts/context-exchange.md) when Workers need reusable state, bounded handoff, or replacement recovery.
+2. Read [content memo](../layer-01-fundamental-concepts/content-memo.md) when the dispatch enables Worker-authored content memos.
 3. Use Context Bootstrap or Refresh only when it is assigned in the active delegation state. Keep the capsule factual and routing-only; it never replaces the Contract, mandatory source loading, or independent verification.
 4. Keep each Worker's context-exchange subdirectory separate, and grant each Worker only the named code and context paths it needs. Follow the child dispatch/lifecycle reference for Worker allocation.
 
