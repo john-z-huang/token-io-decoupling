@@ -16,3 +16,9 @@
 ## 边界
 
 本检查点决定下一步允许做什么，不实现，不执行最终验证，不写入验证后的文档，也不产生 Git 影响。
+
+## 相关概念
+
+- [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md) — 定位 Decision Brief 和放行条件归属。
+- [Coding Execution Planning](../layer-01-fundamental-concepts/execution-planning_zh_cn.md) — 定位有界规划归属。
+- [Coding Execution Control](../layer-01-fundamental-concepts/execution-control_zh_cn.md) — 定位已放行 slice 边界归属。

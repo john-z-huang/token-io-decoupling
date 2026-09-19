@@ -16,3 +16,9 @@ The next slice has one approved direction, an explicit scope, and a stated bound
 ## Boundary
 
 This checkpoint decides what may be done next. It does not implement, perform final verification, write post-verification documentation, or perform Git effects.
+
+## Related concepts
+
+- [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate decision-brief and release-condition ownership.
+- [Coding Execution Planning](../layer-01-fundamental-concepts/execution-planning.md) — locate bounded planning ownership.
+- [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate released-slice boundary ownership.

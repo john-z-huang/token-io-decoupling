@@ -7,7 +7,7 @@ Use this workflow when repository text, developer-tool output, implementation, t
 ## Entry
 
 1. Pass the Mode checkpoint, which composes the delegation references needed for the root-directive mode gate.
-2. Identify the actual runtime environment and complete the Environment checkpoint.
+2. Identify the actual runtime environment, complete the Environment checkpoint, and load the [Environment capability inventory](../references/coding/layer-02-workflow-concepts/environment-capability-inventory.md) for capability checks.
 3. Select exactly one complete route after the mode gate and environment check. That route loads its own references and checkpoints.
 
 ## Routes
@@ -23,7 +23,7 @@ These layers define composition direction, not policy ownership. Each document m
 
 | Layer | Role | Allowed dependency targets |
 | --- | --- | --- |
-| [`layer-01-fundamental-concepts`](../references/coding/layer-01-fundamental-concepts/) | Foundational atomic concepts | Its language mirror only |
+| [`layer-01-fundamental-concepts`](../references/coding/layer-01-fundamental-concepts/) | Foundational atomic concepts | Same-language layer-01 concepts and its language mirror |
 | [`layer-02-workflow-concepts`](../references/coding/layer-02-workflow-concepts/) | Workflow checkpoints | `layer-01-fundamental-concepts`; never layer-03 |
 | [`layer-03-workflows`](../references/coding/layer-03-workflows/) | Ready-to-use workflow templates | layer-01, layer-02, and shared protocols; never this selector |
 | `workflows/coding.md` | Route selector and three-layer index | All three layers; owns navigation, not policy |

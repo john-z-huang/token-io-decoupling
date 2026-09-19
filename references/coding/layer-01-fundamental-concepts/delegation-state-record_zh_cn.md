@@ -1,6 +1,8 @@
 # Coding 委派状态记录
 
-本文档负责 Coding 委派使用的任务控制记录，定义状态结构、ownership 和 Worker 读写边界。不决定模式，不创建子 Agent，不分配职责，也不定义生命周期转换。
+[English](delegation-state-record.md) | [简体中文](delegation-state-record_zh_cn.md)
+
+本文档负责 Coding 委派使用的任务控制记录，定义记录的规范位置、ownership、结构和字段约束。不决定模式，不定义 Worker 读写边界，不创建子 Agent，不分配职责，也不定义生命周期转换。
 
 ## Ownership
 
@@ -22,6 +24,11 @@ unavailable_capabilities: [<能力名称>]
 
 单代理的 `child_count` 为 0，多代理为已锁定的正整数。子 Agent 推进时，allocation 的 lifecycle 可以与顶层记录不同。
 
-## Worker 边界
+## 相关概念
 
-Worker 只能接收父级 Dispatch 中相关的已放行快照，不得推断、修改或替换根记录。放行后，Worker 通过父级 Dispatch Preview 进入，不重新打开根用户模式或数量门禁。运行时无法持久化或返回记录时，依赖该记录的路线被阻塞。
+- [Coding Delegation State Record Worker Boundary](delegation-worker-boundary_zh_cn.md) — 定位 Worker 快照和记录访问边界。
+- [Coding Delegation Mode Confirmation](delegation-mode-confirmation_zh_cn.md) — 定位根模式确认归属。
+- [Coding Delegation Count Gate](delegation-mode-count-gate_zh_cn.md) — 定位子 Agent 数量门禁归属。
+- [Coding Delegation Re-entry](delegation-mode-reentry_zh_cn.md) — 定位模式/数量重新进入归属。
+- [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 字段归属。
+- [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 生命周期字段归属。

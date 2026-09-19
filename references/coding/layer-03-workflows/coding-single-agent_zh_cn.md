@@ -2,30 +2,30 @@
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
 
-本路线由 Coding 工作流选择；只有模式检查点放行单代理 Coding 后才有效。该检查点在执行前组合状态记录和模式/数量 reference。
+本路线由 Coding 工作流选择；只有模式检查点放行单代理 Coding 后才有效。执行前，该检查点组合[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)和[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md) reference。
 
 ## 模式 Contract
 
 - 所有工作保留在当前 Session 中。将 Input-side Reasoning、Primary Output、文档和适用检查视为逻辑阶段，而不是独立代理。
-- 根状态和单代理门禁由状态记录与模式/数量 reference 负责；子代理派发/生命周期不适用于本路线。
+- [委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)负责根状态记录；[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)负责单代理模式确认；[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)负责数量锁定；[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)负责重新进入条件。子代理派发和生命周期不适用于本路线。
 - 保留下方检查点序列中的 Contract、上下文、决策、控制边界、验证边界、文档边界、Git 授权和完成检查。
 - “不要创建子代理”或“不要使用浏览器”等任务级禁止事项在整个任务期间持续有效。
 
 ## 组合输入
 
-本路线组合[共享协议](../../share/shared-protocols_zh_cn.md)、[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)和[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)。模式检查点已经验证任务记录；下方检查点列表是完整的路线组合。
+本路线组合[共享协议](../../share/shared-protocols_zh_cn.md)、[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)、[Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)、[Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md)和[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)。模式检查点已经验证任务记录；下方检查点列表是完整的路线组合。
 
 ## 当前 Session 中的职责边界
 
-职责 ownership 见 `session-model`；本路线在一个 Session 中执行逻辑阶段，无法提供独立 verifier。
+职责 ownership 见[Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md)；本路线在一个 Session 中执行逻辑阶段，无法提供独立 verifier。
 
 ## 本路线的运行环境要求
 
-使用运行环境检查点提供的能力清单和共用运行规则。本路线将所有阶段保留在当前 Session，不创建独立 Session 或 Worker 返回路径。所需能力不可用时，停止切片并报告。
+使用[运行环境能力清单](../layer-02-workflow-concepts/environment-capability-inventory_zh_cn.md)提供的能力清单和共用运行规则。本路线将所有阶段保留在当前 Session，不创建独立 Session 或 Worker 返回路径。所需能力不可用时，停止切片并报告。
 
 ## 已组合的检查点顺序
 
-Coding 选择器已经将 Environment 和 Mode 检查点作为路线前门禁执行；本路线不得重复执行。遵循 Coding 工作流，并组合[Contract](../layer-02-workflow-concepts/contract_zh_cn.md)、[Context](../layer-02-workflow-concepts/context_zh_cn.md)、[Decision](../layer-02-workflow-concepts/decision_zh_cn.md)、[Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)、[Control](../layer-02-workflow-concepts/control_zh_cn.md)、[Verification](../layer-02-workflow-concepts/verification_zh_cn.md)、[Repair](../layer-02-workflow-concepts/repair_zh_cn.md)、[Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)、[Git](../layer-02-workflow-concepts/git_zh_cn.md)和[Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)。单代理差异：仅在需要有界侦察或恢复时加载上下文；每个实质性方向前执行决策；每次只实现一个获批准切片并设置控制边界；针对当前最终状态指纹验证；只有具体失败时才修复，并针对新的 epoch 重新验证；然后在当前 Session 中进入文档、Git 和验收。
+Coding 选择器已经将 Environment 和 Mode 检查点作为路线前门禁执行；本路线不得重复执行。遵循 Coding 工作流，并组合[Contract](../layer-02-workflow-concepts/contract_zh_cn.md)、[Context](../layer-02-workflow-concepts/context_zh_cn.md)、[Decision](../layer-02-workflow-concepts/decision_zh_cn.md)、[Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)、[Control](../layer-02-workflow-concepts/control_zh_cn.md)、[Verification](../layer-02-workflow-concepts/verification_zh_cn.md)、[Verification independence](../layer-02-workflow-concepts/verification-independence_zh_cn.md)、[Verification reporting](../layer-02-workflow-concepts/verification-reporting_zh_cn.md)、[Verification epoch](../layer-02-workflow-concepts/verification-epoch_zh_cn.md)、[Repair](../layer-02-workflow-concepts/repair_zh_cn.md)、[Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate_zh_cn.md)、[Repair execution](../layer-02-workflow-concepts/repair-execution_zh_cn.md)、[Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff_zh_cn.md)、[Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)、[Git](../layer-02-workflow-concepts/git_zh_cn.md)和[Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)。单代理差异：仅在需要有界侦察或恢复时加载上下文；每个实质性方向前执行决策；每次只实现一个获批准切片并设置控制边界；针对当前最终状态指纹验证；只有具体失败时才修复，并针对新的 epoch 重新验证；然后在当前 Session 中进入文档、Git 和验收。
 
 ## 单 Session 执行规则
 

@@ -16,3 +16,10 @@
 ## 边界
 
 本检查点不授予产品决策权限，不允许未请求的清理，也不会把可能产生的 Git 影响变成已授权影响。
+
+## 相关概念
+
+- [Coding Context Exchange 工作区边界](../layer-01-fundamental-concepts/context-exchange-workspace-boundary_zh_cn.md) — 定位 worktree、权限和路径边界。
+- [Coding Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md) — 定位 Documentation/Comments & Git Operations 归属。
+- [Coding Execution Control](../layer-01-fundamental-concepts/execution-control_zh_cn.md) — 定位授权范围和未发布边界归属。
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-worker-boundary_zh_cn.md) — 定位父级控制路径和 Worker 访问边界。

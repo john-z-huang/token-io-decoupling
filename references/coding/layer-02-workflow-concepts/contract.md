@@ -16,3 +16,8 @@ The goal, constraints, decisions, and acceptance conditions are explicit. If req
 ## Boundary
 
 This checkpoint does not choose an execution mode, inspect the whole repository, implement changes, verify results, write documentation, or perform Git operations.
+
+## Related concepts
+
+- [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate decision-brief and release-condition ownership.
+- [Coding Execution Planning](../layer-01-fundamental-concepts/execution-planning.md) — locate bounded planning ownership.

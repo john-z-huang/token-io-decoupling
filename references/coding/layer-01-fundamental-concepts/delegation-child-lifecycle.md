@@ -1,0 +1,21 @@
+# Coding Child Lifecycle
+
+[English](delegation-child-lifecycle.md) | [简体中文](delegation-child-lifecycle_zh_cn.md)
+
+This module owns persistence and lifecycle states for created Multi-Agent children. It consumes a child whose creation, allocation, and dispatch have already been handled by their owner concepts; it does not define creation, role allocation, Dispatch Preview, Worker boundaries, reuse/replacement, or context transport.
+
+## Lifecycle states
+
+Keep created children visible and persistent. Do not close, shut down, archive, delete, or remove them from the task panel. While pending or running, wait or send only authorized input. A child may become completed only after returning its final result and evidence.
+
+## Error and interruption
+
+On error or interruption, keep the child state explicit, report the blocker and available evidence, and do not close it as cleanup without authorization. Authorized repair, reuse, or replacement follows the corresponding owner concept.
+
+## Related concepts
+
+- [Coding Child Creation](delegation-child-creation.md) — locate child creation capability.
+- [Coding Child Role Allocation](delegation-child-role-allocation.md) — locate slot and role allocation.
+- [Coding Child Dispatch](delegation-child-dispatch.md) — locate Dispatch Preview and Worker boundary.
+- [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.md) — locate authorized repair and replacement relations.
+- [Coding Context Exchange](context-exchange.md) — locate context transport ownership.

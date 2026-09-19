@@ -17,3 +17,8 @@
 ## 边界
 
 本检查点不隐藏失败，不把假设变成事实，也不授权新的实现、文档或 Git 工作。
+
+## 相关概念
+
+- [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md) — 定位决策和验收条件归属。
+- [Coding Execution Control](../layer-01-fundamental-concepts/execution-control_zh_cn.md) — 定位已放行范围和返回边界归属。
