@@ -2,12 +2,12 @@
 
 [English](coding-multi-agent.md) | [简体中文](coding-multi-agent_zh_cn.md)
 
-This route is selected by the Coding workflow and is valid only after the Mode checkpoint releases Multi-Agent Coding. The checkpoint composes all three delegation references before execution.
+This route is selected by the Coding workflow and is valid only after the Mode checkpoint releases Multi-Agent Coding. Before execution, the checkpoint composes the [mode-confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [count-gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [mode-reentry](../layer-01-fundamental-concepts/delegation-mode-reentry.md), [state-record](../layer-01-fundamental-concepts/delegation-state-record.md), [child-creation](../layer-01-fundamental-concepts/delegation-child-creation.md), [child-role-allocation](../layer-01-fundamental-concepts/delegation-child-role-allocation.md), [child-dispatch](../layer-01-fundamental-concepts/delegation-child-dispatch.md), [child-reuse/replacement](../layer-01-fundamental-concepts/delegation-child-reuse-replacement.md), and [child-lifecycle](../layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle.md) owners.
 
 ## Mode contract
 
 - A Worker receives one released Interaction Slice and returns only through the parent-controlled channel; it never creates a recursive hierarchy or treats another Worker's progress as permission.
-- The mode/count and child dispatch/lifecycle references own mode, count, allocation, creation, reuse, replacement, and lifecycle; role names do not independently authorize a Session.
+- The [mode-confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [count-gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [mode-reentry](../layer-01-fundamental-concepts/delegation-mode-reentry.md), and [state-record](../layer-01-fundamental-concepts/delegation-state-record.md) owners govern their respective root mode, count, re-entry, and state-record boundaries; [child-creation](../layer-01-fundamental-concepts/delegation-child-creation.md), [child-role-allocation](../layer-01-fundamental-concepts/delegation-child-role-allocation.md), [child-dispatch](../layer-01-fundamental-concepts/delegation-child-dispatch.md), [child-reuse/replacement](../layer-01-fundamental-concepts/delegation-child-reuse-replacement.md), and [child-lifecycle](../layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle.md) own their corresponding child boundaries. Role names do not independently authorize a Session.
 - If the user forbids subagents, child tasks, independent Sessions, or parallel delegation, stop this route and return to route selection; do not simulate multi-agent behavior.
 
 ## Composed inputs

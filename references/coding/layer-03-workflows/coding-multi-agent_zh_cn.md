@@ -2,12 +2,12 @@
 
 [English](coding-multi-agent.md) | [简体中文](coding-multi-agent_zh_cn.md)
 
-本路线由 Coding 工作流选择；只有模式检查点放行多代理 Coding 后才有效。该检查点在执行前组合三个委派 reference。
+本路线由 Coding 工作流选择；只有模式检查点放行多代理 Coding 后才有效。执行前，该检查点组合[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)、[状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[子代理创建](../layer-01-fundamental-concepts/delegation-child-creation_zh_cn.md)、[子代理职责分配](../layer-01-fundamental-concepts/delegation-child-role-allocation_zh_cn.md)、[子代理派发](../layer-01-fundamental-concepts/delegation-child-dispatch_zh_cn.md)、[子代理复用/替换](../layer-01-fundamental-concepts/delegation-child-reuse-replacement_zh_cn.md)和[子代理生命周期](../layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle_zh_cn.md) owner。
 
 ## 模式 Contract
 
 - Worker 接收一个已发布的 Interaction Slice，只能通过父级控制的通道返回；不得递归创建层级，也不得把其他 Worker 的进度当作授权。
-- 模式/数量与子代理派发/生命周期 reference 负责模式、数量、分配、创建、复用、替换和生命周期；职责名称不能独立授权 Session。
+- [模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)和[状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md) owner 分别负责各自的根模式、数量、重新进入和状态记录边界；[子代理创建](../layer-01-fundamental-concepts/delegation-child-creation_zh_cn.md)、[子代理职责分配](../layer-01-fundamental-concepts/delegation-child-role-allocation_zh_cn.md)、[子代理派发](../layer-01-fundamental-concepts/delegation-child-dispatch_zh_cn.md)、[子代理复用/替换](../layer-01-fundamental-concepts/delegation-child-reuse-replacement_zh_cn.md)和[子代理生命周期](../layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle_zh_cn.md) owner 负责对应的子代理边界。职责名称不能独立授权 Session。
 - 如果用户禁止子代理、子任务、独立 Session 或并行委派，应停止本路线并返回路线选择，不得模拟多代理行为。
 
 ## 组合输入

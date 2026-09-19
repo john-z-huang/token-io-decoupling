@@ -2,18 +2,18 @@
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
 
-本路线由 Coding 工作流选择；只有模式检查点放行单代理 Coding 后才有效。该检查点在执行前组合状态记录和模式/数量 reference。
+本路线由 Coding 工作流选择；只有模式检查点放行单代理 Coding 后才有效。执行前，该检查点组合[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)和[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md) reference。
 
 ## 模式 Contract
 
 - 所有工作保留在当前 Session 中。将 Input-side Reasoning、Primary Output、文档和适用检查视为逻辑阶段，而不是独立代理。
-- 根状态和单代理门禁由状态记录与模式/数量 reference 负责；子代理派发/生命周期不适用于本路线。
+- [委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)负责根状态记录；[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)负责单代理模式确认；[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)负责数量锁定；[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)负责重新进入条件。子代理派发和生命周期不适用于本路线。
 - 保留下方检查点序列中的 Contract、上下文、决策、控制边界、验证边界、文档边界、Git 授权和完成检查。
 - “不要创建子代理”或“不要使用浏览器”等任务级禁止事项在整个任务期间持续有效。
 
 ## 组合输入
 
-本路线组合[共享协议](../../share/shared-protocols_zh_cn.md)、[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)、[Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md)和[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)。模式检查点已经验证任务记录；下方检查点列表是完整的路线组合。
+本路线组合[共享协议](../../share/shared-protocols_zh_cn.md)、[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)、[Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)、[Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md)和[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)。模式检查点已经验证任务记录；下方检查点列表是完整的路线组合。
 
 ## 当前 Session 中的职责边界
 

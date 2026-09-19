@@ -2,18 +2,18 @@
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
 
-This route is selected by the Coding workflow and is valid only after the Mode checkpoint releases Single-Agent Coding. The checkpoint composes the state-record and mode/count references before execution.
+This route is selected by the Coding workflow and is valid only after the Mode checkpoint releases Single-Agent Coding. Before execution, the checkpoint composes the [delegation state record](../layer-01-fundamental-concepts/delegation-state-record.md), [mode confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), and [mode re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md) references.
 
 ## Mode contract
 
 - Keep all work in the current Session. Treat Input-side Reasoning, Primary Output, documentation, and applicable checks as logical phases, not separate agents.
-- The state-record and mode/count references own the root state and Single-Agent gate; child dispatch/lifecycle does not apply to this route.
+- The [delegation state record](../layer-01-fundamental-concepts/delegation-state-record.md) owns the root state record; [mode confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md) owns Single-Agent mode confirmation; [mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md) owns count locking; and [mode re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md) owns re-entry conditions. Child dispatch and lifecycle do not apply to this route.
 - Keep the Contract, Context, Decision, Control boundary, verification boundary, documentation boundary, Git authorization, and completion gate from the checkpoint sequence below.
 - A task-level prohibition such as “do not create subagents” or “do not use a browser” remains active for the entire task.
 
 ## Composed inputs
 
-Compose [shared protocols](../../share/shared-protocols.md), [delegation state](../layer-01-fundamental-concepts/delegation-state-record.md), [the mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [session model](../layer-01-fundamental-concepts/session-model.md), [session role ownership](../layer-01-fundamental-concepts/session-role-ownership.md), and [execution control](../layer-01-fundamental-concepts/execution-control.md) for this route. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
+Compose [shared protocols](../../share/shared-protocols.md), [delegation state](../layer-01-fundamental-concepts/delegation-state-record.md), [mode confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [the mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [mode re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md), [session model](../layer-01-fundamental-concepts/session-model.md), [session role ownership](../layer-01-fundamental-concepts/session-role-ownership.md), and [execution control](../layer-01-fundamental-concepts/execution-control.md) for this route. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
 
 ## Responsibility boundary in the current Session
 
