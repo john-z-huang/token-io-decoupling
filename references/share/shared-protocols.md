@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Shared Orchestration Protocols
 
 This module defines reusable Coding message and context primitives. It does not choose a route, Session topology, runtime, or Agent count.

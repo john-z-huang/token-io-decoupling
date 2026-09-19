@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Multimodal OpenAI Deployment Profile
 
 This file preserves legacy concrete OpenAI bindings for Multimodal Flow after those deployment details were removed from the root `SKILL.md`. It is intentionally a small deployment-specific document, not a generalized Multimodal runtime abstraction, and is outside the currently maintained Coding workflow.

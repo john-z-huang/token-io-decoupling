@@ -8,7 +8,7 @@ Pass only the context needed by the receiving Worker. Prefer a targeted read-onl
 
 A reusable capsule may contain neutral facts, exact paths and source pointers, hashes, freshness/invalidation data, and narrow evidence pointers. It must not contain implementation reasoning, Contract verdicts, private chain-of-thought, secrets, complete diffs, complete logs, or large source copies. Receiving Workers read the capsule first and then only the named source paths they need; authoritative source files remain binding.
 
-For a capsule under `context/context-bootstrap/`, use:
+For a capsule under `CONTEXT_ROOT/context-bootstrap/`, use:
 
 ```text
 MANIFEST.md        snapshot identity, hashes, freshness rules
@@ -20,8 +20,8 @@ Check freshness against `HEAD`/tree, tracked-delta fingerprint, listed source ha
 
 ## Workspace ownership
 
-- Use `<primary-worktree>/.token-io-decoupling/context/` as the Context Exchange Root. The parent exclusively maintains `<root>/INDEX.md`, mapping each assigned or historical Context ID to its directory and minimal routing state.
-- Before an assigned Worker uses file-backed exchange, the parent provisions `<root>/<worker-context-id>/` and gives the exact path. The Worker may write only inside that directory; it must not access another Worker's directory unless the parent names specific documents for a concrete handoff or dependency.
+- Set `CONTEXT_ROOT=<primary-worktree>/.token-io-decoupling/context/`. The parent exclusively maintains `CONTEXT_ROOT/INDEX.md`, mapping each assigned or historical Context ID to its directory and minimal routing state. The canonical layout is `CONTEXT_ROOT/INDEX.md`, `CONTEXT_ROOT/<worker-context-id>/`, and, when bootstrap is assigned, `CONTEXT_ROOT/context-bootstrap/`.
+- Before an assigned Worker uses file-backed exchange, the parent provisions `CONTEXT_ROOT/<worker-context-id>/` and gives the exact path. The Worker may write only inside that directory; it must not access another Worker's directory unless the parent names specific documents for a concrete handoff or dependency.
 - Workers normally share the task's primary worktree. An additional worktree requires a concrete isolation need, such as incompatible snapshots/environments, unredirectable validation writes, a distinct permission/security boundary, or an explicitly isolated audit. Worktree separation alone is not a permission boundary.
 - An authorized successor receives a new Context ID and directory. It may read only predecessor documents explicitly exposed by the parent and never writes to the predecessor directory.
 - The repository `.gitignore` must ignore `/.token-io-decoupling/`. This root is runtime coordination state, not a product artifact; do not delete it automatically.
@@ -41,4 +41,3 @@ If several Workers share one OS identity, ordinary Unix ownership is not reliabl
 Each Worker-local `INDEX.md` records only its task, scope, status, latest material update, document purposes, and blocker/handoff target. Add specialized documents only when they provide distinct reusable value. Update context files at material state, evidence, or handoff changes—not after every command.
 
 An authorized replacement handoff should record achieved state, failed approaches and evidence, current changes and verification state, blockers, and the next useful action. The parent updates the root index and exposes only the named predecessor documents. If the predecessor is unavailable, record the smallest fact-supported recovery note; never recreate a full transcript.
-sed: --: No such file or directory

@@ -18,27 +18,17 @@ PAIR_ROOTS = [
     Path("AGENTS.md"),
     Path("MULTI_LINGUAL.md"),
     Path("workflows/coding.md"),
-    Path("workflows/exist-workflow/coding-multi-agent.md"),
-    Path("workflows/exist-workflow/coding-single-agent.md"),
-    Path("workflows/checkpoint/acceptance.md"),
-    Path("workflows/checkpoint/context.md"),
-    Path("workflows/checkpoint/contract.md"),
-    Path("workflows/checkpoint/control.md"),
-    Path("workflows/checkpoint/decision.md"),
-    Path("workflows/checkpoint/documentation.md"),
-    Path("workflows/checkpoint/environment.md"),
-    Path("workflows/checkpoint/git.md"),
-    Path("workflows/checkpoint/implementation.md"),
-    Path("workflows/checkpoint/mode.md"),
-    Path("workflows/checkpoint/repair.md"),
-    Path("workflows/checkpoint/verification.md"),
 ]
 
 CORE_DOCS = [
     PurePosixPath("references/share/shared-protocols.md"),
-    PurePosixPath("references/coding/session-model.md"),
-    PurePosixPath("references/coding/execution-control.md"),
-    PurePosixPath("references/coding/context-exchange.md"),
+    PurePosixPath("references/coding/layer-01-fundamental-concepts/session-model.md"),
+    PurePosixPath("references/coding/layer-01-fundamental-concepts/execution-control.md"),
+    PurePosixPath("references/coding/layer-01-fundamental-concepts/context-exchange.md"),
+]
+
+LOCALE_DIRECTORY_PAIRS = [
+    (PurePosixPath("docs/index.md"), PurePosixPath("docs/zh-cn/index.md")),
 ]
 
 PRODUCT_SPECIFIC_PATTERNS = {
@@ -74,6 +64,17 @@ def normalize_target(source: PurePosixPath, raw: str) -> PurePosixPath | None:
 def main() -> int:
     errors: list[str] = []
 
+    for markdown in sorted(ROOT.rglob("*.md")):
+        if ".git" in markdown.parts:
+            continue
+        text = markdown.read_text(encoding="utf-8")
+        if "sed: --: No such file or directory" in text:
+            errors.append(f"stray shell-error text: {markdown.relative_to(ROOT)}")
+
+    skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    if not skill_text.startswith("---\n"):
+        errors.append("SKILL.md must start with YAML front matter")
+
     english_docs = [PurePosixPath(p.as_posix()) for p in PAIR_ROOTS]
     english_docs += [
         PurePosixPath(p.relative_to(ROOT).as_posix())
@@ -100,8 +101,15 @@ def main() -> int:
 
     known_pairs = bilingual_set | {zh_peer(p) for p in bilingual_set}
 
+    for english, chinese in LOCALE_DIRECTORY_PAIRS:
+        if not (ROOT / english).exists():
+            errors.append(f"missing locale-directory English file: {english}")
+        if not (ROOT / chinese).exists():
+            errors.append(f"missing locale-directory Chinese file: {chinese}")
+
     for rel in sorted(known_pairs, key=str):
-        if not rel.parts or rel.parts[0] != "references" or not (ROOT / rel).exists():
+        is_layer_01 = rel.parts[:3] == ("references", "coding", "layer-01-fundamental-concepts")
+        if not is_layer_01 or not (ROOT / rel).exists():
             continue
         text_without_code = FENCED_CODE_RE.sub("", (ROOT / rel).read_text(encoding="utf-8"))
         for raw_target in LINK_RE.findall(text_without_code):

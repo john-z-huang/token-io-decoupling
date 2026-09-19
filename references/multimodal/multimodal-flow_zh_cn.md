@@ -74,4 +74,3 @@ Goal; Required changes; Constraints; Evidence references; Acceptance
 ```
 
 不得复制完整图片集、视频帧、OCR、DOM 或观察历史。Coding 完成后，尽可能复用已分配的 Observation 上下文进行视觉验证。
-sed: --: No such file or directory

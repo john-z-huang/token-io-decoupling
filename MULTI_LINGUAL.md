@@ -12,6 +12,7 @@ This file is the English canonical version of the multilingual documentation rul
 - Simplified Chinese examples: `README_zh_cn.md`, `SKILL_zh_cn.md`, `MULTI_LINGUAL_zh_cn.md`, `workflows/coding_zh_cn.md`.
 - `AGENTS.md` is the repository instruction entry point; `AGENTS_zh_cn.md` is its Simplified Chinese semantic mirror. Each must point to the rule file in the same language rather than duplicate these rules.
 - Configuration, code, generated files, and non-Markdown assets do not require language mirrors unless a task explicitly requires them.
+- Locale-directory documentation is an explicit exception to the suffix rule: `docs/index.md` is paired with `docs/zh-cn/index.md`.
 - `agents/openai.yaml` is a deliberate exception: user-facing description text must contain both English and Simplified Chinese in the same scalar value, separated by ` | `, with English first.
 
 ## Pairing requirements
@@ -31,6 +32,7 @@ When a maintained Markdown document belongs to the bilingual documentation set:
 - Simplified Chinese Markdown must link to the corresponding `_zh_cn.md` target when a bilingual target exists.
 - Language-switch links are the only intended cross-language Markdown links.
 - `AGENTS.md` must load `MULTI_LINGUAL.md`; `AGENTS_zh_cn.md` must load `MULTI_LINGUAL_zh_cn.md`.
+- `docs/index.md` and `docs/zh-cn/index.md` must remain semantic mirrors and use same-language local links.
 - English instructions in `SKILL.md` must load only English files under `references/`.
 - Simplified Chinese instructions in `SKILL_zh_cn.md` must load only `_zh_cn.md` files under `references/`.
 - English reference documents must not load or depend on Chinese reference documents, and Chinese reference documents must not load or depend on English reference documents.

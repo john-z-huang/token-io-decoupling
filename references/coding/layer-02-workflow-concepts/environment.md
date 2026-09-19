@@ -9,16 +9,21 @@
 3. If authorized by the current task, inspect only non-sensitive runtime metadata exposed by local process or environment information; never print or persist credentials or tokens.
 4. Do not use a browser, GUI navigation, screenshots, or visual page content to identify the runtime environment.
 5. Classify the runtime environment into exactly one supported branch:
-   - **Local Codex or ChatGPT Work**.
-   - **Standard ChatGPT**.
-6. If the runtime environment does not fit either branch, mark the environment unsupported and stop work that depends on it.
+   - **Local Codex**: the task exposes local filesystem/shell or worktree capabilities and Codex Agent tools.
+   - **ChatGPT Work**: the task exposes Work sessions/connectors/files, but local execution is not implied.
+   - **Standard ChatGPT**: no local execution or independent Session capability is assumed unless explicitly exposed.
+6. If the runtime environment does not fit any branch, mark the environment unsupported and stop work that depends on it.
 7. Record only capabilities directly exposed by the current surface: model identity and parameter controls, Session topology, filesystem and sandbox access, tools, connectors, authentication, and any available return path for delegated work.
 8. Mark an unobserved capability as unknown. Do not substitute another runtime environment, model, parameter, Session, tool, permission, or inferred capability.
-9. If the evidence still leaves the runtime environment ambiguous, stop the dependent work and return this exact question to the user: `I cannot determine the current runtime environment from the available metadata. In your next instruction, explicitly state whether it is "local Codex or ChatGPT Work" or "standard ChatGPT", then resume.`
+9. If the evidence still leaves the runtime environment ambiguous, stop the dependent work and return this exact question to the user: `I cannot determine the current runtime environment from the available metadata. In your next instruction, explicitly state whether it is "local Codex", "ChatGPT Work", or "standard ChatGPT", then resume.`
 
 ## Pass condition
 
 The actual runtime environment is uniquely classified from explicit metadata or the user has supplied the fallback clarification, and the next workflow has a current capability inventory to evaluate. This checkpoint does not decide whether that inventory is sufficient for Single-Agent or Multi-Agent Coding.
+
+## Shared runtime rules
+
+Routes consume this inventory and state only their topology-specific deltas. On Local Codex, use the exposed model/session controls and restart after changing global instructions, overrides, the Skill, or repository instructions. On ChatGPT Work, use only explicitly exposed models, Sessions, files, connectors, and execution tools. On Standard ChatGPT, do not assume local execution, Git, worktrees, or independent Sessions. Any required capability that is missing or unknown blocks the dependent slice.
 
 ## Boundary
 

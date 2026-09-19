@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Multimodal Flow
 
 This is a compact descriptive module for non-Coding multimodal work; it is not an executable workflow or an Agent-creation policy. The caller supplies the available roles, Sessions, tools, permissions, and lifecycle.

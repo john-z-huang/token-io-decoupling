@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Coding Execution Control
 
 本模块负责 Coding 执行规划：有界阶段、Decision Checkpoint、Interaction Slice 放行和执行阶段反馈。它假定当前工作流已经提供 Contract、角色/Session 上下文、运行环境能力和委派状态。本模块不决定模式、拓扑、Agent/Session 创建、分配、数量、复用、替换、例外、验证、文档、Git 或最终验收。

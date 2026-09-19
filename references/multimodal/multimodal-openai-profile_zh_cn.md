@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Multimodal OpenAI Deployment Profile
 
 本文件用于在根 `SKILL_zh_cn.md` 移除具体部署细节后，继续保留 Multimodal Flow 的历史 OpenAI 模型绑定。它有意保持为小型部署专属文档，不尝试建立通用 Multimodal Runtime 抽象，也不属于当前维护的 Coding 工作流。

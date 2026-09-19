@@ -52,4 +52,3 @@ The firewall limits raw-state ingress, not semantic reasoning. The input-side ro
 Maintain one Primary Execution Session: the assigned Primary Output Session in multi-agent mode, otherwise the current Session. Reuse it for related exploration, implementation, diagnosis, tests, repairs, and local execution to preserve stable context. A Session is sticky but not immortal; lifecycle changes use the active workflow's recorded state.
 
 Session separation and Git worktree separation are distinct. Workers for one development request normally share its primary worktree; an isolated worktree requires an explicitly released isolation scope. Do not claim cache hits or other runtime savings merely from Session reuse.
-sed: --: No such file or directory
