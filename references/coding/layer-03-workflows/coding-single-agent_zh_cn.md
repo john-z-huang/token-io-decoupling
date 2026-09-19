@@ -13,7 +13,7 @@
 
 ## 组合输入
 
-本路线加载 `shared-protocols`、`delegation-state-record`、`delegation-mode-count-gate`、`session-model` 和 `execution-control`。模式检查点已经验证任务记录；下方检查点列表是完整的路线组合。
+本路线组合[共享协议](../../share/shared-protocols_zh_cn.md)、[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)和[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)。模式检查点已经验证任务记录；下方检查点列表是完整的路线组合。
 
 ## 当前 Session 中的职责边界
 
@@ -25,7 +25,7 @@
 
 ## 已组合的检查点顺序
 
-遵循 Coding 工作流中的公共目录。单代理差异：仅在需要有界侦察或恢复时加载上下文；每个实质性方向前执行决策；每次只实现一个获批准切片并设置控制边界；针对当前最终状态指纹验证；只有具体失败时才修复，并针对新的 epoch 重新验证；然后在当前 Session 中进入文档、Git 和验收。
+遵循 Coding 工作流，并组合[Contract](../layer-02-workflow-concepts/contract_zh_cn.md)、[Environment](../layer-02-workflow-concepts/environment_zh_cn.md)、[Mode](../layer-02-workflow-concepts/mode_zh_cn.md)、[Context](../layer-02-workflow-concepts/context_zh_cn.md)、[Decision](../layer-02-workflow-concepts/decision_zh_cn.md)、[Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)、[Control](../layer-02-workflow-concepts/control_zh_cn.md)、[Verification](../layer-02-workflow-concepts/verification_zh_cn.md)、[Repair](../layer-02-workflow-concepts/repair_zh_cn.md)、[Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)、[Git](../layer-02-workflow-concepts/git_zh_cn.md)和[Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)。单代理差异：仅在需要有界侦察或恢复时加载上下文；每个实质性方向前执行决策；每次只实现一个获批准切片并设置控制边界；针对当前最终状态指纹验证；只有具体失败时才修复，并针对新的 epoch 重新验证；然后在当前 Session 中进入文档、Git 和验收。
 
 ## 单 Session 执行规则
 

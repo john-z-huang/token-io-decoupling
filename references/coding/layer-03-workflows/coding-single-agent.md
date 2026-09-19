@@ -13,7 +13,7 @@ This route is selected by the Coding workflow and is valid only after the Mode c
 
 ## Composed inputs
 
-Load `shared-protocols`, `delegation-state-record`, `delegation-mode-count-gate`, `session-model`, and `execution-control` for this route. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
+Compose [shared protocols](../../share/shared-protocols.md), [delegation state](../layer-01-fundamental-concepts/delegation-state-record.md), [the mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [session model](../layer-01-fundamental-concepts/session-model.md), and [execution control](../layer-01-fundamental-concepts/execution-control.md) for this route. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
 
 ## Responsibility boundary in the current Session
 
@@ -25,7 +25,7 @@ Use the inventory and shared runtime rules from the Environment checkpoint. This
 
 ## Composed checkpoint sequence
 
-Follow the common catalog in the Coding workflow. Single-Agent deltas: load Context only for bounded reconnaissance or recovery; make a Decision before each material direction; implement one approved slice with a Control boundary; verify the current final-state fingerprint; use Repair only after a concrete failure and re-run Verification for the new epoch; then continue to Documentation, Git, and Acceptance in the current Session.
+Follow the common catalog in the Coding workflow by composing [Contract](../layer-02-workflow-concepts/contract.md), [Environment](../layer-02-workflow-concepts/environment.md), [Mode](../layer-02-workflow-concepts/mode.md), [Context](../layer-02-workflow-concepts/context.md), [Decision](../layer-02-workflow-concepts/decision.md), [Implementation](../layer-02-workflow-concepts/implementation.md), [Control](../layer-02-workflow-concepts/control.md), [Verification](../layer-02-workflow-concepts/verification.md), [Repair](../layer-02-workflow-concepts/repair.md), [Documentation](../layer-02-workflow-concepts/documentation.md), [Git](../layer-02-workflow-concepts/git.md), and [Acceptance](../layer-02-workflow-concepts/acceptance.md). Single-Agent deltas: load Context only for bounded reconnaissance or recovery; make a Decision before each material direction; implement one approved slice with a Control boundary; verify the current final-state fingerprint; use Repair only after a concrete failure and re-run Verification for the new epoch; then continue to Documentation, Git, and Acceptance in the current Session.
 
 ## Single-Session execution rules
 

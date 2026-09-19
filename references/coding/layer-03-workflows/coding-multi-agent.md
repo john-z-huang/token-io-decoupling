@@ -12,7 +12,7 @@ This route is selected by the Coding workflow and is valid only after the Mode c
 
 ## Composed inputs
 
-Load `shared-protocols`, `delegation-state-record`, `delegation-mode-count-gate`, `delegation-child-dispatch-lifecycle`, `session-model`, and `execution-control` for this route; load `context-exchange` or `content-memo` only when the released slice needs them. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
+Compose [shared protocols](../../share/shared-protocols.md), [delegation state](../layer-01-fundamental-concepts/delegation-state-record.md), [the mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [child dispatch/lifecycle](../layer-01-fundamental-concepts/delegation-child-dispatch-lifecycle.md), [session model](../layer-01-fundamental-concepts/session-model.md), and [execution control](../layer-01-fundamental-concepts/execution-control.md) for this route; load [context exchange](../layer-01-fundamental-concepts/context-exchange.md) or [content memo](../layer-01-fundamental-concepts/content-memo.md) only when the released slice needs them. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
 
 ## Responsibility boundary
 
@@ -24,7 +24,7 @@ Use the inventory and shared runtime rules from the Environment checkpoint. Cont
 
 ## Composed checkpoint sequence
 
-Follow the common catalog in the Coding workflow. Multi-Agent deltas: load Context when a Worker needs reusable state; make a Decision before material dispatch; pair each released Implementation slice with a Control boundary; use a fresh independent Verification Session when allocated; route failures through Repair and a new verification epoch; then continue to Documentation, Git, and Acceptance.
+Follow the common catalog in the Coding workflow by composing [Contract](../layer-02-workflow-concepts/contract.md), [Environment](../layer-02-workflow-concepts/environment.md), [Mode](../layer-02-workflow-concepts/mode.md), [Context](../layer-02-workflow-concepts/context.md), [Decision](../layer-02-workflow-concepts/decision.md), [Implementation](../layer-02-workflow-concepts/implementation.md), [Control](../layer-02-workflow-concepts/control.md), [Verification](../layer-02-workflow-concepts/verification.md), [Repair](../layer-02-workflow-concepts/repair.md), [Documentation](../layer-02-workflow-concepts/documentation.md), [Git](../layer-02-workflow-concepts/git.md), and [Acceptance](../layer-02-workflow-concepts/acceptance.md). Multi-Agent deltas: load Context when a Worker needs reusable state; make a Decision before material dispatch; pair each released Implementation slice with a Control boundary; use a fresh independent Verification Session when allocated; route failures through Repair and a new verification epoch; then continue to Documentation, Git, and Acceptance.
 
 ## Context and dispatch
 
