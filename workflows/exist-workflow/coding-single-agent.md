@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Coding Workflow — Single-Agent Mode
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
@@ -14,14 +13,14 @@ Read [`../coding.md`](../coding.md) first, then read `../../references/coding/ag
 
 ## Composed inputs
 
-This route combines the independent Coding references before executing the checkpoint sequence: `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control`. The authority records mode/delegation state; the other references provide shared primitives, Session semantics, and execution planning. The checkpoint list below is the complete route composition; checkpoint modules are not imported into one another.
+This route combines the independent Coding references before executing the checkpoint sequence: `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control`. The policy defines mode/delegation rules; the task control record carries the current state; the other references provide shared primitives, Session semantics, and execution planning. The checkpoint list below is the complete route composition; checkpoint modules are not imported into one another.
 
 ## Responsibility boundary in the current Session
 
 - Input-side Reasoning owns the Semantic Contract, material decisions, authorization, checkpoint outcomes, and semantic acceptance.
 - Primary Output owns approved implementation and provisional focused checks.
 - Documentation/Comments & Git Operations owns approved post-verification documentation or comments and non-trivial Git work under an explicit release.
-- Any independent Change Verification requirement remains a requirement even though the route uses one Session; never label same-Session checks as independent. Follow the authority document for whether an independent verifier is available.
+- Any independent Change Verification requirement remains a requirement even though the route uses one Session; never label same-Session checks as independent. This route cannot provide an independent verifier.
 
 ## Route-specific environment requirements
 
@@ -49,7 +48,7 @@ Run the checkpoints in this order, skipping only conditional checkpoints with a 
 
 ## Single-Session execution rules
 
-1. Stabilize `ACTIVE_CONSTRAINTS`, the Semantic Contract, acceptance criteria, and any Decision Brief before substantive work. For a simple fast path, keep the decision concise but explicit.
+1. Stabilize `ACTIVE_CONSTRAINTS`—the short, current list of hard user, runtime, repository, permission, safety, and Session constraints—along with the Semantic Contract, acceptance criteria, and any Decision Brief before substantive work. For a simple fast path, keep the decision concise but explicit.
 2. If project facts are missing, perform bounded reconnaissance as a logical phase. Do not implement until the facts and approved direction are settled.
 3. Execute one approved Interaction Slice at a time. Read only the files needed for that slice, make only authorized mutations, and run provisional focused checks to guide repairs.
 4. At each material boundary, record status, findings, changed scope, verification, issue, next action, and the unreleased boundary.
@@ -57,9 +56,9 @@ Run the checkpoints in this order, skipping only conditional checkpoints with a 
 
 ## Verification limitation
 
-For a material change, the Contract or risk assessment may require an independent Change Verification Session. Follow the authority document for the available topology; if independent verification is unavailable, run the strongest allowed checks in the current Session, report that the result is not independent verification, and do not release dependent external Git effects while the required boundary remains unresolved.
+For a material change, the Contract or risk assessment may require an independent Change Verification Session. Single-Agent mode cannot create or claim an independent verifier Session, so independent verification is unavailable on this route. Run the strongest allowed checks in the current Session, report that the result is not independent verification, and do not release dependent external Git effects while the required boundary remains unresolved.
 
-For trivial behavior-preserving or documentation-only work, use the applicable fast path and run stale-reference, Markdown/link, whitespace/diff, multilingual, and affected-contract checks.
+For trivial behavior-preserving or documentation-only work, use the applicable fast path and run: `rg` for stale paths/names referenced by the changed files; a Markdown/link review covering changed local targets; `git diff --check`; `python3 scripts/check-multilingual-docs.py`; and a manual check that each changed rule still agrees with the selected Contract and route. Record each command or review result and its pass condition.
 
 ## Completion
 

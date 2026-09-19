@@ -41,6 +41,10 @@ CORE_DOCS = [
     PurePosixPath("references/coding/context-exchange.md"),
 ]
 
+LOCALE_DIRECTORY_PAIRS = [
+    (PurePosixPath("docs/index.md"), PurePosixPath("docs/zh-cn/index.md")),
+]
+
 PRODUCT_SPECIFIC_PATTERNS = {
     "Luna": re.compile(r"\bLuna\b", re.IGNORECASE),
     "concrete GPT model": re.compile(r"\bgpt-[a-z0-9_.-]+", re.IGNORECASE),
@@ -74,6 +78,17 @@ def normalize_target(source: PurePosixPath, raw: str) -> PurePosixPath | None:
 def main() -> int:
     errors: list[str] = []
 
+    for markdown in sorted(ROOT.rglob("*.md")):
+        if ".git" in markdown.parts:
+            continue
+        text = markdown.read_text(encoding="utf-8")
+        if "sed: --: No such file or directory" in text:
+            errors.append(f"stray shell-error text: {markdown.relative_to(ROOT)}")
+
+    skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    if not skill_text.startswith("---\n"):
+        errors.append("SKILL.md must start with YAML front matter")
+
     english_docs = [PurePosixPath(p.as_posix()) for p in PAIR_ROOTS]
     english_docs += [
         PurePosixPath(p.relative_to(ROOT).as_posix())
@@ -99,6 +114,12 @@ def main() -> int:
                 errors.append(f"missing English canonical file: {english} for {chinese}")
 
     known_pairs = bilingual_set | {zh_peer(p) for p in bilingual_set}
+
+    for english, chinese in LOCALE_DIRECTORY_PAIRS:
+        if not (ROOT / english).exists():
+            errors.append(f"missing locale-directory English file: {english}")
+        if not (ROOT / chinese).exists():
+            errors.append(f"missing locale-directory Chinese file: {chinese}")
 
     for rel in sorted(known_pairs, key=str):
         if not rel.parts or rel.parts[0] != "references" or not (ROOT / rel).exists():

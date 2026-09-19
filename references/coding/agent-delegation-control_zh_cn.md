@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Coding Agent 委派控制
 
 本文档单独定义 Coding 关于根指令模式确认、子 Agent 和 Session 创建、职责分配、数量锁定、复用、替换、例外和委派限制的决策。其他模块不包含这些事项的独立决策规则。
@@ -8,6 +7,24 @@ sed: --: No such file or directory
 **根父 Agent** 是负责当前根用户指令 Input-side Reasoning 的 Agent。只有根父级可以应用本政策、记录状态、发布 Dispatch，以及创建或管理子 Agent 或 Session。Worker 不会因为自己的 task、thread、角色、进度或发现而成为编排父级，也不会因此获得权限。
 
 本政策服从更高优先级的用户、权限、安全、产品、运行环境、能力、仓库和安全限制。所需能力或授权不可用时，应阻塞请求的路线；绝不能默默改变模式或子 Agent 数量。
+
+## 委派状态记录
+
+模式和数量属于任务状态，不通过编辑本文档保存。第一次 Dispatch 前，根父级必须在任务控制记录中记录一个状态对象：
+
+```text
+owner: <根父级身份>
+gate_status: awaiting-mode | awaiting-count | released | blocked
+mode: Single-Agent Coding | Multi-Agent Coding
+child_count: 0 | <正整数>
+allocations: [{agent, role, interaction_slice, scope, mutations, return_conditions, lifecycle}]
+lifecycle: pending | running | completed | interrupted
+unavailable_capabilities: [<能力名称>]
+```
+
+任务面板或等价的运行时控制记录是规范位置。Worker 只能读取 Dispatch 中明确下发的相关状态，不能推断或修改根记录。如果运行时不能持久化或返回这份记录，该路线即被阻塞。
+
+放行后，Worker 通过父级提供的 Dispatch Preview 进入。它不重新打开根用户模式或数量门禁，也不能修改控制记录。父级必须在 Dispatch 中包含 Worker 身份、职责、Interaction Slice、获准路径/修改、返回条件和当前 epoch。
 
 ## 根指令模式确认门禁
 
@@ -48,7 +65,7 @@ sed: --: No such file or directory
 
 创建子 Agent 是创建一个真实的委派 Agent，而不是打开一个平级聊天或普通 task。根父级必须使用运行环境提供的 **MultiAgentV1** 或 **MultiAgentV2** spawn 方法。不得使用 `create_thread`、`fork_thread`、`handoff_thread` 或其他普通聊天/线程创建 API 来伪造子 Agent。这些 API 只有在另有明确授权的用户任务或 Session 用途中才能使用，绝不能替代子 Agent 创建。
 
-创建出的子 Agent 必须是完整的委派单元：具有独立的子 Agent 身份、由父级控制的返回路径、已发布的职责和 Interaction Slice、获授权的范围与修改、返回条件，以及执行该 slice 所需的上下文。如果 MultiAgentV1/MultiAgentV2 或上述任一子 Agent 能力不可用或无法核验，根父级必须停止并报告阻塞能力；不得退回使用聊天方式创建的子 Agent。
+创建出的子 Agent 必须是完整的委派单元：具有独立的子 Agent 身份、由父级控制的返回路径、已发布的职责和 Interaction Slice、获授权的范围与修改、返回条件，以及执行该 slice 所需的上下文。只有在运行时暴露真实 spawn 操作、子 Agent 身份、父级控制的发送/返回路径、有界等待和生命周期状态时，才满足 MultiAgentV1/MultiAgentV2 能力 Contract。如果其中任何能力不可用或无法核验，根父级必须停止并报告阻塞能力；不得退回使用聊天方式创建的子 Agent。
 
 如果锁定的分配中没有独立 verifier、文档/Git Worker、bootstrap Worker、恢复 Worker 或其他所需职责，根父级应在安全且获准时让当前或已分配的 Agent 在其授权范围内承担，或者报告该职责/能力不可用。已分配的独立验证必须保持独立；不能通过给同一 Session 的检查改名来模拟。如果缺少该职责使验收无法完成，应报告阻塞限制，而不是绕过数量锁定。
 

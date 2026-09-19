@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Coding Agent Delegation Control
 
 This document alone defines Coding decisions about root-directive mode confirmation, child-Agent and Session creation, role allocation, count locking, reuse, replacement, exceptions, and delegation limits. No other module contains an independent decision rule for these matters.
@@ -8,6 +7,24 @@ This document alone defines Coding decisions about root-directive mode confirmat
 The **root parent Agent** is the Agent that owns Input-side Reasoning for the current root user directive. Only the root parent can apply this policy, record its state, release a Dispatch, and create or manage a child Agent or Session. A Worker never becomes an orchestration parent and never gains authority from its own task, thread, role, progress, or findings.
 
 This policy is subordinate to higher-priority user, permission, security, product, runtime-environment, capability, repository, and safety constraints. A required capability or authorization that is unavailable blocks the requested route; it never permits silently changing the mode or child count.
+
+## Delegation-state record
+
+The mode and count are task state; they are not stored by editing this policy file. The root parent records one state object in the task's control record before the first Dispatch:
+
+```text
+owner: <root-parent identity>
+gate_status: awaiting-mode | awaiting-count | released | blocked
+mode: Single-Agent Coding | Multi-Agent Coding
+child_count: 0 | <positive integer>
+allocations: [{agent, role, interaction_slice, scope, mutations, return_conditions, lifecycle}]
+lifecycle: pending | running | completed | interrupted
+unavailable_capabilities: [<capability names>]
+```
+
+The parent-controlled task panel or equivalent runtime control record is the canonical location. Workers receive the relevant released slice and may read only the state explicitly included in that dispatch; they must not infer or mutate the root record. If the runtime cannot persist or return this record, the route is blocked.
+
+After release, a Worker enters through its parent-provided Dispatch Preview. It does not reopen the root-user mode or count gates, and it cannot change the control record. The parent must include the Worker identity, role, Interaction Slice, authorized paths/mutations, return conditions, and the relevant current epoch in that dispatch.
 
 ## Root-directive mode-confirmation gate
 
@@ -48,7 +65,7 @@ After the user confirms the positive integer:
 
 Creating a child Agent means creating a real delegated Agent, not opening a peer chat or generic task. The root parent must use the runtime's **MultiAgentV1** or **MultiAgentV2** spawn method. It must not use `create_thread`, `fork_thread`, `handoff_thread`, or another generic chat/thread creation API to simulate a child Agent. Those APIs may be used only for their separately authorized user-facing task or Session purposes, never as a child-Agent substitute.
 
-The spawned child must be complete as a delegation unit: it has a distinct child-Agent identity, an explicit parent-controlled return path, a released role and Interaction Slice, authorized scope and mutations, return conditions, and the context required to execute that slice. If MultiAgentV1/MultiAgentV2 or any of these child-Agent capabilities is unavailable or cannot be verified, the root parent must stop and report the blocked capability; it must not fall back to a chat-created child.
+The spawned child must be complete as a delegation unit: it has a distinct child-Agent identity, an explicit parent-controlled return path, a released role and Interaction Slice, authorized scope and mutations, return conditions, and the context required to execute that slice. A runtime satisfies the MultiAgentV1/MultiAgentV2 capability contract only when it exposes a real spawn operation, a child identity, a parent-controlled send/return path, bounded waiting, and a lifecycle status. If any of these capabilities is unavailable or cannot be verified, the root parent must stop and report the blocked capability; it must not fall back to a chat-created child.
 
 If the locked allocation does not include an independent verifier, documentation/Git Worker, bootstrap Worker, recovery Worker, or another required role, the root parent uses the current or already allocated Agent within its authorized scope when that is safe, or reports the role/capability as unavailable. Independent verification remains independent when assigned; it must not be simulated by relabeling a same-Session check. If the missing role makes acceptance impossible, report a blocking limitation rather than bypassing the count.
 

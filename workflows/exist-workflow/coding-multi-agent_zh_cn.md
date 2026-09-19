@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Coding 工作流——多代理模式
 
 [English](coding-multi-agent.md) | [简体中文](coding-multi-agent_zh_cn.md)
@@ -13,7 +12,7 @@ sed: --: No such file or directory
 
 ## 组合输入
 
-本路线在执行检查点序列前组合独立的 Coding references：`shared-protocols`、`agent-delegation-control`、`session-model` 和 `execution-control`。已发布切片需要时，再加载 `context-exchange` 和 `content-memo`。权威文档记录模式/数量/生命周期状态；其他 reference 提供消息原语、Session 语义、执行规划和有界上下文机制。下方检查点列表是完整的路线组合；检查点模块不会互相导入。
+本路线在执行检查点序列前组合独立的 Coding references：`shared-protocols`、`agent-delegation-control`、`session-model` 和 `execution-control`。已发布切片需要时，再加载 `context-exchange` 和 `content-memo`。policy 定义模式/数量/生命周期规则；任务控制记录保存当前状态；其他 reference 提供消息原语、Session 语义、执行规划和有界上下文机制。下方检查点列表是完整的路线组合；检查点模块不会互相导入。
 
 ## 职责边界
 
@@ -26,7 +25,7 @@ sed: --: No such file or directory
 
 按照运行环境检查点产生的能力清单执行：
 
-- 只有当前运行环境暴露了权威文档记录的委派状态及已发布切片所需的能力时，才能继续本路线。
+- 只有当前运行环境暴露了任务控制记录中的委派状态及已发布切片所需的能力时，才能继续本路线。
 - Worker 必须只能向直接父级返回结果，不能创建或管理其他 Agent/Session，也不能联系任意线程。如果运行环境无法保证这些限制，不要派发 Worker。
 - 在本地 Codex 中，从 `~/.codex/AGENTS.md` 读取全局指令；同级的 `~/.codex/AGENTS.override.md` 优先，但仓库指令仍然负责仓库策略。确实暴露独立 Session 创建和模型控制时，使用当前 Skill 的绑定：Primary Output 使用 `gpt-5.6-luna` 与 `reasoning_effort=xhigh`；Change Verification 使用 `gpt-5.6-luna` 与 `xhigh`；Documentation/Comments & Git Operations 使用 `gpt-5.6-luna` 与 `high`；Context Bootstrap/Refresh 使用 `gpt-5.6-luna` 与 `high`，只有确定性元数据、哈希或差异刷新可以使用 `medium`。
 - 只有在重复失败或遇到阻塞时，才将 `reasoning_effort=max` 作为窄范围升级；随后回到正常档位。修改全局指令、活动覆盖指令、Skill 或仓库指令后，必须启动新的 Codex 运行或 Session，再判断修改是否生效。
@@ -73,7 +72,7 @@ Unreleased boundary: ...
 
 ## 验证与修复
 
-- 实质性修改达到实现检查点后，只有权威文档记录已分配 verifier 时，才能执行独立 Change Verification。否则由当前或已分配的 Agent 执行允许的最终检查，并报告独立验证不可用；不得改变委派状态。
+- 实质性修改达到实现检查点后，只有任务控制记录包含已分配 verifier 时，才能执行独立 Change Verification。否则由当前或已分配的 Agent 执行允许的最终检查，并报告独立验证不可用；不得改变委派状态。
 - 后续 Evidence-on-Demand 和修复后的 epoch 复用该验证者。每次最终状态指纹改变都必须重新独立评估；早期结论不能作为新状态的证据。
 - 失败时只发布窄范围修复，并将新 epoch 发送给同一验证者。实质性问题未解决前，不开始验证后的文档或依赖验证的远程 Git 工作。
 - 验证通过后，将文档/注释工作和 Git 工作作为独立的有界切片发布，并明确授权。

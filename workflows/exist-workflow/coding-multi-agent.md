@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Coding Workflow — Multi-Agent Mode
 
 [English](coding-multi-agent.md) | [简体中文](coding-multi-agent_zh_cn.md)
@@ -13,7 +12,7 @@ Read [`../coding.md`](../coding.md) first, then read `../../references/coding/ag
 
 ## Composed inputs
 
-This route combines the independent Coding references before executing the checkpoint sequence: `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control`. When the released slices need them, also load `context-exchange` and `content-memo`. The authority records mode/count/lifecycle state; the other references provide message primitives, Session semantics, execution planning, and bounded context mechanics. The checkpoint list below is the complete route composition; checkpoint modules are not imported into one another.
+This route combines the independent Coding references before executing the checkpoint sequence: `shared-protocols`, `agent-delegation-control`, `session-model`, and `execution-control`. When the released slices need them, also load `context-exchange` and `content-memo`. The policy defines mode/count/lifecycle rules; the task control record carries the current state; the other references provide message primitives, Session semantics, execution planning, and bounded context mechanics. The checkpoint list below is the complete route composition; checkpoint modules are not imported into one another.
 
 ## Responsibility boundary
 
@@ -26,7 +25,7 @@ This route combines the independent Coding references before executing the check
 
 Use the capability inventory produced by the Environment checkpoint as follows:
 
-- Continue this route only when the current runtime environment exposes the capabilities required by the delegation state recorded in the authority document and by the released slice.
+- Continue this route only when the current runtime environment exposes the capabilities required by the delegation state in the task control record and by the released slice.
 - A Worker must return only to its direct parent and must not create or manage Agents/Sessions or contact arbitrary threads. If the runtime environment cannot guarantee these restrictions, do not dispatch a Worker.
 - On local Codex, read global instructions from `~/.codex/AGENTS.md`; same-level `~/.codex/AGENTS.override.md` takes precedence, while repository instructions remain authoritative. When independent Session creation and model controls are exposed, use the current Skill's bindings: Primary Output `gpt-5.6-luna` with `reasoning_effort=xhigh`; Change Verification `gpt-5.6-luna` with `xhigh`; Documentation/Comments & Git Operations `gpt-5.6-luna` with `high`; Context Bootstrap/Refresh `gpt-5.6-luna` with `high`, or `medium` only for deterministic metadata, hash, or delta refreshes.
 - Use `reasoning_effort=max` only as a narrow escalation after a repeated failure or blocker, then return to the normal tier. After changing global instructions, an active override, the Skill, or repository instructions, start a new Codex run/Session before judging whether the change was adopted.
@@ -73,7 +72,7 @@ Mark a section `Not applicable` with a reason instead of creating a no-op Worker
 
 ## Verification and repair
 
-- For a material change, perform independent Change Verification only when the authority document records an allocated verifier. Otherwise perform the allowed final checks with the current or already allocated Agent and report independent verification as unavailable; do not alter the delegation state.
+- For a material change, perform independent Change Verification only when the task control record contains an allocated verifier. Otherwise perform the allowed final checks with the current or already allocated Agent and report independent verification as unavailable; do not alter the delegation state.
 - Reuse that verifier for later Evidence-on-Demand and repaired epochs. Every changed final-state fingerprint requires independent re-evaluation; an earlier verdict is not evidence for a new state.
 - On failure, release only the narrow repair scope, then send the new epoch to the same verifier. Do not begin post-verification documentation or dependent remote Git work while a material issue remains unresolved.
 - After verification passes, release documentation/comment work and any Git work as separate bounded slices with explicit authorization.

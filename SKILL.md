@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 ---
 name: token-io-decoupling
 description: "High-volume Agent Token I/O decoupling for Coding. Coding separates high-value input-side reasoning, implementation output, independent change verification, and the Documentation/Comments & Git Operations role for approved documentation/comments and non-trivial repository Git work, while keeping Core role and Session rules independent of any specific Code Agent product or model; runtime-environment bindings and capability checks are declared in the Coding workflow."
@@ -10,15 +9,15 @@ description: "High-volume Agent Token I/O decoupling for Coding. Coding separate
 
 This Skill maintains one executable workflow: Coding. It separates high-value semantic decisions from high-volume project-state consumption and output materialization. Multimodal and Mixed concepts are not maintained as executable workflows in this repository.
 
-Coding delegation and Session-topology decisions are defined exclusively by `references/coding/agent-delegation-control.md`; the Coding workflow loads that authority together with the other Coding references before route selection.
+Coding delegation and Session-topology rules are defined exclusively by `references/coding/agent-delegation-control.md`; the task control record stores the confirmed per-task state. The Coding workflow loads the policy together with the other Coding references before route selection.
 
 The Skill defines orchestration conventions only. It cannot bypass higher-priority permissions, user authorization, product limitations, repository instructions, or safety rules, and it must not present unmeasured claims about price, cache hits, quota savings, latency, or runtime quality as facts.
 
 ## Start here
 
 1. Read [`workflows/coding.md`](workflows/coding.md), then load and follow `references/coding/agent-delegation-control.md` before substantive work. Load exactly one mode workflow according to that authority:
-   - [`workflows/exist-workflow/coding-single-agent.md`](workflows/exist-workflow/coding-single-agent.md) for its recorded Single-Agent outcome;
-   - [`workflows/exist-workflow/coding-multi-agent.md`](workflows/exist-workflow/coding-multi-agent.md) for its recorded Multi-Agent outcome.
+   - [`workflows/exist-workflow/coding-single-agent.md`](workflows/exist-workflow/coding-single-agent.md) when the task control record contains `mode: Single-Agent Coding`;
+   - [`workflows/exist-workflow/coding-multi-agent.md`](workflows/exist-workflow/coding-multi-agent.md) when it contains `mode: Multi-Agent Coding` and a locked positive `child_count`.
 2. Load only the references required by the selected workflow and current step.
 3. Return to `workflows/coding.md` only when the task changes direction or before final acceptance.
 

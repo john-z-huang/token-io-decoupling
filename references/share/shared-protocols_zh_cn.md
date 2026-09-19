@@ -42,4 +42,3 @@ Worker 将普通读取、局部分析、常规编辑、重复检查和原始日�
 优先使用 `stable prefix + small delta`：保留稳定决策和工作上下文，只追加新目标、amendment 或验证要求。不要周期性重写完整 Contract 或任务历史。缓存 key、命中条件、quota、latency 和质量影响由 Runtime 决定，不得擅自保证。稳定历史妨碍正确理解时，执行一次压缩或重建。
 
 本模块不能绕过用户授权、权限、产品限制、仓库规则、安全限制或 Runtime capability 检查。
-sed: --: No such file or directory

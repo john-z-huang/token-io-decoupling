@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Coding Session Model
 
 本模块定义 Coding 的职责 ownership、Session 语义、Context Firewall 和 Primary Execution Session Affinity。它独立于运行环境/模型 eligibility、执行参数、dispatch 格式、上下文文件传输和验收流程。

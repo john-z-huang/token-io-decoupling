@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Coding Execution Control
 
 This module owns Coding execution planning: bounded stages, Decision Checkpoints, Interaction Slice release, and execution-stage feedback. It assumes that the active workflow has already supplied the Contract, role/session context, runtime capabilities, and delegation state. It does not decide mode, topology, Agent/Session creation, allocation, count, reuse, replacement, exceptions, verification, documentation, Git, or final acceptance.

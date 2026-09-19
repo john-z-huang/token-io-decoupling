@@ -9,15 +9,15 @@ description: "面向 Coding 的高体量 Agent Token I/O 解耦：将输入侧�
 
 当前本 Skill 只维护一套可执行工作流：Coding。它用于把高价值语义决策与高体量项目状态消费、输出物化分离。Multimodal 和 Mixed 内容目前不作为本仓库中的可执行工作流维护。
 
-Coding 的根指令模式和委派状态由唯一权威文档决定；Coding 工作流必须在路线选择前将其与其他 Coding reference 一并加载。
+Coding 的委派和 Session 拓扑规则由唯一权威文档决定；任务控制记录保存每个任务已确认的状态。Coding 工作流必须在路线选择前将该 policy 与其他 Coding reference 一并加载。
 
 本 Skill 只定义调度约定，不能绕过更高优先级的权限、用户授权、产品限制、仓库指令或安全规则，也不把价格、缓存命中、额度节省、延迟或 Runtime 质量表述为未经实测的事实。
 
 ## 从这里开始
 
 1. 读取 [`workflows/coding_zh_cn.md`](workflows/coding_zh_cn.md)，再按唯一权威文档执行根指令模式确认门禁，然后只加载一个模式工作流：
-   - 用户明确确认单代理 Coding 后，读取 [`workflows/exist-workflow/coding-single-agent_zh_cn.md`](workflows/exist-workflow/coding-single-agent_zh_cn.md)；
-   - 只有用户明确确认多代理 Coding，并进一步确认正整数子 Agent 数量后，才读取 [`workflows/exist-workflow/coding-multi-agent_zh_cn.md`](workflows/exist-workflow/coding-multi-agent_zh_cn.md)。
+   - 任务控制记录包含 `mode: Single-Agent Coding` 时，读取 [`workflows/exist-workflow/coding-single-agent_zh_cn.md`](workflows/exist-workflow/coding-single-agent_zh_cn.md)；
+   - 任务控制记录包含 `mode: Multi-Agent Coding` 且已锁定正整数 `child_count` 时，读取 [`workflows/exist-workflow/coding-multi-agent_zh_cn.md`](workflows/exist-workflow/coding-multi-agent_zh_cn.md)。
 2. 只按选定工作流和当前步骤加载所需 reference。
 3. 只有任务改变方向或进行最终验收前才回到 `workflows/coding_zh_cn.md`。
 
@@ -37,4 +37,3 @@ Coding 的根指令模式和委派状态由唯一权威文档决定；Coding 工
 ## 完成
 
 遵循选定的 Coding 工作流，只有 [`workflows/coding_zh_cn.md`](workflows/coding_zh_cn.md) 中的最终验收门禁拥有明确证据后才能返回 `COMPLETE`。清楚报告跳过或不可用的检查、假设、剩余风险和未授权效果。
-sed: --: No such file or directory

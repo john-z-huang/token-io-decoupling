@@ -1,4 +1,3 @@
-sed: --: No such file or directory
 # Coding 工作流——单代理模式
 
 [English](coding-single-agent.md) | [简体中文](coding-single-agent_zh_cn.md)
@@ -14,14 +13,14 @@ sed: --: No such file or directory
 
 ## 组合输入
 
-本路线在执行检查点序列前组合独立的 Coding references：`shared-protocols`、`agent-delegation-control`、`session-model` 和 `execution-control`。权威文档记录模式/委派状态；其他 reference 提供共享原语、Session 语义和执行规划。下方检查点列表是完整的路线组合；检查点模块不会互相导入。
+本路线在执行检查点序列前组合独立的 Coding references：`shared-protocols`、`agent-delegation-control`、`session-model` 和 `execution-control`。policy 定义模式/委派规则；任务控制记录保存当前状态；其他 reference 提供共享原语、Session 语义和执行规划。下方检查点列表是完整的路线组合；检查点模块不会互相导入。
 
 ## 当前 Session 中的职责边界
 
 - Input-side Reasoning 负责 Semantic Contract、实质性决策、授权、检查点结果和语义验收。
 - Primary Output 负责获批准的实现和临时聚焦检查。
 - Documentation/Comments & Git Operations 负责验证后的获批准文档或注释，以及明确发布下的非简单 Git 工作。
-- 即使本路线只使用一个 Session，Contract 要求的独立 Change Verification 仍然有效；不得把同一 Session 的检查标记为独立验证。是否存在独立 verifier 遵循权威文档。
+- 即使本路线只使用一个 Session，Contract 要求的独立 Change Verification 仍然有效；不得把同一 Session 的检查标记为独立验证。本路线无法提供独立 verifier。
 
 ## 本路线的运行环境要求
 
@@ -49,7 +48,7 @@ sed: --: No such file or directory
 
 ## 单 Session 执行规则
 
-1. 在实质性工作前固定 `ACTIVE_CONSTRAINTS`、Semantic Contract、验收条件和可能的 Decision Brief。简单快速路径的决策可以简短，但必须明确。
+1. 在实质性工作前固定 `ACTIVE_CONSTRAINTS`（当前用户、运行环境、仓库、权限、安全和 Session 硬约束的简短清单）、Semantic Contract、验收条件和可能的 Decision Brief。简单快速路径的决策可以简短，但必须明确。
 2. 项目事实不足时，将有界侦察作为逻辑阶段执行。事实和方向获批准前不要实现。
 3. 每次只执行一个获批准的 Interaction Slice。只读取该切片需要的文件，只作获授权的修改，并运行用于指导修复的聚焦临时检查。
 4. 每个实质性边界都记录状态、发现、修改范围、验证、问题、下一步和未发布边界。
@@ -57,9 +56,9 @@ sed: --: No such file or directory
 
 ## 验证限制
 
-实质性修改的 Contract 或风险评估可能要求独立的 Change Verification Session。可用拓扑遵循权威文档；如果独立验证不可用，则在当前 Session 中运行允许的最强检查，明确说明结果不是独立验证，并在必需边界未解决时不发布依赖该验证的外部 Git 影响。
+实质性修改的 Contract 或风险评估可能要求独立的 Change Verification Session。单代理模式不能创建或声称拥有独立 verifier Session，因此该路线无法提供独立验证。此时在当前 Session 中运行允许的最强检查，明确说明结果不是独立验证，并在必需边界未解决时不发布依赖该验证的外部 Git 影响。
 
-对于保持行为不变的简单修改或仅文档修改，使用适用的快速路径，并运行过期引用、Markdown/链接、空白/差异、多语言和受影响 Contract 检查。
+对于保持行为不变的简单修改或仅文档修改，使用适用的快速路径，并执行：用 `rg` 检查修改文件引用的过期路径/名称；检查修改后的 Markdown 和本地链接目标；运行 `git diff --check`；运行 `python3 scripts/check-multilingual-docs.py`；手动确认每条修改后的规则仍与选定 Contract 和路线一致。记录每条命令或审查的结果及通过条件。
 
 ## 完成
 
