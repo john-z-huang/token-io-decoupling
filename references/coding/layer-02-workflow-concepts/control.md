@@ -16,3 +16,9 @@ The next action is either released within the current envelope or is paused with
 ## Boundary
 
 This checkpoint controls release and authority. It does not silently approve scope expansion, replace verification, or grant Git or external-effect authorization.
+
+## Related concepts
+
+- [Coding Execution Control](../layer-01-fundamental-concepts/execution-control.md) — locate Interaction Slice and control-boundary ownership.
+- [Coding Execution Decision Gate](../layer-01-fundamental-concepts/execution-decision-gate.md) — locate decision and release-condition ownership.
+- [Coding Delegation State Record Worker Boundary](../layer-01-fundamental-concepts/delegation-state-record-worker-boundary.md) — locate parent-controlled Worker release boundaries.
