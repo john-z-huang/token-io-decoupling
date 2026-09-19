@@ -9,7 +9,7 @@ This module owns the file-backed context workspace layout, directory ownership, 
 - Set `CONTEXT_ROOT=<primary-worktree>/.token-io-decoupling/context/`. The parent exclusively maintains `CONTEXT_ROOT/INDEX.md`, mapping each assigned or historical Context ID to its directory and minimal routing state. The canonical layout is `CONTEXT_ROOT/INDEX.md`, `CONTEXT_ROOT/<worker-context-id>/`, and, when bootstrap is assigned, `CONTEXT_ROOT/context-bootstrap/`.
 - Before an assigned Worker uses file-backed exchange, the parent provisions `CONTEXT_ROOT/<worker-context-id>/` and gives the exact path. The Worker may write only inside that directory; it must not access another Worker's directory unless the parent names specific documents for a concrete handoff or dependency.
 - Workers normally share the task's primary worktree. An additional worktree requires a concrete isolation need, such as incompatible snapshots/environments, unredirectable validation writes, a distinct permission/security boundary, or an explicitly isolated audit. Worktree separation alone is not a permission boundary.
-- The repository `.gitignore` must ignore `/.token-io-decoupling/`. This root is runtime coordination state, not a product artifact; do not delete it automatically.
+- The repository `.gitignore` must ignore `.token-io-decoupling`. This root is runtime coordination state, not a product artifact; do not delete it automatically.
 
 ## Capability boundary
 

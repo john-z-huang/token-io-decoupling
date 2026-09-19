@@ -26,7 +26,7 @@ class ContextExchangeValidatorTests(unittest.TestCase):
         self.git("init", "-q")
         self.git("config", "user.email", "validator@example.invalid")
         self.git("config", "user.name", "Context Validator")
-        (self.root / ".gitignore").write_text("/.token-io-decoupling/\n", encoding="utf-8")
+        (self.root / ".gitignore").write_text(".token-io-decoupling\n", encoding="utf-8")
         (self.root / "README.md").write_text("fixture\n", encoding="utf-8")
         self.git("add", ".gitignore", "README.md")
         self.git("commit", "-m", "fixture")

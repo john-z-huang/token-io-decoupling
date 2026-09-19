@@ -9,7 +9,7 @@
 - 设置 `CONTEXT_ROOT=<primary-worktree>/.token-io-decoupling/context/`。父 Agent 独占维护 `CONTEXT_ROOT/INDEX.md`，将每个已分配或历史 Context ID 映射到目录，并记录最小 routing 状态。规范布局是 `CONTEXT_ROOT/INDEX.md`、`CONTEXT_ROOT/<worker-context-id>/`，以及分配 bootstrap 时的 `CONTEXT_ROOT/context-bootstrap/`。
 - 已分配 Worker 使用文件化交换前，父 Agent 为其准备 `CONTEXT_ROOT/<worker-context-id>/` 并提供准确路径。Worker 只能在该目录内写入；除非父 Agent 为具体 handoff 或依赖关系点名文档，否则不得访问其他 Worker 目录。
 - 同一任务的 Worker 通常共享 primary worktree。只有不兼容快照/环境、无法重定向的验证写入、不同权限/安全边界或明确隔离审计等具体需求，才能使用额外 worktree。Worktree 隔离本身不是权限边界。
-- 仓库 `.gitignore` 必须忽略 `/.token-io-decoupling/`。该根目录是运行时协调状态，不是产品产物；不得自动删除。
+- 仓库 `.gitignore` 必须忽略 `.token-io-decoupling`。该根目录是运行时协调状态，不是产品产物；不得自动删除。
 
 ## Capability 边界
 
