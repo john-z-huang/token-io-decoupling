@@ -2,16 +2,19 @@
 
 [English](verification-epoch.md) | [简体中文](verification-epoch_zh_cn.md)
 
-This checkpoint owns final-state epoch invalidation: a later change makes an earlier verification result stale and requires re-verification. It does not define check contents, independent Sessions, result classification, or repair.
+This checkpoint owns epoch invalidation by covered state dimension. A later change advances only the dimension whose verified coverage it changes; earlier evidence remains valid for unaffected dimensions. It does not define check contents, independent Sessions, result classification, or repair.
 
 ## Actions
 
-1. Treat any later change as a new final-state epoch.
-2. Do not use an earlier verification result as evidence for the new state; require Verification for the new epoch.
+1. Track three dimensions: implementation/content, documentation, and Git metadata.
+2. Advance the implementation/content epoch when implementation, configuration, tests, or other content covered by product verification changes; invalidate earlier product verification for that changed content.
+3. Advance the documentation epoch when maintained documentation or comments change. Run the applicable Markdown, link, whitespace, multilingual, and scope checks. If the change alters executable content, the Contract, or acceptance conditions, also treat it as an implementation/content change and return to implementation Verification.
+4. Advance the Git metadata epoch when commit, branch, index, or history state changes. Do not advance the implementation/content or documentation epoch for Git metadata operations alone. Git state still requires the Git checkpoint to confirm that staged or committed content matches the latest verified fingerprints; content divergence or unverified content returns to the corresponding Verification epoch.
+5. Do not use evidence from an earlier epoch for an affected dimension; require the applicable checks or Verification for the new epoch.
 
 ## Pass condition
 
-The current final-state epoch is explicit and any required re-verification is queued or complete.
+The latest applicable implementation/content, documentation, and Git metadata epochs are explicit, their required checks or Verification are queued or complete, and no affected dimension relies on stale evidence.
 
 ## Boundary
 

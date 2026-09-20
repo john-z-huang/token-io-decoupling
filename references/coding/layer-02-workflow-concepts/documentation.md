@@ -6,12 +6,13 @@
 
 1. Confirm the approved documentation paths, audience, purpose, and source evidence.
 2. Change only the approved Markdown or comment scope. Keep English and Simplified Chinese mirrors synchronized when both are maintained.
-3. Do not add new behavior, policy, scope, or Git effects under the label of documentation.
-4. Run applicable Markdown, link, whitespace, and multilingual checks, and report checks that could not run.
+3. After a documentation or comment change, advance the documentation epoch and run applicable Markdown, link, whitespace, multilingual, and scope checks.
+4. If the documentation or comment change alters executable content, the Contract, or acceptance conditions, return to the related implementation and Verification checkpoints. Otherwise, do not rerun unrelated product behavior tests solely because the documentation epoch changed.
+5. Do not add new behavior, policy, scope, or Git effects under the label of documentation, and report checks that could not run.
 
 ## Pass condition
 
-Approved documentation is accurate for the verified state, stays within scope, and its applicable checks pass or have explicit unavailable results.
+Approved documentation is accurate for the applicable verified state, its current documentation epoch is explicit, its applicable checks pass or have explicit unavailable results, and any content-affecting change has returned through implementation Verification.
 
 ## Boundary
 
