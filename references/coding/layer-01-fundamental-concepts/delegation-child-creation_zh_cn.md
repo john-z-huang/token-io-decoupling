@@ -2,7 +2,7 @@
 
 [English](delegation-child-creation.md) | [简体中文](delegation-child-creation_zh_cn.md)
 
-本文档负责创建 Multi-Agent 子 Agent 的能力。它消费已 release 且 count 已 locked 的 Multi-Agent 状态，不重新打开 mode 或 count 确认；不定义职责分配、Dispatch Preview、Worker 边界、复用或替换，或生命周期。
+本文档负责创建 Multi-Agent 子 Agent 的唯一能力入口。它只消费已 release 且 count 已 locked 的 Multi-Agent 状态，不重新打开 mode 或 count 确认。数量锁定前的计划级 replacement 不属于创建能力，不能创建子 Agent 或消耗子 Agent 名额；只有修订后的数量锁定且路线 release 后，才能创建实际 successor 或 replacement。它不定义职责分配、Dispatch Preview、Worker 边界、复用或替换，或生命周期。
 
 ## 创建能力
 

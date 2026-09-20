@@ -2,7 +2,7 @@
 
 [English](delegation-child-creation.md) | [简体中文](delegation-child-creation_zh_cn.md)
 
-This module owns the capability to create a Multi-Agent child. It consumes a released Multi-Agent state with a locked count and does not reopen mode or count confirmation. It does not define role allocation, Dispatch Preview, Worker boundaries, reuse or replacement, or lifecycle.
+This module owns the only capability to create a Multi-Agent child. It consumes only a released Multi-Agent state with a locked positive count and does not reopen mode or count confirmation. A plan-level replacement before count locking is not a creation capability and cannot create a child or consume a child slot; actual successor or replacement creation occurs only after the revised count is locked and the route is released. It does not define role allocation, Dispatch Preview, Worker boundaries, reuse or replacement, or lifecycle.
 
 ## Creation capability
 
