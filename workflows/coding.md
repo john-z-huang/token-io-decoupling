@@ -6,9 +6,10 @@ Use this workflow when repository text, developer-tool output, implementation, t
 
 ## Entry
 
-1. Pass the Mode checkpoint, which composes the delegation references needed for the root-directive mode gate.
-2. Identify the actual runtime environment, complete the Environment checkpoint, and load the [Environment capability inventory](../references/coding/layer-02-workflow-concepts/environment-capability-inventory.md) for capability checks.
-3. Select exactly one complete route after the mode gate and environment check. That route loads its own references and checkpoints.
+1. Complete the Contract checkpoint before route selection.
+2. Identify the actual runtime environment, complete the Environment checkpoint, and establish or load the [Environment capability inventory](../references/coding/layer-02-workflow-concepts/environment-capability-inventory.md) for capability checks.
+3. Pass the Mode checkpoint, which consumes the already established Environment capability inventory and composes the delegation references needed for the root-directive mode gate.
+4. Select exactly one complete route after the Contract, Environment, and Mode checkpoints. That route loads its own references and checkpoints.
 
 ## Routes
 
@@ -34,7 +35,7 @@ If a lower layer needs a concept owned by a higher layer, treat that upward depe
 
 The route may compose these independent action boundaries from [layer-02 workflow concepts](../references/coding/layer-02-workflow-concepts/) as conditions require:
 
-`contract` → `environment` → `mode` → `context` → `decision` → `implementation` → `control` → `verification` → `repair` → `documentation` → `git` → `acceptance`
+`contract` → `environment` (+ capability inventory) → `mode` → `context` → `decision` → `implementation` → `control` → `verification` → `repair` → `documentation` → `git` → `acceptance`
 
 The catalog is navigation only. A checkpoint does not route to another checkpoint; the selected route defines the actual sequence and records why a conditional checkpoint is skipped.
 
