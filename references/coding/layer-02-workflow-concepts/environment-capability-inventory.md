@@ -16,6 +16,8 @@ Mark an unobserved capability as unknown. Do not substitute another runtime envi
 
 Routes consume this inventory and state only for their topology-specific deltas. On Local Codex, use the exposed model/session controls and restart after changing global instructions, overrides, the Skill, or repository instructions. On ChatGPT Work, use only explicitly exposed models, Sessions, files, connectors, and execution tools. On Standard ChatGPT, do not assume local execution, Git, worktrees, or independent Sessions.
 
+A profile declared by a route is a capability requirement, not a product-wide availability claim. A branch-specific route may consume that profile only after this inventory records the current surface's actual model identity and reasoning parameter. If a required model or parameter is not exposed or is unknown, record the requirement in `unavailable_capabilities` and block the dependent slice or route. Do not silently substitute a model, reasoning effort, Session, tool, permission, or mode/count; choosing a different route requires re-entering its applicable gate and obtaining new explicit confirmation. This keeps Core rules decoupled from product details while allowing a route to consume its declared, surface-specific requirements.
+
 ## Related concepts
 
 - [Coding Session Model](../layer-01-fundamental-concepts/session-model.md) — locate Session topology ownership.

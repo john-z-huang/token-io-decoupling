@@ -20,11 +20,11 @@
 
 ## 本路线的运行环境要求
 
-使用[运行环境能力清单](../layer-02-workflow-concepts/environment-capability-inventory_zh_cn.md)提供的能力清单和共用运行规则。只有任务记录和已发布切片所需能力均暴露时才能继续。Worker 只能向直接父级返回，不能创建/管理其他 Agent 或联系任意线程。在本地 Codex 中使用 Skill 绑定：Primary Output 为 `gpt-5.6-luna`/`xhigh`；Change Verification 为 `gpt-5.6-luna`/`xhigh`；Documentation/Git 为 `gpt-5.6-luna`/`high`；Context Bootstrap 为 `gpt-5.6-luna`/`high`，确定性刷新可用 `medium`。重复失败或阻塞时才窄范围升级到 `max`，随后恢复正常档位。
+使用[运行环境能力清单](../layer-02-workflow-concepts/environment-capability-inventory_zh_cn.md)提供的能力清单和共用运行规则。只有任务记录和已发布切片所需能力均暴露时才能继续。Worker 只能向直接父级返回，不能创建/管理其他 Agent 或联系任意线程。下列 profile binding 仅适用于 Local Codex 分支。它们是本路线职责分配所需的能力要求，不是对 ChatGPT Work 或 Standard ChatGPT 的默认可用性假设：Primary Output 为 `gpt-5.6-luna`/`xhigh`；Change Verification 为 `gpt-5.6-luna`/`xhigh`；Documentation/Git 为 `gpt-5.6-luna`/`high`；Context Bootstrap 为 `gpt-5.6-luna`/`high`，确定性刷新可用 `medium`。Local Codex 能力清单必须核验每个已分配 binding 暴露的 model identity 和 reasoning parameter。任何必需 binding 缺失或未知，都必须记录到 `unavailable_capabilities`，并阻塞依赖的切片/路线。不得静默替换 model、reasoning effort、Session、工具、权限或 mode/count；选择其他路线必须重新进入适用门禁并取得新的明确确认。重复失败或阻塞时才窄范围升级到 `max`，随后恢复正常档位。
 
 ## 已组合的检查点顺序
 
-Coding 选择器已经将 Environment 和 Mode 检查点作为路线前门禁执行；本路线不得重复执行。遵循 Coding 工作流，并组合[Contract](../layer-02-workflow-concepts/contract_zh_cn.md)、[Context](../layer-02-workflow-concepts/context_zh_cn.md)、[Decision](../layer-02-workflow-concepts/decision_zh_cn.md)、[Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)、[Control](../layer-02-workflow-concepts/control_zh_cn.md)、[Verification](../layer-02-workflow-concepts/verification_zh_cn.md)、[Verification independence](../layer-02-workflow-concepts/verification-independence_zh_cn.md)、[Verification reporting](../layer-02-workflow-concepts/verification-reporting_zh_cn.md)、[Verification epoch](../layer-02-workflow-concepts/verification-epoch_zh_cn.md)、[Repair](../layer-02-workflow-concepts/repair_zh_cn.md)、[Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate_zh_cn.md)、[Repair execution](../layer-02-workflow-concepts/repair-execution_zh_cn.md)、[Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff_zh_cn.md)、[Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)、[Git](../layer-02-workflow-concepts/git_zh_cn.md)和[Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)。多代理差异：Worker 需要可复用状态时加载上下文；实质性派发前执行决策；每个已发布实现切片配套控制边界；分配了 verifier 时使用新的独立验证 Session；失败经过修复和新的验证 epoch 后，再进入文档、Git 和验收。
+Coding 选择器已经将 Contract、Environment 和 Mode 检查点作为路线前门禁完成；本路线不得重复执行。遵循 Coding 工作流，并从[Context](../layer-02-workflow-concepts/context_zh_cn.md)开始组合[Decision](../layer-02-workflow-concepts/decision_zh_cn.md)、[Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)、[Control](../layer-02-workflow-concepts/control_zh_cn.md)、[Verification](../layer-02-workflow-concepts/verification_zh_cn.md)、[Verification independence](../layer-02-workflow-concepts/verification-independence_zh_cn.md)、[Verification reporting](../layer-02-workflow-concepts/verification-reporting_zh_cn.md)、[Verification epoch](../layer-02-workflow-concepts/verification-epoch_zh_cn.md)、[Repair](../layer-02-workflow-concepts/repair_zh_cn.md)、[Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate_zh_cn.md)、[Repair execution](../layer-02-workflow-concepts/repair-execution_zh_cn.md)、[Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff_zh_cn.md)、[Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)、[Git](../layer-02-workflow-concepts/git_zh_cn.md)和[Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)。多代理差异：Worker 需要可复用状态时加载上下文；实质性派发前执行决策；每个已发布实现切片配套控制边界；分配了 verifier 时使用新的独立验证 Session；失败经过修复和新的验证 epoch 后，再进入文档、Git 和验收。
 
 ## 上下文与派发
 
@@ -43,9 +43,12 @@ Coding 选择器已经将 Environment 和 Mode 检查点作为路线前门禁执
 Owner: Primary Output | Documentation/Comments & Git Operations | Change Verification
 Objective: ...
 Authorized scope/mutations: ...
+write_content_memo: true | false
 Return conditions: ...
 Unreleased boundary: ...
 ```
+
+父级必须为每个 released slice 显式发布 `write_content_memo`，并将其与 scope 和 mutations 一同写入；Worker 只消费该 bundle 中的值，不得自行推断或改写。
 
 不适用的段落写明 `Not applicable` 及原因，不要创建无操作 Worker。除非子代理派发/生命周期 reference 允许独立且不冲突的并行工作，否则一次只发布一个 Interaction Slice。在切片内使用 Progress Signals，在实质性边界使用控制边界检查点。
 
@@ -54,6 +57,7 @@ Unreleased boundary: ...
 - 实质性修改达到实现检查点后，只有任务控制记录包含已分配 verifier 时，才能执行独立 Change Verification。否则由当前或已分配的 Agent 执行允许的最终检查，并报告独立验证不可用；不得改变委派状态。
 - 后续 Evidence-on-Demand 和修复后的 epoch 复用该验证者。每次最终状态指纹改变都必须重新独立评估；早期结论不能作为新状态的证据。
 - 失败时只发布窄范围修复，并将新 epoch 发送给同一验证者。实质性问题未解决前，不开始验证后的文档或依赖验证的远程 Git 工作。
+- 如果修复失败且同一个 child 无法安全复用，数量锁定后不得创建 replacement child；报告相关证据并将多代理路线置为 `blocked`。
 - 验证通过后，将文档/注释工作和 Git 工作作为独立的有界切片发布，并明确授权。
 
 ## 完成

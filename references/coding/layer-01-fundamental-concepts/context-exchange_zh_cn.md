@@ -6,7 +6,7 @@
 
 ## 传输 capsule
 
-只传递接收 Worker 当前所需的上下文。优先把原文档以定向只读方式暴露给它；无法暴露时，文件系统/工具层可以把点名文档机械复制到接收方的 `imports/<source-context-id>/`，不得由 LLM 为传输重写正文。只有两种文件系统方式都不安全时，才使用精简的父级中转 handoff。
+只传递接收 Worker 当前所需的上下文。优先把原文档以定向只读方式暴露给它；无法暴露时，父级或文件系统层可以创建父级准备的只读目录，并把点名文档机械复制到 `CONTEXT_ROOT/<worker-context-id>/imports/<source-context-id>/`；Worker 可以读取导入内容，但不得重写。父级必须在具体 handoff 或依赖关系中点名来源文档，权威 source 仍然优先且具有约束力。只有两种文件系统方式都不安全时，才使用精简的父级中转 handoff。
 
 可复用 capsule 可以包含中性事实、准确路径和 source pointer、hash、freshness/invalidation 数据以及窄范围证据指针。不得包含实现推理、Contract 结论、私有 chain-of-thought、秘密、完整 diff、完整日志或大段源码副本。接收 Worker 先读 capsule，再只读自身需要的点名 source 路径；权威源文件仍具有约束力。
 

@@ -6,8 +6,8 @@
 
 ## 工作区 ownership
 
-- 设置 `CONTEXT_ROOT=<primary-worktree>/.token-io-decoupling/context/`。父 Agent 独占维护 `CONTEXT_ROOT/INDEX.md`，将每个已分配或历史 Context ID 映射到目录，并记录最小 routing 状态。规范布局是 `CONTEXT_ROOT/INDEX.md`、`CONTEXT_ROOT/<worker-context-id>/`，以及分配 bootstrap 时的 `CONTEXT_ROOT/context-bootstrap/`。
-- 已分配 Worker 使用文件化交换前，父 Agent 为其准备 `CONTEXT_ROOT/<worker-context-id>/` 并提供准确路径。Worker 只能在该目录内写入；除非父 Agent 为具体 handoff 或依赖关系点名文档，否则不得访问其他 Worker 目录。
+- 设置 `CONTEXT_ROOT=<primary-worktree>/.token-io-decoupling/context/`。父 Agent 独占维护 `CONTEXT_ROOT/INDEX.md`，将每个已分配或历史 Context ID 映射到目录，并记录最小 routing 状态。规范布局是 `CONTEXT_ROOT/INDEX.md`、`CONTEXT_ROOT/<worker-context-id>/`、由父级准备的只读导入目录 `CONTEXT_ROOT/<worker-context-id>/imports/<source-context-id>/`，以及分配 bootstrap 时的 `CONTEXT_ROOT/context-bootstrap/`。
+- 已分配 Worker 使用文件化交换前，父 Agent 为其准备 `CONTEXT_ROOT/<worker-context-id>/` 并提供准确路径。对于具体 handoff 或依赖关系，父级创建并点名相关的 `imports/<source-context-id>/` 目录和来源文档。Imports 为只读目录，不是 Worker 可写的 generated context；Worker 只能在自己的 context 目录内写入其他获准内容，除非父级点名特定文档，否则不得访问其他 Worker 目录。
 - 同一任务的 Worker 通常共享 primary worktree。只有不兼容快照/环境、无法重定向的验证写入、不同权限/安全边界或明确隔离审计等具体需求，才能使用额外 worktree。Worktree 隔离本身不是权限边界。
 - 仓库 `.gitignore` 必须忽略 `.token-io-decoupling`。该根目录是运行时协调状态，不是产品产物；不得自动删除。
 
@@ -15,9 +15,9 @@
 
 宿主支持 filesystem capability 时，应在执行前配置最小权限：
 
-- **RW**：仅 Worker 已放行的代码路径和自己的 context 目录；verifier 只能写入点名的验证资产。
-- **RO**：仅当前 slice 所需源路径，以及其他 Worker 被明确点名的文档。
-- **DENY**：根 `INDEX.md`、其他 Worker 目录和所有未列出的路径。
+- **RW**：仅 Worker 已放行的代码路径和自己 context 目录中允许写入的内容；不包括 `imports/`，verifier 只能写入点名的验证资产。
+- **RO**：仅当前 slice 所需源路径，以及其他 Worker 被明确点名的文档或 imports。
+- **DENY**：根 `INDEX.md`、未点名的 imports、其他 Worker 目录和所有其他未列出的路径。
 
 多个 Worker 共用一个 OS identity 时，普通 Unix ownership 不能形成可靠隔离；应使用真实 sandbox、container/mount namespace、path allowlist 或等价能力。宿主不能强制所需边界时，Worker 必须停止。
 

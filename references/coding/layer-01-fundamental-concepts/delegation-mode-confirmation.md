@@ -8,13 +8,15 @@ This module owns root-directive mode recommendation and explicit confirmation, p
 
 For every new root user directive, the root parent must:
 
-1. Analyze the task enough to make a useful recommendation.
-2. Recommend Single-Agent Coding or Multi-Agent Coding with a concise reason.
-3. Ask the user to choose and wait for an unambiguous confirmation.
+1. Confirm that the runtime exposes the parent-controlled task panel or equivalent task-control record capability.
+2. If it does, create or initialize the record in `gate_status: awaiting-mode` before asking the confirmation question. If it is missing or unknown, block the dependent route and do not assume that a record exists.
+3. Analyze the task enough to make a useful recommendation.
+4. Recommend Single-Agent Coding or Multi-Agent Coding with a concise reason.
+5. Ask the user to choose and wait for an unambiguous confirmation.
 
 A mode stated in the directive is input to the recommendation, not a substitute for confirmation. Until confirmation, do not create/manage Agents or Sessions, release Dispatch, or begin substantive reconnaissance, implementation, verification, documentation, or Git work. Mandatory instruction loading and capability checks needed to form the question are allowed.
 
-Record the confirmed mode in the task-control record. Ambiguous or non-responsive input does not release it.
+Record the confirmed mode in the task-control record. For confirmed Multi-Agent Coding, transition the record to `gate_status: awaiting-count`; for confirmed Single-Agent Coding, set `child_count: 0` and release the route only after the required release conditions are satisfied. Ambiguous or non-responsive input does not release it.
 
 ## Single-Agent Coding
 

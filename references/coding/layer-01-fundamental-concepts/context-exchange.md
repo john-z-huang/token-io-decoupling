@@ -6,7 +6,7 @@ This module defines the transport capsule for already-assigned Coding Workers: i
 
 ## Transport capsule
 
-Pass only the context needed by the receiving Worker. Prefer a targeted read-only view of the original document. If that is unavailable, the filesystem/tool layer may mechanically copy the named documents into the receiver's `imports/<source-context-id>/`; the LLM must not rewrite them for transport. Use a compact parent-mediated handoff only when neither filesystem option is safe.
+Pass only the context needed by the receiving Worker. Prefer a targeted read-only view of the original document. If that is unavailable, the parent or filesystem layer may create and mechanically copy the named documents into the parent-prepared read-only directory `CONTEXT_ROOT/<worker-context-id>/imports/<source-context-id>/`; the Worker may read the import but must not rewrite it. The parent must name the source documents in the concrete handoff or dependency, and the authoritative source remains preferred and binding. Use a compact parent-mediated handoff only when neither filesystem option is safe.
 
 A reusable capsule may contain neutral facts, exact paths and source pointers, hashes, freshness/invalidation data, and narrow evidence pointers. It must not contain implementation reasoning, Contract verdicts, private chain-of-thought, secrets, complete diffs, complete logs, or large source copies. Receiving Workers read the capsule first and then only the named source paths they need; authoritative source files remain binding.
 

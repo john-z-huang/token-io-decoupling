@@ -31,6 +31,19 @@ Any Agent or contributor that creates, edits, renames, moves, or deletes documen
 - Use an independent read-only verification agent when a batch is ready for final review. It must not repair, stage, commit, or push; it reports filename/content mismatches, relationship violations, stale owner names, and broken links.
 - Preserve unrelated user changes and never stage repository-generated or pre-existing untracked state such as `.serena/` unless explicitly requested.
 
+## Iterative Skill clarity-review directive
+
+When the root directive explicitly requests an iterative Skill-document clarity review, use this reusable sequence in a new isolated Git worktree:
+
+1. Create one child Agent with low reasoning effort and assign it only the named Skill worktree. The child first reads the current worktree's Skill entry, workflow, and only the direct reference documents needed for the review; it does not modify files in the first pass.
+2. Require the child to return evidence-backed ambiguities, contradictions, missing execution boundaries, or confusing passages, including exact file paths, headings, consequences, and minimal repair directions. The child must not create recursive agents or contact unrelated Sessions.
+3. The parent reviews the findings, defines a Semantic Contract and one narrow approved document slice, then dispatches explicit paths, allowed mutations, return conditions, and the unreleased boundary. The child edits only that slice and returns the changed paths, diff summary, checks, and any remaining uncertainty.
+4. The parent reviews the child’s proposed result against the Contract, ownership boundaries, English/Chinese mirrors, links, and scope. If the result is not approved, do not commit it; send only a narrow repair instruction and repeat the review. If it is approved, require the child to run the applicable documentation checks, stage only the approved files, and create one local commit with a Chinese commit message. Never push to a remote unless the root directive separately authorizes it.
+5. After every approved commit, require the child to reread the current worktree Skill documents and report whether any material ambiguity or improvement remains. Continue the parent-review/child-repair/approval/commit cycle until the child reports no remaining material confusion or actionable improvement and the parent independently accepts that conclusion.
+6. At completion, verify the final worktree, commit scope, bilingual mirrors, required checks, and absence of remote effects. Preserve unrelated changes and leave the worktree available unless cleanup is explicitly requested.
+
+This directive controls the review loop only; it does not authorize unrelated implementation, history rewriting, remote operations, or changes outside the approved document slices.
+
 ## Required validation
 
 Before completing any documentation slice, run all of the following from the repository root:

@@ -6,9 +6,10 @@
 
 ## 入口
 
-1. 通过模式检查点组合根指令模式门禁所需的委派 references。
-2. 识别真实运行环境，完成运行环境检查点，并加载[运行环境能力清单](../references/coding/layer-02-workflow-concepts/environment-capability-inventory_zh_cn.md)进行能力检查。
-3. 在模式门禁和运行环境检查完成后，只选择一条完整路线。该路线自行加载 references 并组合检查点。
+1. 在路线选择前完成 Contract 检查点。
+2. 识别真实运行环境，完成运行环境检查点，并建立或加载[运行环境能力清单](../references/coding/layer-02-workflow-concepts/environment-capability-inventory_zh_cn.md)进行能力检查。
+3. 通过消费已建立的运行环境能力清单的模式检查点，组合根指令模式门禁所需的委派 references。
+4. 在 Contract、运行环境和模式检查点完成后，只选择一条完整路线。该路线自行加载 references 并组合检查点。
 
 ## 路线
 
@@ -34,7 +35,7 @@
 
 路线可以按条件组合 [layer-02 工作流概念](../references/coding/layer-02-workflow-concepts/) 中的以下独立动作边界：
 
-`contract` → `environment` → `mode` → `context` → `decision` → `implementation` → `control` → `verification` → `repair` → `documentation` → `git` → `acceptance`
+`contract` → `environment`（+ 能力清单）→ `mode` → `context` → `decision` → `implementation` → `control` → `verification` → `repair` → `documentation` → `git` → `acceptance`
 
 目录只用于导航。检查点不负责路由到另一个检查点；选定路线定义实际顺序，并记录跳过条件检查点的原因。
 

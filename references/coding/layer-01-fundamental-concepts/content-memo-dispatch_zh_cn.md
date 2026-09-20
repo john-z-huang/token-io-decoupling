@@ -14,6 +14,8 @@ write_content_memo: true
 
 省略该字段时也按 `true` 处理。它为当前 dispatch 启用文件化 memo。`false` 只关闭文件化 memo，且仅适用于 memo 成本明显高于预期复用、恢复或 handoff 价值的情况。
 
+内部派发配置可以省略字段并使用上述 `true` 默认值。但在父级序列化 released task bundle 前，必须显式写出 `write_content_memo: true` 或 `write_content_memo: false`。Worker 只消费其 released bundle 中的显式值；如果 released bundle 省略该字段，则派发不完整，Worker 不得自行推断默认值。
+
 ## 父级授权
 
 Worker 不得修改或重新解释该开关；只有父 Agent 可以为后续 slice 选择取值。该授权只控制 memo 文件是否物化，不授予其他范围或 capability。
