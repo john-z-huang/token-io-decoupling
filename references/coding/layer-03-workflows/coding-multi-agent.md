@@ -57,6 +57,7 @@ Mark a section `Not applicable` with a reason instead of creating a no-op Worker
 - For a material change, perform independent Change Verification only when the task control record contains an allocated verifier. Otherwise perform the allowed final checks with the current or already allocated Agent and report independent verification as unavailable; do not alter the delegation state.
 - Reuse that verifier for later Evidence-on-Demand and repaired epochs. Every changed final-state fingerprint requires independent re-evaluation; an earlier verdict is not evidence for a new state.
 - On failure, release only the narrow repair scope, then send the new epoch to the same verifier. Do not begin post-verification documentation or dependent remote Git work while a material issue remains unresolved.
+- If repair fails and the same child cannot be safely reused, do not create a replacement child after count locking; report the evidence and set the Multi-Agent route to `blocked`.
 - After verification passes, release documentation/comment work and any Git work as separate bounded slices with explicit authorization.
 
 ## Completion

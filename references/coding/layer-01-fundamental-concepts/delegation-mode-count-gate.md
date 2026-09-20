@@ -10,7 +10,7 @@ After Multi-Agent confirmation, recommend the exact positive integer child count
 
 ## Count locking
 
-After count confirmation, lock it before the first Dispatch. Create exactly that many children if the runtime can safely do so; otherwise block rather than silently changing the count. Every independently assigned role consumes a slot. Reuse does not create a slot. Replacement, fork, handoff to a new child, or an additional verifier is a new creation and is forbidden after the lock for this directive.
+After count confirmation, lock it before the first Dispatch. If a replacement need is discovered before the first Dispatch, the parent must re-confirm or update the proposed count, then lock the revised count and re-satisfy the route's release conditions. Create exactly the locked number of children if the runtime can safely do so; otherwise block rather than silently changing the count. Every independently assigned role consumes a slot. Reuse does not create a slot. After the count is locked, replacement, fork, handoff to a new child, or an additional verifier is a new creation: each is forbidden and must not increase `child_count` for this directive.
 
 An unavailable capability blocks this count route; it never authorizes silently changing the confirmed count.
 

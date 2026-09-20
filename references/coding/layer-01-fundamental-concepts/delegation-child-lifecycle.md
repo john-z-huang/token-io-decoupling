@@ -10,7 +10,7 @@ Keep created children visible and persistent. Do not close, shut down, archive, 
 
 ## Error and interruption
 
-On error or interruption, keep the child state explicit, report the blocker and available evidence, and do not close it as cleanup without authorization. Authorized repair, reuse, or replacement follows the corresponding owner concept.
+On error or interruption, keep the original child state explicit, preserve its available evidence, and do not close it as cleanup without authorization. First attempt an authorized repair by reusing the same child. Only while `child_count` is not locked may the parent use the controlled replacement path. After count locking, if the same child cannot be safely reused, report the blocker and set the Multi-Agent route to `blocked`; do not create a replacement child. Authorized reuse or pre-lock replacement follows the corresponding owner concept.
 
 ## Related concepts
 
