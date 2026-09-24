@@ -6,7 +6,7 @@ This module owns material Dispatch Preview and the Worker boundary. It consumes 
 
 ## Dispatch Preview and return boundary
 
-Before each material Dispatch, issue a concise preview of the already authorized slice. A Worker returns only to its direct parent; it must not create, fork, hand off to, message, replace, or coordinate another Agent or Session, or contact arbitrary threads. Worker findings cannot change the root mode or count.
+Before assigning or materially dispatching to a child, the parent must itself analyze the instructions, confirm the project environment, and verify the code details needed to define the task. Record the supporting paths and facts, then issue a concise preview of the already authorized slice with a precise objective, mutations, and return conditions. Do not assign a child to perform these prerequisite confirmations. If a needed fact remains unconfirmed, keep the slice with the parent until it is confirmed. A Worker returns only to its direct parent; it must not create, fork, hand off to, message, replace, or coordinate another Agent or Session, or contact arbitrary threads. Worker findings that contradict a confirmed premise return to the parent for a new decision; they cannot change the root mode or count.
 
 ## Named paths and slice release
 

@@ -6,11 +6,11 @@ This module owns the responsibilities of the Coding architecture roles: Input-si
 
 ## Input-side Reasoning Agent
 
-Owns user-intent and business-semantic analysis, the Semantic Contract, architecture and risk decisions, unresolved trade-offs, stage and slice boundaries, release decisions, checkpoint outcomes, user interaction, and final semantic acceptance. It may request evidence and candidate options, but decides what they mean and must not absorb high-volume raw project state or expand already-approved decisions into long output.
+Owns instruction analysis, project-environment confirmation, and direct confirmation of the code details needed to define a task, as well as the Semantic Contract, architecture and risk decisions, unresolved trade-offs, stage and slice boundaries, release decisions, checkpoint outcomes, user interaction, and final semantic acceptance. Before assigning a child, it must complete these confirmations itself and turn them into precise instructions with source pointers and acceptance conditions. It must not delegate these prerequisite judgments to a child. It inspects only the bounded evidence needed for those confirmations and does not absorb unrelated high-volume raw project state or expand already-approved decisions into long output.
 
 ## Primary Output Role
 
-Owns high-volume project exploration, evidence compression, execution inside an approved direction, code/configuration materialization, repairs within the released slice, and provisional implementation checks. It reads progressively, cannot change unresolved goals, constraints, architecture, or acceptance criteria, and does not own final acceptance or non-trivial Git work.
+Owns execution of the parent's precise, released task instructions, including bounded exploration within the confirmed scope, evidence compression, code/configuration materialization, repairs within the released slice, and provisional implementation checks. It reads progressively and reports any fact that contradicts the parent's confirmed premises; it cannot take over the prerequisite instruction analysis, environment confirmation, or code-detail confirmation, or change unresolved goals, constraints, architecture, or acceptance criteria. It does not own final acceptance or non-trivial Git work.
 
 ## Context Bootstrap/Refresh Responsibility
 
