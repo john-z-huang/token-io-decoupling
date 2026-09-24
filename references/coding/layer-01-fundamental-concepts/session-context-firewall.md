@@ -6,9 +6,9 @@ This module owns the Context Firewall: raw-state ingress limits, bounded inspect
 
 ## Raw-state ingress
 
-In a multi-Session Coding run, the input-side Session does not perform open-ended project inspection. Primary Output consumes source/configuration state; Change Verification consumes final-state evidence; Documentation/Comments & Git Operations consumes Git state and approved documentation scope. Each returns only the facts needed for the next decision.
+In a multi-Session Coding run, the input-side Session directly inspects the bounded project-environment and code evidence required to confirm a child's task before dispatch; it does not perform open-ended project inspection. Primary Output consumes further source/configuration state only within the parent's confirmed and released scope; Change Verification consumes final-state evidence; Documentation/Comments & Git Operations consumes Git state and approved documentation scope. Each returns only the facts needed for the next decision.
 
-Only strictly bounded, read-only metadata may be inspected directly by the input-side Session. Potential output volume and repository-state impact determine the boundary, not the command name. A single Session has no cross-Session firewall, but still reads progressively and compresses raw state.
+The input-side Session may directly inspect bounded, read-only source/configuration excerpts and environment evidence needed for its prerequisite fact confirmation. It records exact source pointers and conclusions before child assignment. Potential output volume and repository-state impact determine the boundary, not the command name. A single Session has no cross-Session firewall, but still reads progressively and compresses raw state.
 
 ## Semantic ownership and ephemeral localization
 

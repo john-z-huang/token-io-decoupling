@@ -6,7 +6,7 @@
 
 ## Dispatch Preview 和返回边界
 
-每次实际派发前，都要对已授权的 slice 发出简洁 preview。Worker 只能返回其直接父级；不得创建、fork、handoff、向其他 Agent 或 Session 发消息、替换或协调其他 Agent 或 Session，也不得联系任意线程。Worker findings 不得改变 root mode 或 count。
+分配子代理或进行实质性派发前，父级必须亲自分析指令、确认项目环境，并核实定义任务所需的代码细节。记录支持性路径与事实，然后对已授权 slice 发出包含精确目标、允许改动和返回条件的简洁 preview。不得分配子代理完成这些前置确认。若所需事实尚未确认，slice 留在父级，直至确认完成。Worker 只能返回其直接父级；不得创建、fork、handoff、向其他 Agent 或 Session 发消息、替换或协调其他 Agent 或 Session，也不得联系任意线程。与已确认前提冲突的 Worker findings 须返回父级重新决策，不能改变 root mode 或 count。
 
 ## Named path 和 slice 放行
 

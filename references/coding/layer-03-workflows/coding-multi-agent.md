@@ -35,7 +35,7 @@ The common workflow already establishes shared protocols, Session rules, environ
 3. Use Context Bootstrap or Refresh only when it is assigned in the active delegation state. Keep the capsule factual and routing-only; it never replaces the Contract, mandatory source loading, or independent verification.
 4. Keep each Worker's context-exchange subdirectory separate, and grant each Worker only the named code and context paths it needs. Follow the child role-allocation and dispatch references for Worker allocation and boundaries.
 
-Before the first substantive dispatch, form a concise Decision Brief unless the task is simple, local, low-risk, obvious, reversible, and mechanically verifiable. If material facts are missing, release bounded reconnaissance only, then synthesize the result on the input side before releasing implementation.
+Before assigning any child, the parent directly analyzes the instructions, confirms the project environment, and checks the code details needed to define the task. If material facts are missing, the parent performs bounded read-only reconnaissance and completes those confirmations before assignment. Before the first substantive dispatch, form a concise Decision Brief unless the task is simple, local, low-risk, obvious, reversible, and mechanically verifiable. Workers then execute precise released instructions and return contradictions or newly discovered facts to the parent for a new decision.
 
 For every released task bundle, state:
 
