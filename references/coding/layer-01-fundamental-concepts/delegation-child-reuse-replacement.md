@@ -22,6 +22,12 @@ No provider-specific optimization instructions at present; follow the general ru
 
 Use `SendMessage` with the returned Agent ID for an authorized follow-up or repair of the same child. Calling `Agent` again creates another child and consumes another slot; do not use it for reuse after count locking.
 
+### Resume identity, do not respawn
+
+Resume an authorized persistent `general-purpose` or custom subagent with `SendMessage` addressed to its returned `agent_id` (or the supported agent name) and a narrow repair/follow-up prompt. A fresh `Agent` invocation creates a distinct instance even if its type and prompt match; never use it as a hidden replacement under the locked budget. Built-in `Explore` and `Plan` are one-shot and return no resumable ID; do not assign them to a slot that requires later follow-up. If resume fails, preserve the error and block dependent work rather than trying another child. Claude Desktop Chat connector invocations or side chats are not a substitute for this persistent identity.
+
+Official reference: [resume subagents](https://code.claude.com/docs/en/sub-agents).
+
 ## Related concepts
 
 - [Coding Child Creation](delegation-child-creation.md) — locate child creation capability.

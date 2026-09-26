@@ -22,6 +22,12 @@ No provider-specific optimization instructions at present; follow the general ru
 
 No provider-specific optimization instructions at present; follow the general rules above.
 
+### Pre-dispatch tool guard
+
+For a locally configured Claude Code host, an authorized `PreToolUse` Hook matching `Agent` may inspect the proposed invocation before it executes and deny a spawn when the parent record does not show the reserved slot, released slice, and approved return path. Use an explicit deny result rather than relying on a `SubagentStart` event, which occurs after spawn and cannot veto it. Keep the human-readable Dispatch Preview in the parent conversation **before** the `Agent` tool call; a Hook alone is not evidence that the parent reviewed or exposed the preview. Guard scripts must read the actual record and fail closed on missing authorization without logging secrets or full prompts. If no reviewed Hook is installed, the semantic pre-dispatch checks remain mandatory.
+
+Official reference: [PreToolUse and SubagentStart semantics](https://code.claude.com/docs/en/hooks).
+
 ## Related concepts
 
 - [Coding Child Creation](delegation-child-creation.md) — locate child creation capability.

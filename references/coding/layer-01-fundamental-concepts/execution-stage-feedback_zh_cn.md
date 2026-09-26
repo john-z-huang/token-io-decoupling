@@ -24,6 +24,12 @@
 
 目前没有针对该厂商的特别优化指令；遵循上述通用规范。
 
+### Hook 辅助的精简阶段证据
+
+持久 Claude Code 子代理的 `SubagentStop` 提供 `last_assistant_message`，父级可直接消费精简阶段结果，不必重读完整子代理 transcript。工具执行本身失败时，`PostToolUseFailure` 可提供错误信息，供执行者在**现有**阶段边界汇报；不得把每次失败命令都升级成新的高价值决策检查点。这两种事件都不能替代明确的进度证据、最终验证或父级的 Control 选择。只有当前 Claude Code Runtime 实际安装 Hooks 时才使用，不能套用于无关 Desktop Chat 对话。
+
+官方依据：[SubagentStop 与 PostToolUseFailure 事件数据](https://code.claude.com/docs/en/hooks)。
+
 ## 相关概念
 
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 边界。

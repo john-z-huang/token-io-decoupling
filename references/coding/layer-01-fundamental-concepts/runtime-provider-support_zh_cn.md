@@ -55,6 +55,16 @@ Claude Code 仅在所选 Sonnet 版本暴露相应档位时应用以下 effort �
 
 修改 `CLAUDE.md`、本 Skill 或 Agent 定义后，若当前会话无法证实已加载新指令，则启动新的 Claude Code 会话；`/tasks` 和 `/agents` 不能作为已加载的证据。
 
+### Claude Desktop 运行界面与连接器门禁
+
+Claude Desktop **不是**能力完全一致的单一 Coding 运行环境。在 **Code 标签页**，必须核实所选 Session 确实为具有所需 shell/文件系统和 Agent 工具的本地 Claude Code Session，才应用本模型配置；云端/远程 Code Session 应独立盘点能力。Code 标签页和本地 Claude Code CLI 可以共用适用的项目指令、设置、MCP 配置和 Hooks，但仍须核对实际 Session。Desktop **Chat** 对话或 **Cowork** 任务不会仅因运行在同一桌面应用中，就自动变为 Claude Code Agent Session。不得假定这些界面具有 Claude Code 的 `Agent`、`SendMessage`、`/tasks`、本地 shell 或 Hooks。
+
+Desktop Chat 需要工具时，云端服务优先使用已授权的**远程连接器**；本机资源可使用已核实的**桌面扩展/本地 MCP Server**，并核对具体工具的读写权限。连接器只提供数据与操作，不等于独立 Coding Session、父级可控 Agent 身份或已锁定的子代理预算。缺少必需 Coding 能力时记录缺失项，仅阻塞依赖路线或 Slice，不将 Chat/Cowork 冒充本地 Claude Code。
+
+Desktop Code 本地 Session 可通过模型下拉菜单选择/核对模型、侧边栏恢复 Session，并使用共用设置中的权限规则；Desktop 不提供 CLI `--allowedTools`/`--disallowedTools` 的逐 Session 等价界面。Desktop Code 可加载 `claude_desktop_config.json` 中的本地 MCP 定义，但独立 CLI **不会**自动读取该文件；必须核实或导入预期 Server，不能假定两边的 Server 列表完全相同。这些 UI 操作也不是 Desktop Chat 中的 CLI 参数。
+
+官方依据：[Desktop Code 标签页](https://code.claude.com/docs/en/desktop)、[Desktop 本地 MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)、[桌面与远程连接器](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors)。
+
 ## 相关概念
 
 - [Coding Session Model](session-model_zh_cn.md) — 定位单代理和多代理 Session 映射。

@@ -22,6 +22,12 @@
 
 目前没有针对该厂商的特别优化指令；遵循上述通用规范。
 
+### 派发前工具门禁
+
+本地已配置 Claude Code 的宿主中，获准的 `PreToolUse` Hook 可匹配 `Agent`，在调用执行**之前**检查父级记录是否具备预留名额、已放行 Slice 和获准返回路径；缺少时通过显式 deny 阻止创建。不得依赖创建之后才触发且不能 veto 的 `SubagentStart`。必须在 `Agent` 工具调用**之前**在父级会话展示人类可读的 Dispatch Preview；Hook 本身不能证明父级已审核或展示该预览。守卫脚本必须读取真实状态记录，授权缺失时拒绝执行，不记录密钥或完整提示词。未安装经过审查的 Hook 时，派发前语义检查仍然是强制要求。
+
+官方依据：[PreToolUse 与 SubagentStart 语义](https://code.claude.com/docs/en/hooks)。
+
 ## 相关概念
 
 - [Coding Child Creation](delegation-child-creation_zh_cn.md) — 定位子 Agent 创建能力。

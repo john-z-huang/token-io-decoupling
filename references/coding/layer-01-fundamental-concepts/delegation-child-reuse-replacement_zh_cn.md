@@ -22,6 +22,12 @@
 
 获准跟进或修复同一子代理时，使用返回的 Agent ID 调用 `SendMessage`。再次调用 `Agent` 会创建另一个子代理并消耗另一个名额；数量锁定后不得将其用于复用。
 
+### 恢复同一身份，不重新创建
+
+获准的持久 `general-purpose` 或自定义子代理，应通过 `SendMessage` 指定返回的 `agent_id`（或运行时支持的 Agent 名称），发送范围明确的修复/follow-up 指令。新的 `Agent` 调用即使类型与提示词相同，也会产生不同实例；数量锁定后不得暗中用它替换原子代理。内置 `Explore` 和 `Plan` 是一次性 Agent，不返回可恢复 ID，不得用于需要后续 follow-up 的名额。恢复失败时保留错误并阻塞依赖工作，不再尝试创建另一子代理。Claude Desktop Chat 的连接器调用或 side chat 不能代替这一持久身份。
+
+官方依据：[恢复子代理](https://code.claude.com/docs/en/sub-agents)。
+
 ## 相关概念
 
 - [Coding Child Creation](delegation-child-creation_zh_cn.md) — 定位子 Agent 创建能力。
