@@ -12,7 +12,7 @@ The root parent owns one conversation-level mode/count decision and updates task
 
 ### Record shape
 
-Before route release, initialize and maintain:
+Before route release, maintain this canonical record:
 
 ```text
 owner: <root-parent identity>
@@ -20,23 +20,25 @@ gate_status: awaiting-mode | awaiting-count | released | blocked
 mode_source: unset | explicit | timeout-default
 mode: unset | Single-Agent Coding | Multi-Agent Coding
 child_count: unset | 0 | <locked positive integer>
-allocations: [{agent: unbound | <created-agent-identity>, role, interaction_slice, scope, mutations, return_conditions, lifecycle, write_content_memo}]
+allocations: [{agent: unbound | <created-agent-identity>, role: unassigned | <role>,
+               slice_status: pending | released, interaction_slice, scope, mutations,
+               return_conditions, lifecycle, write_content_memo}]
 lifecycle: pending | running | completed | interrupted
 unavailable_capabilities: [<capability names>]
 block_reason: <required only when gate_status is blocked>
 ```
 
-The staged field contract is:
+| `gate_status` | Mode and count | Allocations and lifecycle | Additional requirement |
+| --- | --- | --- | --- |
+| `awaiting-mode` | Unset | `[]`; top-level lifecycle `pending` | Initialize before an unanswered first mode question. |
+| `awaiting-count` | Multi-Agent; count unset | `[]`; top-level lifecycle `pending` | Only an invalid explicit count enters this state; an omitted count defaults to one. |
+| `released` — Single-Agent | Single-Agent; count `0` | `[]`; top-level lifecycle required | Releases the single route, not an independent Session. |
+| `released` — Multi-Agent | Multi-Agent; locked positive count | Exactly `child_count` reserved allocations; each starts `agent: unbound`, `role: unassigned`, `slice_status: pending`, `lifecycle: pending` | Releases the route and count budget, **not** each child or Interaction Slice. |
+| `blocked` | Preserve confirmed values | Preserve existing allocations/lifecycle | `unavailable_capabilities` and `block_reason` required; cannot enter a dependent route. |
 
-| `gate_status` | `mode` | `child_count` | `allocations` | `lifecycle` | Additional requirement |
-| --- | --- | --- | --- | --- | --- |
-| `awaiting-mode` | Unset | Unset | Must be `[]` | Must be `pending` | Initialize this state before the first mode question when no explicit mode was supplied. |
-| `awaiting-count` | Must be `Multi-Agent Coding` | Unset; not yet locked | Must be `[]` | Must be `pending` | Optional preparation state after an explicit Multi-Agent choice with an invalid child count; never wait for a second count question when the count was omitted. |
-| `released` — Single-Agent | Must be `Single-Agent Coding` | Must be `0` | Must be `[]` | Required; records root-task state | Route is released only after its release conditions are satisfied. |
-| `released` — Multi-Agent | Must be `Multi-Agent Coding` | Must be a locked positive integer | Must contain exactly `child_count` locked planned allocations; before creation, each may have `agent: unbound` and `lifecycle: pending` | Required at record level; each allocation must have its own lifecycle | Every allocation must include explicit `write_content_memo: true` or `false`. This state releases the route for child creation; it does not claim that children have been created or dispatched. |
-| `blocked` | Preserve any confirmed value; otherwise unset | Preserve any confirmed value; otherwise unset | Preserve the current value | Preserve the current value | `unavailable_capabilities` and `block_reason` are required. This state is not `released`. |
+An allocation's role becomes assigned at Role Allocation. A concrete `slice_status: released` requires `role`, `interaction_slice`, `scope`, `mutations`, `return_conditions`, and an explicit boolean `write_content_memo`; pending slices may leave these fields unset. Before serializing each released Worker bundle, include `write_content_memo: true` or `false`; the Worker never infers a default. Child Creation may bind `agent` and lifecycle only after the target role and slice are released. A later slice may be prepared on the **same** created child without creating or recycling a slot.
 
-For `awaiting-mode`, `mode` and `child_count` are absent or explicitly `unset`; all other required fields are present as shown. For `awaiting-count`, `mode` is present, while `child_count` remains absent or explicitly `unset` until count locking. For every `released` record, the fields shown as required must be present; `write_content_memo` is a per-Worker released-slice dispatch field, not an inferred Worker default. A released Multi-Agent record contains exactly the locked number of planned allocations; before child creation, an allocation may use `agent: unbound` with `lifecycle: pending`. The released state means that the route release gate has passed and the next step may be child creation; it does not claim that children have been created or dispatched. After successful creation, the child-creation owner writes back the created agent identity and actual lifecycle. Allocation lifecycle values may differ from the top-level record while children progress. An explicit or 15-second default Multi-Agent choice normally proceeds directly to count locking; `awaiting-count` is reserved for an invalid explicit count. A Single-Agent choice sets `child_count: 0` before route release and retains `allocations: []`. `mode_source` must record `explicit` or `timeout-default` after selection and remain fixed for the conversation. Blocking preserves the confirmed state and does not release the route; any later gate re-entry follows its owner concept.
+`mode_source` records the explicit choice or 15-second default and remains fixed for this conversation. Allocation lifecycle may differ from top-level task lifecycle. Blocking preserves all confirmed values; later directives use the Re-entry owner without changing locked mode/count.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 

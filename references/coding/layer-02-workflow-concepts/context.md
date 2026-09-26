@@ -9,6 +9,7 @@
 3. Before reusing cached or file-backed context, check its scope, owner, source paths, freshness, and final-state epoch.
 4. Treat stale, incomplete, or conflicting context as unusable. Refresh only the affected context and record what changed.
 5. Keep context factual and routing-oriented; do not use it as a replacement for the Contract, source documents, or verification.
+6. When a released Worker enables a file-backed memo, require its context workspace, permissions, and local index even when no cross-Worker exchange is needed; the file-backed-exchange and memo triggers are independent.
 
 ## Pass condition
 

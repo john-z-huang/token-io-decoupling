@@ -12,7 +12,7 @@
 
 ### Handoff 和 successor 暴露
 
-获准的 successor 使用新的 Context ID 和目录。它只能读取父 Agent 明确暴露的前任文档，永远不得写入前任目录。获准的 replacement handoff 应记录已完成状态、失败方案与证据、当前修改和验证状态、blocker 以及下一步最有价值的动作。父 Agent 更新根索引，只暴露点名的前任文档。前任不可用时，只记录事实支持的最小恢复说明，不能重建完整 transcript。
+只有已获授权的上下文交接才能为接收方分配新的 Context ID 和目录；Context ID 本身不授予创建或替换 Agent 的权限。接收方仅能读取父级明确暴露的前任文档，永远不得写入前任目录。交接优先引用已有[执行 memo](content-memo_zh_cn.md) 中准确的稳定事实，而不另造重复状态副本；若 memo 已关闭或缺失，则直接记录交接必需的最小事实：已完成状态、失败方案与证据、当前修改和验证状态、阻塞以及下一步动作。父级更新根索引，明确来源路径并只暴露点名文档；前任不可用时不得重建完整 transcript。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 

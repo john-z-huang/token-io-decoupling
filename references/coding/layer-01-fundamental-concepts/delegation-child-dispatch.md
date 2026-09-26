@@ -8,11 +8,11 @@ This module owns material Dispatch Preview and the Worker boundary. It consumes 
 
 ### Dispatch Preview and return boundary
 
-Before assigning or materially dispatching to a child, the parent must itself analyze the instructions, confirm the project environment, and verify the code details needed to define the task. Record the supporting paths and facts, then issue a concise preview of the already authorized slice with a precise objective, mutations, and return conditions. Do not assign a child to perform these prerequisite confirmations. If a needed fact remains unconfirmed, keep the slice with the parent until it is confirmed. A Worker returns only to its direct parent; it must not create, fork, hand off to, message, replace, or coordinate another Agent or Session, or contact arbitrary threads. Worker findings that contradict a confirmed premise return to the parent for a new decision; they cannot change the root mode or count.
+Before assigning or materially dispatching to a child, verify that Input-side Reasoning has completed its prerequisite instruction, environment, and task-defining code-fact confirmations with source pointers, and that a concrete Interaction Slice was released. The parent shows a concise Dispatch Preview of the authorized objective, mutations, and return conditions; a missing prerequisite keeps the slice with the parent. A Worker returns only to its direct parent and cannot create, fork, hand off to, message, replace, or coordinate another Agent or Session, or contact arbitrary threads. Contradictory findings return to the parent for a new decision, not a new mode or count.
 
 ### Named paths and slice release
 
-Keep each Worker's context-exchange directory separate and grant only named paths. Release one Interaction Slice at a time unless independent, non-conflicting parallel work is explicitly allowed. Interaction Slice fields and boundary controls are owned by [execution control](execution-control.md).
+Check each Worker's named-path and directory permissions under [context workspace boundary](context-exchange-workspace-boundary.md); consume the released Interaction Slice under [execution control](execution-control.md). Dispatch one slice at a time unless independent, non-conflicting parallel work is explicitly allowed. Do not redefine directory layout or slice fields here.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 

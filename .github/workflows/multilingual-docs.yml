@@ -5,9 +5,12 @@ on:
     paths:
       - "**/*.md"
       - "agents/openai.yaml"
+      - "scripts/check-doc-layer-links.py"
       - "scripts/check-multilingual-docs.py"
       - "scripts/check-layer-01-sections.py"
       - "scripts/check-layer-02-03-provider-neutrality.py"
+      - "scripts/check-layer-03-workflow-maps.py"
+      - "tests/test_check_layer_03_workflow_maps.py"
       - "scripts/check-context-exchange.py"
       - "tests/test_check_context_exchange.py"
       - ".gitignore"
@@ -21,6 +24,8 @@ on:
       - "scripts/check-multilingual-docs.py"
       - "scripts/check-layer-01-sections.py"
       - "scripts/check-layer-02-03-provider-neutrality.py"
+      - "scripts/check-layer-03-workflow-maps.py"
+      - "tests/test_check_layer_03_workflow_maps.py"
       - "scripts/check-context-exchange.py"
       - "tests/test_check_context_exchange.py"
       - ".gitignore"
@@ -36,6 +41,9 @@ jobs:
       - name: Validate multilingual documentation
         run: python3 scripts/check-multilingual-docs.py
 
+      - name: Validate Markdown layer links
+        run: python3 scripts/check-doc-layer-links.py
+
       - name: Validate Layer-01 document sections
         run: python3 scripts/check-layer-01-sections.py
 
@@ -47,3 +55,9 @@ jobs:
 
       - name: Run Context Exchange regression tests
         run: python3 -m unittest discover -s tests -p 'test_check_context_exchange.py'
+
+      - name: Validate Layer-03 workflow maps and their bilingual structure
+        run: python3 scripts/check-layer-03-workflow-maps.py
+
+      - name: Run Layer-03 workflow map regression tests
+        run: python3 -m unittest discover -s tests -p 'test_check_layer_03_workflow_maps.py'

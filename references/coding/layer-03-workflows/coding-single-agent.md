@@ -4,6 +4,65 @@
 
 This route is selected by the Coding workflow and is valid only after the Mode checkpoint releases Single-Agent Coding. Before execution, the checkpoint composes the [delegation state record](../layer-01-fundamental-concepts/delegation-state-record.md), [mode confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), and [mode re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md) references.
 
+## Workflow map
+
+```mermaid
+flowchart TD
+    S01["01 Contract"]
+    S02["02 Environment"]
+    S03["03 Mode"]
+    S04["04 Session"]
+    S05["05 Context"]
+    S06["06 Decision"]
+    S07["07 Implementation"]
+    S08["08 Stage Feedback"]
+    S09["09 Control"]
+    S10["10 Verification"]
+    S11["11 Repair"]
+    S12["12 Documentation"]
+    S13["13 Git"]
+    S14["14 Acceptance"]
+    D_RECON{"More facts required?"}
+    ACT_RECON["Current Session: bounded reconnaissance"]
+    D_CONTROL{"Control: Continue / Amend / Stop"}
+    D_VERIFY{"Current epoch passed?"}
+    D_DOC{"Documentation changed content or Contract?"}
+    D_GIT{"Git authorized and verified?"}
+    BLOCK["Blocked: report missing boundary"]
+    DONE["Acceptance complete"]
+    S01 --> S02
+    S02 --> S03
+    S03 --> S04
+    S04 --> S05
+    S05 --> D_RECON
+    D_RECON -- yes --> ACT_RECON
+    ACT_RECON --> S05
+    D_RECON -- no / N/A --> S06
+    S06 --> S07
+    S07 --> S08
+    S08 --> S09
+    S09 --> D_CONTROL
+    D_CONTROL -- continue / evidence --> S05
+    D_CONTROL -- amend --> S06
+    D_CONTROL -- done --> S10
+    D_CONTROL -- stop --> BLOCK
+    S10 --> D_VERIFY
+    D_VERIFY -- repairable --> S11
+    D_VERIFY -- passed --> S12
+    D_VERIFY -- required evidence unavailable --> BLOCK
+    S11 --> S10
+    S12 --> D_DOC
+    D_DOC -- content change --> S10
+    D_DOC -- Contract change --> S06
+    D_DOC -- no change / N/A --> S13
+    S13 --> D_GIT
+    D_GIT -- authorized / N/A --> S14
+    D_GIT -- no permission --> BLOCK
+    S14 --> DONE
+```
+
+Numbered nodes match the sole ordered checklist below. Record the `Not applicable` reason for a skipped conditional concept. The map selects and orders concepts; the checklist and same-language owner links provide concrete actions, evidence, and failure handling.
+
 ## Mode contract
 
 - Keep all work in the current Session. Treat Input-side Reasoning, Primary Output, documentation, and applicable checks as logical phases, not separate agents.
@@ -13,7 +72,7 @@ This route is selected by the Coding workflow and is valid only after the Mode c
 
 ## Composed inputs
 
-Compose [shared protocols](../../share/shared-protocols.md), [delegation state](../layer-01-fundamental-concepts/delegation-state-record.md), [mode confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [the mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [mode re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md), [session model](../layer-01-fundamental-concepts/session-model.md), [session role ownership](../layer-01-fundamental-concepts/session-role-ownership.md), and [execution control](../layer-01-fundamental-concepts/execution-control.md) for this route. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
+At their consuming checklist steps, use [shared protocols](../../share/shared-protocols.md), [delegation state](../layer-01-fundamental-concepts/delegation-state-record.md), [mode confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [the mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [mode re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md), [session model](../layer-01-fundamental-concepts/session-model.md), [session role ownership](../layer-01-fundamental-concepts/session-role-ownership.md), and [execution control](../layer-01-fundamental-concepts/execution-control.md) for this route. The Mode checkpoint has already validated the record; the checkpoint list below is the complete route composition.
 
 ## Responsibility boundary in the current Session
 
@@ -35,7 +94,7 @@ Run every numbered stage in order in the current Session. For every linked owner
 6. **Decision and two-level plan.** At [Decision](../layer-02-workflow-concepts/decision.md), state the material question, facts, constraints, options, chosen direction, rejected alternatives, authorized paths/mutations, and unreleased boundary. Apply the [decision gate](../layer-01-fundamental-concepts/execution-decision-gate.md): prepare a concise Decision Brief with Problem, Known facts, Assumptions and unknowns, Decision questions, Solution envelope, Risks, Acceptance, and Stages/checkpoints unless the task qualifies for its simple fast path; release only reconnaissance while a material choice is open. Use [execution planning](../layer-01-fundamental-concepts/execution-planning.md) to order bounded inspection, implementation, and focused checks with expected evidence. Confirm the Contract permits the chosen direction before releasing one slice.
 7. **Interaction Slice and implementation.** Use [execution control](../layer-01-fundamental-concepts/execution-control.md) to state `Objective`, `Authorized scope/mutations`, `Return conditions`, and `Unreleased boundary`. At [Implementation](../layer-02-workflow-concepts/implementation.md), re-read that release, inspect only needed files, make the smallest authorized change, exclude unrelated cleanup and external effects, run focused provisional checks, and return changed paths, evidence, issues, and the still-unreleased boundary. Provisional checks are not final acceptance.
 8. **Stage feedback.** Apply [execution stage feedback](../layer-01-fundamental-concepts/execution-stage-feedback.md) when uncertainty requires bounded evidence-producing stages. At material observations, retain only compressed status, findings, changed scope, verification, issue, and need; keep routine reads, edits, and repeated checks inside the approved stage. Send a new material choice back to stage 6 before more implementation.
-9. **Control boundary.** At [Control](../layer-02-workflow-concepts/control.md), record `Status`, `Findings`, `Changed`, `Verification`, `Issue`, `Need`, and `Unreleased boundary`. Check for interface, schema, compatibility, security, risk, irreversible, scope, or external-effect changes; explicitly choose Continue, Amend, Stop, or Evidence-on-Demand. Continue only within the current envelope; amend Contract and Decision before crossing it. Repeat stages 5–9 for another approved slice.
+9. **Control boundary.** At [Control](../layer-02-workflow-concepts/control.md), record `Status`, `Findings`, `Changed`, `Verification`, `Issue`, `Need`, and `Unreleased boundary`. Check for interface, schema, compatibility, security, risk, irreversible, scope, or external-effect changes; explicitly choose Continue, Amend, Stop, or Evidence-on-Demand. Continue only within the current envelope; amend Contract and Decision before crossing it. Repeat stages 5–9 for another approved slice. `Evidence-on-Demand` is an intermediate evidence request, not a fourth final outcome; return here for `Continue`, `Amend`, or `Stop` and consume the Stage Feedback Progress Signal rather than duplicating it.
 10. **Final-state verification.** At [Verification](../layer-02-workflow-concepts/verification.md), capture the current final-state fingerprint and acceptance conditions, then run applicable holistic and targeted checks against that state. Apply [Verification independence](../layer-02-workflow-concepts/verification-independence.md): same-Session checks are logical verification, never an independent Session. Apply [Verification reporting](../layer-02-workflow-concepts/verification-reporting.md): record passed, failed, unavailable, and assumed checks, residual risks, unresolved items, and their blocking effects. Apply [Verification epoch](../layer-02-workflow-concepts/verification-epoch.md): track implementation/content, documentation, and Git metadata separately and never reuse stale evidence for a changed dimension. If required independence or evidence is unavailable, keep dependent effects blocked.
 11. **Repair only after concrete failure.** At [Repair](../layer-02-workflow-concepts/repair.md), name failing evidence, affected paths, and the smallest candidate. Use the [Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate.md) to confirm Contract/Decision compatibility before authorization; return to stages 1 and 6 for a material change. At [Repair execution](../layer-02-workflow-concepts/repair-execution.md), apply only the authorized narrow change and focused checks. Use [Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff.md) to capture the new state and repeat stage 10 before dependent work. If no failure exists, record Repair as not applicable.
 12. **Documentation.** At [Documentation](../layer-02-workflow-concepts/documentation.md), confirm approved paths, audience, purpose, source evidence, and applicable verification boundary. Change only approved documentation/comments; synchronize maintained language mirrors. Advance the documentation epoch and run applicable Markdown, link, whitespace, multilingual, and scope checks. If content changes behavior, the Contract, or acceptance, return to implementation/content Verification; otherwise retain valid product evidence. Record checks that could not run.

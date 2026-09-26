@@ -4,6 +4,65 @@
 
 本路线由 Coding 工作流选择；只有模式检查点放行单代理 Coding 后才有效。执行前，该检查点组合[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)和[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md) reference。
 
+## 工作流路线图
+
+```mermaid
+flowchart TD
+    S01["01 Contract / 契约"]
+    S02["02 Environment / 环境与能力"]
+    S03["03 Mode / 模式与数量"]
+    S04["04 Session / 会话职责"]
+    S05["05 Context / 上下文"]
+    S06["06 Decision / 决策"]
+    S07["07 Implementation / 实现"]
+    S08["08 Stage Feedback / 阶段反馈"]
+    S09["09 Control / 控制"]
+    S10["10 Verification / 验证"]
+    S11["11 Repair / 修复"]
+    S12["12 Documentation / 文档"]
+    S13["13 Git / 版本控制"]
+    S14["14 Acceptance / 验收"]
+    D_RECON{"是否仍需事实？"}
+    ACT_RECON["当前 Session 有界侦察"]
+    D_CONTROL{"控制：继续／修订／停止"}
+    D_VERIFY{"当前 Epoch 是否通过？"}
+    D_DOC{"文档是否改变内容或 Contract？"}
+    D_GIT{"Git 是否已授权并验证？"}
+    BLOCK["阻塞：报告缺失条件"]
+    DONE["完成验收"]
+    S01 --> S02
+    S02 --> S03
+    S03 --> S04
+    S04 --> S05
+    S05 --> D_RECON
+    D_RECON -- 需要 --> ACT_RECON
+    ACT_RECON --> S05
+    D_RECON -- 不需要 --> S06
+    S06 --> S07
+    S07 --> S08
+    S08 --> S09
+    S09 --> D_CONTROL
+    D_CONTROL -- 继续／取证 --> S05
+    D_CONTROL -- 修订 --> S06
+    D_CONTROL -- 已完成 --> S10
+    D_CONTROL -- 停止 --> BLOCK
+    S10 --> D_VERIFY
+    D_VERIFY -- 可修复 --> S11
+    D_VERIFY -- 通过 --> S12
+    D_VERIFY -- 必需证据不可用 --> BLOCK
+    S11 --> S10
+    S12 --> D_DOC
+    D_DOC -- 内容变化 --> S10
+    D_DOC -- 契约变化 --> S06
+    D_DOC -- 无变化／不适用 --> S13
+    S13 --> D_GIT
+    D_GIT -- 获授权／不适用 --> S14
+    D_GIT -- 未授权 --> BLOCK
+    S14 --> DONE
+```
+
+编号节点与下方唯一路线顺序检查清单一一对应。未触发的条件概念记录 `Not applicable` 原因；路线图只负责概念选择和排序，具体动作、证据与失败处理以清单及同语言 owner 为准。
+
 ## 模式 Contract
 
 - 所有工作保留在当前 Session 中。将 Input-side Reasoning、Primary Output、文档和适用检查视为逻辑阶段，而不是独立代理。
@@ -13,7 +72,7 @@
 
 ## 组合输入
 
-本路线组合[共享协议](../../share/shared-protocols_zh_cn.md)、[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)、[Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)、[Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md)和[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)。模式检查点已经验证任务记录；下方检查点列表是完整的路线组合。
+在对应编号步骤按需消费[共享协议](../../share/shared-protocols_zh_cn.md)、[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)、[Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)、[Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md)和[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)。模式检查点已经验证任务记录；下方检查点列表是完整的路线组合。
 
 ## 当前 Session 中的职责边界
 
@@ -35,7 +94,7 @@
 6. **决策与两级规划。** 在 [Decision](../layer-02-workflow-concepts/decision_zh_cn.md)说明实质问题、事实、约束、选项、选定方向、舍弃方案、授权路径/修改和未发布边界。应用[决策门禁](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md)：除非任务符合简单快速路径，否则先形成包含 Problem、Known facts、Assumptions and unknowns、Decision questions、Solution envelope、Risks、Acceptance 和 Stages/checkpoints 的简洁 Decision Brief；实质选择未定时只发布侦察。用[执行规划](../layer-01-fundamental-concepts/execution-planning_zh_cn.md)安排有界检查、实现和聚焦检查，并写明预期证据。放行一个切片前确认所选方向符合 Contract。
 7. **Interaction Slice 与实现。** 按[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)写明 `Objective`、`Authorized scope/mutations`、`Return conditions` 和 `Unreleased boundary`。在 [Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)重新读取放行内容，只查看必需文件，实施最小的授权改动，排除无关清理和外部影响，运行聚焦的临时检查，并返回修改路径、证据、问题及仍未发布的边界。临时检查不是最终验收。
 8. **阶段反馈。** 不确定性需要有界、产出证据的阶段时，应用[执行阶段反馈](../layer-01-fundamental-concepts/execution-stage-feedback_zh_cn.md)。在实质性观察点只保留压缩后的状态、发现、改动范围、验证、问题和需求；常规读取、修改和重复检查留在获准阶段内。出现新的实质选择时先返回第 6 阶段。
-9. **控制边界。** 在 [Control](../layer-02-workflow-concepts/control_zh_cn.md)记录 `Status`、`Findings`、`Changed`、`Verification`、`Issue`、`Need` 和 `Unreleased boundary`。检查接口、schema、兼容、安全、风险、不可逆操作、范围或外部影响是否改变；明确选择 Continue、Amend、Stop 或 Evidence-on-Demand。只有处于现有边界内才可继续；越界前先修订 Contract 和 Decision。其他获准切片重复第 5–9 阶段。
+9. **控制边界。** 在 [Control](../layer-02-workflow-concepts/control_zh_cn.md)记录 `Status`、`Findings`、`Changed`、`Verification`、`Issue`、`Need` 和 `Unreleased boundary`。检查接口、schema、兼容、安全、风险、不可逆操作、范围或外部影响是否改变；明确选择 Continue、Amend、Stop 或 Evidence-on-Demand。只有处于现有边界内才可继续；越界前先修订 Contract 和 Decision。其他获准切片重复第 5–9 阶段。 `Evidence-on-Demand` 是暂停放行并获取证据的中间动作；返回本检查点后仅选择 `Continue`、`Amend` 或 `Stop`，并消费 Stage Feedback 的 Progress Signal 而不是重复汇报。
 10. **最终状态验证。** 在 [Verification](../layer-02-workflow-concepts/verification_zh_cn.md)记录当前最终状态指纹和验收条件，针对该状态运行适用的整体与聚焦检查。应用[验证独立性](../layer-02-workflow-concepts/verification-independence_zh_cn.md)：同一 Session 的检查是逻辑验证，不能称为独立 Session。应用[验证报告](../layer-02-workflow-concepts/verification-reporting_zh_cn.md)：记录通过、失败、不可用和基于假设的检查、剩余风险、未解决项及其阻塞影响。应用[验证 epoch](../layer-02-workflow-concepts/verification-epoch_zh_cn.md)：分别跟踪实现/内容、文档和 Git 元数据；受影响维度不得复用旧证据。必需的独立性或证据不可用时，阻塞依赖的影响。
 11. **仅在具体失败后修复。** 在 [Repair](../layer-02-workflow-concepts/repair_zh_cn.md)指出失败证据、受影响路径和最小候选修复。用[修复范围门禁](../layer-02-workflow-concepts/repair-scope-gate_zh_cn.md)先确认与 Contract/Decision 兼容，再授权执行；实质变化返回第 1 和第 6 阶段。在[修复执行](../layer-02-workflow-concepts/repair-execution_zh_cn.md)只应用授权的窄范围改动并运行聚焦检查。用[修复验证交接](../layer-02-workflow-concepts/repair-verification-handoff_zh_cn.md)记录新状态，依赖工作前重复第 10 阶段。没有失败时记录 Repair 不适用。
 12. **文档。** 在 [Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)确认获准路径、读者、目的、源证据及适用的验证边界。只修改获准文档/注释；同步受维护的语言镜像。推进文档 epoch，执行适用的 Markdown、链接、空白、多语言和范围检查。若内容改变行为、Contract 或验收条件，返回实现/内容验证；否则保留有效的产品证据。记录未能运行的检查。

@@ -8,13 +8,13 @@ This module owns the Context Firewall: raw-state ingress limits, bounded inspect
 
 ### Raw-state ingress
 
-In a multi-Session Coding run, the input-side Session directly inspects the bounded project-environment and code evidence required to confirm a child's task before dispatch; it does not perform open-ended project inspection. Primary Output consumes further source/configuration state only within the parent's confirmed and released scope; Change Verification consumes final-state evidence; Documentation/Comments & Git Operations consumes Git state and approved documentation scope. Each returns only the facts needed for the next decision.
+In a multi-Session Coding run, the input-side Session reads only bounded, read-only environment and code evidence needed for the prerequisite confirmations owned by [session role ownership](session-role-ownership.md), not an open-ended repository scan. Primary Output consumes further source/configuration state only within released scope; Change Verification consumes final-state evidence; Documentation/Comments & Git Operations consumes Git state and approved documentation scope. Each returns only next-decision facts and exact source pointers.
 
-The input-side Session may directly inspect bounded, read-only source/configuration excerpts and environment evidence needed for its prerequisite fact confirmation. It records exact source pointers and conclusions before child assignment. Potential output volume and repository-state impact determine the boundary, not the command name. A single Session has no cross-Session firewall, but still reads progressively and compresses raw state.
+Raw-state ingress is bounded by potential output volume, state sensitivity, and repository impact, not the command name. A single Session has no cross-Session firewall but still reads progressively and compresses raw state.
 
 ### Semantic ownership and ephemeral localization
 
-The firewall limits raw-state ingress, not semantic reasoning. The input-side role retains ownership of meaning, trade-offs, release decisions, and acceptance. Ephemeral UI/project localization belongs to the Session that observes it and is not promoted to long-lived Contract state.
+The firewall limits raw-state ingress without transferring semantic authority; follow [session role ownership](session-role-ownership.md). Ephemeral UI/project localization belongs to the observing Session and is not promoted to long-lived Contract state.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 

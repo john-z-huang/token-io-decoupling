@@ -11,7 +11,7 @@ This checkpoint owns the distinction between an independent Change Verification 
 
 ## Pass condition
 
-The required verification independence is available and explicit, or the result is labeled as logical verification with independent verification unavailable.
+Independence status is explicitly classified: the required independent Session has verified the change, or same-Session checks are labeled logical and independence unavailable. The latter is a recorded limitation, **not** satisfaction of a Contract that requires independent verification; dependent effects remain blocked.
 
 ## Boundary
 

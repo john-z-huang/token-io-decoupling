@@ -2,13 +2,13 @@
 
 [English](delegation-child-creation.md) | [简体中文](delegation-child-creation_zh_cn.md)
 
-This module owns the only capability to create a Multi-Agent child. Its entry requires a released Multi-Agent state, a locked positive `child_count`, and exactly `child_count` locked planned allocations; each planned allocation may have `agent: unbound` before creation. It does not reopen mode or count confirmation. A plan-level replacement before count locking is not a creation capability and cannot create a child or consume a child slot. After successful creation, this owner writes each created agent identity and actual lifecycle back to its planned allocation; it does not change mode or count or create an extra slot. It does not define role allocation, Dispatch Preview, Worker boundaries, reuse or replacement, or lifecycle.
+This module owns the only capability to create a Multi-Agent child. It consumes a released mode/count gate, a reserved slot with an assigned role, and a released concrete Interaction Slice; it does not reconfirm mode/count, assign roles, or define replacement or lifecycle policy. Creation writes back only the actual Agent identity and initial lifecycle, without adding a slot.
 
 ## General rules
 
 ### Creation capability
 
-Use the runtime's real parent-controlled child mechanism. Never use a peer chat or an untracked generic task as a persistent child. Require a child identity, parent-controlled return/resume path, bounded wait, and observable lifecycle. After creation, bind its actual identity and lifecycle to the planned allocation. Missing or unverifiable capabilities block creation; they do not change the mode or count.
+Use the runtime's real parent-controlled child mechanism. Before creating a child, require the released Multi-Agent gate, locked positive count, a reserved unbound allocation with an assigned role, and a current `slice_status: released` Interaction Slice with explicit objective, allowed paths/mutations, return conditions, and memo dispatch switch. Do not treat a reserved slot or released mode alone as child-creation authorization. Never use a peer chat or an untracked generic task as a persistent child. Require a child identity, parent-controlled return/resume path, bounded wait, and observable lifecycle. After creation, bind its actual identity and lifecycle to the same allocation; never free the slot for another child. Missing or unverifiable capabilities block creation; they do not change mode or count.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 

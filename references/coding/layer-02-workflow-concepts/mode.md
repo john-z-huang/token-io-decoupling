@@ -4,13 +4,13 @@
 
 ## Actions
 
-1. Load [the state-record reference](../layer-01-fundamental-concepts/delegation-state-record.md), [the mode-confirmation reference](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [the mode/count-gate reference](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), and [the mode-reentry reference](../layer-01-fundamental-concepts/delegation-mode-reentry.md). When the released mode allocates children, also load [child creation](../layer-01-fundamental-concepts/delegation-child-creation.md), [child role allocation](../layer-01-fundamental-concepts/delegation-child-role-allocation.md), [child dispatch](../layer-01-fundamental-concepts/delegation-child-dispatch.md), [child reuse/replacement](../layer-01-fundamental-concepts/delegation-child-reuse-replacement.md), and [child lifecycle](../layer-01-fundamental-concepts/delegation-child-lifecycle.md).
-2. Read the parent-controlled task record and validate its current `gate_status`, `mode`, `child_count`, allocations, lifecycle, and unavailable capabilities before route selection. If the record has not released the route, stop at this checkpoint and do not proceed.
-3. For a later root directive in the same conversation, reuse the locked mode/count decision and refresh only task-specific state. If it conflicts with the locked topology, stop dependent work and apply the re-entry owner; do not restart the 15-second timer. This checkpoint composes and validates the references; it does not decide mode, count, creation, allocation, reuse, exceptions, or lifecycle itself.
+1. Load the [state record](../layer-01-fundamental-concepts/delegation-state-record.md), [mode confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), and [re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md) owners. Do not eagerly load child creation, dispatch, lifecycle, or reuse policies before their actual route step.
+2. Confirm the parent-controlled record contains a selected mode and locked count, with `child_count: 0` and `allocations: []` for Single-Agent or exactly `child_count` reserved, initially unbound/unassigned/pending slots for Multi-Agent. Releasing this gate does **not** release a concrete Interaction Slice or authorize child creation.
+3. For a later directive, reuse the locked mode/count; refresh task-specific evidence without reopening the timer. If required record/capability evidence is missing, block the dependent route. Role allocation and child operations are performed and checked at their designated route steps.
 
 ## Pass condition
 
-The task control record contains exactly one valid released mode outcome and the required delegation state: `child_count: 0` for Single-Agent, or a locked positive count with valid allocations and lifecycle for Multi-Agent. The selected route's required capabilities and prohibitions are satisfied.
+The parent record has exactly one valid released mode, a fixed count, valid reserved allocation shape where applicable, and sufficient entry capabilities. No concrete child or slice is assumed to have been released.
 
 ## Boundary
 

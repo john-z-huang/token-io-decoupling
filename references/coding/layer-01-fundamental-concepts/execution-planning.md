@@ -29,4 +29,4 @@ No provider-specific optimization instructions at present; follow the general ru
 - [Coding Execution Stage Feedback](execution-stage-feedback.md) — locate bounded-stage feedback.
 - [Coding Session Model](session-model.md) — locate role and Session ownership.
 - [Coding Context Exchange](context-exchange.md) — locate context transport ownership.
-- [Coding Child Dispatch and Lifecycle](delegation-child-lifecycle.md) — locate delegation lifecycle ownership.
+- [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate delegation lifecycle ownership.

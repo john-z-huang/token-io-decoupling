@@ -37,6 +37,13 @@
 - 顺序必须可执行：路线前门禁；Session/职责和能力边界；有界上下文；决策与规划；切片放行；仅在获授权时创建/派发子代理；实现与控制；当前状态验证；条件修复与重新验证；文档；Git；最终验收。写出适用的返回循环和状态 epoch 变化后的检查，使小模型不会跳过必需边界。
 - 修改路线前，逐一对照所有实际消费的低层 owner 及其通过条件。实际消费的 owner 或其执行要求变化时，在同一变更集中更新检查清单及双语镜像。低层文件仍是权威来源；路线清单只概括并排列其要求，不得发明新策略。
 
+## Layer-03 工作流路线图
+
+- 每份最终 Single-Agent / Multi-Agent Layer-03 路线及其双语镜像，必须在唯一路线顺序检查清单之前恰好包含一个 `## Workflow map` / `## 工作流路线图` 章节和一个 `mermaid` fenced 流程图。流程图是可执行导航与按需加载概念的路线图，**不是**新的政策 owner；清单中的低层 owner 链接仍负责动作、证据和失败边界。
+- 每个编号清单步骤必须对应稳定且有序的流程图节点（Single-Agent 用 `S01`…；Multi-Agent 用 `M01`…）。英文中文必须使用等价节点 ID、方向边与条件判断。单代理图不得加入 Child Creation/Dispatch/Lifecycle、Worker Memo 或跨 Worker 交换的执行分支；多代理图必须体现获准的职责分配、Context/Bootstrap 与 Memo 条件、Slice 先于创建/派发、验证、条件修复和变更 Epoch 重新验证、文档、Git 与验收。
+- 显式画出跳过/`Not applicable`、阻塞及返回路径，不得暗示每个条件概念都必须执行，也不得绕开模式/能力授权或当前状态验证。路线图节点可以概括检查点，但不得重定义低层政策。实际消费的 owner、路线顺序、分支或清单要求变化时，在同一变更集中同步更新**两张语言镜像流程图及两份清单**。
+- 每次修改 Layer-03 路线或本规范时运行 `python3 scripts/check-layer-03-workflow-maps.py`，检查图的存在和位置、编号节点与清单、必需分支/边、双语拓扑一致、模式隔离及 CI 接线。此脚本只检查结构，不证明翻译文本或所有政策解释语义等价；仍须人工审阅。
+
 ## Codex 与 Claude Code 工具双向对应
 
 每个概念的厂商特调和工具对应关系放在该 Layer-01 owner 的对应厂商章节。跨概念的运行环境识别和模型/effort 绑定统一维护在[运行环境与模型厂商支持](references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)及其英文镜像中；其他 owner 引用这些绑定，不重复其控制规则。每次依据 Codex 源码中的工具或指令调整本 Skill，必须检查 Claude Code 当前官方文档或实际暴露的运行时控制中是否有对应能力。每次针对 Claude Code 特调，也必须反向检查 Codex 的对应能力。完成双向核对前，不得把任一运行环境的行为当作共用能力。
@@ -88,6 +95,8 @@ python3 scripts/check-multilingual-docs.py
 python3 scripts/check-doc-layer-links.py
 python3 scripts/check-layer-01-sections.py
 python3 scripts/check-layer-02-03-provider-neutrality.py
+python3 scripts/check-layer-03-workflow-maps.py
+python3 -m unittest discover -s tests -p 'test_check_layer_03_workflow_maps.py'
 git diff --check
 ```
 

@@ -12,7 +12,7 @@ Each Worker-local `INDEX.md` records only its task, scope, status, latest materi
 
 ### Handoff and successor exposure
 
-An authorized successor receives a new Context ID and directory. It may read only predecessor documents explicitly exposed by the parent and never writes to the predecessor directory. An authorized replacement handoff records achieved state, failed approaches and evidence, current changes and verification state, blockers, and the next useful action. The parent updates the root index and exposes only the named predecessor documents. If the predecessor is unavailable, record the smallest fact-supported recovery note; never recreate a full transcript.
+Only an authorized context handoff may assign a new Context ID and directory to the receiver; a Context ID never authorizes creating or replacing an Agent. The receiver reads only predecessor documents explicitly exposed by the parent and never writes to its directory. Prefer exact references to stable facts in an existing [content memo](content-memo.md) instead of duplicating their state; when the memo is disabled or absent, record the minimum facts needed for recovery: achieved state, failed approaches and evidence, current changes and verification, blockers, and next action. The parent updates the root index, names source paths, and exposes only named documents; never reconstruct a complete transcript when the predecessor is unavailable.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 

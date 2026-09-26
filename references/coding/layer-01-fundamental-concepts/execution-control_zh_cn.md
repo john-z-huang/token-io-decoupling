@@ -23,7 +23,7 @@ Slice 是控制单元，不是逐命令脚本。只要 Contract 和边界未变�
 
 ### Control Checkpoint
 
-到达实质性边界时，使用压缩的 Control Checkpoint，只报告下一步决策所需的状态、发现、变更范围、验证、问题、所需动作和未放行边界。输入侧职责选择 `Continue`、`Amend` 或 `Stop`；`Continue` 只放行下一个有界 slice，`Amend` 必须在恢复前修改 Contract 或边界。在单代理路线中，这是内部推理暂停，不模拟发给自己的消息。
+到达实质性边界时，消费[执行阶段反馈](execution-stage-feedback_zh_cn.md)定义的 Progress Signal，附加当前 `Unreleased boundary`，再选择一个最终控制结果：`Continue`、`Amend` 或 `Stop`。`Continue` 只放行下一个有界 Slice；`Amend` 必须先修改 Contract 或边界再恢复执行。`Evidence-on-Demand` 是暂停放行并请求证据的中间动作，取得证据后重新经过本检查点；它不是第四种最终授权结果。单代理路线中这是内部推理暂停，不模拟发给自己的消息。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
@@ -39,4 +39,4 @@ Slice 是控制单元，不是逐命令脚本。只要 Contract 和边界未变�
 - [Coding Execution Decision Gate](execution-decision-gate_zh_cn.md) — 定位 Decision Brief 和决策放行规则。
 - [Coding Execution Stage Feedback](execution-stage-feedback_zh_cn.md) — 定位有界阶段反馈规则。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位上下文传输归属。
-- [Coding 子 Agent Dispatch 与生命周期](delegation-child-lifecycle_zh_cn.md) — 定位已放行 slice 的委派生命周期归属。
+- [Coding 子 Agent 生命周期](delegation-child-lifecycle_zh_cn.md) — 定位已放行 slice 的委派生命周期归属。

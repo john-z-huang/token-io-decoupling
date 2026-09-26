@@ -29,4 +29,4 @@
 - [Coding Execution Stage Feedback](execution-stage-feedback_zh_cn.md) — 定位有界阶段反馈。
 - [Coding Session Model](session-model_zh_cn.md) — 定位角色和 Session 归属。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位上下文传输归属。
-- [Coding 子 Agent Dispatch 与生命周期](delegation-child-lifecycle_zh_cn.md) — 定位委派生命周期归属。
+- [Coding 子 Agent 生命周期](delegation-child-lifecycle_zh_cn.md) — 定位委派生命周期归属。

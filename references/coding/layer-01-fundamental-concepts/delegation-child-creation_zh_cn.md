@@ -2,13 +2,13 @@
 
 [English](delegation-child-creation.md) | [简体中文](delegation-child-creation_zh_cn.md)
 
-本文档负责创建 Multi-Agent 子 Agent 的唯一能力入口。入口要求是：已 release 的 Multi-Agent 状态、已锁定的正整数 `child_count`，以及恰好等于 `child_count` 个已锁定的计划 allocation；每个计划 allocation 在创建前都可以是 `agent: unbound`。它不重新打开 mode 或 count 确认。数量锁定前的计划级 replacement 不属于创建能力，不能创建子 Agent 或消耗子 Agent 名额。创建成功后，由本 owner 将每个已创建的 agent identity 和实际 lifecycle 回写到计划 allocation；不改变 mode 或 count，也不创建额外名额。它不定义职责分配、Dispatch Preview、Worker 边界、复用或替换，或生命周期。
+本文档负责 Multi-Agent 子代理创建的唯一能力入口。它消费已放行的模式/数量门禁、已预留且分配职责的名额，以及已放行的具体 Interaction Slice；不重新确认 mode/count，不分配职责，不决定 replacement 或生命周期政策。创建成功后只回写实际 Agent 身份和初始 lifecycle，且不得新增名额。
 
 ## 通用规范
 
 ### 创建能力
 
-使用运行环境真实且由父级控制的子代理机制。不得把 peer chat 或无法跟踪的通用任务当作持久子代理。必须具备子代理身份、父级控制的返回/继续路径、有界等待和可观察生命周期。创建后将实际身份和生命周期绑定到计划 allocation。能力缺失或无法核实时阻塞创建，不更改模式或数量。
+必须使用运行环境真实且由父级控制的子代理机制。创建前必须具有已放行的 Multi-Agent 门禁、锁定的正整数数量、已分配职责且尚未绑定子代理的预留名额，以及本次 `slice_status: released` 的 Interaction Slice（明确目标、路径/修改、返回条件和 memo 派发开关）。预留名额或模式放行本身不授权创建子代理。不得将 peer chat 或无法跟踪的通用任务当作持久子代理。必须具备子代理身份、父级控制的返回/继续路径、有界等待和可观察生命周期。创建后把实际身份与生命周期绑定到同一 allocation；不得将该名额释放给另一个子代理。能力缺失或无法核实时阻塞创建，不更改模式或数量。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 

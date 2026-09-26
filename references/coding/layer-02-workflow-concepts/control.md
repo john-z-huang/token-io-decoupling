@@ -4,10 +4,10 @@
 
 ## Actions
 
-1. Report `Status`, `Findings`, `Changed`, `Verification`, `Issue`, `Need`, and `Unreleased boundary`.
-2. Check whether the next action introduces a public interface, schema or migration, compatibility change, security-sensitive behavior, new risk domain, difficult-to-reverse mutation, scope expansion, or external effect.
-3. Choose one outcome: Continue within the approved envelope, Amend the Contract and Decision, Stop, or request Evidence-on-Demand.
-4. Release the next slice only after the outcome is explicit. In Single-Agent mode, perform this as a logical pause; in Multi-Agent mode, the parent controls the release.
+1. Consume the compressed Progress Signal from the Stage Feedback owner; append the current `Unreleased boundary` without creating a second progress report.
+2. Check whether the next action crosses an interface, schema, compatibility, security, risk, irreversible, scope, or external-effect boundary.
+3. If more evidence is required, request Evidence-on-Demand and **pause** release; return to this checkpoint after evidence arrives. This is an intermediate action, not a fourth final authorization outcome.
+4. Choose the final `Continue`, `Amend`, or `Stop` outcome. Only an explicit `Continue` releases the next slice within the approved envelope; `Amend` returns through Contract and Decision. In Single-Agent this is a logical pause; in Multi-Agent the parent controls release.
 
 ## Pass condition
 

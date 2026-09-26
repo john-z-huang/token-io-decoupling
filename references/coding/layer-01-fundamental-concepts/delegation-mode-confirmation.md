@@ -32,7 +32,6 @@ Claude Code has no documented native timeout for `AskUserQuestion` or equivalent
 
 ## Related concepts
 
-- [Coding Delegation Mode Confirmation](delegation-mode-confirmation.md) — locate mode confirmation ownership.
 - [Coding Delegation Count Gate](delegation-mode-count-gate.md) — locate count locking ownership.
 - [Coding Delegation Re-entry](delegation-mode-reentry.md) — locate gate re-entry ownership.
 - [Coding Delegation State Record](delegation-state-record.md) — locate state record ownership.

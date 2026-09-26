@@ -8,7 +8,7 @@ This module owns slot and auxiliary-role allocation under a locked Multi-Agent c
 
 ### Allocation
 
-Allocate only within the locked count. Primary Output, Change Verification, Documentation/Comments & Git Operations, Context Bootstrap/Refresh, and other independent responsibilities each consume a slot. If no independent verifier or auxiliary role was allocated, use the current or already allocated Agent when safe, or report it unavailable; never simulate independence by relabeling same-Session work.
+Assign roles only within the locked, reserved count after bounded parent fact confirmation. A reserved slot may remain `role: unassigned` until its purpose is known; assign and release its role before child creation. With one child, assign Primary Output. Primary Output, Change Verification, Documentation/Comments & Git Operations, Context Bootstrap/Refresh, and other independent responsibilities each consume a separate slot. An authorized revision of an unbound slot is not a replacement child and must not exceed the count; after creation, its child identity remains bound. If no independent verifier or auxiliary role was allocated, use the current or already allocated Agent when safe, or report it unavailable; never simulate independence by relabeling same-Session work.
 
 ### Context Bootstrap/Refresh allocation
 

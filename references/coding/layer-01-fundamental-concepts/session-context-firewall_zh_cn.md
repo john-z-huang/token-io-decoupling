@@ -8,13 +8,13 @@
 
 ### 原始状态进入
 
-在多 Session Coding 中，输入侧 Session 在派发前直接检查确认子代理任务所需的有界项目环境和代码证据；不执行开放式项目检查。Primary Output 仅在父级已确认并放行的范围内消费更多源代码/配置状态；Change Verification 消费最终状态证据；Documentation/Comments & Git Operations 消费 Git 状态和获准的文档范围。各自只返回下一步决策所需的事实。
+在多 Session Coding 中，输入侧 Session 按[职责归属](session-role-ownership_zh_cn.md)要求读取派发前确认所需的有界、只读环境与代码证据，不进行开放式项目扫描。Primary Output 仅在父级确认和放行的范围内读取更多源代码/配置状态；Change Verification 消费最终状态证据；Documentation/Comments & Git Operations 消费 Git 状态和获准文档范围。各自只返回下一步决策需要的事实与准确来源。
 
-输入侧 Session 可直接检查完成前置事实确认所需的有界、只读源代码/配置片段及环境证据。分配子代理前，记录准确的源文件定位和结论。边界由潜在输出体积和仓库状态影响决定，而不是由命令名称决定。单 Session 没有跨 Session Firewall，但仍须渐进读取并压缩原始状态。
+原始状态摄入边界由潜在输出体积、状态敏感性和仓库影响决定，而不是命令名称。单 Session 没有跨 Session Firewall，但仍须渐进读取并压缩原始状态。
 
 ### 语义 ownership 和临时定位
 
-Firewall 限制原始状态进入输入侧上下文，不限制语义推理。输入侧仍拥有含义、权衡、放行决定和验收；临时的 UI/项目定位状态留在观察它的 Session 中，不提升为长期 Contract 状态。
+Firewall 只限制原始状态进入，不转移语义责任；语义权威性遵循[职责归属](session-role-ownership_zh_cn.md)。临时 UI/项目定位只属于观察它的 Session，不提升为长期 Contract 状态。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 

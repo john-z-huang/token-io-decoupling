@@ -8,7 +8,7 @@
 
 ### 职责分配
 
-只能在 locked count 内分配。Primary Output、Change Verification、Documentation/Comments & Git Operations、Context Bootstrap/Refresh 以及其他独立职责各自消耗一个名额。如果没有分配独立 verifier 或辅助职责，则在安全时使用当前或已分配的 Agent，或报告其不可用；绝不能通过重新标记同一 Session 的工作来模拟独立性。
+父级完成有界事实确认后，只能在已锁定和预留的数量预算内分配职责。预留名额在用途未确定前可以保持 `role: unassigned`；创建子代理前必须分配并放行其职责。只有一个子代理时，将其分配给 Primary Output。Primary Output、Change Verification、Documentation/Comments & Git Operations、Context Bootstrap/Refresh 及其他独立职责各自消耗一个名额。获准修改未绑定名额的计划不属于创建替代子代理，不得突破预算；创建后子代理身份保持绑定。未分配独立 verifier 或辅助职责时，安全情况下可使用当前或已分配 Agent，否则报告不可用；不得通过改名将同一 Session 的工作冒充独立验证。
 
 ### Context Bootstrap/Refresh 分配
 
