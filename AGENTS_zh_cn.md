@@ -13,6 +13,16 @@
 - 路线组合文档可以排序 owner，并复述其操作检查和所需证据，但不能成为模式门禁、委派生命周期、运行环境能力、修复执行、验证独立性/报告/epoch 或其他低层概念的第二个 owner。
 - 新 owner 文件及其组合入口必须在同一变更集中更新。英文和简体中文文件必须保持语义镜像，约束强度和动作要求等价。
 
+## Layer-01 三模块结构
+
+每份现有或新建的 Layer-01 Markdown owner 及其中文镜像，在开头的责任声明之后必须恰好包含以下三个顶层内容章节，且顺序固定：
+
+1. `## General rules` / `## 通用规范`：与厂商无关的要求和该概念原有的子主题。
+2. `## Codex CLI / ChatGPT Desktop optimizations` / `## Codex CLI / ChatGPT Desktop 特别优化指令`：仅写该概念适用的 Codex 或 ChatGPT Desktop 指令。
+3. `## Claude Code CLI / Claude Desktop optimizations` / `## Claude Code CLI / Claude Desktop 特别优化指令`：仅写该概念适用的 Claude Code 或 Claude Desktop 指令。
+
+概念子主题放在三个章节下，使用三级标题。某厂商当前没有该概念的特别优化时，仍保留章节，明确写明目前没有，并要求 Agent 遵循通用规范。三个模块后可以保留独立的 `Related concepts` / `相关概念` 导航章节。每次修改或新增 Layer-01 文档后运行 `python3 scripts/check-layer-01-sections.py`；缺少、重复、顺序错误或空白模块都不能视为完成。
+
 ## Layer-03 路线完整性
 
 - 每份最终 Layer-03 工作流必须有一份主要的编号执行检查清单。先核对 Contract、Environment、能力清单和 Mode 在进入路线前已通过的证据，再依次覆盖该路线实际消费的每个 Layer-02 检查点及 Layer-01 概念，包括通过操作性检查点要求间接涉及的概念。单纯的 `相关概念` 导航链接不构成执行依赖。
@@ -22,14 +32,14 @@
 
 ## Codex 与 Claude Code 工具双向对应
 
-厂商专属工具和指令特调统一维护在[运行环境与模型厂商支持](references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)及其英文镜像中。每次依据 Codex 源码中的工具或指令调整本 Skill，必须检查 Claude Code 当前官方文档或实际暴露的运行时控制中是否有对应能力。每次针对 Claude Code 特调，也必须反向检查 Codex 的对应能力。完成双向核对前，不得把任一运行环境的行为当作共用能力。
+每个概念的厂商特调放在该 Layer-01 owner 的对应厂商章节。跨概念的运行环境/模型绑定及工具对应清单统一维护在[运行环境与模型厂商支持](references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)及其英文镜像中；其他 owner 引用它，不重复其控制规则。每次依据 Codex 源码中的工具或指令调整本 Skill，必须检查 Claude Code 当前官方文档或实际暴露的运行时控制中是否有对应能力。每次针对 Claude Code 特调，也必须反向检查 Codex 的对应能力。完成双向核对前，不得把任一运行环境的行为当作共用能力。
 
 每次此类改动都按以下顺序在双语镜像中完成：
 
 1. 写明来源运行环境的准确工具、指令或控制项，以及 Skill 依赖的行为；保留可核验的源码或官方文档指向，或运行时观察证据。
 2. 找出并核验另一运行环境的对应工具或控制项；若存在，写明具体调用方式、能力限制，以及生命周期或参数行为的差异。
 3. 若不存在对应能力，在另一运行环境的对应部分明确写明“没有”，并指定该 Agent 应使用运行时默认行为、通过现有机制保留等价证据，还是把该特调标记为 `Not applicable`。不得假定功能对等，也不得仅因可选特调缺失而阻断无关工作。
-4. 在同一变更集中更新受影响的工作流检查点和 Layer-03 路线检查；厂商专属细节仍只归属上述单一 owner 文档。完成文档检查前，确认英文和中文指令语义等价。
+4. 在同一变更集中更新受影响的 Layer-01 厂商章节、工作流检查点和 Layer-03 路线检查。跨概念厂商控制仍由运行环境 owner 负责；完成文档检查前确认英文和中文指令语义等价。
 
 ## Markdown 引用与层级方向
 
@@ -69,6 +79,7 @@
 ```bash
 python3 scripts/check-multilingual-docs.py
 python3 scripts/check-doc-layer-links.py
+python3 scripts/check-layer-01-sections.py
 git diff --check
 ```
 

@@ -4,7 +4,9 @@
 
 This module owns the supported runtime branches, their identifying evidence, and branch-specific model controls and profile bindings. It does not choose the task mode, create Sessions, or treat a model name alone as proof of the runtime.
 
-## Supported runtime branches
+## General rules
+
+### Supported runtime branches
 
 - **Local Codex**: the task exposes local filesystem/shell or worktree capabilities and Codex Agent tools.
 - **Local Claude Code**: the task explicitly exposes a Claude Code Session together with local filesystem/shell or worktree capabilities.
@@ -13,14 +15,30 @@ This module owns the supported runtime branches, their identifying evidence, and
 
 If the available metadata cannot distinguish these branches, use this exact fallback question: `I cannot determine the current runtime environment from the available metadata. In your next instruction, explicitly state whether it is "local Codex", "local Claude Code", "ChatGPT Work", or "standard ChatGPT", then resume.`
 
-## Branch-specific capability use
+## Codex CLI / ChatGPT Desktop optimizations
 
 - On Local Codex, use the exposed model/Session controls and restart after changing global instructions, overrides, the Skill, or repository instructions.
-- On Local Claude Code, record the exact model identifier or alias exposed by the active Session and use only its exposed parameter controls. Apply the Claude Code model selection below; do not infer a model or assume a reasoning control.
 - On ChatGPT Work, use only explicitly exposed models, Sessions, files, connectors, and execution tools.
 - On Standard ChatGPT, do not assume local execution, Git, worktrees, or independent Sessions.
 
-## Local Claude Code model selection
+### Local Codex independent-Session model profile
+
+For independent role assignments on Local Codex, these are required bindings, not product-wide availability claims:
+
+| Role | Model | Reasoning parameter |
+| --- | --- | --- |
+| Primary Output | `gpt-6-luna` | `medium` |
+| Change Verification | `gpt-6-luna` | `medium` |
+| Documentation/Comments & Git Operations | `gpt-6-luna` | `medium` |
+| Context Bootstrap/Refresh | `gpt-6-luna` | `medium`; `low` for deterministic refreshes |
+
+The capability inventory must verify each assigned binding's exposed model identity and reasoning parameter. If a required binding is missing or unknown, record it in `unavailable_capabilities` and block the dependent slice or route. Raise only the affected slice to `high` when concrete complexity or repeated failure/blockage warrants it; return to the normal tier afterward. Escalate to `max` only when `high` was insufficient and repeated failure/blockage continues, then return to the normal tier.
+
+## Claude Code CLI / Claude Desktop optimizations
+
+- On Local Claude Code, record the exact model identifier or alias exposed by the active Session and use only its exposed parameter controls. Apply the Claude Code model selection below; do not infer a model or assume a reasoning control.
+
+### Local Claude Code model selection
 
 Use only the `sonnet` and `haiku` aliases, or verified model identifiers in the `claude-sonnet-*` and `claude-haiku-*` families. Before using an active Session or launching an Agent, confirm the effective model resolves to one of these families. Never launch an Agent with `claude-opus-*`, an Opus alias, or any model above or outside the Sonnet/Haiku families. Do not use an unresolved default, inherited model, or fallback as a substitute for this check.
 
@@ -39,20 +57,7 @@ For Claude Code, apply these effort bindings only when the selected Sonnet versi
 
 For Single-Agent Coding, use Sonnet at `medium` for material work, with the same affected-slice escalation rule below. A Haiku-only Single-Agent task must remain simple, bounded, and mechanically checkable; it has no effort control. Verify the effective model and effort before relying on a binding, including any organization cap or inherited setting. Raise only the affected Sonnet slice to `high` for concrete complexity or repeated failure/blockage, then restore `medium`. Use `max` only if `high` was insufficient and repeated failure/blockage continues, and only when the active Sonnet model exposes `max`; then restore `medium`. Do not select `xhigh` or `ultracode` in this profile. If the required model or supported effort binding is missing or cannot be verified, record it in `unavailable_capabilities` and block the dependent slice or route; do not switch to Opus or a higher model.
 
-## Local Codex independent-Session model profile
-
-For independent role assignments on Local Codex, these are required bindings, not product-wide availability claims:
-
-| Role | Model | Reasoning parameter |
-| --- | --- | --- |
-| Primary Output | `gpt-6-luna` | `medium` |
-| Change Verification | `gpt-6-luna` | `medium` |
-| Documentation/Comments & Git Operations | `gpt-6-luna` | `medium` |
-| Context Bootstrap/Refresh | `gpt-6-luna` | `medium`; `low` for deterministic refreshes |
-
-The capability inventory must verify each assigned binding's exposed model identity and reasoning parameter. If a required binding is missing or unknown, record it in `unavailable_capabilities` and block the dependent slice or route. Raise only the affected slice to `high` when concrete complexity or repeated failure/blockage warrants it; return to the normal tier afterward. Escalate to `max` only when `high` was insufficient and repeated failure/blockage continues, then return to the normal tier.
-
-## Runtime tool correspondence
+### Runtime tool correspondence
 
 Use this table for provider-specific operations; the workflow concepts remain shared.
 

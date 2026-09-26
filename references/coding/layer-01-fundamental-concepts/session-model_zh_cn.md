@@ -4,7 +4,9 @@
 
 本模块负责 Coding 的 Session 语义、单代理与多代理 Session 映射、Primary Execution Session Affinity，以及复用/worktree 隔离边界。它消费 owner 概念提供的职责归属和当前工作流的状态；不定义职责责任、Context Firewall、运行环境 eligibility、执行参数、dispatch 格式、上下文文件传输或验收流程。
 
-## Session 语义
+## 通用规范
+
+### Session 语义
 
 模式、拓扑、职责分配、生命周期、复用、替换、例外和不可用处理由当前工作流提供。职责名称本身不能授权新建 Session 或改变拓扑。
 
@@ -19,11 +21,19 @@
 
 未分配的职责在独立子级上下文层面不可用。不得通过给同一上下文的工作改名来模拟独立性。描述厂商子级的实际隔离时，遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)。
 
-## Primary Execution Session 与 Affinity
+### Primary Execution Session 与 Affinity
 
 维持一个 Primary Execution Session：多代理模式下是已分配的 Primary Output Session，否则是当前 Session。相关探索、实现、诊断、测试、修复和局部执行优先复用它，以保留稳定上下文。Session 应保持 sticky but not immortal；生命周期变化遵循当前工作流的已记录状态。
 
 Session 隔离与 Git worktree 隔离不同。同一开发需求的 Worker 通常共享 primary worktree；隔离 worktree 必须有明确放行的隔离范围。不得仅因复用 Session 就宣称一定命中缓存或获得其他运行时收益。
+
+## Codex CLI / ChatGPT Desktop 特别优化指令
+
+目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+
+## Claude Code CLI / Claude Desktop 特别优化指令
+
+目前没有针对该厂商的特别优化指令；遵循上述通用规范。
 
 ## 相关概念
 

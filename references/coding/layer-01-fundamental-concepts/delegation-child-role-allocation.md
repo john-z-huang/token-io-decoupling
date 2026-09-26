@@ -4,13 +4,23 @@
 
 This module owns slot and auxiliary-role allocation under a locked Multi-Agent count. It does not define child creation, Dispatch Preview, Worker boundaries, reuse or replacement, lifecycle, context transport, verification, or Git policies.
 
-## Allocation
+## General rules
+
+### Allocation
 
 Allocate only within the locked count. Primary Output, Change Verification, Documentation/Comments & Git Operations, Context Bootstrap/Refresh, and other independent responsibilities each consume a slot. If no independent verifier or auxiliary role was allocated, use the current or already allocated Agent when safe, or report it unavailable; never simulate independence by relabeling same-Session work.
 
-## Context Bootstrap/Refresh allocation
+### Context Bootstrap/Refresh allocation
 
 Assign Context Bootstrap/Refresh only when reuse is likely to outweigh setup: at least two independent downstream Workers, broad discovery plus three or more routed policy modules, or a source set roughly above 20k characters / 5k token-equivalents. Skip it for one small Worker or documentation-only fast paths. These are routing heuristics, not measured runtime or quality claims.
+
+## Codex CLI / ChatGPT Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
+
+## Claude Code CLI / Claude Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
 
 ## Related concepts
 

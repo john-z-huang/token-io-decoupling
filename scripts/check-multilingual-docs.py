@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate bilingual Markdown structure, link isolation, and product-neutral core docs."""
+"""Validate bilingual Markdown structure, link isolation, and common core rules."""
 
 from __future__ import annotations
 
@@ -130,6 +130,9 @@ def main() -> int:
                 errors.append(f"missing product-neutral core document: {rel}")
                 continue
             text = file_path.read_text(encoding="utf-8")
+            # Layer-01 has provider sections; only the opening and general rules
+            # must stay product-neutral. Provider headings themselves name products.
+            text = text.split("\n## Codex CLI / ChatGPT Desktop ", 1)[0]
             for label, pattern in PRODUCT_SPECIFIC_PATTERNS.items():
                 if pattern.search(text):
                     errors.append(f"product-specific term in core ({label}): {rel}")

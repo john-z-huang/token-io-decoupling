@@ -13,6 +13,16 @@ Any Agent or contributor that creates, edits, renames, moves, or deletes documen
 - A route-composition document may order owners and restate their operational checks and required evidence; it must not become a second owner for mode gates, delegation lifecycle, environment capability rules, repair execution, verification independence/reporting/epochs, or other lower-layer concepts.
 - New owner files and any composition entries that consume them must be updated in the same change set. Keep English and Simplified Chinese files semantically mirrored with equivalent constraints and action strength.
 
+## Layer-01 three-module structure
+
+Every existing or new Layer-01 Markdown owner and its Chinese mirror must have these three top-level content sections, exactly once and in this order, after the opening ownership statement:
+
+1. `## General rules` / `## 通用规范`: provider-independent requirements and the concept's existing subtopics.
+2. `## Codex CLI / ChatGPT Desktop optimizations` / `## Codex CLI / ChatGPT Desktop 特别优化指令`: only the applicable Codex or ChatGPT Desktop instructions for this concept.
+3. `## Claude Code CLI / Claude Desktop optimizations` / `## Claude Code CLI / Claude Desktop 特别优化指令`: only the applicable Claude Code or Claude Desktop instructions for this concept.
+
+Keep concept subtopics under these sections as level-three headings. When a provider has no special optimization for this concept, retain its section and state explicitly that there is currently none and that the Agent follows the general rules. Keep `Related concepts` / `相关概念` as a separate navigation section after the three modules. Run `python3 scripts/check-layer-01-sections.py` after every Layer-01 edit or addition; a missing, duplicate, reordered, or empty module is not complete.
+
 ## Layer-03 route completeness
 
 - Each final Layer-03 workflow must contain one primary numbered execution checklist. Start with evidence that Contract, Environment, capability inventory, and Mode have passed before route entry; then order every Layer-02 checkpoint and Layer-01 concept that the route actually consumes, including concepts reached through operational checkpoint requirements. A `Related concepts` navigation link alone does not make an owner an execution dependency.
@@ -22,14 +32,14 @@ Any Agent or contributor that creates, edits, renames, moves, or deletes documen
 
 ## Codex and Claude Code tool parity
 
-Keep provider-specific tool and instruction optimizations in the single [Runtime and Model Provider Support](references/coding/layer-01-fundamental-concepts/runtime-provider-support.md) owner and its Chinese mirror. Whenever a change tunes this Skill for a tool or instruction found in Codex source, inspect the corresponding Claude Code capability in its current official documentation or exposed runtime controls. Whenever a change tunes this Skill for Claude Code, perform the same check for Codex. Do this before treating either runtime's behavior as shared.
+Keep each concept's provider-specific optimization in that Layer-01 owner's provider section. Keep cross-cutting runtime/model bindings and the tool correspondence inventory in the single [Runtime and Model Provider Support](references/coding/layer-01-fundamental-concepts/runtime-provider-support.md) owner and its Chinese mirror; refer to that owner instead of duplicating its controls. Whenever a change tunes this Skill for a tool or instruction found in Codex source, inspect the corresponding Claude Code capability in its current official documentation or exposed runtime controls. Whenever a change tunes this Skill for Claude Code, perform the same check for Codex. Do this before treating either runtime's behavior as shared.
 
 For each such change, complete this sequence in both language mirrors:
 
 1. Name the source runtime's exact tool, instruction, or control and the behavior the Skill relies on; retain a verifiable source-code or official-documentation pointer, or a runtime observation.
 2. Identify and verify the other runtime's corresponding tool or control. When it exists, specify its concrete invocation, capability limits, and any different lifecycle or parameter behavior.
 3. When no corresponding capability exists, explicitly say so in the other runtime's section and state whether its Agent must use the runtime default, maintain equivalent evidence through an available mechanism, or mark that optimization `Not applicable`. Do not imply feature parity or block unrelated work solely because an optional optimization is absent.
-4. Update affected workflow checkpoints and Layer-03 route checks in the same change set, keeping provider-specific details in the single owner document. Confirm the English and Chinese instructions remain equivalent before completing the documentation checks.
+4. Update the affected Layer-01 provider sections, workflow checkpoints, and Layer-03 route checks in the same change set. Keep cross-cutting provider controls in the runtime owner and confirm the English and Chinese instructions remain equivalent before completing the documentation checks.
 
 ## Markdown references and layer direction
 
@@ -69,6 +79,7 @@ Before completing any documentation slice, run all of the following from the rep
 ```bash
 python3 scripts/check-multilingual-docs.py
 python3 scripts/check-doc-layer-links.py
+python3 scripts/check-layer-01-sections.py
 git diff --check
 ```
 

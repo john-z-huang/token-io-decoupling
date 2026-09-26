@@ -4,7 +4,9 @@
 
 This module owns the conversation's initial mode question, explicit selection or timed default, pre-selection restrictions, and Single-Agent route restrictions. It consumes and updates the state record; it does not define count locking, re-entry, child creation, or lifecycle.
 
-## Session mode selection
+## General rules
+
+### Session mode selection
 
 On the first Coding directive of a conversation, the root parent must:
 
@@ -16,9 +18,17 @@ On the first Coding directive of a conversation, the root parent must:
 
 A timeout selects a workflow mode only; it does not grant missing user authorization, bypass a task-level prohibition, or create a capability. If a higher-priority restriction forbids children, it controls; do not start a child under the timeout default. If the required record capability is absent, block the dependent route rather than pretending it exists.
 
-## Single-Agent Coding
+### Single-Agent Coding
 
 After confirmation, keep all work in the current Session. Do not create, fork, hand off to, message, replace, or otherwise manage a child Agent or additional Session. Structural benefit, verification, documentation/Git needs, bootstrap, recovery, or runtime convenience are not exceptions. Independent verification remains a semantic requirement, but is unavailable on this route.
+
+## Codex CLI / ChatGPT Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
+
+## Claude Code CLI / Claude Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
 
 ## Related concepts
 

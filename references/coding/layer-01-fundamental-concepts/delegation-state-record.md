@@ -4,11 +4,13 @@
 
 This module owns the task-control record used by Coding delegation. It defines the record's canonical location, ownership, shape, field constraints, and staged presence semantics. It does not decide the mode, define Worker read/write boundaries, create children, allocate roles, or define lifecycle transitions.
 
-## Ownership
+## General rules
+
+### Ownership
 
 The root parent owns one conversation-level mode/count decision and updates task-specific slices and lifecycle in the same record. The record is task state; it is not stored by editing a policy file. Use a parent-controlled task panel when available; otherwise maintain an explicit structured record in the parent conversation that can be read back before each route release. Do not treat a transient child-status UI as the canonical record.
 
-## Record shape
+### Record shape
 
 Before route release, initialize and maintain:
 
@@ -35,6 +37,14 @@ The staged field contract is:
 | `blocked` | Preserve any confirmed value; otherwise unset | Preserve any confirmed value; otherwise unset | Preserve the current value | Preserve the current value | `unavailable_capabilities` and `block_reason` are required. This state is not `released`. |
 
 For `awaiting-mode`, `mode` and `child_count` are absent or explicitly `unset`; all other required fields are present as shown. For `awaiting-count`, `mode` is present, while `child_count` remains absent or explicitly `unset` until count locking. For every `released` record, the fields shown as required must be present; `write_content_memo` is a per-Worker released-slice dispatch field, not an inferred Worker default. A released Multi-Agent record contains exactly the locked number of planned allocations; before child creation, an allocation may use `agent: unbound` with `lifecycle: pending`. The released state means that the route release gate has passed and the next step may be child creation; it does not claim that children have been created or dispatched. After successful creation, the child-creation owner writes back the created agent identity and actual lifecycle. Allocation lifecycle values may differ from the top-level record while children progress. An explicit or 15-second default Multi-Agent choice normally proceeds directly to count locking; `awaiting-count` is reserved for an invalid explicit count. A Single-Agent choice sets `child_count: 0` before route release and retains `allocations: []`. `mode_source` must record `explicit` or `timeout-default` after selection and remain fixed for the conversation. Blocking preserves the confirmed state and does not release the route; any later gate re-entry follows its owner concept.
+
+## Codex CLI / ChatGPT Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
+
+## Claude Code CLI / Claude Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
 
 ## Related concepts
 

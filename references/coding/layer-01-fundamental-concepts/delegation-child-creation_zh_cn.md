@@ -4,9 +4,19 @@
 
 本文档负责创建 Multi-Agent 子 Agent 的唯一能力入口。入口要求是：已 release 的 Multi-Agent 状态、已锁定的正整数 `child_count`，以及恰好等于 `child_count` 个已锁定的计划 allocation；每个计划 allocation 在创建前都可以是 `agent: unbound`。它不重新打开 mode 或 count 确认。数量锁定前的计划级 replacement 不属于创建能力，不能创建子 Agent 或消耗子 Agent 名额。创建成功后，由本 owner 将每个已创建的 agent identity 和实际 lifecycle 回写到计划 allocation；不改变 mode 或 count，也不创建额外名额。它不定义职责分配、Dispatch Preview、Worker 边界、复用或替换，或生命周期。
 
-## 创建能力
+## 通用规范
 
-使用运行环境真实且由父级控制的子代理机制。本地 Codex 使用当前暴露的 MultiAgentV1/V2 spawn 操作。本地 Claude Code 使用内建 `Agent` 工具，并显式指定符合要求的 `subagent_type`、单次调用模型、有界任务提示和返回条件；厂商专属控制与缺失的对应能力统一写在[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)。不得把 peer chat、无法跟踪的通用任务或自动触发的内建 Explore/Plan Agent 当作持久子代理。必须具备子代理身份、父级控制的返回/继续路径、有界等待和可观察生命周期。创建后将实际身份和生命周期绑定到计划 allocation。能力缺失或无法核实时阻塞创建，不更改模式或数量。
+### 创建能力
+
+使用运行环境真实且由父级控制的子代理机制。不得把 peer chat 或无法跟踪的通用任务当作持久子代理。必须具备子代理身份、父级控制的返回/继续路径、有界等待和可观察生命周期。创建后将实际身份和生命周期绑定到计划 allocation。能力缺失或无法核实时阻塞创建，不更改模式或数量。
+
+## Codex CLI / ChatGPT Desktop 特别优化指令
+
+本地 Codex 使用当前暴露的 MultiAgentV1/V2 spawn 操作；模型与能力绑定遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)。
+
+## Claude Code CLI / Claude Desktop 特别优化指令
+
+本地 Claude Code 使用内建 `Agent` 工具，显式指定符合要求的 `subagent_type`、单次调用模型、有界任务提示和返回条件。自动触发的内建 Explore/Plan Agent 不得作为持久子代理。具体控制和缺失的对应能力遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)。
 
 ## 相关概念
 

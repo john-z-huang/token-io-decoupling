@@ -4,13 +4,23 @@
 
 This module owns authorized follow-up, repaired epochs, and reuse or replacement relations for created children. It does not define child creation, role allocation, Dispatch Preview, Worker boundaries, lifecycle states, or context transport.
 
-## Authorized reuse
+## General rules
+
+### Authorized reuse
 
 Repair takes priority over replacement: reuse the same child for authorized follow-ups and repaired epochs. After an error or interruption, first attempt an authorized repair through the same child; otherwise report the blocker. Reuse must not create a recursive hierarchy or peer coordination.
 
-## Replacement relation
+### Replacement relation
 
 Replacement is distinct from ordinary same-child reuse and is allowed only as a plan-level allocation change before `child_count` is locked. Keep the count selected for this conversation; do not ask a second count question or create, spawn, or hand off to a new child during preparation. Lock the count and satisfy route release before the child-creation owner creates the planned children. Once locked, if the same child cannot be safely reused, report the blocker and set the Multi-Agent route to `blocked`; do not create a replacement child. Replacement is not peer coordination or a recursive hierarchy. This module does not define handoff or context transport; locate those rules in [context exchange](context-exchange.md).
+
+## Codex CLI / ChatGPT Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
+
+## Claude Code CLI / Claude Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
 
 ## Related concepts
 
