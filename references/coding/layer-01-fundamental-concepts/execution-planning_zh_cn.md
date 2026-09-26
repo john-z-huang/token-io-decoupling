@@ -20,7 +20,7 @@
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-Claude Code 可在启动时使用 `claude --permission-mode plan` 进入只读 Plan mode；交互式 CLI 中可按 `Shift+Tab` 直到 Plan mode 生效。Plan mode 会读取文件并提出方案，在获批前不会修改文件。应复用通用规则中的阶段与证据大纲，不把 `/plan` 的对话历史另立为政策 owner。计划完成后仍须检查 Interaction Slice 获准及工具权限，才能编辑文件。`/tasks` 报告运行中／后台 Agent 工作，不是持久计划记录，不能代替阶段检查点。其他 Session 只有在向 Agent 直接暴露 Plan-mode 命令或控制时才使用该模式。[Anthropic：工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：后台 Agent](https://code.claude.com/docs/en/sub-agents)。
+Claude Code 可在启动时使用 `claude --permission-mode plan` 进入只读 Plan mode。Plan mode 会读取文件并提出方案，在获批前不会修改文件。应复用通用规则中的阶段与证据大纲，不把 `/plan` 的对话历史另立为政策 owner。计划完成后仍须检查 Interaction Slice 获准及工具权限，才能编辑文件。`/tasks` 报告运行中／后台 Agent 工作，不是持久计划记录，不能代替阶段检查点。其他 Session 只有在向 Agent 直接暴露 Plan-mode 命令或 API 时才使用该模式。[Anthropic：工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：后台 Agent](https://code.claude.com/docs/en/sub-agents)。
 
 ## 相关概念
 

@@ -30,7 +30,7 @@ Codex 本地 memories（启用时）总结跨会话可复用经验，`/compact` 
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-Claude Code auto memory 存储在 `~/.claude/projects/<project>/memory/`；`MEMORY.md` 是索引，只有开头 200 行或 25 KB（取较小值）会在 Session 启动时载入。主题文件按需加载。同一 Git 仓库内的所有 worktree 和子目录共用这一本机 memory 目录；主对话的 auto memory 不会载入其 subagent。当前 Session 暴露这些命令时，用 `/memory` 浏览 memory 文件，用 `/context` 核对已加载的 `CLAUDE.md` 和 rules 文件。`CLAUDE.md` 保存长期指令，auto memory 记录学习到的偏好；`/compact` 压缩的是**会话历史**，`PreCompact`／`PostCompact` 只观察该过程。它们都不能代替本 Worker 拥有、受路径限制、可追溯来源的 `content-memo.md` 或实时 parent state record。启用 memo 时，只将稳定决策、来源引用、变更路径、阻塞与下一步写入获授权文件；不应倾倒整个 transcript，也不应把 auto memory 复制一份进去。[Anthropic：memory 存储位置、载入限制和命令](https://code.claude.com/docs/en/memory)、[Anthropic：compaction Hooks](https://code.claude.com/docs/en/hooks)。
+Claude Code auto memory 存储在 `~/.claude/projects/<project>/memory/`；`MEMORY.md` 是索引，只有开头 200 行或 25 KB（取较小值）会在 Session 启动时载入。主题文件按需加载。该 memory 目录的作用域由宿主按工作目录推导，因此哪些 worktree、子目录或 subagent 共用同一个 memory 目录取决于具体环境；应核对某个 Session 或 subagent 实际载入的内容，不要假定整个仓库共享，也不要假定主对话的 auto memory 会传递到 subagent。当前 Session 暴露这些命令时，用 `/memory` 浏览 memory 文件，用 `/context` 核对已加载的 `CLAUDE.md` 和 rules 文件。`CLAUDE.md` 保存长期指令，auto memory 记录学习到的偏好；`/compact` 压缩的是**会话历史**，`PreCompact`／`PostCompact` 只观察该过程。它们都不能代替本 Worker 拥有、受路径限制、可追溯来源的 `content-memo.md` 或实时 parent state record。启用 memo 时，只将稳定决策、来源引用、变更路径、阻塞与下一步写入获授权文件；不应倾倒整个 transcript，也不应把 auto memory 复制一份进去。[Anthropic：memory 存储位置、载入限制和命令](https://code.claude.com/docs/en/memory)、[Anthropic：compaction Hooks](https://code.claude.com/docs/en/hooks)。
 
 ## 相关概念
 
