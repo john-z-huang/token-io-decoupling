@@ -20,6 +20,17 @@ Any Agent or contributor that creates, edits, renames, moves, or deletes documen
 - Make the order executable: pre-route gates; Session/role and capability boundaries; bounded context; Decision and planning; slice release; child creation/dispatch only when authorized; Implementation and Control; current-state Verification; conditional Repair and re-verification; Documentation; Git; final Acceptance. Include the applicable return loop and changed-epoch checks so a smaller model cannot skip a required boundary.
 - Before changing a route, compare its checklist against all operationally consumed lower-layer owners and their pass conditions. Update the checklist and both language mirrors in the same change set whenever a consumed owner or its execution requirement changes. Keep lower-layer files authoritative; route checklists summarize and sequence their requirements without inventing new policy.
 
+## Codex and Claude Code tool parity
+
+Keep provider-specific tool and instruction optimizations in the single [Runtime and Model Provider Support](references/coding/layer-01-fundamental-concepts/runtime-provider-support.md) owner and its Chinese mirror. Whenever a change tunes this Skill for a tool or instruction found in Codex source, inspect the corresponding Claude Code capability in its current official documentation or exposed runtime controls. Whenever a change tunes this Skill for Claude Code, perform the same check for Codex. Do this before treating either runtime's behavior as shared.
+
+For each such change, complete this sequence in both language mirrors:
+
+1. Name the source runtime's exact tool, instruction, or control and the behavior the Skill relies on; retain a verifiable source-code or official-documentation pointer, or a runtime observation.
+2. Identify and verify the other runtime's corresponding tool or control. When it exists, specify its concrete invocation, capability limits, and any different lifecycle or parameter behavior.
+3. When no corresponding capability exists, explicitly say so in the other runtime's section and state whether its Agent must use the runtime default, maintain equivalent evidence through an available mechanism, or mark that optimization `Not applicable`. Do not imply feature parity or block unrelated work solely because an optional optimization is absent.
+4. Update affected workflow checkpoints and Layer-03 route checks in the same change set, keeping provider-specific details in the single owner document. Confirm the English and Chinese instructions remain equivalent before completing the documentation checks.
+
 ## Markdown references and layer direction
 
 - Use real relative Markdown links for document references. Never replace a valid Markdown link with HTML, a bare path, or backticked pseudo-link text to evade validation.
