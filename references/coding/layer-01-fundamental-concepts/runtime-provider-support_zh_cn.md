@@ -61,6 +61,8 @@ Claude Desktop **不是**能力完全一致的单一 Coding 运行环境。在 *
 
 Desktop Chat 需要工具时，云端服务优先使用已授权的**远程连接器**；本机资源可使用已核实的**桌面扩展/本地 MCP Server**，并核对具体工具的读写权限。连接器只提供数据与操作，不等于独立 Coding Session、父级可控 Agent 身份或已锁定的子代理预算。缺少必需 Coding 能力时记录缺失项，仅阻塞依赖路线或 Slice，不将 Chat/Cowork 冒充本地 Claude Code。
 
+Desktop Code 本地 Session 可通过模型下拉菜单选择/核对模型、侧边栏恢复 Session，并使用共用设置中的权限规则；Desktop 不提供 CLI `--allowedTools`/`--disallowedTools` 的逐 Session 等价界面。Desktop Code 可加载 `claude_desktop_config.json` 中的本地 MCP 定义，但独立 CLI **不会**自动读取该文件；必须核实或导入预期 Server，不能假定两边的 Server 列表完全相同。这些 UI 操作也不是 Desktop Chat 中的 CLI 参数。
+
 官方依据：[Desktop Code 标签页](https://code.claude.com/docs/en/desktop)、[Desktop 本地 MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)、[桌面与远程连接器](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors)。
 
 ## 相关概念

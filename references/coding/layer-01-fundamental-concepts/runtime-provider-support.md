@@ -61,6 +61,8 @@ Claude Desktop is not one uniform Coding runtime. In the **Code tab**, verify th
 
 For a Desktop Chat tool need, use an authorized **remote connector** for hosted services, or a verified **desktop extension/local MCP server** for machine-local resources; check the connected tool's actual read/write scope before use. A connector supplies data/actions, not an independent Coding Session, a parent-controlled Agent identity, or the locked child budget. If the required Coding capability is absent, record it and block only the dependent route/slice; do not reinterpret a Chat/Cowork conversation as local Claude Code.
 
+In local Desktop Code sessions, use the model dropdown to select and inspect the model, the sidebar to resume a session, and shared settings for permission rules; Desktop has no per-session equivalent of CLI `--allowedTools`/`--disallowedTools`. The Desktop Code tab may load local MCP definitions from `claude_desktop_config.json`, but the standalone CLI does **not** read that file automatically; verify or import the intended server rather than assuming identical server lists. These UI paths are not available as CLI flags in Desktop Chat.
+
 Official references: [Desktop Code tab](https://code.claude.com/docs/en/desktop), [Desktop local MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop), [desktop vs remote connectors](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors).
 
 ## Related concepts
