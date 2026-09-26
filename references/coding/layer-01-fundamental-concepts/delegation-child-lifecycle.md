@@ -20,7 +20,7 @@ No provider-specific optimization instructions at present; follow the general ru
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Use the `Agent` result and `/tasks` when available to observe a running child; use a bounded runtime wait for its result. `/tasks` is temporary, so retain the returned Agent ID and completed or error state in the parent record after its entry disappears.
 
 ## Related concepts
 

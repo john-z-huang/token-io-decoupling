@@ -39,14 +39,14 @@ Keep concept subtopics under these sections as level-three headings. When a prov
 
 ## Codex and Claude Code tool parity
 
-Keep each concept's provider-specific optimization in that Layer-01 owner's provider section. Keep cross-cutting runtime/model bindings and the tool correspondence inventory in the single [Runtime and Model Provider Support](references/coding/layer-01-fundamental-concepts/runtime-provider-support.md) owner and its Chinese mirror; refer to that owner instead of duplicating its controls. Whenever a change tunes this Skill for a tool or instruction found in Codex source, inspect the corresponding Claude Code capability in its current official documentation or exposed runtime controls. Whenever a change tunes this Skill for Claude Code, perform the same check for Codex. Do this before treating either runtime's behavior as shared.
+Keep each concept's provider-specific optimization and tool correspondence in that Layer-01 owner's provider section. Keep only cross-cutting runtime identification and model/effort bindings in the single [Runtime and Model Provider Support](references/coding/layer-01-fundamental-concepts/runtime-provider-support.md) owner and its Chinese mirror; other owners link to those bindings instead of repeating them. Whenever a change tunes this Skill for a tool or instruction found in Codex source, inspect the corresponding Claude Code capability in its current official documentation or exposed runtime controls. Whenever a change tunes this Skill for Claude Code, perform the same check for Codex. Do this before treating either runtime's behavior as shared.
 
 For each such change, complete this sequence in both language mirrors:
 
 1. Name the source runtime's exact tool, instruction, or control and the behavior the Skill relies on; retain a verifiable source-code or official-documentation pointer, or a runtime observation.
 2. Identify and verify the other runtime's corresponding tool or control. When it exists, specify its concrete invocation, capability limits, and any different lifecycle or parameter behavior.
 3. When no corresponding capability exists, explicitly say so in the other runtime's section and state whether its Agent must use the runtime default, maintain equivalent evidence through an available mechanism, or mark that optimization `Not applicable`. Do not imply feature parity or block unrelated work solely because an optional optimization is absent.
-4. Update the affected Layer-01 provider sections and the generic outcomes in workflow checkpoints and Layer-03 route checks in the same change set. Keep cross-cutting provider controls in the runtime owner, keep Layer-02/03 provider-neutral, and confirm the English and Chinese instructions remain equivalent before completing the documentation checks.
+4. Update the affected Layer-01 concept owner's provider sections and, when their generic outcomes change, the workflow checkpoints and Layer-03 route checks in the same change set. Keep cross-cutting runtime/model bindings in the runtime owner, keep Layer-02/03 provider-neutral, and confirm the English and Chinese instructions remain equivalent before completing the documentation checks.
 
 ## Markdown references and layer direction
 

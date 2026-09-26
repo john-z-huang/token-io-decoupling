@@ -19,7 +19,7 @@ assigned verifier child context → Change Verification
 assigned docs/Git child context → Documentation/Comments & Git Operations
 ```
 
-An unassigned role is unavailable as an independent child context. Do not simulate independence by relabeling same-context work. Apply [Runtime and Model Provider Support](runtime-provider-support.md) when describing the actual isolation of a provider's child.
+An unassigned role is unavailable as an independent child context. Do not simulate independence by relabeling same-context work.
 
 ### Primary Execution Session and affinity
 
@@ -29,11 +29,11 @@ Session separation and Git worktree separation are distinct. Workers for one dev
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+An allocated Codex child uses an independent child Session and task UI. Report only the isolation actually exposed by the runtime.
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+A Claude Code subagent has its own context inside the parent session; it has no identical independent Codex task UI. Treat it as the allocated child context, return only to the parent, and report actual isolation and verification independence. Do not use an agent team or peer channel as a substitute. A Codex-only UI convenience needs no Claude Code equivalent when the parent record and result supply the required evidence.
 
 ## Related concepts
 

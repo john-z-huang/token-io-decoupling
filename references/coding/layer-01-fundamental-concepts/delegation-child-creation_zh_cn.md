@@ -16,7 +16,9 @@
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-本地 Claude Code 使用内建 `Agent` 工具，显式指定符合要求的 `subagent_type`、单次调用模型、有界任务提示和返回条件。自动触发的内建 Explore/Plan Agent 不得作为持久子代理。具体控制和缺失的对应能力遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)。
+本地 Claude Code 在数量和 allocation 放行后使用内建 `Agent` 工具，显式指定 `subagent_type`（`general-purpose` 或已命名自定义子代理）、合规模型、有界任务提示和返回条件。模型与 effort 绑定遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)；可用时在 `/tasks` 核验实际模型，因为被禁模型可能回退到继承模型。内建 Explore/Plan Agent 不返回可复用 Agent ID，不得作为持久子代理。
+
+通用 `Agent` 调用没有逐次 effort 参数。需要 Sonnet 职责专属 effort 时，使用获准的 `.claude/agents/<name>.md` 或 `~/.claude/agents/<name>.md` 定义，填写 `name`、`description`、`model: sonnet`、必需的 `effort` 和适当的工具白名单。否则在启动前显式设置并核验子代理继承的会话 `/effort`；Haiku 省略 effort。优先使用工具白名单中排除 `Agent` 和 peer 消息的具名可复用子代理，防止递归委派。自定义定义不在获准修改范围内时，只有在能核验实际 effort 和工具边界时才使用 `general-purpose`。必需的绑定或边界无法核实时阻塞该子代理职责。
 
 ## 相关概念
 

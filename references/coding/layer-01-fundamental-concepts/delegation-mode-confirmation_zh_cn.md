@@ -28,7 +28,7 @@
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+未查到 Claude Code 原生 `AskUserQuestion` 超时或等价异步回复工具。以普通进度文字发出模式问题，保持当前 turn 活跃并计时 15 秒，检查宿主在截止前提供的回复。不得为此门禁调用会阻断的 `AskUserQuestion`。若宿主在活跃 turn 中无法提供回复，记录该限制并在 15 秒后采用默认值，不得无限等待。
 
 ## 相关概念
 

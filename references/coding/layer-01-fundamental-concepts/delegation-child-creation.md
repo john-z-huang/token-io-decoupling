@@ -16,7 +16,9 @@ On Local Codex, use the exposed MultiAgentV1/V2 spawn operation; apply model and
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-On Local Claude Code, use the built-in `Agent` tool with an explicit eligible `subagent_type`, per-invocation model, bounded task prompt, and return conditions. Do not use automatically selected built-in Explore/Plan agents as persistent children. Apply the concrete controls and unavailable equivalents in [Runtime and Model Provider Support](runtime-provider-support.md).
+On Local Claude Code, use the built-in `Agent` tool after count and allocation release. Specify `subagent_type` as `general-purpose` or a named custom subagent, an explicit eligible model, a bounded task prompt, and return conditions. Apply the model and effort bindings from [Runtime and Model Provider Support](runtime-provider-support.md); verify the effective model in `/tasks` when available because a blocked selection may fall back to an inherited model. Do not use built-in Explore/Plan agents as persistent children; they return no reusable agent ID.
+
+The general `Agent` call has no per-invocation effort parameter. For role-specific Sonnet effort, use an authorized `.claude/agents/<name>.md` or `~/.claude/agents/<name>.md` definition with `name`, `description`, `model: sonnet`, the required `effort`, and a suitable tool allowlist. Otherwise explicitly set and verify the session `/effort` inherited by the child before launch; omit effort for Haiku. Prefer a named reusable subagent whose allowed tools exclude `Agent` and peer messaging to prevent recursive delegation. If a custom definition is outside the authorized mutation scope, use `general-purpose` only when its effective effort and tool boundary can be verified. Block the child role when a required binding or boundary cannot be verified.
 
 ## Related concepts
 

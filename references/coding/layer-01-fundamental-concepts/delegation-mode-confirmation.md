@@ -28,7 +28,7 @@ No provider-specific optimization instructions at present; follow the general ru
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Claude Code has no documented native timeout for `AskUserQuestion` or equivalent asynchronous reply tool. Send the mode question as ordinary progress text, keep the turn active for the 15-second wall-clock interval, and inspect any reply surfaced by the host before the deadline. Do not call the blocking `AskUserQuestion` for this gate. If the host cannot surface a reply during the active turn, record that limitation and apply the default after 15 seconds; do not wait indefinitely.
 
 ## Related concepts
 

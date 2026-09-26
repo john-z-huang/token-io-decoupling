@@ -29,7 +29,7 @@ No provider-specific optimization instructions at present; follow the general ru
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+When the task releases worktree isolation or tool restrictions, Claude Code may use `EnterWorktree`/`ExitWorktree` or a custom agent with `isolation: worktree`, and `tools`/`disallowedTools` for tool scope. These controls alone do not enforce named filesystem path permissions. If a required path boundary cannot be enforced, block the dependent slice; otherwise use the ordinary shared worktree and default tools.
 
 ## Related concepts
 

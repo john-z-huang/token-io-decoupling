@@ -29,7 +29,7 @@
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+当前任务放行 worktree 隔离或工具限制时，Claude Code 可使用 `EnterWorktree`/`ExitWorktree` 或自定义 Agent 的 `isolation: worktree`，并使用 `tools`/`disallowedTools` 限定工具范围。这些控制本身不能强制执行具名文件系统路径权限；必需的路径边界无法落实时阻塞依赖切片，其余情况使用普通共享 worktree 和默认工具。
 
 ## 相关概念
 

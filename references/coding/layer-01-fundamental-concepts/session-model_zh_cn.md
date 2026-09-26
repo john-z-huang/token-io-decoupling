@@ -19,7 +19,7 @@
 已分配文档/Git 子级上下文 → Documentation/Comments & Git Operations
 ```
 
-未分配的职责在独立子级上下文层面不可用。不得通过给同一上下文的工作改名来模拟独立性。描述厂商子级的实际隔离时，遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)。
+未分配的职责在独立子级上下文层面不可用。不得通过给同一上下文的工作改名来模拟独立性。
 
 ### Primary Execution Session 与 Affinity
 
@@ -29,11 +29,11 @@ Session 隔离与 Git worktree 隔离不同。同一开发需求的 Worker 通�
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+已分配的 Codex 子代理使用独立子 Session 和任务界面。只报告运行环境实际暴露的隔离能力。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Claude Code 子代理在父会话中拥有独立上下文，没有完全相同的 Codex 独立任务界面。把它视为已分配的子级上下文，只向父级返回，并准确报告实际隔离和验证独立性。不得以 agent team 或 peer channel 替代。父级记录和结果已提供所需证据时，不必为 Codex 专有界面便利功能寻找 Claude Code 对应项。
 
 ## 相关概念
 
