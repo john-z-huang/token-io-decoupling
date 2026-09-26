@@ -16,7 +16,7 @@
 
 路线消费这份能力清单和状态，只记录各自拓扑差异。按[运行环境与模型厂商支持](../layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)应用分支特定的控制和模型绑定。
 
-路线所需的 profile 是能力要求，不是对整个产品的可用性声明。分支特定路线只有在本清单记录当前 surface 实际暴露的 model identity 和 reasoning parameter 后，才能消费该 profile。如果必需的 model 或 parameter 未暴露或未知，必须将该要求记录到 `unavailable_capabilities`，并阻塞依赖的切片或路线。不得静默替换 model、reasoning effort、Session、工具、权限或 mode/count；选择其他路线必须重新进入其适用门禁并取得新的明确确认。这使 Core 规则与产品细节解耦，同时允许路线消费其所需的、特定于 surface 的 profile。
+路线所需的 profile 是能力要求，不是对整个产品可用性的声明。分支特定路线只有在本清单记录当前 surface 实际生效的模型身份及该 profile 要求的每项参数后，才能消费该 profile。如果必需的模型或参数未暴露或未知，必须将该要求记录到 `unavailable_capabilities`，并阻塞依赖的切片或路线。不得静默替换模型、reasoning effort、Session、工具、权限或 mode/count；选择其他路线必须重新进入其适用门禁并取得新的明确确认。这使 Core 规则与产品细节解耦，同时允许路线消费其所需的、特定于 surface 的 profile。
 
 ## 相关概念
 

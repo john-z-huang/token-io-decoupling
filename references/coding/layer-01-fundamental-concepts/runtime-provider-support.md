@@ -16,9 +16,18 @@ If the available metadata cannot distinguish these branches, use this exact fall
 ## Branch-specific capability use
 
 - On Local Codex, use the exposed model/Session controls and restart after changing global instructions, overrides, the Skill, or repository instructions.
-- On Local Claude Code, record the exact Claude model identifier or alias exposed by the active Session and use only its exposed parameter controls. When the current Session handles all logical phases, it uses that active model. Do not infer a model or assume a reasoning control. This support does not declare a Claude Code independent-Session role profile.
+- On Local Claude Code, record the exact model identifier or alias exposed by the active Session and use only its exposed parameter controls. Apply the Claude Code model selection below; do not infer a model or assume a reasoning control.
 - On ChatGPT Work, use only explicitly exposed models, Sessions, files, connectors, and execution tools.
 - On Standard ChatGPT, do not assume local execution, Git, worktrees, or independent Sessions.
+
+## Local Claude Code model selection
+
+Use only the `sonnet` and `haiku` aliases, or verified model identifiers in the `claude-sonnet-*` and `claude-haiku-*` families. Claude Code spells the smaller family `haiku`, not `hiku`. Before using an active Session or launching an Agent, confirm the effective model resolves to one of these families. Never launch an Agent with `claude-opus-*`, an Opus alias, or any model above or outside the Sonnet/Haiku families. Do not use an unresolved default, inherited model, or fallback as a substitute for this check.
+
+- **Single-Agent Coding:** keep one active model for all logical phases. Use Sonnet for material coding, decisions, repair, or verification; Haiku is allowed for simple, bounded, mechanically checkable work. If the active model is ineligible or insufficient for the task and an allowed switch is unavailable, block the dependent work rather than continuing on that model.
+- **Multi-Agent Coding, only after its mode and capability gates release it:** assign Sonnet to Primary Output, Change Verification, Documentation/Comments & Git Operations, and Context Bootstrap. Assign Haiku only to a deterministic Context Refresh; use Sonnet when the refresh requires semantic judgment. Confirm each Agent's effective model before launch. These bindings do not authorize creating independent Sessions or changing the locked child count.
+
+This Claude Code profile sets no reasoning parameter. Use a parameter only when the current surface exposes and the selected task requires it. If a required Sonnet or Haiku binding is unavailable or cannot be verified, record it in `unavailable_capabilities` and block the dependent slice or route; do not escalate to Opus or a higher model.
 
 ## Local Codex independent-Session model profile
 

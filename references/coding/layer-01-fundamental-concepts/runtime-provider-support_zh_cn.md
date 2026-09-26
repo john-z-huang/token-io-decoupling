@@ -16,9 +16,18 @@
 ## 按分支使用能力
 
 - 在本地 Codex 中使用当前暴露的模型/Session 控制；修改全局指令、覆盖指令、Skill 或仓库指令后重新启动。
-- 在本地 Claude Code 中，记录当前 Session 暴露的确切 Claude 模型标识符或别名，并且只使用其实际暴露的参数控制。当前 Session 承担所有逻辑阶段时，使用该当前模型。不得推断模型或假设存在 reasoning 控制。本支持文档不声明 Claude Code 独立 Session 职责 Profile。
+- 在本地 Claude Code 中，记录当前 Session 暴露的确切模型标识符或别名，并且只使用其实际暴露的参数控制。应用下方的 Claude Code 模型选择规则；不得推断模型或假设存在 reasoning 控制。
 - 在 ChatGPT Work 中只使用明确暴露的模型、Session、文件、连接器和执行工具。
 - 在标准 ChatGPT 中不假设拥有本地执行、Git、worktree 或独立 Session。
+
+## 本地 Claude Code 模型选择
+
+只使用 `sonnet` 和 `haiku` 别名，或已核实属于 `claude-sonnet-*` 和 `claude-haiku-*` 系列的模型标识符。Claude Code 对较小模型系列的拼写是 `haiku`，不是 `hiku`。使用当前 Session 或启动 Agent 前，确认实际生效的模型属于这两个系列。不得使用 `claude-opus-*`、Opus 别名或任何高于或不属于 Sonnet/Haiku 系列的模型启动 Agent。不得用未解析的默认模型、继承模型或回退模型代替这项检查。
+
+- **单代理 Coding：**所有逻辑阶段保持使用一个当前模型。实质性编码、决策、修复或验证使用 Sonnet；简单、有界且可机械检查的工作可以使用 Haiku。如果当前模型不符合要求或不足以完成任务，且无法切换到允许的模型，则阻塞依赖工作，不得继续使用该模型。
+- **多代理 Coding，仅在模式和能力门禁放行后：**Primary Output、Change Verification、Documentation/Comments & Git Operations 和 Context Bootstrap 分配 Sonnet。只有确定性的 Context Refresh 才分配 Haiku；需要语义判断的刷新使用 Sonnet。启动前确认每个 Agent 实际生效的模型。这些绑定不授权创建独立 Session 或改变已锁定的子代理数量。
+
+此 Claude Code Profile 不规定 reasoning 参数。只有当前界面暴露且所选任务需要时才使用相应参数。必需的 Sonnet 或 Haiku 绑定不可用或无法核实时，将其记录到 `unavailable_capabilities` 并阻塞依赖的切片或路线；不得升级到 Opus 或更高系列。
 
 ## 本地 Codex 独立 Session 模型 Profile
 
