@@ -37,6 +37,13 @@ Keep concept subtopics under these sections as level-three headings. When a prov
 - Make the order executable: pre-route gates; Session/role and capability boundaries; bounded context; Decision and planning; slice release; child creation/dispatch only when authorized; Implementation and Control; current-state Verification; conditional Repair and re-verification; Documentation; Git; final Acceptance. Include the applicable return loop and changed-epoch checks so a smaller model cannot skip a required boundary.
 - Before changing a route, compare its checklist against all operationally consumed lower-layer owners and their pass conditions. Update the checklist and both language mirrors in the same change set whenever a consumed owner or its execution requirement changes. Keep lower-layer files authoritative; route checklists summarize and sequence their requirements without inventing new policy.
 
+## Layer-03 workflow maps
+
+- Each final Single-Agent and Multi-Agent Layer-03 route and its Simplified Chinese mirror must have exactly one `## Workflow map` / `## 工作流路线图` section above its sole ordered execution checklist, containing one fenced `mermaid` flowchart. The map is an executable navigation and selective concept-loading guide, **not** a new policy owner; lower-layer references in the checklist remain authoritative for actions, evidence, and failure boundaries.
+- Every numbered checklist step must correspond to a stable, ordered map checkpoint ID (`S01`… for Single-Agent, `M01`… for Multi-Agent). Use equivalent IDs and directed edges in each language mirror, with equivalent conditional decisions. The Single-Agent map excludes child creation, dispatch, child lifecycle, Worker memo, and cross-Worker exchange branches; the Multi-Agent map includes gated role allocation, context/Bootstrap and memo decisions, slice release before creation/dispatch, verification, conditional repair and changed-epoch re-verification, documentation, Git, and acceptance.
+- Show explicit skip/`Not applicable`, block, and return paths rather than suggesting that every conditional concept must run. Never draw a shortcut around mode/capability authorization or current-state verification. A map node may summarize a checkpoint but may not redefine the lower-layer owner’s policy. When any consumed owner, route order, branch, or checklist requirement changes, update **both** diagrams and **both** checklists in the same change set.
+- Run `python3 scripts/check-layer-03-workflow-maps.py` on every Layer-03 route or rule change. This script enforces map presence/order, fixed checkpoint identity and checklist sequence, required branches/edges, language-mirror graph equivalence, mode isolation, and CI integration. The structural validator does not prove that translated prose or every policy interpretation is semantically equivalent; review those manually as well.
+
 ## Codex and Claude Code tool parity
 
 Keep each concept's provider-specific optimization and tool correspondence in that Layer-01 owner's provider section. Keep only cross-cutting runtime identification and model/effort bindings in the single [Runtime and Model Provider Support](references/coding/layer-01-fundamental-concepts/runtime-provider-support.md) owner and its Chinese mirror; other owners link to those bindings instead of repeating them. Whenever a change tunes this Skill for a tool or instruction found in Codex source, inspect the corresponding Claude Code capability in its current official documentation or exposed runtime controls. Whenever a change tunes this Skill for Claude Code, perform the same check for Codex. Do this before treating either runtime's behavior as shared.
@@ -88,6 +95,8 @@ python3 scripts/check-multilingual-docs.py
 python3 scripts/check-doc-layer-links.py
 python3 scripts/check-layer-01-sections.py
 python3 scripts/check-layer-02-03-provider-neutrality.py
+python3 scripts/check-layer-03-workflow-maps.py
+python3 -m unittest discover -s tests -p 'test_check_layer_03_workflow_maps.py'
 git diff --check
 ```
 
