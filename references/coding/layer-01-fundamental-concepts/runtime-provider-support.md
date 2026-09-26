@@ -15,6 +15,10 @@ This module owns the supported runtime branches, their identifying evidence, and
 
 If the available metadata cannot distinguish these branches, use this exact fallback question: `I cannot determine the current runtime environment from the available metadata. In your next instruction, explicitly state whether it is "local Codex", "local Claude Code", "ChatGPT Work", or "standard ChatGPT", then resume.`
 
+### Desktop sessions and exposed tools
+
+For ChatGPT Desktop and Claude Desktop, use only tools, commands, or APIs directly exposed and authorized for the current Agent Session. Identify the active runtime and its capabilities from Session metadata and the exposed tool inventory. If a necessary step is only available through a channel that repository instructions prohibit, stop the Skill task and report the blocker; do not route the step through an adapter or helper. When an optional capability is absent, block only the dependent route or slice.
+
 ## Codex CLI / ChatGPT Desktop optimizations
 
 - On Local Codex, use the exposed model/Session controls and restart after changing global instructions, overrides, the Skill, or repository instructions.
@@ -35,6 +39,14 @@ The capability inventory must verify each assigned binding's exposed model ident
 ### Codex instruction-loading correspondence
 
 Codex natively discovers `AGENTS.md` along its instruction hierarchy; do not create a `CLAUDE.md` copy or require Claude Code's `@AGENTS.md` import for Codex. After an authorized instruction change, verify the running Session actually loaded the current instructions or restart it; a child-status view is not proof of instruction freshness. [OpenAI: AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+
+### Desktop runtime identification
+
+ChatGPT Desktop can host **Chat**, **Work**, and **Codex** Sessions. Use Session metadata and exposed tools to identify the active runtime before treating it as local Codex: Work has its own hosted Agent workflows, and a Chat or Work Session does not imply a local shell or a child of a project-bound Codex Session. A quick Codex Session is not automatically bound to the project. In Remote sessions, the repository remains on the connected host. [OpenAI: desktop experiences](https://learn.chatgpt.com/docs/use-chatgpt), [OpenAI: subagent availability](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: worktree host](https://learn.chatgpt.com/docs/environments/git-worktrees).
+
+### Effective local configuration
+
+Codex CLI, IDE, and Codex in the ChatGPT desktop app can share the active host's `~/.codex/config.toml` and trusted project `.codex/config.toml`; project-local config, rules, and hooks are skipped for an untrusted project. Several config layers can apply at once — session flags and CLI overrides, trusted project `.codex/config.toml` files, the selected profile, user `~/.codex/config.toml`, managed policy such as system config, MDM, or delivered organization requirements, plugins, and packaged defaults — and the host decides their effective precedence rather than the order in which they are named here. Resolve the active value from the running Session instead of assuming a fixed order: in a CLI Session that exposes them, run `/status` to inspect the active model, approval policy, and writable roots, then `/debug-config`, which prints the config-layer stack in precedence order together with the active requirements and policy sources. If these commands are unavailable, use only settings and metadata directly exposed to the current Session; mark hidden layers unavailable instead of guessing. A spawned subagent also inherits the parent turn's live permission/sandbox overrides. Check `AGENTS.override.md`, nested instruction precedence and `project_doc_max_bytes` before claiming a large instruction file loaded in full. These checks do not change this Skill's fixed role-model profile. [OpenAI: config precedence](https://learn.chatgpt.com/docs/config-file/config-basic), [OpenAI: inspect settings](https://learn.chatgpt.com/docs/developer-settings), [OpenAI: instruction discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md), [OpenAI: child overrides](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
@@ -59,15 +71,15 @@ For Single-Agent Coding, use Sonnet at `medium` for material work, with the same
 
 After changing `CLAUDE.md`, this Skill, or an agent definition, start a new Claude Code session if the current session cannot prove it loaded the changed instructions; `/tasks` and `/agents` do not establish that proof.
 
-### Claude Desktop surface and connector gate
+### Claude Code Plan-mode startup and Session boundary
 
-Claude Desktop is not one uniform Coding runtime. In the **Code tab**, verify that the selected session is a local Claude Code session with the required shell/filesystem and Agent tools before applying this profile; cloud/remote Code sessions require their own capability inventory. The Code tab and local Claude Code CLI share project instructions, supported settings, MCP configuration, and hooks, but availability still depends on the actual session. A **Chat** conversation or **Cowork** task does not become a Claude Code Agent session merely because it runs in the same Desktop app. Do not assume that Claude Code's `Agent`, `SendMessage`, `/tasks`, local shell, or hooks exist in those surfaces.
+`claude --permission-mode plan` selects read-only Plan mode **when launching a new Claude Code CLI Session**. It is not a command for switching an already running Parent or Worker Session into Plan mode: do not invoke it from the active Session's shell merely to plan the current slice. For an existing Session, use only a Plan-mode control actually exposed and authorized within that same Session; if none exists, follow the general bounded planning and decision process without claiming Plan-mode protection. A separately launched CLI Session is not the recorded Parent or an allocated Child and does not inherit this Skill's locked mode/count, released Interaction Slice, or live task record by virtue of its launch flags. Plan-mode tool permissions do not authorize implementation or change the Skill's Contract and release gates. [Anthropic: CLI permission mode](https://code.claude.com/docs/en/cli-reference), [Anthropic: Plan mode](https://code.claude.com/docs/en/common-workflows).
 
-For a Desktop Chat tool need, use an authorized **remote connector** for hosted services, or a verified **desktop extension/local MCP server** for machine-local resources; check the connected tool's actual read/write scope before use. A connector supplies data/actions, not an independent Coding Session, a parent-controlled Agent identity, or the locked child budget. If the required Coding capability is absent, record it and block only the dependent route/slice; do not reinterpret a Chat/Cowork conversation as local Claude Code.
+### Claude Desktop connectors and tool inventory
 
-In local Desktop Code sessions, use the model dropdown to select and inspect the model, the sidebar to resume a session, and shared settings for permission rules; Desktop has no per-session equivalent of CLI `--allowedTools`/`--disallowedTools`. The Desktop Code tab may load local MCP definitions from `claude_desktop_config.json`, but the standalone CLI does **not** read that file automatically; verify or import the intended server rather than assuming identical server lists. These UI paths are not available as CLI flags in Desktop Chat.
+Claude Desktop Sessions can expose Claude Code capabilities, remote connectors, or local MCP tools; the app identity alone does not establish which are available. Use `Agent`, `SendMessage`, `/tasks`, shell, or hooks only when the current Session directly exposes them. For hosted resources, call an authorized remote connector; for machine-local resources, use an authorized local MCP/desktop-extension tool. Check the exposed tool's read/write scope before use. A connector provides data or actions, not an independent Coding Session, a parent-controlled Agent identity, or a locked child slot. If a required capability is absent, record it and block the dependent route or slice.
 
-Official references: [Desktop Code tab](https://code.claude.com/docs/en/desktop), [Desktop local MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop), [desktop vs remote connectors](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors).
+Claude Desktop can load local MCP definitions from `claude_desktop_config.json`; the standalone CLI does not read that file automatically. Inspect the MCP tools exposed to each Session instead of assuming the Desktop and CLI tool inventories match. Do not treat CLI `--allowedTools` or `--disallowedTools` arguments as controls on a Desktop Session. [Anthropic: Desktop local MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop), [Anthropic: remote connectors](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors).
 
 ### Claude Code instruction loading
 

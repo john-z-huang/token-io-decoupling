@@ -20,6 +20,8 @@
 
 Codex 已配置的 `PostToolUse` 或 `SubagentStop` Hook 可以提供工具或子代理的观察结果，供父级压缩 Progress Signal；`PreCompact` 可以标记上下文将被压缩的边界。这些可选事件不证明语义验收，也不应导致完整工具日志或 transcript 倾倒。[OpenAI：工具与生命周期 Hooks](https://learn.chatgpt.com/docs/hooks)。
 
+当前 Session 暴露的 Codex `/diff`、文件／diff 工具、`/agent` 或子代理结果工具可以在阶段边界定位变更文件、行与结果对应的 Worker。返回的 Progress Signal 应压缩为变更路径、实际检查、阻塞及来源指针。可用时，`/review` 产出关于 diff 的**审查发现**；但要求独立 Agent 验证时，仍须有真正独立且获准的验证者上下文。[OpenAI：Diff 与 review](https://learn.chatgpt.com/docs/code-review)、[OpenAI：CLI 命令](https://learn.chatgpt.com/docs/developer-commands)、[OpenAI：子代理线程](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 ### Hook 辅助的精简阶段证据
@@ -28,7 +30,7 @@ Codex 已配置的 `PostToolUse` 或 `SubagentStop` Hook 可以提供工具或�
 
 官方依据：[SubagentStop 与 PostToolUseFailure 事件数据](https://code.claude.com/docs/en/hooks)。
 
-已配置的 `PostToolUse` 可以在阶段边界提供实际工具结果，但不能替代压缩的 Progress Signal。Desktop Code 的 diff review 是修改行的证据，不是测试通过或独立验证完成的证明。[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)、[Anthropic：Desktop diff review](https://code.claude.com/docs/en/desktop)。
+已配置的 `PostToolUse` 可以在阶段边界提供实际工具结果，但不能替代压缩的 Progress Signal。diff 工具结果可以证明修改行，不代表测试通过或独立验证完成。[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)。
 
 ## 相关概念
 

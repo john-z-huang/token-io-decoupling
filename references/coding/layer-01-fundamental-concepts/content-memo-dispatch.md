@@ -24,7 +24,7 @@ The Worker cannot change or reinterpret the switch. Only the parent may choose a
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Codex custom agent TOML, `AGENTS.md`, optional memories and `/compact` do not implement this Skill's dispatch switch. Serialize `write_content_memo: true` or `false` in the **actual released child-task prompt** and name the authorized memo path before spawning. If enabled, confirm that the parent has provisioned the memo directory at the exact authorized absolute path and that the receiving Worker Session can actually write there under its approved RW boundary. When a Worker uses a separate checkout, independently verify that the primary-worktree `CONTEXT_ROOT` is reachable; do not relocate the memo into the Worker's checkout or infer access from checkout ownership. The canonical layout and path rights belong to [Context Exchange Workspace Boundary](context-exchange-workspace-boundary.md). A `SubagentStart` or `PreCompact` hook is optional context, not a replacement for the explicit bundle or the Worker's file write. [OpenAI: subagent prompts](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: local memories](https://learn.chatgpt.com/docs/customization/memories), [OpenAI: hooks](https://learn.chatgpt.com/docs/hooks).
 
 ## Claude Code CLI / Claude Desktop optimizations
 

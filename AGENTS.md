@@ -4,6 +4,14 @@ Multilingual documentation requirements are maintained in [`MULTI_LINGUAL.md`](M
 
 Any Agent or contributor that creates, edits, renames, moves, or deletes documentation in this repository must load and follow that file before making documentation changes.
 
+## Forbidden Skill operations and absolute Computer Use stop rule
+
+This is a mandatory repository-wide constraint for **every execution of this Skill**, across all runtime providers, parent Agents, child Agents, delegated tasks, recovery paths, and tool adapters.
+
+- **This section is a blacklist, not an allowlist.** Every tool, API, command, MCP server, or other capability exposed to and authorized for the current Agent Session is permitted unless it is named here as forbidden. A capability a runtime adds later is permitted by default; never infer a prohibition from the fact that an operation is not listed.
+- **Computer Use is categorically forbidden.** Never control a computer, browser, or desktop app by interacting with its graphical interface, including screenshots used to locate controls, mouse/keyboard simulation, clicking, accessibility APIs, window automation, remote-desktop control, or GUI scripting. Routing such interaction through an API, HTTP request, CLI, MCP server, Skill, helper process, or another Agent does **not** make it permitted.
+- **Mandatory immediate stop:** As soon as analysis establishes that a necessary step requires a forbidden operation, immediately stop this Skill's task. Do not attempt that step, delegate it, silently skip it, substitute a forbidden wrapper, or continue to later steps. Report the exact blocked step, why it is forbidden and why no permitted alternative exists, and what work remains incomplete to the user. There are **no exemptions**, including a user's approval, a host exposing Computer Use, or a claim that the GUI interaction is only an optional optimization for a required step. An actually available and authorized non-Computer-Use route may be used instead; an unexposed or speculative route may not be assumed.
+
 ## Documentation ownership and atomicity
 
 - Every maintained Markdown document must have one clear, reusable responsibility. Its filename, title, opening ownership statement, sections, and links must describe the same responsibility.
@@ -21,7 +29,7 @@ Every existing or new Layer-01 Markdown owner and its Chinese mirror must have t
 2. `## Codex CLI / ChatGPT Desktop optimizations` / `## Codex CLI / ChatGPT Desktop 特别优化指令`: only the applicable Codex or ChatGPT Desktop instructions for this concept.
 3. `## Claude Code CLI / Claude Desktop optimizations` / `## Claude Code CLI / Claude Desktop 特别优化指令`: only the applicable Claude Code or Claude Desktop instructions for this concept.
 
-Keep concept subtopics under these sections as level-three headings. When a provider has no special optimization for this concept, retain its section and state explicitly that there is currently none and that the Agent follows the general rules. Keep `Related concepts` / `相关概念` as a separate navigation section after the three modules. Run `python3 scripts/check-layer-01-sections.py` after every Layer-01 edit or addition; a missing, duplicate, reordered, or empty module is not complete.
+Keep concept subtopics under these sections as level-three headings. For ChatGPT Desktop and Claude Desktop, Agent-facing instructions may invoke only tools, commands, or APIs actually exposed to and authorized for the current Agent Session. Never direct an Agent to operate either desktop app through Computer Use, GUI screenshots/clicks, simulated mouse/keyboard, accessibility, window automation, or shell-driven UI scripting—even if an automation tool is exposed. A product UI control is descriptive background only; if a required step is available only through Computer Use, apply the repository-wide immediate-stop rule above and report the blocker to the user. Enforce this in the runtime owner and applicable provider sections; do not write UI-navigation steps as Agent workflow instructions. When a provider has no special optimization for this concept, retain its section and state explicitly that there is currently none and that the Agent follows the general rules. Keep `Related concepts` / `相关概念` as a separate navigation section after the three modules. Run `python3 scripts/check-layer-01-sections.py` after every Layer-01 edit or addition; a missing, duplicate, reordered, or empty module is not complete.
 
 ## Layer-02 and Layer-03 provider neutrality
 

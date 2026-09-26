@@ -18,11 +18,13 @@
 
 当前 Codex 已配置 `PreCompact` 或 `SubagentStop` Hooks 时，可以把事件作为检查本 Worker memo 是否需要更新的观察信号；不能假定 Hook 自动写入 memo、掌握所有相关来源或能够跨 Worker 目录写文件。Worker 仍应在证据丢失前更新其明确获准的 memo／索引。[OpenAI：生命周期与 compaction Hooks](https://learn.chatgpt.com/docs/hooks)。
 
+可信且已启用的 Codex `PreCompact` 或 `SubagentStop` Hook 可识别即将压缩上下文或退出的边界；压缩后，`source: compact` 的 `SessionStart` Hook 可以给继续执行的上下文补充少量获准信息。Hooks 不会自动序列化正确的 Worker memo，并发 Hook 输出也不是有序写入事务。Worker 必须在来源证据仍可用的实质节点更新自己的获准 memo／索引，不得写入其他 Worker 的目录。[OpenAI：Hooks 生命周期、信任与 compact 恢复](https://learn.chatgpt.com/docs/hooks)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 ### 压缩与退出时的 Memo 检查点
 
-本地 Claude Code 已配置 Hooks 且 `write_content_memo: true` 时，可选 `PreCompact` Hook 可在压缩**之前**识别压缩事件并检查现有、获准的 Memo/索引是否最新；不可假定该 Hook 能提醒 Agent 生成新状态；`SubagentStop` 可以把末条回复提供给父级以核对 Memo/索引。这些事件信号本身不会自动写出正确 Memo，把整个 transcript 复制进去也违反 Memo 内容契约。无论是否装有 Hook，均须在普通实质性里程碑维护 Memo，并在 Worker Index 保留准确具名路径；Memo 明确关闭时不得执行该 Hook 工作流。Hooks 的脚本必须在实际 Claude Code Session 中可用且获信任；不得推断 Desktop Chat/Cowork 会运行它们。
+Claude Code 已配置 Hooks 且 `write_content_memo: true` 时，可选 `PreCompact` Hook 可在压缩**之前**识别压缩事件并检查现有、获准的 Memo/索引是否最新；不可假定该 Hook 能提醒 Agent 生成新状态；`SubagentStop` 可以把末条回复提供给父级以核对 Memo/索引。这些事件信号本身不会自动写出正确 Memo，把整个 transcript 复制进去也违反 Memo 内容契约。无论是否装有 Hook，均须在普通实质性里程碑维护 Memo，并在 Worker Index 保留准确具名路径；Memo 明确关闭时不得执行该 Hook 工作流。Hooks 的脚本必须在当前 Session 中可用且获信任；Desktop 连接器工具不代表该 Session 支持 Hooks。
 
 官方依据：[PreCompact 与 SubagentStop Hooks](https://code.claude.com/docs/en/hooks)。
 

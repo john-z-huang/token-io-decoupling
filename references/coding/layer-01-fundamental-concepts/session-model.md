@@ -29,15 +29,19 @@ Session isolation and Git worktree isolation are distinct. Workspace and filesys
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-An allocated Codex child uses an independent child Session and task UI. Report only the isolation actually exposed by the runtime.
+An allocated Codex child uses an independent child Session. Confirm that relationship only through runtime metadata or a directly exposed child/thread tool, and report only the isolation those sources establish.
+
+### Desktop Session and child identities
+
+In ChatGPT Desktop, count a spawned Codex thread as a child only when a tool exposed to the active Session reports that parent-child relationship. A tool that creates or transfers another Session or worktree does not by itself establish a child identity; Codex-managed worktrees can be detached-HEAD and disposable. A Chat or Work Session is not a Codex child unless an exposed tool reports that relation. [OpenAI: subagent threads](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: worktree behavior](https://learn.chatgpt.com/docs/environments/git-worktrees), [OpenAI: Desktop modes](https://learn.chatgpt.com/docs/use-chatgpt).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-A Claude Code subagent has its own context inside the parent session; it has no identical independent Codex task UI. Treat it as the allocated child context, return only to the parent, and report actual isolation and verification independence. Do not use an agent team or peer channel as a substitute. A Codex-only UI convenience needs no Claude Code equivalent when the parent record and result supply the required evidence.
+A Claude Code subagent has its own context inside the parent session. Treat it as the allocated child context, return only to the parent, and report actual isolation and verification independence. Do not use an agent team or peer channel as a substitute.
 
 For a Claude Code subagent, its `Agent` invocation and returned ID identify a child context within the parent Session; the built-in Explore and Plan agents are one-shot and do not return resumable IDs. Preserve the parent identity and the returned ID if a future authorized follow-up may be needed. `/resume` resumes a Claude Code conversation, not an arbitrary previously completed one-shot child. [Anthropic: subagent context and resume](https://code.claude.com/docs/en/sub-agents).
 
-In Claude Desktop's **Code** tab, separate local sessions may be isolated into their own Git worktrees; these are independent desktop sessions, not silently allocated children of the current `Agent` call. Ordinary Desktop Chat has no documented equivalent Code-tab worktree Session control. Never count a separate pane or worktree as the locked child without a verified parent-controlled Agent identity. [Anthropic: Desktop sessions](https://code.claude.com/docs/en/desktop).
+In Claude Desktop, use the built-in `Agent` or `SendMessage` tool only when directly exposed to the active Session. A separately identified Session, connector tool call, or worktree is not an allocated child unless the parent-controlled tool result establishes that identity relation. [Anthropic: subagent context and lifecycle](https://code.claude.com/docs/en/sub-agents), [Anthropic: Desktop MCP tools](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop).
 
 ## Related concepts
 

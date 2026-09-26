@@ -29,11 +29,11 @@ If material decisions remain open, release reconnaissance only. After it returns
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Where Codex exposes `/plan` or Plan permission mode, use it for bounded investigation and drafting the Decision Brief before a substantive write. `/review` can inspect an existing diff without changing the tree and may inform a material repair decision. Neither a generated plan nor a review result releases the Skill's Contract or implementation slice, and a new independent review chat does not count as an allocated verification child. [OpenAI: CLI plan and review commands](https://learn.chatgpt.com/docs/developer-commands), [OpenAI: review behavior](https://learn.chatgpt.com/docs/code-review).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-For a substantive Claude Code decision, the available Plan mode (via `/plan`, or the Desktop Code-tab mode selector) can keep the session read-only during research and proposed-plan drafting. It is a **tool permission mode**, not evidence that the Semantic Contract, authorized mutations, user confirmation, or parent Slice Release has passed. Do not leave Plan mode and mutate files merely because a plan was generated; use the general Decision Brief and the active workflow's release boundary first. Ordinary Desktop Chat does not inherit this Code-tab execution control. [Anthropic: common workflows](https://code.claude.com/docs/en/common-workflows), [Anthropic: permissions](https://code.claude.com/docs/en/permissions), [Anthropic: Desktop Code](https://code.claude.com/docs/en/desktop).
+For a substantive Claude Code decision, an already authorized Plan mode in the active Session may support read-only investigation and drafting the Decision Brief; its activation and Session boundary belong to [Runtime and Model Provider Support](runtime-provider-support.md). Plan mode is a **tool permission mode**, not evidence that the Semantic Contract, authorized mutations, user confirmation, or Parent Slice Release has passed. Apply the general Decision Brief and active workflow's release boundary before editing, even if a plan is approved. If the active Session exposes no authorized Plan-mode control, use the general bounded decision process. [Anthropic: common workflows](https://code.claude.com/docs/en/common-workflows), [Anthropic: permissions](https://code.claude.com/docs/en/permissions).
 
 ## Related concepts
 

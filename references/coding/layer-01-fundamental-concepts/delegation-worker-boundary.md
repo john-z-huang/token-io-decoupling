@@ -18,6 +18,10 @@ After release, a Worker enters through the parent-provided Dispatch Preview and 
 
 Codex's configured `PreToolUse` hook can match the local `spawn_agent` tool under its `Agent` alias; where available, use it as a tested guardrail against unauthorized nested delegation, alongside the runtime's actual tool/sandbox restrictions. Some specialized tools bypass hook coverage, so a prompt or hook alone is not proof that recursion or peer messaging is impossible. Keep the parent-controlled spawn/follow-up role separate from Worker permissions. [OpenAI: hook tool coverage](https://learn.chatgpt.com/docs/hooks).
 
+### Effective worker authority
+
+A Codex custom agent file can set `developer_instructions`, `sandbox_mode`, scoped `mcp_servers` and `skills.config`, but omitted fields inherit the parent and live parent permission overrides can be reapplied at spawn. Inspect the resulting child rather than trusting the file's intended profile. Where a trusted `PreToolUse` hook is installed, match local `spawn_agent`/`Agent` and exposed peer operations before executing, but no hook can prove a complete deny boundary for tools outside its coverage; use real runtime/OS restrictions or block the dependent Worker. [OpenAI: inherited subagent settings](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: tool-hook exceptions](https://learn.chatgpt.com/docs/hooks).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 ### Scoped worker tools

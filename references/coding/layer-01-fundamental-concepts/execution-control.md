@@ -29,15 +29,43 @@ At a material boundary, consume the Progress Signal owned by [execution stage fe
 
 Where enabled, Codex `PreToolUse` can deny a supported `Bash`, edit, or MCP call before it executes; `PostToolUse` is observation **after** the call. Codex's plan/read-only or other permission modes are tool controls, not this Skill's `Continue` decision. Coverage has exceptions, so do not use a hook as the only proof of a filesystem or semantic authorization boundary. [OpenAI: hooks](https://learn.chatgpt.com/docs/hooks).
 
+### Native approvals and focused review
+
+Before relying on a non-managed Codex hook, inspect and trust its exact definition; in a CLI session that exposes it, run `/hooks` to review or trust configured hooks. A `PreToolUse` command hook denies a supported local call by writing this JSON to stdout:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Explain the blocked operation."
+  }
+}
+```
+
+For this event, `continue: false` is unsupported and the tool call continues after the hook error; `PostToolUse` runs after the effect and cannot retroactively approve it. At a stage boundary, an Agent must inspect the actual working-tree diff with an authorized read-only diff tool, or invoke `/diff` in a Codex CLI session that exposes the command. `/diff` includes staged, unstaged, and untracked changes. The parent still makes the semantic `Continue`/`Amend`/`Stop` choice under the general rules. [OpenAI: PreToolUse output contract](https://learn.chatgpt.com/docs/hooks), [OpenAI: code review](https://learn.chatgpt.com/docs/code-review), [OpenAI: CLI diff](https://learn.chatgpt.com/docs/developer-commands).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 ### Tool-boundary guard versus semantic Control
 
-An authorized Claude Code `PreToolUse` Hook may deny a concrete `Bash`, `Write`, `Edit`, or external-effect MCP operation that crosses a machine-checkable released path/permission boundary. A `Stop` hook can request a final evidence check before the current agent finishes. These are *guards*, not an alternate authority for deciding `Continue`, `Amend`, or `Stop`: the parent must still consume the Progress Signal and authorize each new slice under the general rules. Hook exit/deny signals, Desktop visual review, or an MCP connector must not silently enlarge the Contract or child budget. Do not claim these native Hooks exist in Desktop Chat/Cowork.
+An authorized Claude Code `PreToolUse` hook runs after tool parameters are formed and before the call. It receives JSON on stdin with `tool_name`, `tool_input`, and `tool_use_id`; the hook group's `matcher` filters `tool_name`. To deny a call, write this JSON to stdout:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Explain the blocked operation."
+  }
+}
+```
+
+Exit code 0 with no output leaves the normal permission flow in place; it does not approve the call. A `Stop` hook can request a final evidence check before the current agent finishes. These are *guards*, not an alternate authority for deciding `Continue`, `Amend`, or `Stop`: the parent must still consume the Progress Signal and authorize each new slice under the general rules. Hook decisions or an MCP connector must not silently enlarge the Contract or child budget. Use native Hooks only in a Claude Code runtime where they are actually exposed and authorized.
 
 Official reference: [Claude Code Hooks and decisions](https://code.claude.com/docs/en/hooks).
 
-In Claude Code, `PostToolUse` reports observations after an action; it cannot authorize that action retroactively. In Desktop Code, the permission-mode selector manages tool approvals, not this Skill's Contract/Control decision. [Anthropic: hooks](https://code.claude.com/docs/en/hooks), [Anthropic: Desktop Code](https://code.claude.com/docs/en/desktop).
+In Claude Code, `PostToolUse` reports observations after an action; it cannot authorize that action retroactively. [Anthropic: hooks](https://code.claude.com/docs/en/hooks).
 
 ## Related concepts
 

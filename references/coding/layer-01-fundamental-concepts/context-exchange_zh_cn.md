@@ -24,7 +24,7 @@ Freshness 对照 `HEAD`/tree、tracked-delta fingerprint、列出的 source hash
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+获准接收的 Codex Worker 需要外部来源时，优先提供具名 MCP 来源或精确只读文件指针；CLI、IDE 与 Desktop Codex 可以共享当前宿主的 MCP 配置，但项目级 MCP server 依赖该项目配置已受信任。父级 ChatGPT Work 插件连接或 Chat 附件不会自动暴露给本地 spawned Codex Child。必须核实接收 Worker 确实能读取来源，保留原始路径和新鲜度数据；直接访问缺失时使用父级准备的只读 import，不能仅为加载 capsule 就扩大 MCP／工具权限。[OpenAI：MCP 客户端与信任](https://learn.chatgpt.com/docs/extend/mcp)、[OpenAI：配置信任](https://learn.chatgpt.com/docs/config-file/config-basic)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 

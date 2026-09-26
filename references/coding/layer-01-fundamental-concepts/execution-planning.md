@@ -16,11 +16,11 @@ When project facts are needed before a material decision, plan a bounded reconna
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+In an interactive Codex CLI or an Agent Session that exposes the direct `/plan` command, invoke `/plan` to enter Plan mode; optionally append the first planning request, for example `/plan Propose a migration plan for this service`. Codex uses that prompt to draft an execution plan before implementation. The command is unavailable while Codex is already working; when no direct `/plan` control is exposed, use the general bounded planning process. Keep the final stage outline in the parent task record or approved plan artifact rather than relying on the plan-mode transcript as a second policy owner. [OpenAI: slash commands](https://learn.chatgpt.com/docs/developer-commands).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-In Claude Code, Plan mode may help draft the approved direction without making repository changes; use the stage/evidence outline from the general rules rather than converting a `/plan` transcript into another policy owner. After planning, confirm the permitted interaction slice and executable tool permissions before any edit. `/tasks` is a view of running/background Agent work, not a durable plan database or a substitute for stage checkpoints. In Desktop Code, the graphical plan/permission selector applies only to that Code session. [Anthropic: workflows](https://code.claude.com/docs/en/common-workflows), [Anthropic: background agents](https://code.claude.com/docs/en/sub-agents), [Anthropic: desktop mode selector](https://code.claude.com/docs/en/desktop).
+In an existing Claude Code Session, use Plan mode for read-only stage drafting only when that Session directly exposes and authorizes the control; the launch-only flag and Session-identity boundary are owned by [Runtime and Model Provider Support](runtime-provider-support.md). Otherwise use the general bounded planning process. Preserve the stage/evidence outline in the approved plan artifact or parent task record rather than turning a Plan-mode transcript into another policy owner. Before editing, confirm both the released Interaction Slice and effective tool permissions. `/tasks` reports running/background Agent work; it is not a durable plan record or a substitute for stage checkpoints. [Anthropic: workflows](https://code.claude.com/docs/en/common-workflows), [Anthropic: background agents](https://code.claude.com/docs/en/sub-agents).
 
 ## Related concepts
 

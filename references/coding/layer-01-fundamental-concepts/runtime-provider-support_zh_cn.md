@@ -15,6 +15,10 @@
 
 如果现有元数据无法区分这些分支，使用以下原问题兜底：`无法根据当前元数据确定当前运行环境。请在下一条指令中明确说明当前运行环境是“本地 Codex”“本地 Claude Code”“ChatGPT Work”还是“标准 ChatGPT”，然后继续。`
 
+### Desktop Session 与已暴露工具
+
+在 ChatGPT Desktop 和 Claude Desktop 中，只调用当前 Agent Session 直接暴露且已获授权的工具、命令或 API。通过 Session 元数据和已暴露的工具清单识别运行环境及能力。若必需步骤只能通过仓库指令禁止的渠道完成，立即停止 Skill 任务并报告阻塞；不得经由适配器或辅助程序绕行。若缺少的是可选能力，只阻塞依赖它的路线或 Slice。
+
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
 - 在本地 Codex 中使用当前暴露的模型/Session 控制；修改全局指令、覆盖指令、Skill 或仓库指令后重新启动。
@@ -34,7 +38,15 @@
 
 ### Codex 指令加载对应关系
 
-Codex 原生读取指令层级中的 `AGENTS.md`；不得为 Codex 创建冗余 `CLAUDE.md` 副本，也不要求 Claude Code 的 `@AGENTS.md` 导入机制。已获准的指令变更后，必须确认运行中 Session 实际加载了最新指令，无法确认则重新启动；子代理状态界面不代表指令已更新。[OpenAI：AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)。
+Codex 原生读取指令层级中的 `AGENTS.md`；不得为 Codex 创建冗余 `CLAUDE.md` 副本，也不要求 Claude Code 的 `@AGENTS.md` 导入机制。已获准的指令变更后，必须确认运行中 Session 实际加载了最新指令，无法确认则重新启动；子代理状态结果不代表指令已更新。[OpenAI：AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)。
+
+### Desktop 运行环境识别
+
+ChatGPT Desktop 可以承载 **Chat**、**Work** 和 **Codex** Session。将 Session 视为本地 Codex 前，必须通过 Session 元数据和已暴露工具核实：Work 有独立的云端 Agent 工作流，Chat 或 Work Session 不代表本地 Shell，也不代表项目 Codex Session 的子代理。快速 Codex Session 也不会自动绑定项目。Remote Session 的仓库仍位于连接的宿主。[OpenAI：桌面体验](https://learn.chatgpt.com/docs/use-chatgpt)、[OpenAI：子代理可用性](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 宿主](https://learn.chatgpt.com/docs/environments/git-worktrees)。
+
+### 实际生效的本地配置
+
+Codex CLI、IDE 与 ChatGPT Desktop 中的 Codex 可以共享当前宿主的 `~/.codex/config.toml` 和受信任项目的 `.codex/config.toml`；不受信任的项目不会加载项目级 config、rules 和 hooks。可能同时生效的 config 层级包括：session flags 与 CLI 覆盖、受信任项目的 `.codex/config.toml`、所选 profile、用户级 `~/.codex/config.toml`、已下发的组织级策略（如系统 config、MDM 或 requirements）、插件以及内置打包默认值；其实际优先级由宿主决定，而不是按这里列出的顺序。不要假定固定的优先级顺序，应从运行中的 Session 读取实际生效值：在暴露这些命令的 CLI Session 中，先运行 `/status` 查看当前模型、审批策略和可写根目录，再运行 `/debug-config`，它会按优先级顺序打印 config 层级栈，以及当前生效的 requirements 和策略来源。若当前 Session 无法运行这些命令，只能使用直接暴露的设置和元数据；不可见的层级应标记为不可用，不要猜测。子代理还继承父级当前回合的实时权限／sandbox 覆盖。声称完整加载较大的指令文件前，检查 `AGENTS.override.md`、嵌套指令优先级与 `project_doc_max_bytes`。上述能力检查不修改本 Skill 固定的职责模型绑定。[OpenAI：配置优先级](https://learn.chatgpt.com/docs/config-file/config-basic)、[OpenAI：查看当前设置](https://learn.chatgpt.com/docs/developer-settings)、[OpenAI：指令发现](https://learn.chatgpt.com/docs/agent-configuration/agents-md)、[OpenAI：子代理覆盖设置](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
@@ -59,19 +71,19 @@ Claude Code 仅在所选 Sonnet 版本暴露相应档位时应用以下 effort �
 
 修改 `CLAUDE.md`、本 Skill 或 Agent 定义后，若当前会话无法证实已加载新指令，则启动新的 Claude Code 会话；`/tasks` 和 `/agents` 不能作为已加载的证据。
 
-### Claude Desktop 运行界面与连接器门禁
+### Claude Code Plan mode 启动与 Session 边界
 
-Claude Desktop **不是**能力完全一致的单一 Coding 运行环境。在 **Code 标签页**，必须核实所选 Session 确实为具有所需 shell/文件系统和 Agent 工具的本地 Claude Code Session，才应用本模型配置；云端/远程 Code Session 应独立盘点能力。Code 标签页和本地 Claude Code CLI 可以共用适用的项目指令、设置、MCP 配置和 Hooks，但仍须核对实际 Session。Desktop **Chat** 对话或 **Cowork** 任务不会仅因运行在同一桌面应用中，就自动变为 Claude Code Agent Session。不得假定这些界面具有 Claude Code 的 `Agent`、`SendMessage`、`/tasks`、本地 shell 或 Hooks。
+`claude --permission-mode plan` 只在**启动新的 Claude Code CLI Session 时**选择只读 Plan mode；它不是切换已运行 Parent 或 Worker Session 权限模式的命令。不得仅为规划当前 Slice 就从当前 Session 的 Shell 中执行该命令。对于已运行的 Session，只能使用同一 Session 实际暴露且已获授权的 Plan-mode 控制；如果不存在，则遵循通用的有界规划与决策流程，不得声称获得了 Plan mode 的只读保护。另行启动的 CLI Session 既不是已记录的 Parent，也不是已分配的 Child，不能仅凭启动参数继承本 Skill 已锁定的 mode/count、已放行 Interaction Slice 或实时任务记录。Plan mode 的工具权限不授权实现，也不改变 Skill 的 Contract 与放行门禁。[Anthropic：CLI 权限模式](https://code.claude.com/docs/en/cli-reference)、[Anthropic：Plan mode](https://code.claude.com/docs/en/common-workflows)。
 
-Desktop Chat 需要工具时，云端服务优先使用已授权的**远程连接器**；本机资源可使用已核实的**桌面扩展/本地 MCP Server**，并核对具体工具的读写权限。连接器只提供数据与操作，不等于独立 Coding Session、父级可控 Agent 身份或已锁定的子代理预算。缺少必需 Coding 能力时记录缺失项，仅阻塞依赖路线或 Slice，不将 Chat/Cowork 冒充本地 Claude Code。
+### Claude Desktop 连接器与工具清单
 
-Desktop Code 本地 Session 可通过模型下拉菜单选择/核对模型、侧边栏恢复 Session，并使用共用设置中的权限规则；Desktop 不提供 CLI `--allowedTools`/`--disallowedTools` 的逐 Session 等价界面。Desktop Code 可加载 `claude_desktop_config.json` 中的本地 MCP 定义，但独立 CLI **不会**自动读取该文件；必须核实或导入预期 Server，不能假定两边的 Server 列表完全相同。这些 UI 操作也不是 Desktop Chat 中的 CLI 参数。
+Claude Desktop Session 可能暴露 Claude Code 能力、远程连接器或本地 MCP 工具；不能只凭应用名称判断具体能力。只有当前 Session 直接暴露时，才能调用 `Agent`、`SendMessage`、`/tasks`、Shell 或 Hooks。访问云端资源时调用获准的远程连接器；访问本机资源时使用获准的本地 MCP／桌面扩展工具。使用前核对已暴露工具的读写范围。连接器提供数据或操作，不等于独立 Coding Session、父级可控 Agent 身份或锁定的子代理名额。缺少必需能力时记录并阻塞依赖路线或 Slice。
 
-官方依据：[Desktop Code 标签页](https://code.claude.com/docs/en/desktop)、[Desktop 本地 MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)、[桌面与远程连接器](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors)。
+Claude Desktop 可从 `claude_desktop_config.json` 加载本地 MCP 定义；独立 CLI 不会自动读取该文件。分别检查每个 Session 暴露的 MCP 工具，不得假设 Desktop 和 CLI 的工具清单相同。不得将 CLI `--allowedTools` 或 `--disallowedTools` 参数当作 Desktop Session 的控制。[Anthropic：Desktop 本地 MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)、[Anthropic：远程连接器](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors)。
 
 ### Claude Code 指令加载
 
-Claude Code 通过 `CLAUDE.md` 加载项目指令；仓库权威规范位于 `AGENTS.md` 时，可以在获准的 `CLAUDE.md` 中用 `@AGENTS.md` 导入，而不是复制一份长期策略。通过 `/context` 查看已加载的 memory／指令文件；该界面和 `CLAUDE.md` 都不是父级实时 mode/count 记录。Desktop 远程 MCP connector 经 Anthropic 云端执行，并非从桌面本机 localhost 发起，因此须核对真实网络可达性和权限。[Anthropic：memory](https://code.claude.com/docs/en/memory)、[Anthropic：远程 MCP](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)。
+Claude Code 通过 `CLAUDE.md` 加载项目指令；仓库权威规范位于 `AGENTS.md` 时，可以在获准的 `CLAUDE.md` 中用 `@AGENTS.md` 导入，而不是复制一份长期策略。通过 `/context` 命令输出查看已加载的 memory／指令文件；该输出和 `CLAUDE.md` 都不是父级实时 mode/count 记录。Desktop 远程 MCP connector 经 Anthropic 云端执行，并非从桌面本机 localhost 发起，因此须核对真实网络可达性和权限。[Anthropic：memory](https://code.claude.com/docs/en/memory)、[Anthropic：远程 MCP](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)。
 
 ## 相关概念
 

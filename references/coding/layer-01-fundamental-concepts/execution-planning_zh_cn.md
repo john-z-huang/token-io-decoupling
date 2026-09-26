@@ -16,11 +16,11 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+在交互式 Codex CLI 或向 Agent Session 直接暴露 `/plan` 命令的环境中，调用 `/plan` 进入 Plan mode；也可以附加首次规划请求，例如 `/plan Propose a migration plan for this service`。Codex 会据此在实现前起草执行计划。Codex 正在工作时该命令不可用；若当前 Session 未暴露直接 `/plan` 控制，则使用通用有界规划流程。最终阶段大纲应保留在父级任务记录或获准计划产物中，不能以 Plan mode transcript 另立政策 owner。[OpenAI：Slash commands](https://learn.chatgpt.com/docs/developer-commands)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-Claude Code 可使用 Plan mode 在不修改仓库的情况下起草已确定方向的执行方案；应复用通用规则中的阶段与证据大纲，不把 `/plan` 的对话历史另立为政策 owner。计划完成后仍须检查 Interaction Slice 获准及工具权限，才能编辑文件。`/tasks` 显示运行中／后台 Agent 工作，不是持久计划数据库，不能代替阶段检查点。Desktop Code 的图形化计划／权限选择器只作用于对应 Code Session。[Anthropic：工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：后台 Agent](https://code.claude.com/docs/en/sub-agents)、[Anthropic：Desktop 模式选择器](https://code.claude.com/docs/en/desktop)。
+已运行的 Claude Code Session 只有在同一 Session 直接暴露且授权 Plan-mode 控制时，才使用该模式草拟只读阶段计划；仅在启动时生效的参数及 Session 身份边界由[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)负责。否则使用通用有界规划流程。阶段与证据大纲应保留在获准计划产物或父级任务记录中，不能以 Plan-mode 对话历史另立政策 owner。编辑文件前仍须确认 Interaction Slice 已放行且工具权限实际生效。`/tasks` 报告运行中／后台 Agent 工作，不是持久计划记录，不能代替阶段检查点。[Anthropic：工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：后台 Agent](https://code.claude.com/docs/en/sub-agents)。
 
 ## 相关概念
 

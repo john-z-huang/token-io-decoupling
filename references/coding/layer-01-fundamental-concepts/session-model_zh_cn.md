@@ -29,15 +29,19 @@ Session 隔离与 Git worktree 隔离不同。工作区和文件系统隔离条�
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-已分配的 Codex 子代理使用独立子 Session 和任务界面。只报告运行环境实际暴露的隔离能力。
+已分配的 Codex 子代理使用独立子 Session。只有运行时元数据或直接暴露的子代理／线程工具能够证明该关系；只报告这些来源明确显示的隔离能力。
+
+### Desktop Session 与子代理身份
+
+在 ChatGPT Desktop 中，只有当前 Session 暴露的工具报告明确父子关系时，才将 spawned Codex thread 记为 Child。通过工具创建或转移另一个 Session／worktree 本身不能建立子代理身份；Codex 管理的 worktree 可能是 detached HEAD 且可清理。只有暴露的工具报告相关关系时，Chat 或 Work Session 才能算作 Codex Child。[OpenAI：子代理线程](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 行为](https://learn.chatgpt.com/docs/environments/git-worktrees)、[OpenAI：Desktop 模式](https://learn.chatgpt.com/docs/use-chatgpt)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-Claude Code 子代理在父会话中拥有独立上下文，没有完全相同的 Codex 独立任务界面。把它视为已分配的子级上下文，只向父级返回，并准确报告实际隔离和验证独立性。不得以 agent team 或 peer channel 替代。父级记录和结果已提供所需证据时，不必为 Codex 专有界面便利功能寻找 Claude Code 对应项。
+Claude Code 子代理在父会话中拥有独立上下文。将其视为已分配的子级上下文，只向父级返回，并准确报告实际隔离和验证独立性。不得以 agent team 或 peer channel 替代。
 
 Claude Code 子代理的 `Agent` 调用及返回 ID 标识父 Session 内的一个子代理上下文；内置 Explore 和 Plan 属于一次性 Agent，不返回可恢复 ID。后续可能需要获准 follow-up 时，保留父级身份与返回的 ID。`/resume` 恢复的是 Claude Code 会话，不是任意一次性子代理。[Anthropic：子代理上下文与恢复](https://code.claude.com/docs/en/sub-agents)。
 
-Claude Desktop 的 **Code 标签页**可将不同的本地 Session 隔离到各自 Git worktree；这些是独立桌面 Session，不能默认为当前 `Agent` 调用所分配的 Child。普通 Desktop Chat 没有文档证明具备等价的 Code 标签页 worktree Session 控制。没有经核验的父级可控 Agent 身份时，不得把独立面板或 worktree 算作锁定数量内的子代理。[Anthropic：Desktop Session](https://code.claude.com/docs/en/desktop)。
+Claude Desktop 只有在当前 Session 直接暴露内建 `Agent` 或 `SendMessage` 工具时才能调用。单独识别出的 Session、连接器工具调用或 worktree 不属于已分配的 Child，除非父级控制的工具结果明确报告这一身份关系。[Anthropic：子代理上下文与生命周期](https://code.claude.com/docs/en/sub-agents)、[Anthropic：Desktop MCP 工具](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)。
 
 ## 相关概念
 

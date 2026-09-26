@@ -29,11 +29,11 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Codex 暴露 `/plan` 或 Plan permission mode 时，可用于实质写入前的有界调查及 Decision Brief 草拟。`/review` 能在不修改工作树的情况下检查既有 diff，为重要的修复决策提供依据。生成计划或得到 review 结果都不等于本 Skill 的 Contract／实施 Slice 已放行；新开的独立 review chat 也不自动计为已分配验证 Child。[OpenAI：CLI plan 与 review 命令](https://learn.chatgpt.com/docs/developer-commands)、[OpenAI：review 行为](https://learn.chatgpt.com/docs/code-review)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-Claude Code 的实质性决策阶段，如果运行环境暴露 Plan mode（通过 `/plan` 或 Desktop Code 标签页的模式选择器），可以用它在调查和拟定方案期间保持只读。这是**工具权限模式**，并非 Semantic Contract、获准修改、用户确认或父级 Slice Release 已通过的证据。不能因为生成了 Plan 就退出 Plan mode 并直接写文件；必须先经过通用 Decision Brief 与当前路线的放行边界。普通 Desktop Chat 不继承 Code 标签页的执行控制。[Anthropic：常见工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：权限](https://code.claude.com/docs/en/permissions)、[Anthropic：Desktop Code](https://code.claude.com/docs/en/desktop)。
+Claude Code 的实质性决策阶段，当前 Session 已获授权的 Plan mode 可以辅助只读调查和草拟 Decision Brief；该模式的启用方法与 Session 边界由[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)负责。Plan mode 只是**工具权限模式**，并非 Semantic Contract、获准修改、用户确认或父级 Slice Release 已通过的证据。即使计划获批，编辑前仍须满足通用 Decision Brief 和当前路线的放行边界。若当前 Session 未暴露已获授权的 Plan-mode 控制，则使用通用有界决策流程。[Anthropic：常见工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：权限](https://code.claude.com/docs/en/permissions)。
 
 ## 相关概念
 

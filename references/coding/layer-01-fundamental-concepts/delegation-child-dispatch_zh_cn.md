@@ -18,6 +18,10 @@
 
 Codex 自定义 Agent 可通过 `developer_instructions` 保存职责专属指令；父级仍必须通过实际子任务调用发送已放行目标、具名来源、范围和返回条件。`AGENTS.md` 可提供仓库指令，却不能代替这份任务专属 bundle。若已配置 Codex Hooks，`SubagentStart` 可以添加少量上下文，但不能阻止创建，也不得默默扩大获准 Slice。[OpenAI：子代理 profile](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：SubagentStart](https://learn.chatgpt.com/docs/hooks)。
 
+### 可观察的派发与创建前守卫
+
+交互式 Codex CLI 可用 `/agent` 查看所选 Agent 线程。ChatGPT Desktop 只有在当前 Session 直接暴露线程／结果工具时，才能通过该工具读取子代理工作与返回摘要；否则将此能力记录为不可用。实际 spawn 前，父级回合应保留简短任务指令，并将目标、获准路径、来源指针、显式 `write_content_memo` 与返回条件写入 Child 的真实任务提示。若已经审查并启用的 `PreToolUse` Hook 匹配 `spawn_agent`／`Agent`，可拒绝缺少已放行 Slice 的调用；`SubagentStart` 太晚，不能否决创建。应检查 Hook 的信任与覆盖情况，不得声称该守卫默认存在。[OpenAI：子代理工具与线程](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：Hooks 工具覆盖](https://learn.chatgpt.com/docs/hooks)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 ### 派发前工具门禁

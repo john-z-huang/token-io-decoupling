@@ -16,6 +16,10 @@
 
 对于 Codex 自定义子代理，获准的 `.codex/agents/<name>.toml` 可设置 `name`、`description`、`developer_instructions`、`model`、`model_reasoning_effort`、`sandbox_mode` 和 `mcp_servers`。经父级控制的创建操作放行前，核验继承后实际生效的模型、effort 和 sandbox。注册 profile 不是创建或分配新子代理；宿主全局并发上限不等于本次会话锁定数量。Claude 的 `.claude/agents/*.md` frontmatter 不能作为 Codex 配置格式。[OpenAI：自定义子代理](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
 
+### 原生子代理 Profile 与继承权限
+
+当前本地 Codex 暴露内置 `default`、`worker` 和 `explorer` profile；获准的 `.codex/agents/` 或 `~/.codex/agents/` 自定义 profile 可以细化已放行职责。创建 Child 前核验 `agents.enabled` 与实际 spawn 能力。按官方规则解析自定义文件、显式 spawn、`[agents]` 默认值和父级模型／effort，并检查继承的 `sandbox_mode`／`mcp_servers`／`skills.config`。父级实时 `/permissions` 或 CLI sandbox 覆盖可能被重新应用到子代理；不能把 TOML 中的只读默认值当成已强制生效的证明。宿主的 `agents.max_concurrent_threads_per_session` 限制的是**同时打开的线程数**，不是会话已锁定的 Child 总数。[OpenAI：子代理 Profile、优先级与权限](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 本地 Claude Code 在数量和 allocation 放行后使用内建 `Agent` 工具，显式指定 `subagent_type`（`general-purpose` 或已命名自定义子代理）、合规模型、有界任务提示和返回条件。模型与 effort 绑定遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)；可用时在 `/tasks` 核验实际模型，因为被禁模型可能回退到继承模型。内建 Explore/Plan Agent 不返回可复用 Agent ID，不得作为持久子代理。
@@ -26,9 +30,9 @@
 
 同一获准职责需要跨 Slice 复用时，优先使用经过审查的项目级或个人级 `.claude/agents/`、`~/.claude/agents/` 自定义 Agent；使用 `name`/`description` 表达选择条件，以显式 `tools`/`disallowedTools` 与 `maxTurns` 限制工具和执行轮次。从 Worker 允许的工具中排除 `Agent`（或显式禁止），并排除 peer messaging；当前 Claude Code 的子代理在未限制时可能继续创建嵌套 Agent。仅使用 `skills` 预加载该职责必需的参考内容，不预加载整个 Skill 或无关概念。插件自带 Agent 的 `hooks`、`mcpServers` 和 `permissionMode` frontmatter 会被忽略；需要这些控制时使用获准的项目/个人 Agent 或 Session 设置。
 
-实际 `Agent` 调用仍须等待已放行的具体 Slice 和未绑定的预留名额。`SubagentStart` Hook 可以注入上下文，**不能阻止创建**，不可替代创建前门禁。Claude Desktop **Code** 的本地 Session 在实际暴露能力时可复用这些 Claude Code 控制；普通 Desktop Chat 不提供等价的子代理创建工具。以 Runtime owner 核实 `Agent` 能力和实际模型，不得仅凭桌面应用名称推断。
+实际 `Agent` 调用仍须等待已放行的具体 Slice 和未绑定的预留名额。`SubagentStart` Hook 可以注入上下文，**不能阻止创建**，不可替代创建前门禁。Claude Desktop 只有在当前 Session 直接暴露并授权内建 `Agent` 工具时才能调用；否则将其记录为不可用并阻塞依赖的 Slice。通过 Runtime owner 核实实际模型，不得仅凭应用身份推断工具是否可用。
 
-官方依据：[自定义子代理与 frontmatter](https://code.claude.com/docs/en/sub-agents)、[SubagentStart Hook](https://code.claude.com/docs/en/hooks)、[Desktop Code 标签页](https://code.claude.com/docs/en/desktop)。
+官方依据：[自定义子代理与 frontmatter](https://code.claude.com/docs/en/sub-agents)、[SubagentStart Hook](https://code.claude.com/docs/en/hooks)。
 
 已审查的项目／用户自定义 subagent 若支持 `background` 和 `isolation: worktree`，两者仅控制**已经获准名额**的执行方式。后台子代理的交互式权限／工具可能受限：已放行任务需要这些能力时，应使用可用的前台调用，不可默默省略要求。Worktree 隔离的是仓库副本，不是父级 Context 根目录中的逐 Worker 路径权限。[Anthropic：subagents](https://code.claude.com/docs/en/sub-agents)。
 

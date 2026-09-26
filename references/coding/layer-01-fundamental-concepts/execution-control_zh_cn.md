@@ -29,15 +29,43 @@ Slice 是控制单元，不是逐命令脚本。只要 Contract 和边界未变�
 
 可用且已启用时，Codex `PreToolUse` 可在受支持的 `Bash`、编辑或 MCP 调用执行前拒绝操作；`PostToolUse` 只能在调用**结束后**观察。Codex 的 plan／只读及其他权限模式属于工具控制，不等于本 Skill 的 `Continue` 决策。Hook 覆盖并非完整，不能把它作为文件系统或语义授权边界的唯一证明。[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)。
 
+### 原生审批与聚焦审查
+
+依赖非托管 Codex Hook 前，先检查并信任其确切定义；若当前 CLI Session 暴露了 `/hooks`，用它审查或信任已配置的 Hook。`PreToolUse` 命令 Hook 通过向 stdout 写入以下 JSON，拒绝受支持的本地调用：
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "说明拒绝该操作的原因。"
+  }
+}
+```
+
+对该事件，`continue: false` 不受支持，Hook 报错后工具调用仍会继续；`PostToolUse` 在副作用发生后运行，不能追认授权。阶段边界时，Agent 必须通过获准的只读 diff 工具检查真实工作树 diff；若 Codex CLI Session 暴露 `/diff`，则调用该命令。`/diff` 包含已暂存、未暂存和未跟踪的改动。父级仍须按通用规则作出语义上的 `Continue`／`Amend`／`Stop` 决策。[OpenAI：PreToolUse 输出契约](https://learn.chatgpt.com/docs/hooks)、[OpenAI：Code review](https://learn.chatgpt.com/docs/code-review)、[OpenAI：CLI diff](https://learn.chatgpt.com/docs/developer-commands)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 ### 工具边界守卫与语义 Control 的区分
 
-已获准的 Claude Code `PreToolUse` Hook 可以拒绝某项具体 `Bash`、`Write`、`Edit` 或具有外部影响的 MCP 操作，防止其越过可机器校验的已放行路径/权限边界。`Stop` Hook 可以在当前 Agent 结束前请求最终证据检查。这些都只是**守卫**，不是 `Continue`、`Amend`、`Stop` 的替代决策权：父级仍须消费 Progress Signal，并按通用规则批准每个新 Slice。Hook 的退出/deny 信号、Desktop 可视化审查或 MCP 连接器不得暗中扩大 Contract 或子代理预算。不得声称 Desktop Chat/Cowork 具备这些原生 Hooks。
+获准的 Claude Code `PreToolUse` Hook 在工具参数生成后、调用执行前运行。它从 stdin 接收含有 `tool_name`、`tool_input` 和 `tool_use_id` 的 JSON；Hook 组的 `matcher` 用于筛选 `tool_name`。要拒绝调用，向 stdout 写入以下 JSON：
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "说明拒绝该操作的原因。"
+  }
+}
+```
+
+以退出码 0 且不输出内容结束，会继续正常权限流程，并不代表批准调用。`Stop` Hook 可以在当前 Agent 结束前请求最终证据检查。这些都只是**守卫**，不是 `Continue`、`Amend`、`Stop` 的替代决策权：父级仍须消费 Progress Signal，并按通用规则批准每个新 Slice。Hook 决策或 MCP 连接器不得暗中扩大 Contract 或子代理预算。仅在当前 Claude Code 运行环境实际暴露且获准时，才能使用原生 Hooks。
 
 官方依据：[Claude Code Hooks 与决策](https://code.claude.com/docs/en/hooks)。
 
-Claude Code 的 `PostToolUse` 在操作后提供观察结果，不能倒过来授权已经执行的操作。Desktop Code 的 permission-mode selector 管理工具审批，不是本 Skill 的 Contract／Control 决策。[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)、[Anthropic：Desktop Code](https://code.claude.com/docs/en/desktop)。
+Claude Code 的 `PostToolUse` 在操作后提供观察结果，不能倒过来授权已经执行的操作。[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)。
 
 ## 相关概念
 
