@@ -8,7 +8,7 @@
 
 ### Ownership
 
-根父级负责一份会话级模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，不通过编辑 policy 文件保存。存在父级控制的任务面板时使用该面板；否则在父级会话中维护可在每次路线放行前读回的显式结构化记录。不得将短暂的子代理状态界面当作规范记录。
+根父级负责一份会话级模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，不通过编辑 policy 文件保存。在父级上下文中维护可于每次路线放行前读回的显式结构化记录。短暂的子代理状态结果不能作为规范记录。
 
 ### 记录结构
 
@@ -42,13 +42,13 @@ Role Allocation 阶段分配 allocation 的职责。具体 `slice_status: releas
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-Codex 中，`AGENTS.md` 是指令来源，不是可写的实时 mode/count 记录；仅在已配置且受支持时，`SessionStart`、`SubagentStart` 等 Hook 才可补充获准上下文。即使任务界面或 Hook 显示某 Agent 运行中，仍要在路线放行前读回父级规范记录、已分配身份及 epoch。[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)、[OpenAI：AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)。
+Codex 中，`AGENTS.md` 是指令来源，不是可写的实时 mode/count 记录；仅在已配置且受支持时，`SessionStart`、`SubagentStart` 等 Hook 才可补充获准上下文。路线放行前须读回父级规范记录、已分配身份及 epoch；运行时状态和 Hook 事件都不是规范记录。[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)、[OpenAI：AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)。
 
-Codex 的 `/agent` 与 `/status` 只有暴露给当前 Agent Session 时才可提供运行时观察；Desktop 子代理面板属于面向用户的 GUI，不得通过 Computer Use 读取或操作；`AGENTS.md`、可选本地 memories 和 `/compact` 则分别用于项目指令、回忆与会话压缩，都不是实时 mode/count/allocation/epoch 权威记录。CLI resume、compact 或 Desktop chat handoff 后，放行新路线前必须读回父级保留的状态记录。可信且实际启用的 `SessionStart` Hook 在 `compact` 时可以提供获准上下文，但不能重新锁定数量。[OpenAI：子代理](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)、[OpenAI：memories](https://learn.chatgpt.com/docs/customization/memories)、[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)。
+Codex 的 `/agent` 与 `/status` 只有暴露给当前 Agent Session 时才可提供运行时观察；`AGENTS.md`、可选本地 memories 和 `/compact` 分别用于项目指令、回忆与会话压缩，都不是实时 mode/count/allocation/epoch 权威记录。Session 恢复、compact 或通过工具转移线程后，放行新路线前必须读回父级保留的状态记录。可信且实际启用的 `SessionStart` Hook 在 `compact` 时可以提供获准上下文，但不能重新锁定数量。[OpenAI：子代理](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)、[OpenAI：memories](https://learn.chatgpt.com/docs/customization/memories)、[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-Claude Code 没有与 Codex 父级任务面板相同的持久能力。在父级会话中维护结构化模式、数量和切片记录，每次路线放行前读回。`/tasks` 只是短暂的子代理状态界面，不是规范记录。
+在父级会话中维护结构化模式、数量和切片记录，每次路线放行前读回。`/tasks` 输出只是短暂的子代理状态信号，不是规范记录。
 
 Claude Code 的 `/tasks` 显示当前／后台子代理任务状态，`/context` 查看已加载的指令／memory 文件。它们都不是规范的 mode/count/allocation 记录；`CLAUDE.md` 与 auto memory 是**指令或学习上下文**，不能作为重写实时任务记录的位置。父会话在 compaction 或重新启动后恢复时，必须先读回保留的任务记录，核验锁定门禁与当前 epoch，再放行新 Slice。已配置的 `SessionStart` Hook 可以提供获准的初始上下文，但仅凭 Hook 输出不得创建 allocation 或覆盖已锁定数量。[Anthropic：memory](https://code.claude.com/docs/en/memory)、[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)、[Anthropic：子代理状态](https://code.claude.com/docs/en/sub-agents)。
 

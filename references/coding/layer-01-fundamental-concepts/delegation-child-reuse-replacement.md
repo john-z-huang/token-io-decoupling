@@ -18,7 +18,7 @@ A plan-level revision is allowed for an `agent: unbound` reserved allocation aft
 
 ### Reuse the allocated Codex thread
 
-When the host exposes parent-controlled steering or an actual follow-up to a recorded Codex child thread, address that same identity for its authorized repair or next epoch. A Session-exposed `/agent` or direct child-thread lookup can **locate** the recorded identity; the Desktop subagent panel is human-facing UI, not an Agent lookup tool. Opening a separate Codex chat/worktree does not create continuity with the allocated child. Requesting a fresh subagent creates a distinct identity and must not be disguised as reuse after count locking. If the original thread cannot be steered or continued, keep its evidence and block the dependent Multi-Agent slice; do not infer a cross-session resume capability from a sidebar. [OpenAI: subagent orchestration and thread controls](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: worktree chats](https://learn.chatgpt.com/docs/environments/git-worktrees).
+When the host exposes parent-controlled steering or an actual follow-up to a recorded Codex child thread, address that same identity for its authorized repair or next epoch. A Session-exposed `/agent` or direct child-thread tool can locate the recorded identity. A distinct Session or worktree returned by an exposed tool does not establish continuity with the allocated child. Requesting a fresh subagent creates a distinct identity and must not be disguised as reuse after count locking. If the original thread cannot be steered or continued through an exposed tool, keep its evidence and block the dependent Multi-Agent slice. [OpenAI: subagent orchestration and thread controls](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: worktree behavior](https://learn.chatgpt.com/docs/environments/git-worktrees).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
@@ -26,11 +26,11 @@ Use `SendMessage` with the returned Agent ID for an authorized follow-up or repa
 
 ### Resume identity, do not respawn
 
-Resume an authorized persistent `general-purpose` or custom subagent with `SendMessage` addressed to its returned `agent_id` (or the supported agent name) and a narrow repair/follow-up prompt. A fresh `Agent` invocation creates a distinct instance even if its type and prompt match; never use it as a hidden replacement under the locked budget. Built-in `Explore` and `Plan` are one-shot and return no resumable ID; do not assign them to a slot that requires later follow-up. If resume fails, preserve the error and block dependent work rather than trying another child. Claude Desktop Chat connector invocations or side chats are not a substitute for this persistent identity.
+Resume an authorized persistent `general-purpose` or custom subagent with `SendMessage` addressed to its returned `agent_id` (or the supported agent name) and a narrow repair/follow-up prompt. A fresh `Agent` invocation creates a distinct instance even if its type and prompt match; never use it as a hidden replacement under the locked budget. Built-in `Explore` and `Plan` are one-shot and return no resumable ID; do not assign them to a slot that requires later follow-up. If resume fails, preserve the error and block dependent work rather than trying another child. A Claude Desktop connector tool call is not a substitute for `SendMessage` to the recorded Agent identity unless its result explicitly provides that parent-controlled relation.
 
 Official reference: [resume subagents](https://code.claude.com/docs/en/sub-agents).
 
-An agent-team message, `/branch`, or a separate Desktop pane cannot substitute for resuming the recorded Agent identity. If the original child ID is no longer resumable, keep its evidence and block the dependent slice; do not spend an unapproved replacement slot. [Anthropic: subagent resume](https://code.claude.com/docs/en/sub-agents).
+An agent-team message or `/branch` cannot substitute for resuming the recorded Agent identity. If the original child ID is no longer resumable, keep its evidence and block the dependent slice; do not spend an unapproved replacement slot. [Anthropic: subagent resume](https://code.claude.com/docs/en/sub-agents).
 
 ## Related concepts
 

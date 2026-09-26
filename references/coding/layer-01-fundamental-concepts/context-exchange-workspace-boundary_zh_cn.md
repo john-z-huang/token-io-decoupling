@@ -29,7 +29,7 @@
 
 ### Codex 管理的 Worktree 与强制路径边界
 
-用户授权额外 checkout 时，只有当前 Session 实际暴露的 Git／worktree 工具才能由 Agent 创建。Desktop Codex 的 `Worktree`、`Handoff` 属于面向用户的产品控件：Agent 不得点击或自动化，也不得假定相同的 worktree 创建／chat 转移能力已暴露为工具。管理的 worktree 可能使用 detached HEAD，且后续可能被清理；它**不是** Child Agent 名额，不能保证父级 `CONTEXT_ROOT` 可达，也不是操作系统级 RW/RO/DENY 隔离。建立 checkout 后核验真实路径，再分别通过可用的操作系统／文件系统／容器控制以及可信且启用时已测试的 `PreToolUse` 防护限制 Worker 写入。Hooks 不能覆盖所有专用路径，也不能撤回已经执行的命令；必须隔离而无法强制时阻塞 Slice。[OpenAI：worktree 行为](https://learn.chatgpt.com/docs/environments/git-worktrees)、[OpenAI：Hooks 覆盖](https://learn.chatgpt.com/docs/hooks)。
+用户授权额外 checkout 时，只能通过当前 Session 直接暴露的 Git／worktree 工具创建。管理型 worktree 可能使用 detached HEAD，且后续可能被清理；它**不是** Child Agent 名额，不能保证父级 `CONTEXT_ROOT` 可达，也不是操作系统级 RW/RO/DENY 隔离。建立 checkout 后核验真实路径，再分别通过可用的操作系统／文件系统／容器控制以及可信且启用时已测试的 `PreToolUse` 防护限制 Worker 写入。Hooks 不能覆盖所有专用路径，也不能撤回已经执行的命令；必须隔离而无法强制时阻塞 Slice。[OpenAI：worktree 行为](https://learn.chatgpt.com/docs/environments/git-worktrees)、[OpenAI：Hooks 覆盖](https://learn.chatgpt.com/docs/hooks)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
@@ -41,7 +41,7 @@
 
 官方依据：[子代理 Worktree 隔离](https://code.claude.com/docs/en/sub-agents)、[PreToolUse 覆盖和限制](https://code.claude.com/docs/en/hooks)。
 
-获准且可用时，组合 Claude Code 的 `permissions.deny` 与确定性的 `PreToolUse`，覆盖**所有实际可写工具路径**，包括 Shell 间接写入与 MCP 文件系统工具；依赖前必须测试一次真正被拒绝的跨 Worker 写入。`PostToolUse` 太晚，不能阻止已执行操作；`SubagentStart` 不能否决创建。本地 Desktop Extension 拥有自己的操作系统／文件权限，不能凭已安装就断言符合 Worker 的 RW/RO/DENY。[Anthropic：权限](https://code.claude.com/docs/en/permissions)、[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)、[Anthropic：本地 MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)。
+获准且可用时，组合 Claude Code 的 `permissions.deny` 与确定性的 `PreToolUse`，覆盖**所有实际可写工具路径**，包括 Shell 间接写入与 MCP 文件系统工具；依赖前必须测试一次真正被拒绝的跨 Worker 写入。`PostToolUse` 太晚，不能阻止已执行操作；`SubagentStart` 不能否决创建。Claude Desktop 中暴露的本地 MCP 工具拥有自己的操作系统／文件权限，不能凭工具可用就断言符合 Worker 的 RW/RO/DENY。[Anthropic：权限](https://code.claude.com/docs/en/permissions)、[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)、[Anthropic：本地 MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)。
 
 ## 相关概念
 

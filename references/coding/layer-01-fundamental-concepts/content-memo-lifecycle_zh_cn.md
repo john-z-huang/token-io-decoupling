@@ -24,7 +24,7 @@
 
 ### 压缩与退出时的 Memo 检查点
 
-本地 Claude Code 已配置 Hooks 且 `write_content_memo: true` 时，可选 `PreCompact` Hook 可在压缩**之前**识别压缩事件并检查现有、获准的 Memo/索引是否最新；不可假定该 Hook 能提醒 Agent 生成新状态；`SubagentStop` 可以把末条回复提供给父级以核对 Memo/索引。这些事件信号本身不会自动写出正确 Memo，把整个 transcript 复制进去也违反 Memo 内容契约。无论是否装有 Hook，均须在普通实质性里程碑维护 Memo，并在 Worker Index 保留准确具名路径；Memo 明确关闭时不得执行该 Hook 工作流。Hooks 的脚本必须在实际 Claude Code Session 中可用且获信任；不得推断 Desktop Chat/Cowork 会运行它们。
+Claude Code 已配置 Hooks 且 `write_content_memo: true` 时，可选 `PreCompact` Hook 可在压缩**之前**识别压缩事件并检查现有、获准的 Memo/索引是否最新；不可假定该 Hook 能提醒 Agent 生成新状态；`SubagentStop` 可以把末条回复提供给父级以核对 Memo/索引。这些事件信号本身不会自动写出正确 Memo，把整个 transcript 复制进去也违反 Memo 内容契约。无论是否装有 Hook，均须在普通实质性里程碑维护 Memo，并在 Worker Index 保留准确具名路径；Memo 明确关闭时不得执行该 Hook 工作流。Hooks 的脚本必须在当前 Session 中可用且获信任；Desktop 连接器工具不代表该 Session 支持 Hooks。
 
 官方依据：[PreCompact 与 SubagentStop Hooks](https://code.claude.com/docs/en/hooks)。
 

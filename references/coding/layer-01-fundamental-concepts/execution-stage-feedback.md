@@ -20,7 +20,7 @@ When stage evidence shows that the next stage depends on high-value judgment, ro
 
 A configured Codex `PostToolUse` or `SubagentStop` hook can supply observed tool or child results for the parent's compressed Progress Signal, while `PreCompact` can mark a pending context-loss boundary. These optional events never prove semantic acceptance and must not trigger a full tool-log or transcript dump. [OpenAI: tool and lifecycle hooks](https://learn.chatgpt.com/docs/hooks).
 
-An exposed Codex `/diff`, file/diff tool, `/agent`, or child-result tool can locate changed files, lines, and the producing Worker at a stage boundary. The Desktop Codex review pane is human-facing UI; it may be described as product context, but the Agent must not inspect or operate it through Computer Use. Return a compact Progress Signal with changed paths, actual checks, blocker and source pointers, not screenshots of the whole chat or complete tool transcripts. When available, `/review` produces independent **review findings of a diff**, but only a truly separate authorized verifier context can satisfy any required independent-agent verification. [OpenAI: diff and review](https://learn.chatgpt.com/docs/code-review), [OpenAI: CLI commands](https://learn.chatgpt.com/docs/developer-commands), [OpenAI: subagent threads](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+An exposed Codex `/diff`, file/diff tool, `/agent`, or child-result tool can locate changed files, lines, and the producing Worker at a stage boundary. Return a compact Progress Signal with changed paths, actual checks, blocker and source pointers. When available, `/review` produces **review findings of a diff**, but only a truly separate authorized verifier context can satisfy any required independent-agent verification. [OpenAI: diff and review](https://learn.chatgpt.com/docs/code-review), [OpenAI: CLI commands](https://learn.chatgpt.com/docs/developer-commands), [OpenAI: subagent threads](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
@@ -30,7 +30,7 @@ For a persistent Claude Code child, `SubagentStop` exposes `last_assistant_messa
 
 Official reference: [SubagentStop and PostToolUseFailure event data](https://code.claude.com/docs/en/hooks).
 
-A configured `PostToolUse` can provide actual tool outcomes at a stage boundary but cannot replace the compressed Progress Signal. Desktop Code diff review is evidence of changed lines, not proof of tests or independent verification. [Anthropic: hooks](https://code.claude.com/docs/en/hooks), [Anthropic: Desktop diff review](https://code.claude.com/docs/en/desktop).
+A configured `PostToolUse` can provide actual tool outcomes at a stage boundary but cannot replace the compressed Progress Signal. A diff tool result is evidence of changed lines, not proof of tests or independent verification. [Anthropic: hooks](https://code.claude.com/docs/en/hooks).
 
 ## Related concepts
 

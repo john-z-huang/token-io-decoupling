@@ -18,7 +18,7 @@
 
 ### 复用已分配的 Codex 线程
 
-宿主提供父级可控的 steering 或能够向已记录 Codex 子线程 follow-up 时，必须对**同一身份**发起获准的修复或后续 epoch。当前 Session 暴露的 `/agent` 或直接子线程检索工具可**定位**已记录身份；Desktop 子代理面板只是面向用户的 GUI，不是 Agent 查找工具。打开额外 Codex chat／worktree 也不会建立与已分配 Child 的身份连续性。请求新的 subagent 会产生不同身份，在数量锁定后不得伪装为复用。原线程不可继续或 steering 失败时，保留证据并阻塞依赖 Multi-Agent Slice；不能由侧边栏存在推断具备跨会话恢复能力。[OpenAI：子代理编排与线程控制](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 对话](https://learn.chatgpt.com/docs/environments/git-worktrees)。
+宿主提供父级可控的 steering 或能够向已记录 Codex 子线程 follow-up 时，必须对**同一身份**发起获准的修复或后续 epoch。当前 Session 暴露的 `/agent` 或直接子线程工具可定位已记录身份。通过暴露工具返回的不同 Session 或 worktree 不足以证明与已分配 Child 身份连续。请求新的 subagent 会产生不同身份，在数量锁定后不得伪装为复用。原线程无法通过暴露工具继续或 steering 失败时，保留证据并阻塞依赖 Multi-Agent Slice。[OpenAI：子代理编排与线程控制](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 行为](https://learn.chatgpt.com/docs/environments/git-worktrees)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
@@ -26,11 +26,11 @@
 
 ### 恢复同一身份，不重新创建
 
-获准的持久 `general-purpose` 或自定义子代理，应通过 `SendMessage` 指定返回的 `agent_id`（或运行时支持的 Agent 名称），发送范围明确的修复/follow-up 指令。新的 `Agent` 调用即使类型与提示词相同，也会产生不同实例；数量锁定后不得暗中用它替换原子代理。内置 `Explore` 和 `Plan` 是一次性 Agent，不返回可恢复 ID，不得用于需要后续 follow-up 的名额。恢复失败时保留错误并阻塞依赖工作，不再尝试创建另一子代理。Claude Desktop Chat 的连接器调用或 side chat 不能代替这一持久身份。
+获准的持久 `general-purpose` 或自定义子代理，应通过 `SendMessage` 指定返回的 `agent_id`（或运行时支持的 Agent 名称），发送范围明确的修复/follow-up 指令。新的 `Agent` 调用即使类型与提示词相同，也会产生不同实例；数量锁定后不得暗中用它替换原子代理。内置 `Explore` 和 `Plan` 是一次性 Agent，不返回可恢复 ID，不得用于需要后续 follow-up 的名额。恢复失败时保留错误并阻塞依赖工作，不再尝试创建另一子代理。除非 Claude Desktop 连接器工具结果明确返回父级控制的该身份关系，否则连接器调用不能代替向已记录 Agent 身份发送 `SendMessage`。
 
 官方依据：[恢复子代理](https://code.claude.com/docs/en/sub-agents)。
 
-Agent team 消息、`/branch` 或独立的 Desktop 面板都不能替代恢复已记录的 Agent 身份。原子代理 ID 不可继续时，保留其证据并阻塞依赖 Slice，不得消耗未经批准的替代名额。[Anthropic：子代理恢复](https://code.claude.com/docs/en/sub-agents)。
+Agent team 消息或 `/branch` 都不能替代恢复已记录的 Agent 身份。原子代理 ID 不可继续时，保留其证据并阻塞依赖 Slice，不得消耗未经批准的替代名额。[Anthropic：子代理恢复](https://code.claude.com/docs/en/sub-agents)。
 
 ## 相关概念
 

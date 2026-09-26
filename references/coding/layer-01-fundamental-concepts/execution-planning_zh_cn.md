@@ -16,11 +16,11 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-交互式 Codex CLI 或支持的 Desktop Codex chat 可以通过 `/plan` 将获准方向组织为简短阶段及预期证据，并在编辑前检查。最终阶段大纲应保留在父级任务记录或获准计划产物中，不能以 Plan mode transcript 另立政策 owner。Desktop local environment 的 setup scripts 与可复用 actions 只作用于所选项目／worktree；它们准备执行环境，不授权新增阶段、Agent 或文件修改。[OpenAI：Slash commands](https://learn.chatgpt.com/docs/developer-commands)、[OpenAI：本地环境](https://learn.chatgpt.com/docs/environments/local-environment)。
+在交互式 Codex CLI 或向 Agent Session 直接暴露 `/plan` 命令的环境中，调用 `/plan` 进入 Plan mode；也可以附加首次规划请求，例如 `/plan Propose a migration plan for this service`。Codex 会据此在实现前起草执行计划。Codex 正在工作时该命令不可用；若当前 Session 未暴露直接 `/plan` 控制，则使用通用有界规划流程。最终阶段大纲应保留在父级任务记录或获准计划产物中，不能以 Plan mode transcript 另立政策 owner。[OpenAI：Slash commands](https://learn.chatgpt.com/docs/developer-commands)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-Claude Code 可使用 Plan mode 在不修改仓库的情况下起草已确定方向的执行方案；应复用通用规则中的阶段与证据大纲，不把 `/plan` 的对话历史另立为政策 owner。计划完成后仍须检查 Interaction Slice 获准及工具权限，才能编辑文件。`/tasks` 显示运行中／后台 Agent 工作，不是持久计划数据库，不能代替阶段检查点。Desktop Code 的图形化计划／权限选择器是对应 Code Session 中面向用户的控件；Agent 仅能通过当前 Session 直接暴露的控制修改计划或权限，绝不得自动化 Desktop GUI。[Anthropic：工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：后台 Agent](https://code.claude.com/docs/en/sub-agents)、[Anthropic：Desktop 模式选择器](https://code.claude.com/docs/en/desktop)。
+Claude Code 可在启动时使用 `claude --permission-mode plan` 进入只读 Plan mode；交互式 CLI 中可按 `Shift+Tab` 直到 Plan mode 生效。Plan mode 会读取文件并提出方案，在获批前不会修改文件。应复用通用规则中的阶段与证据大纲，不把 `/plan` 的对话历史另立为政策 owner。计划完成后仍须检查 Interaction Slice 获准及工具权限，才能编辑文件。`/tasks` 报告运行中／后台 Agent 工作，不是持久计划记录，不能代替阶段检查点。其他 Session 只有在向 Agent 直接暴露 Plan-mode 命令或控制时才使用该模式。[Anthropic：工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：后台 Agent](https://code.claude.com/docs/en/sub-agents)。
 
 ## 相关概念
 
