@@ -15,6 +15,10 @@
 
 如果现有元数据无法区分这些分支，使用以下原问题兜底：`无法根据当前元数据确定当前运行环境。请在下一条指令中明确说明当前运行环境是“本地 Codex”“本地 Claude Code”“ChatGPT Work”还是“标准 ChatGPT”，然后继续。`
 
+### Desktop Agent 仅使用会话工具的边界
+
+ChatGPT Desktop 与 Claude Desktop 均遵循：Agent **只能执行当前 Agent Session 实际暴露且已获授权的工具**。即使提供了自动化工具，也不得通过 Computer Use、截图后点击、模拟鼠标／键盘、辅助功能自动化、窗口控制或 Shell 驱动的 GUI 自动化操作任一桌面应用。产品文档中的标签页、面板、选择器、侧边栏和按钮只是能力说明，**不是** Agent 可执行操作或授权。只有当前 Session 提供该操作的直接原生工具、命令或 API 时，Agent 才能使用该桌面能力；否则必须记录依赖能力不可用，或将图形界面操作留给用户本人。不得将未暴露的 GUI 功能冒充为 Agent 工具，也不得通过额外桌面自动化程序绕过此边界。
+
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
 - 在本地 Codex 中使用当前暴露的模型/Session 控制；修改全局指令、覆盖指令、Skill 或仓库指令后重新启动。
@@ -38,7 +42,7 @@ Codex 原生读取指令层级中的 `AGENTS.md`；不得为 Codex 创建冗余 
 
 ### Desktop 界面与宿主能力清单
 
-当前 ChatGPT Desktop 整合了 **Chat**、**Work** 和 **Codex**。声称具备本地 Codex Session 前，必须识别实际界面：Codex 视图可提供项目／worktree 对话与开发者工具；Chat 是对话界面；Work 可以运行自己的云端子代理流程，但它属于不同运行环境，不能因此视为本地 Codex Child 或具有本地 Shell。Codex quick chat 也不自动成为绑定项目的主执行 Session。移动端 Remote 的仓库与 worktree 仍位于连接的宿主，而不是手机。依据实际工具与审批检查能力，不能仅凭桌面窗口推断。[OpenAI：桌面体验](https://learn.chatgpt.com/docs/use-chatgpt)、[OpenAI：子代理可用性](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 宿主](https://learn.chatgpt.com/docs/environments/git-worktrees)。
+当前 ChatGPT Desktop 整合了 **Chat**、**Work** 和 **Codex**。声称具备本地 Codex Session 前，必须通过 Session 元数据与实际暴露的工具识别运行界面，而不是检查或操纵桌面 GUI：Codex 视图可提供项目／worktree 对话与开发者工具；Chat 是对话界面；Work 可以运行自己的云端子代理流程，但它属于不同运行环境，不能因此视为本地 Codex Child 或具有本地 Shell。Codex quick chat 也不自动成为绑定项目的主执行 Session。移动端 Remote 的仓库与 worktree 仍位于连接的宿主，而不是手机。依据实际工具与审批检查能力，不能仅凭桌面窗口推断。[OpenAI：桌面体验](https://learn.chatgpt.com/docs/use-chatgpt)、[OpenAI：子代理可用性](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 宿主](https://learn.chatgpt.com/docs/environments/git-worktrees)。
 
 ### 实际生效的本地配置
 
@@ -73,7 +77,7 @@ Claude Desktop **不是**能力完全一致的单一 Coding 运行环境。在 *
 
 Desktop Chat 需要工具时，云端服务优先使用已授权的**远程连接器**；本机资源可使用已核实的**桌面扩展/本地 MCP Server**，并核对具体工具的读写权限。连接器只提供数据与操作，不等于独立 Coding Session、父级可控 Agent 身份或已锁定的子代理预算。缺少必需 Coding 能力时记录缺失项，仅阻塞依赖路线或 Slice，不将 Chat/Cowork 冒充本地 Claude Code。
 
-Desktop Code 本地 Session 可通过模型下拉菜单选择/核对模型、侧边栏恢复 Session，并使用共用设置中的权限规则；Desktop 不提供 CLI `--allowedTools`/`--disallowedTools` 的逐 Session 等价界面。Desktop Code 可加载 `claude_desktop_config.json` 中的本地 MCP 定义，但独立 CLI **不会**自动读取该文件；必须核实或导入预期 Server，不能假定两边的 Server 列表完全相同。这些 UI 操作也不是 Desktop Chat 中的 CLI 参数。
+Desktop Code 的模型下拉菜单、侧边栏和设置均为面向用户的产品 GUI，**不是 Agent 工具**。Agent 只能通过当前 Session 实际暴露的控制获取有效模型、Session 状态和权限；不得点击或自动化这些控件，无法通过工具执行的 UI 专属变更必须标记为不可用。Desktop 不提供 CLI `--allowedTools`/`--disallowedTools` 的逐 Session 等价界面。Desktop Code 可加载 `claude_desktop_config.json` 中的本地 MCP 定义，但独立 CLI **不会**自动读取该文件；只可通过暴露且获准的工具核实或导入预期 Server，不能假定两边的 Server 列表完全相同。这些 UI 操作也不是 Desktop Chat 中的 CLI 参数。
 
 官方依据：[Desktop Code 标签页](https://code.claude.com/docs/en/desktop)、[Desktop 本地 MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)、[桌面与远程连接器](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors)。
 

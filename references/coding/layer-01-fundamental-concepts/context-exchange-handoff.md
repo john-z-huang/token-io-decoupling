@@ -16,7 +16,7 @@ Only an authorized context handoff may assign a new Context ID and directory to 
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-In Desktop Codex, `Handoff` transfers a **chat** between Local and a Codex-managed Worktree; it is not this Skill's cross-Worker context handoff and does not deliver a named capsule to another allocated Agent. For a real Worker transfer, use the parent-approved source/import paths and recorded receiving child identity. An archived chat or cleaned-up managed worktree may need its saved snapshot restored, so confirm source freshness before relying on previously exported files. [OpenAI: worktree Handoff and cleanup](https://learn.chatgpt.com/docs/environments/git-worktrees).
+In Desktop Codex, the human-facing `Handoff` control transfers a **chat** between Local and a Codex-managed Worktree; an Agent must not operate it via Computer Use and cannot assume a matching Session tool exists. This is not this Skill's cross-Worker context handoff and does not deliver a named capsule to another allocated Agent. For a real Worker transfer, use the parent-approved source/import paths and recorded receiving child identity. An archived chat or cleaned-up managed worktree may need its saved snapshot restored, so confirm source freshness before relying on previously exported files. [OpenAI: worktree Handoff and cleanup](https://learn.chatgpt.com/docs/environments/git-worktrees).
 
 ## Claude Code CLI / Claude Desktop optimizations
 

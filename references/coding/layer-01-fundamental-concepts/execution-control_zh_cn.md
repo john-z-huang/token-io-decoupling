@@ -41,7 +41,7 @@ Slice 是控制单元，不是逐命令脚本。只要 Contract 和边界未变�
 
 官方依据：[Claude Code Hooks 与决策](https://code.claude.com/docs/en/hooks)。
 
-Claude Code 的 `PostToolUse` 在操作后提供观察结果，不能倒过来授权已经执行的操作。Desktop Code 的 permission-mode selector 管理工具审批，不是本 Skill 的 Contract／Control 决策。[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)、[Anthropic：Desktop Code](https://code.claude.com/docs/en/desktop)。
+Claude Code 的 `PostToolUse` 在操作后提供观察结果，不能倒过来授权已经执行的操作。Desktop Code 的 permission-mode selector 是面向用户的 GUI 工具审批控件，不是 Agent 工具或本 Skill 的 Contract／Control 决策；Agent 不得通过 Computer Use 操作。[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)、[Anthropic：Desktop Code](https://code.claude.com/docs/en/desktop)。
 
 ## 相关概念
 

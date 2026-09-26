@@ -41,7 +41,7 @@ An authorized Claude Code `PreToolUse` Hook may deny a concrete `Bash`, `Write`,
 
 Official reference: [Claude Code Hooks and decisions](https://code.claude.com/docs/en/hooks).
 
-In Claude Code, `PostToolUse` reports observations after an action; it cannot authorize that action retroactively. In Desktop Code, the permission-mode selector manages tool approvals, not this Skill's Contract/Control decision. [Anthropic: hooks](https://code.claude.com/docs/en/hooks), [Anthropic: Desktop Code](https://code.claude.com/docs/en/desktop).
+In Claude Code, `PostToolUse` reports observations after an action; it cannot authorize that action retroactively. In Desktop Code, the permission-mode selector is human-facing GUI for tool approvals, not an Agent tool or this Skill's Contract/Control decision; an Agent must not operate it through Computer Use. [Anthropic: hooks](https://code.claude.com/docs/en/hooks), [Anthropic: Desktop Code](https://code.claude.com/docs/en/desktop).
 
 ## Related concepts
 

@@ -18,7 +18,7 @@
 
 ### 复用已分配的 Codex 线程
 
-宿主提供父级可控的 steering 或能够向已记录 Codex 子线程 follow-up 时，必须对**同一身份**发起获准的修复或后续 epoch。CLI 的 `/agent` 与 Desktop 子代理面板可用于**定位**线程；打开界面或额外 Codex chat／worktree 都不能建立与已分配 Child 的身份连续性。请求新的 subagent 会产生不同身份，在数量锁定后不得伪装为复用。原线程不可继续或 steering 失败时，保留证据并阻塞依赖 Multi-Agent Slice；不能由侧边栏存在推断具备跨会话恢复能力。[OpenAI：子代理编排与线程控制](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 对话](https://learn.chatgpt.com/docs/environments/git-worktrees)。
+宿主提供父级可控的 steering 或能够向已记录 Codex 子线程 follow-up 时，必须对**同一身份**发起获准的修复或后续 epoch。当前 Session 暴露的 `/agent` 或直接子线程检索工具可**定位**已记录身份；Desktop 子代理面板只是面向用户的 GUI，不是 Agent 查找工具。打开额外 Codex chat／worktree 也不会建立与已分配 Child 的身份连续性。请求新的 subagent 会产生不同身份，在数量锁定后不得伪装为复用。原线程不可继续或 steering 失败时，保留证据并阻塞依赖 Multi-Agent Slice；不能由侧边栏存在推断具备跨会话恢复能力。[OpenAI：子代理编排与线程控制](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 对话](https://learn.chatgpt.com/docs/environments/git-worktrees)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 

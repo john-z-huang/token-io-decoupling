@@ -21,7 +21,7 @@
 2. `## Codex CLI / ChatGPT Desktop optimizations` / `## Codex CLI / ChatGPT Desktop 特别优化指令`：仅写该概念适用的 Codex 或 ChatGPT Desktop 指令。
 3. `## Claude Code CLI / Claude Desktop optimizations` / `## Claude Code CLI / Claude Desktop 特别优化指令`：仅写该概念适用的 Claude Code 或 Claude Desktop 指令。
 
-概念子主题放在三个章节下，使用三级标题。某厂商当前没有该概念的特别优化时，仍保留章节，明确写明目前没有，并要求 Agent 遵循通用规范。三个模块后可以保留独立的 `Related concepts` / `相关概念` 导航章节。每次修改或新增 Layer-01 文档后运行 `python3 scripts/check-layer-01-sections.py`；缺少、重复、顺序错误或空白模块都不能视为完成。
+概念子主题放在三个章节下，使用三级标题。对于 ChatGPT Desktop 和 Claude Desktop，面向 Agent 的指令只能调用当前 Agent Session 实际暴露且已获授权的工具、命令或 API。即使暴露自动化工具，也绝不得指示 Agent 通过 Computer Use、GUI 截图／点击、模拟鼠标／键盘、辅助功能、窗口自动化或 Shell 驱动的 UI 脚本操作任一桌面应用。产品 UI 控件只能作为能力背景描述；仅在 GUI 中可执行的动作必须标记为 Agent 不可用，或留给用户本人。此限制由运行环境 owner 和适用厂商章节落实；不得将桌面界面导航写成 Agent 工作流指令。某厂商当前没有该概念的特别优化时，仍保留章节，明确写明目前没有，并要求 Agent 遵循通用规范。三个模块后可以保留独立的 `Related concepts` / `相关概念` 导航章节。每次修改或新增 Layer-01 文档后运行 `python3 scripts/check-layer-01-sections.py`；缺少、重复、顺序错误或空白模块都不能视为完成。
 
 ## Layer-02 与 Layer-03 厂商无关约束
 

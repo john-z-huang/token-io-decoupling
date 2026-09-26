@@ -20,7 +20,7 @@
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-Claude Code 可使用 Plan mode 在不修改仓库的情况下起草已确定方向的执行方案；应复用通用规则中的阶段与证据大纲，不把 `/plan` 的对话历史另立为政策 owner。计划完成后仍须检查 Interaction Slice 获准及工具权限，才能编辑文件。`/tasks` 显示运行中／后台 Agent 工作，不是持久计划数据库，不能代替阶段检查点。Desktop Code 的图形化计划／权限选择器只作用于对应 Code Session。[Anthropic：工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：后台 Agent](https://code.claude.com/docs/en/sub-agents)、[Anthropic：Desktop 模式选择器](https://code.claude.com/docs/en/desktop)。
+Claude Code 可使用 Plan mode 在不修改仓库的情况下起草已确定方向的执行方案；应复用通用规则中的阶段与证据大纲，不把 `/plan` 的对话历史另立为政策 owner。计划完成后仍须检查 Interaction Slice 获准及工具权限，才能编辑文件。`/tasks` 显示运行中／后台 Agent 工作，不是持久计划数据库，不能代替阶段检查点。Desktop Code 的图形化计划／权限选择器是对应 Code Session 中面向用户的控件；Agent 仅能通过当前 Session 直接暴露的控制修改计划或权限，绝不得自动化 Desktop GUI。[Anthropic：工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：后台 Agent](https://code.claude.com/docs/en/sub-agents)、[Anthropic：Desktop 模式选择器](https://code.claude.com/docs/en/desktop)。
 
 ## 相关概念
 

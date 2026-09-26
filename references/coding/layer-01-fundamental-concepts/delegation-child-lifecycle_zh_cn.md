@@ -20,7 +20,7 @@ Codex 也可通过已配置的 `SubagentStart`／`SubagentStop` Hooks 观察子�
 
 ### Codex 线程观察
 
-Codex CLI 的 `/agent` 线程界面和 Desktop Codex 子代理线程／活动面板可查看执行中工作及返回摘要，避免把完整 transcript 输入父级上下文。非当前 CLI Child 的审批请求可能出现在现有线程上方，并标明来源线程；核对其身份与操作授权后才能处理。非交互宿主不能提供新的审批时，操作会失败，父级必须记录 Slice 阻塞。`SubagentStop` Hook 只提供观察；Done 标记或空白活动面板都不能取代最终证据，也不授权清理／替换。[OpenAI：子代理线程与审批](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)。
+当前 Agent Session 暴露 `/agent` 或直接的子代理状态／结果工具时，才通过该工具获取执行中工作和返回摘要，避免把完整 transcript 输入父级上下文。Desktop Codex 线程／活动面板属于面向用户的 GUI；不得通过 Computer Use 读取，也不能在没有会话工具时声称 Agent 可访问。非当前 CLI Child 的审批请求可能出现在现有线程上方，并标明来源线程；核对其身份与操作授权后才能处理。非交互宿主不能提供新的审批时，操作会失败，父级必须记录 Slice 阻塞。`SubagentStop` Hook 只提供观察；Done 标记或空白活动面板都不能取代最终证据，也不授权清理／替换。[OpenAI：子代理线程与审批](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
