@@ -20,7 +20,7 @@
 
 ## 本路线的运行环境要求
 
-使用[运行环境能力清单](../layer-02-workflow-concepts/environment-capability-inventory_zh_cn.md)提供的能力清单和共用运行规则。只有任务记录和已发布切片所需能力均暴露时才能继续。Worker 只能向直接父级返回，不能创建/管理其他 Agent 或联系任意线程。下列 profile binding 仅适用于 Local Codex 分支。它们是本路线职责分配所需的能力要求，不是对 ChatGPT Work 或 Standard ChatGPT 的默认可用性假设：Primary Output 为 `gpt-6-luna`/`medium`；Change Verification 为 `gpt-6-luna`/`medium`；Documentation/Git 为 `gpt-6-luna`/`medium`；Context Bootstrap/Refresh 为 `gpt-6-luna`/`medium`，确定性刷新可用 `low`。Local Codex 能力清单必须核验每个已分配 binding 暴露的 model identity 和 reasoning parameter。任何必需 binding 缺失或未知，都必须记录到 `unavailable_capabilities`，并阻塞依赖的切片/路线。不得静默替换 model、reasoning effort、Session、工具、权限或 mode/count；选择其他路线必须重新进入适用门禁并取得新的明确确认。只有具体复杂性或重复失败/阻塞证据足以支持时，才将受影响切片局部提高至 `high`，随后恢复常规档位。只有 `high` 不足且重复失败/阻塞仍持续时，才升级到 `max`，之后恢复常规档位。
+使用[运行环境能力清单](../layer-02-workflow-concepts/environment-capability-inventory_zh_cn.md)提供的能力清单和共用运行规则，包括[运行环境与模型厂商支持](../layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)中的模型绑定。只有任务记录和已发布切片所需能力均暴露时才能继续。Worker 只能向直接父级返回，不能创建/管理其他 Agent 或联系任意线程。
 
 ## 已组合的检查点顺序
 

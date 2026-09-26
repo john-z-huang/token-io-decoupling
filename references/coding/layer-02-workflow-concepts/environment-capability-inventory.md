@@ -2,7 +2,7 @@
 
 [English](environment-capability-inventory.md) | [简体中文](environment-capability-inventory_zh_cn.md)
 
-This module owns the capability inventory for an already-classified runtime environment: exposed capabilities, unknown capability handling, dependent-route blocking, and branch-specific capability use. It does not classify the environment, choose execution mode, bind roles, authorize delegation, authorize implementation, or define task policy.
+This module owns the capability inventory for an already-classified runtime environment: exposed capabilities, unknown capability handling, and dependent-route blocking. Branch definitions and model bindings belong to [Runtime and Model Provider Support](../layer-01-fundamental-concepts/runtime-provider-support.md). This module does not classify the environment, choose execution mode, bind roles, authorize delegation, authorize implementation, or define task policy.
 
 ## Exposed capability inventory
 
@@ -12,11 +12,11 @@ Record only capabilities directly exposed by the current surface: model identity
 
 Mark an unobserved capability as unknown. Do not substitute another runtime environment, model, parameter, Session, tool, permission, or inferred capability. Any required capability that is missing or unknown blocks the dependent slice.
 
-## Branch-specific capability use
+## Route consumption
 
-Routes consume this inventory and state only for their topology-specific deltas. On Local Codex, use the exposed model/session controls and restart after changing global instructions, overrides, the Skill, or repository instructions. On ChatGPT Work, use only explicitly exposed models, Sessions, files, connectors, and execution tools. On Standard ChatGPT, do not assume local execution, Git, worktrees, or independent Sessions.
+Routes consume this inventory and state only for their topology-specific deltas. Apply branch-specific controls and model bindings from [Runtime and Model Provider Support](../layer-01-fundamental-concepts/runtime-provider-support.md).
 
-A profile declared by a route is a capability requirement, not a product-wide availability claim. A branch-specific route may consume that profile only after this inventory records the current surface's actual model identity and reasoning parameter. If a required model or parameter is not exposed or is unknown, record the requirement in `unavailable_capabilities` and block the dependent slice or route. Do not silently substitute a model, reasoning effort, Session, tool, permission, or mode/count; choosing a different route requires re-entering its applicable gate and obtaining new explicit confirmation. This keeps Core rules decoupled from product details while allowing a route to consume its declared, surface-specific requirements.
+A profile required by a route is a capability requirement, not a product-wide availability claim. A branch-specific route may consume that profile only after this inventory records the current surface's actual model identity and reasoning parameter. If a required model or parameter is not exposed or is unknown, record the requirement in `unavailable_capabilities` and block the dependent slice or route. Do not silently substitute a model, reasoning effort, Session, tool, permission, or mode/count; choosing a different route requires re-entering its applicable gate and obtaining new explicit confirmation. This keeps Core rules decoupled from product details while allowing a route to consume its required, surface-specific profile.
 
 ## Related concepts
 

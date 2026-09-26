@@ -31,7 +31,7 @@ Coding 的委派和 Session 拓扑规则拆分为原子 reference：状态记录
 - “不要创建子代理”“不要使用浏览器”等任务级禁止条件在整个任务中持续有效。
 - 路线选择或任何委派/Session 拓扑工作前，模式检查点必须组合并验证委派 references；这些 references 在各自的原子边界内规定根指令模式确认、子 Agent 数量、创建、分配、复用、替换、例外和限制。
 - 不得虚构授权、能力、证据、产品支持，或为未维护场景推导可执行路线。
-- Core 规则不依赖具体产品；Coding 工作流只支持本地 Codex、ChatGPT Work 和标准 ChatGPT，并在其中检查当前界面实际提供的能力。
+- Core 规则不依赖具体产品；受支持的运行环境分支和模型绑定见[运行环境与模型厂商支持](references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)。
 - 按需读取 reference。不要仅因为可能以后有用，就预加载整个 Skill、`references/` 或原始项目状态。
 
 ## 完成

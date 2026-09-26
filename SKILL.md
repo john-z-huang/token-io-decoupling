@@ -31,7 +31,7 @@ Use Coding for repository or project exploration, implementation, refactoring, d
 - A task-level prohibition, such as “do not create subagents” or “do not use a browser,” remains active for the whole task.
 - Before route selection or any delegation/Session-topology work, the Mode checkpoint must compose and validate the delegation references; those references own root-directive mode confirmation, child counts, creation, allocation, reuse, replacement, exceptions, and limits at their respective atomic boundaries.
 - Never invent authorization, capability, evidence, product support, or an executable route for an unmaintained scenario.
-- Keep Core rules independent of product details; the Coding workflow supports only local Codex, ChatGPT Work, and standard ChatGPT, and contains the checks for their exposed capabilities.
+- Keep Core rules independent of product details; read [Runtime and Model Provider Support](references/coding/layer-01-fundamental-concepts/runtime-provider-support.md) for supported runtime branches and model bindings.
 - Read references on demand. Do not preload the entire Skill, `references/`, or raw project state merely because it may become useful.
 
 ## Completion

@@ -4,16 +4,13 @@
 
 ## Actions
 
-1. Read explicit runtime metadata in the current system, developer, and application context. If that metadata names local Codex, ChatGPT Work, or standard ChatGPT, use it as the primary fact.
+1. Read explicit runtime metadata in the current system, developer, and application context. Use a named supported runtime as the primary fact.
 2. Use the callable tool inventory, workspace roots, permission profile, sandbox details, and other exposed task metadata as corroborating evidence. A local shell, worktree, model name, or tool pattern alone does not uniquely identify the runtime environment.
 3. If authorized by the current task, inspect only non-sensitive runtime metadata exposed by local process or environment information; never print or persist credentials or tokens.
 4. Do not use a browser, GUI navigation, screenshots, or visual page content to identify the runtime environment.
-5. Classify the runtime environment into exactly one supported branch:
-   - **Local Codex**: the task exposes local filesystem/shell or worktree capabilities and Codex Agent tools.
-   - **ChatGPT Work**: the task exposes Work sessions/connectors/files, but local execution is not implied.
-   - **Standard ChatGPT**: no local execution or independent Session capability is assumed unless explicitly exposed.
+5. Classify the runtime environment into exactly one branch defined by [Runtime and Model Provider Support](../layer-01-fundamental-concepts/runtime-provider-support.md).
 6. If the runtime environment does not fit any branch, mark the environment unsupported and stop work that depends on it.
-7. If the evidence still leaves the runtime environment ambiguous, stop the dependent work and return this exact question to the user: `I cannot determine the current runtime environment from the available metadata. In your next instruction, explicitly state whether it is "local Codex", "ChatGPT Work", or "standard ChatGPT", then resume.`
+7. If the evidence still leaves the runtime environment ambiguous, stop the dependent work and return that reference's exact fallback question to the user.
 
 ## Pass condition
 
