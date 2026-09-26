@@ -33,7 +33,7 @@ Codex 暴露 `/plan` 或 Plan permission mode 时，可用于实质写入前的�
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-Claude Code 的实质性决策阶段，可在启动 CLI 时使用 `claude --permission-mode plan` 进入只读 Plan mode。Plan mode 会读取文件并提出计划，在计划获批前不会编辑文件。只能通过该直接 CLI 命令，或当前 Agent Session 实际暴露的其他 Plan-mode 命令或 API 使用 Plan mode。Plan mode 只是**工具权限模式**，并非 Semantic Contract、获准修改、用户确认或父级 Slice Release 已通过的证据。计划获批后，编辑前仍须满足通用 Decision Brief 和当前路线的放行边界。若当前 Session 未暴露任何 Plan-mode 命令或 API，则使用通用有界规划流程。[Anthropic：常见工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：权限](https://code.claude.com/docs/en/permissions)。
+Claude Code 的实质性决策阶段，当前 Session 已获授权的 Plan mode 可以辅助只读调查和草拟 Decision Brief；该模式的启用方法与 Session 边界由[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)负责。Plan mode 只是**工具权限模式**，并非 Semantic Contract、获准修改、用户确认或父级 Slice Release 已通过的证据。即使计划获批，编辑前仍须满足通用 Decision Brief 和当前路线的放行边界。若当前 Session 未暴露已获授权的 Plan-mode 控制，则使用通用有界决策流程。[Anthropic：常见工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：权限](https://code.claude.com/docs/en/permissions)。
 
 ## 相关概念
 
