@@ -20,6 +20,14 @@
 
 通用 `Agent` 调用没有逐次 effort 参数。需要 Sonnet 职责专属 effort 时，使用获准的 `.claude/agents/<name>.md` 或 `~/.claude/agents/<name>.md` 定义，填写 `name`、`description`、`model: sonnet`、必需的 `effort` 和适当的工具白名单。否则在启动前显式设置并核验子代理继承的会话 `/effort`；Haiku 省略 effort。优先使用工具白名单中排除 `Agent` 和 peer 消息的具名可复用子代理，防止递归委派。自定义定义不在获准修改范围内时，只有在能核验实际 effort 和工具边界时才使用 `general-purpose`。必需的绑定或边界无法核实时阻塞该子代理职责。
 
+### 原生子代理定义与创建门禁
+
+同一获准职责需要跨 Slice 复用时，优先使用经过审查的项目级或个人级 `.claude/agents/`、`~/.claude/agents/` 自定义 Agent；使用 `name`/`description` 表达选择条件，以显式 `tools`/`disallowedTools` 与 `maxTurns` 限制工具和执行轮次。从 Worker 允许的工具中排除 `Agent`（或显式禁止），并排除 peer messaging；当前 Claude Code 的子代理在未限制时可能继续创建嵌套 Agent。仅使用 `skills` 预加载该职责必需的参考内容，不预加载整个 Skill 或无关概念。插件自带 Agent 的 `hooks`、`mcpServers` 和 `permissionMode` frontmatter 会被忽略；需要这些控制时使用获准的项目/个人 Agent 或 Session 设置。
+
+实际 `Agent` 调用仍须等待已放行的具体 Slice 和未绑定的预留名额。`SubagentStart` Hook 可以注入上下文，**不能阻止创建**，不可替代创建前门禁。Claude Desktop **Code** 的本地 Session 在实际暴露能力时可复用这些 Claude Code 控制；普通 Desktop Chat 不提供等价的子代理创建工具。以 Runtime owner 核实 `Agent` 能力和实际模型，不得仅凭桌面应用名称推断。
+
+官方依据：[自定义子代理与 frontmatter](https://code.claude.com/docs/en/sub-agents)、[SubagentStart Hook](https://code.claude.com/docs/en/hooks)、[Desktop Code 标签页](https://code.claude.com/docs/en/desktop)。
+
 ## 相关概念
 
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态归属。

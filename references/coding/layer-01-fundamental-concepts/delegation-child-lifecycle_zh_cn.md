@@ -22,6 +22,12 @@
 
 可用时通过 `Agent` 结果和 `/tasks` 观察运行中的子代理；以有界运行时等待取得结果。`/tasks` 是短暂状态界面，其条目消失后仍在父级记录保留返回的 Agent ID 和完成或错误状态。
 
+### 事件辅助观察
+
+实际暴露 Hooks 的 Claude Code Session 中，可选 `SubagentStart` Hook 用于记录事件提供的 `agent_id`/`agent_type`；可选 `SubagentStop` Hook 可读取 `agent_id`、`agent_transcript_path` 和 `last_assistant_message`，无需把完整 transcript 塞入父级上下文。必须与实际 `Agent` 结果和父级状态记录交叉核对；单个 Hook 事件既不证明成功完成，也不授予关闭、替换或创建子代理的权限。失败和部分输出应单独记录。`/tasks` 只是便捷视图而非持久事实源，条目消失后仍要保留 ID 和证据。只有实际 Claude Code Runtime 才能依赖这些 Hooks，不假定 Desktop Chat 或 Cowork 具有相同功能。
+
+官方依据：[SubagentStart/SubagentStop 事件字段](https://code.claude.com/docs/en/hooks)、[子代理生命周期与恢复](https://code.claude.com/docs/en/sub-agents)。
+
 ## 相关概念
 
 - [Coding Child Creation](delegation-child-creation_zh_cn.md) — 定位子 Agent 创建能力。

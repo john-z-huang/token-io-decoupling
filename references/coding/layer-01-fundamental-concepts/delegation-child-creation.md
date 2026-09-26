@@ -20,6 +20,14 @@ On Local Claude Code, use the built-in `Agent` tool after count and allocation r
 
 The general `Agent` call has no per-invocation effort parameter. For role-specific Sonnet effort, use an authorized `.claude/agents/<name>.md` or `~/.claude/agents/<name>.md` definition with `name`, `description`, `model: sonnet`, the required `effort`, and a suitable tool allowlist. Otherwise explicitly set and verify the session `/effort` inherited by the child before launch; omit effort for Haiku. Prefer a named reusable subagent whose allowed tools exclude `Agent` and peer messaging to prevent recursive delegation. If a custom definition is outside the authorized mutation scope, use `general-purpose` only when its effective effort and tool boundary can be verified. Block the child role when a required binding or boundary cannot be verified.
 
+### Native subagent definition and creation guard
+
+When the authorized role repeats across slices, prefer a reviewed project or personal custom agent definition in `.claude/agents/` or `~/.claude/agents/`; use `name`/`description` for selection and explicit `tools`/`disallowedTools` and `maxTurns` to bound it. Omit `Agent` from a worker's allowed tools (or explicitly disallow it) and exclude peer-messaging tools; current Claude Code can otherwise let a subagent spawn nested agents. Use `skills` to preload only references essential to that role, not the entire Skill or unrelated concept owners. A plugin-shipped agent ignores its own `hooks`, `mcpServers`, and `permissionMode` frontmatter; use an authorized project/user agent or session settings if those controls are required.
+
+The actual `Agent` call must still wait for the existing released slice and reserved unbound allocation. A `SubagentStart` hook can inject context but **cannot block creation**, so it is not a substitute for a pre-creation gate. Claude Desktop **Code** local sessions may use these Claude Code controls when exposed; ordinary Desktop Chat does not offer an interchangeable child-creation tool. Confirm `Agent` capability and the effective model using the runtime owner rather than inferring them from the Desktop app name.
+
+Official references: [custom subagents and frontmatter](https://code.claude.com/docs/en/sub-agents), [SubagentStart hook](https://code.claude.com/docs/en/hooks), [Desktop Code tab](https://code.claude.com/docs/en/desktop).
+
 ## Related concepts
 
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state ownership.

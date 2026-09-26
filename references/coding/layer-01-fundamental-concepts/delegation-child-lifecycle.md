@@ -22,6 +22,12 @@ No provider-specific optimization instructions at present; follow the general ru
 
 Use the `Agent` result and `/tasks` when available to observe a running child; use a bounded runtime wait for its result. `/tasks` is temporary, so retain the returned Agent ID and completed or error state in the parent record after its entry disappears.
 
+### Event-assisted observation
+
+In a Claude Code session that actually exposes Hooks, an optional `SubagentStart` hook can record the emitted `agent_id`/`agent_type`; an optional `SubagentStop` hook can observe `agent_id`, `agent_transcript_path`, and `last_assistant_message` without copying the full transcript into the parent context. Reconcile those signals with the actual `Agent` result and parent state record; a hook event alone does not prove successful completion or grant permission to close, replace, or create a child. Record failures and partial output distinctly. `/tasks` is a convenience view, not the durable source of truth; retain ID and evidence when a row disappears. Hooks require actual Claude Code runtime support and are not assumed for Desktop Chat or Cowork.
+
+Official references: [SubagentStart/SubagentStop event inputs](https://code.claude.com/docs/en/hooks), [subagent lifecycle and resume](https://code.claude.com/docs/en/sub-agents).
+
 ## Related concepts
 
 - [Coding Child Creation](delegation-child-creation.md) — locate child creation capability.
