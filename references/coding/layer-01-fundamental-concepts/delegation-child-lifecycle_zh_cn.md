@@ -12,7 +12,7 @@
 
 ### 错误与中断
 
-发生错误或中断时，保持原 child 状态明确并保留现有证据；未经授权不得以清理为由关闭它。先通过复用同一个 child 尝试获准修复。只有在 `child_count` 尚未锁定时，父级才能使用受控 replacement 路径。数量锁定后，如果同一个 child 无法安全复用，报告阻塞并将多代理路线置为 `blocked`；不得创建 replacement child。获准复用或锁定前的 replacement 遵循对应 owner 概念。
+发生错误或中断时，保留原子代理的身份、明确的生命周期状态与现有证据；未经授权不得以清理为由关闭它。同一子代理是否能够进行获准 follow-up，以及无法继续时如何处理，均由复用/替换 owner 决定；生命周期 owner 只记录结果状态和阻塞原因。不得从生命周期变化推断创建 successor 或回收 allocation 名额的权限。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 

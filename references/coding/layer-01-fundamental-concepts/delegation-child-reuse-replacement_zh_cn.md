@@ -8,11 +8,11 @@
 
 ### 获准复用
 
-修复优先于 replacement：对获准的 follow-up 和修复 epoch 复用同一个子 Agent。发生错误或中断后，先通过同一个子 Agent 尝试获准修复；否则报告阻塞。复用不得创建递归层级或 peer 协调。
+对已授权 follow-up、修复 epoch 和中断，在安全时复用同一个已创建子代理。优先通过该子代理尝试获准修复；无法安全继续时报告阻塞，并将依赖的 Multi-Agent 工作置为 `blocked`。复用不得创建递归层级或 peer 协调。已创建子代理的身份和证据遵循生命周期 owner 保留。
 
 ### 替换关系
 
-替换不同于普通的同一子 Agent 复用，只能在 `child_count` 尚未锁定时调整计划级 allocation。保持本次会话选定的数量；准备阶段不得再次询问数量，也不得创建、spawn 或 handoff 到新子 Agent。先锁定数量并满足路线放行条件，child-creation owner 才能创建计划中的子 Agent。数量锁定后，如果同一个子 Agent 无法安全复用，报告阻塞并将多代理路线置为 `blocked`；不得创建 replacement child。替换不是 peer 协调，也不是递归层级。本模块不定义 handoff 或上下文传输；相关规则定位于 [context exchange](context-exchange_zh_cn.md)。
+数量锁定后、名额中的子代理创建前，允许父级授权修改 `agent: unbound` 的预留 allocation 计划；只能在锁定预算内调整未绑定职责或待放行 Slice。数量尚未锁定时，awaiting-count 记录不存在可替换的 allocation。已创建子代理的名额不得回收；数量锁定后不得再创建额外或替代子代理。不得重复询问数量、fork 或 handoff 给新子代理。上下文交接由[上下文交换交接](context-exchange-handoff_zh_cn.md)拥有，不授予创建 Agent 的能力。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 

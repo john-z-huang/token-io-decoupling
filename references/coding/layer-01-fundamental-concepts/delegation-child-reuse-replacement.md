@@ -8,11 +8,11 @@ This module owns authorized follow-up, repaired epochs, and reuse or replacement
 
 ### Authorized reuse
 
-Repair takes priority over replacement: reuse the same child for authorized follow-ups and repaired epochs. After an error or interruption, first attempt an authorized repair through the same child; otherwise report the blocker. Reuse must not create a recursive hierarchy or peer coordination.
+For authorized follow-ups, repaired epochs, and interruptions, reuse the same created child when safe. First attempt an authorized repair through that child; if it cannot safely continue, report the blocker and set dependent Multi-Agent work to `blocked`. Reuse must not create a recursive hierarchy or peer coordination. Retain the created child's identity and evidence according to the lifecycle owner.
 
 ### Replacement relation
 
-Replacement is distinct from ordinary same-child reuse and is allowed only as a plan-level allocation change before `child_count` is locked. Keep the count selected for this conversation; do not ask a second count question or create, spawn, or hand off to a new child during preparation. Lock the count and satisfy route release before the child-creation owner creates the planned children. Once locked, if the same child cannot be safely reused, report the blocker and set the Multi-Agent route to `blocked`; do not create a replacement child. Replacement is not peer coordination or a recursive hierarchy. This module does not define handoff or context transport; locate those rules in [context exchange](context-exchange.md).
+A plan-level revision is allowed for an `agent: unbound` reserved allocation after count locking and before that slot's child is created. It may adjust an unbound role or pending slice only within the locked count and with parent authorization. Before count locking the awaiting-count record has no allocation to replace. A created child's slot cannot be recycled, and after locking no additional or replacement child may be created. Do not reopen the count question, fork, or hand off to a new child. Context handoff is owned by [Coding Context Exchange Handoff](context-exchange-handoff.md) and does not grant an Agent-creation capability.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
