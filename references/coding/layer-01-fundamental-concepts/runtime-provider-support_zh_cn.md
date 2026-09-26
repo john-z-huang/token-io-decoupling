@@ -17,7 +17,7 @@
 
 ### Desktop Agent 仅使用会话工具的边界
 
-ChatGPT Desktop 与 Claude Desktop 均遵循：Agent **只能执行当前 Agent Session 实际暴露且已获授权的工具**。即使提供了自动化工具，也不得通过 Computer Use、截图后点击、模拟鼠标／键盘、辅助功能自动化、窗口控制或 Shell 驱动的 GUI 自动化操作任一桌面应用。产品文档中的标签页、面板、选择器、侧边栏和按钮只是能力说明，**不是** Agent 可执行操作或授权。只有当前 Session 提供该操作的直接原生工具、命令或 API 时，Agent 才能使用该桌面能力；否则必须记录依赖能力不可用，或将图形界面操作留给用户本人。不得将未暴露的 GUI 功能冒充为 Agent 工具，也不得通过额外桌面自动化程序绕过此边界。
+ChatGPT Desktop 与 Claude Desktop 均遵循：Agent **只能执行当前 Agent Session 实际暴露且已获授权的工具**。即使提供了自动化工具，也不得通过 Computer Use、截图后点击、模拟鼠标／键盘、辅助功能自动化、窗口控制或 Shell 驱动的 GUI 自动化操作任一桌面应用。产品文档中的标签页、面板、选择器、侧边栏和按钮只是能力说明，**不是** Agent 可执行操作或授权。只有当前 Session 提供直接、已获授权的 API、HTTP、CLI 或 MCP 操作时，Agent 才能使用该桌面能力。必需步骤若需要 Computer Use，必须按仓库指令中的绝对规则立即停止整个 Skill 任务，向用户反馈具体阻塞步骤与未完成工作；不得通过 GUI 或 Computer Use 包装工具绕过。不得将未暴露的 GUI 功能冒充为 Agent 工具，也不得通过额外桌面自动化程序绕过此边界。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 

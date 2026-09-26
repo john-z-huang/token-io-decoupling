@@ -4,6 +4,14 @@
 
 任何在本仓库中创建、修改、重命名、移动或删除文档的 Agent 和贡献者，都必须在进行文档变更前加载并遵守该文件。
 
+## Skill 允许的操作范围与 Computer Use 绝对停止规则
+
+本节是**整个仓库强制执行的约束**，适用于本 Skill 的每次执行、所有运行环境、父 Agent、子 Agent、已委派任务、恢复分支及工具适配层。
+
+- **唯一允许的操作渠道：**直接 API 调用、HTTP 网络请求调用、CLI 程序调用、MCP 调用、查看 Skill 文档。每项操作还必须是当前 Agent Session 实际暴露且已获授权的能力。除此之外不允许任何其他操作渠道。
+- **绝对禁止 Computer Use。** 不得通过图形界面交互控制计算机、浏览器或桌面应用，包括以操纵控件为目的的截图定位、鼠标／键盘模拟、点击、辅助功能 API、窗口自动化、远程桌面控制或 GUI 脚本。即使把此类操作包装为已允许的 API、HTTP 请求、CLI、MCP Server、Skill、辅助程序或其他 Agent 调用，也不因此获得许可。
+- **必须立即停止：**一旦分析确认任何必需步骤无法通过上述允许渠道完成、必须借助 Computer Use，就必须立刻停止本 Skill 当前任务。不得尝试该步骤、委派他人执行、静默跳过、改用 Computer Use 包装工具，或继续后续步骤。必须立即向用户反馈具体阻塞步骤、为什么必须使用 Computer Use，以及尚未完成的工作。**不存在任何豁免情况**：用户批准、宿主暴露 Computer Use、或声称某个必需步骤中的 GUI 操作只是一项可选优化，都不能解除禁令。只有实际可用且已获授权的非 Computer Use 路线才能采用，不得假设未暴露或尚未证实的替代路径存在。
+
 ## 文档归属与原子化
 
 - 每个受维护的 Markdown 文档必须只有一个清晰、可复用的责任。文件名、标题、开头的归属声明、章节和链接必须描述同一个责任。
@@ -21,7 +29,7 @@
 2. `## Codex CLI / ChatGPT Desktop optimizations` / `## Codex CLI / ChatGPT Desktop 特别优化指令`：仅写该概念适用的 Codex 或 ChatGPT Desktop 指令。
 3. `## Claude Code CLI / Claude Desktop optimizations` / `## Claude Code CLI / Claude Desktop 特别优化指令`：仅写该概念适用的 Claude Code 或 Claude Desktop 指令。
 
-概念子主题放在三个章节下，使用三级标题。对于 ChatGPT Desktop 和 Claude Desktop，面向 Agent 的指令只能调用当前 Agent Session 实际暴露且已获授权的工具、命令或 API。即使暴露自动化工具，也绝不得指示 Agent 通过 Computer Use、GUI 截图／点击、模拟鼠标／键盘、辅助功能、窗口自动化或 Shell 驱动的 UI 脚本操作任一桌面应用。产品 UI 控件只能作为能力背景描述；仅在 GUI 中可执行的动作必须标记为 Agent 不可用，或留给用户本人。此限制由运行环境 owner 和适用厂商章节落实；不得将桌面界面导航写成 Agent 工作流指令。某厂商当前没有该概念的特别优化时，仍保留章节，明确写明目前没有，并要求 Agent 遵循通用规范。三个模块后可以保留独立的 `Related concepts` / `相关概念` 导航章节。每次修改或新增 Layer-01 文档后运行 `python3 scripts/check-layer-01-sections.py`；缺少、重复、顺序错误或空白模块都不能视为完成。
+概念子主题放在三个章节下，使用三级标题。对于 ChatGPT Desktop 和 Claude Desktop，面向 Agent 的指令只能调用当前 Agent Session 实际暴露且已获授权的工具、命令或 API。即使暴露自动化工具，也绝不得指示 Agent 通过 Computer Use、GUI 截图／点击、模拟鼠标／键盘、辅助功能、窗口自动化或 Shell 驱动的 UI 脚本操作任一桌面应用。产品 UI 控件只能作为能力背景描述；如果必需步骤只能通过 Computer Use 完成，立即按上述仓库级停止规则中止并向用户报告阻塞。此限制由运行环境 owner 和适用厂商章节落实；不得将桌面界面导航写成 Agent 工作流指令。某厂商当前没有该概念的特别优化时，仍保留章节，明确写明目前没有，并要求 Agent 遵循通用规范。三个模块后可以保留独立的 `Related concepts` / `相关概念` 导航章节。每次修改或新增 Layer-01 文档后运行 `python3 scripts/check-layer-01-sections.py`；缺少、重复、顺序错误或空白模块都不能视为完成。
 
 ## Layer-02 与 Layer-03 厂商无关约束
 
