@@ -20,7 +20,7 @@
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Claude Code 原子代理仍有可恢复 Agent ID 时，优先通过获准的 `SendMessage` follow-up 与具名只读来源指针继续，不新建子代理，也不复制 transcript。原子代理无法继续时，只能把经父级批准的交接文档与当前来源证据交给**已经获授权**的接收方；恢复父 Session 的 `/resume`、`/branch` 或新的 Desktop Code 面板本身都不授权替换子代理。本地 MCP Desktop Extension 可以向 Desktop Chat 暴露获准文档，但不会因此创建共享的 Worker 生命周期。[Anthropic：子代理恢复](https://code.claude.com/docs/en/sub-agents)、[Anthropic：Desktop Session](https://code.claude.com/docs/en/desktop)。
 
 ## 相关概念
 

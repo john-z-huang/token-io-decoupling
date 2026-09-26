@@ -18,17 +18,17 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Codex 已配置的 `PostToolUse` 或 `SubagentStop` Hook 可以提供工具或子代理的观察结果，供父级压缩 Progress Signal；`PreCompact` 可以标记上下文将被压缩的边界。这些可选事件不证明语义验收，也不应导致完整工具日志或 transcript 倾倒。[OpenAI：工具与生命周期 Hooks](https://learn.chatgpt.com/docs/hooks)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
-
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
 
 ### Hook 辅助的精简阶段证据
 
 持久 Claude Code 子代理的 `SubagentStop` 提供 `last_assistant_message`，父级可直接消费精简阶段结果，不必重读完整子代理 transcript。工具执行本身失败时，`PostToolUseFailure` 可提供错误信息，供执行者在**现有**阶段边界汇报；不得把每次失败命令都升级成新的高价值决策检查点。这两种事件都不能替代明确的进度证据、最终验证或父级的 Control 选择。只有当前 Claude Code Runtime 实际安装 Hooks 时才使用，不能套用于无关 Desktop Chat 对话。
 
 官方依据：[SubagentStop 与 PostToolUseFailure 事件数据](https://code.claude.com/docs/en/hooks)。
+
+已配置的 `PostToolUse` 可以在阶段边界提供实际工具结果，但不能替代压缩的 Progress Signal。Desktop Code 的 diff review 是修改行的证据，不是测试通过或独立验证完成的证明。[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)、[Anthropic：Desktop diff review](https://code.claude.com/docs/en/desktop)。
 
 ## 相关概念
 

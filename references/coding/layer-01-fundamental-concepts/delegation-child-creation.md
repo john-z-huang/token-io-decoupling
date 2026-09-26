@@ -14,6 +14,8 @@ Use the runtime's real parent-controlled child mechanism. Before creating a chil
 
 On Local Codex, use the exposed MultiAgentV1/V2 spawn operation; apply model and capability bindings from [Runtime and Model Provider Support](runtime-provider-support.md).
 
+For Codex custom children, an authorized `.codex/agents/<name>.toml` can specify `name`, `description`, `developer_instructions`, `model`, `model_reasoning_effort`, `sandbox_mode`, and `mcp_servers`. Confirm the *effective* inherited model, effort, and sandbox before launching via the exposed parent-controlled spawn operation. Registering a profile is not spawning or allocating a new child, and a host-wide concurrency limit is not this conversation's locked child count. Claude's `.claude/agents/*.md` frontmatter is not a Codex configuration format. [OpenAI: custom subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 On Local Claude Code, use the built-in `Agent` tool after count and allocation release. Specify `subagent_type` as `general-purpose` or a named custom subagent, an explicit eligible model, a bounded task prompt, and return conditions. Apply the model and effort bindings from [Runtime and Model Provider Support](runtime-provider-support.md); verify the effective model in `/tasks` when available because a blocked selection may fall back to an inherited model. Do not use built-in Explore/Plan agents as persistent children; they return no reusable agent ID.
@@ -27,6 +29,8 @@ When the authorized role repeats across slices, prefer a reviewed project or per
 The actual `Agent` call must still wait for the existing released slice and reserved unbound allocation. A `SubagentStart` hook can inject context but **cannot block creation**, so it is not a substitute for a pre-creation gate. Claude Desktop **Code** local sessions may use these Claude Code controls when exposed; ordinary Desktop Chat does not offer an interchangeable child-creation tool. Confirm `Agent` capability and the effective model using the runtime owner rather than inferring them from the Desktop app name.
 
 Official references: [custom subagents and frontmatter](https://code.claude.com/docs/en/sub-agents), [SubagentStart hook](https://code.claude.com/docs/en/hooks), [Desktop Code tab](https://code.claude.com/docs/en/desktop).
+
+When available on a reviewed project/user custom subagent, `background` and `isolation: worktree` are execution controls for an already authorized slot. Background children can have restricted interactive permission/tool access: if the released task needs those tools, use an available foreground invocation instead of silently dropping requirements. Worktree isolation separates repository copies, not the parent Context root's per-Worker path permissions. [Anthropic: subagents](https://code.claude.com/docs/en/sub-agents).
 
 ## Related concepts
 

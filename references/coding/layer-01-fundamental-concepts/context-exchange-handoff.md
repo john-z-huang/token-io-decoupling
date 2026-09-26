@@ -20,7 +20,7 @@ No provider-specific optimization instructions at present; follow the general ru
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+If the original Claude Code child still has a resumable Agent ID, prefer an authorized `SendMessage` follow-up and named read-only source pointers instead of creating a new subagent or copying its transcript. If the original child cannot resume, transfer only the parent-approved handoff documents and current source evidence to an **already authorized** recipient; `/resume` for a parent Session, `/branch`, or a new Desktop Code pane does not itself authorize a child replacement. A local MCP Desktop Extension can expose permitted documents to Desktop Chat, but it does not create a shared Worker lifecycle. [Anthropic: subagent resume](https://code.claude.com/docs/en/sub-agents), [Anthropic: Desktop sessions](https://code.claude.com/docs/en/desktop).
 
 ## Related concepts
 

@@ -16,17 +16,17 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Codex 自定义 Agent 可通过 `developer_instructions` 保存职责专属指令；父级仍必须通过实际子任务调用发送已放行目标、具名来源、范围和返回条件。`AGENTS.md` 可提供仓库指令，却不能代替这份任务专属 bundle。若已配置 Codex Hooks，`SubagentStart` 可以添加少量上下文，但不能阻止创建，也不得默默扩大获准 Slice。[OpenAI：子代理 profile](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：SubagentStart](https://learn.chatgpt.com/docs/hooks)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
-
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
 
 ### 派发前工具门禁
 
 本地已配置 Claude Code 的宿主中，获准的 `PreToolUse` Hook 可匹配 `Agent`，在调用执行**之前**检查父级记录是否具备预留名额、已放行 Slice 和获准返回路径；缺少时通过显式 deny 阻止创建。不得依赖创建之后才触发且不能 veto 的 `SubagentStart`。必须在 `Agent` 工具调用**之前**在父级会话展示人类可读的 Dispatch Preview；Hook 本身不能证明父级已审核或展示该预览。守卫脚本必须读取真实状态记录，授权缺失时拒绝执行，不记录密钥或完整提示词。未安装经过审查的 Hook 时，派发前语义检查仍然是强制要求。
 
 官方依据：[PreToolUse 与 SubagentStart 语义](https://code.claude.com/docs/en/hooks)。
+
+Claude Code 自定义 subagent 具有自己的上下文，不会自动继承父级完整对话历史或此前调用过的 Skills。必须在实际 `Agent` 任务提示中携带已放行目标、有界来源指针及返回条件。`skills` frontmatter 会将**整个具名 Skill**预加载到该子代理，因此只有职责确需时才配置，不把它当作选择性加载概念的替代方案。若 Worker 工具池暴露 `SendMessage`／peer 控制，应从 Worker 排除，保留获准的父级到子代理 follow-up。[Anthropic：子代理上下文与 Skills](https://code.claude.com/docs/en/sub-agents)。
 
 ## 相关概念
 

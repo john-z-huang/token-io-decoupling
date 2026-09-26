@@ -18,17 +18,17 @@ Firewall 只限制原始状态进入，不转移语义责任；语义权威性�
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Codex 的自定义 Agent profile 可以用只读 `sandbox_mode` 和指定 `mcp_servers` 收窄源码及工具访问范围；`developer_instructions` 可以要求有界来源指针，但不是权限边界。必须检查继承设置，因为自定义 Agent 中省略的字段可继承父级。这些设置不等同于 Claude 的 `tools`／`disallowedTools` frontmatter，也不代表 Claude Desktop Chat 的 connector Tool-access 模式。[OpenAI：自定义子代理](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
-
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
 
 ### 原生有界读取与 MCP 按需发现
 
 本地 Claude Code 中，仓库定位优先使用定向的 `Glob`/`Grep` 与少量 `Read` 范围，然后只向父级返回路径、行号来源和压缩事实；不得把完整递归目录或构建日志灌入父级。配置 MCP 工具后，可利用 Claude Code 的 **MCP Tool Search** 在实际需要时发现相关工具，而不是强制把全部 MCP Schema 提前加载到 Session。Tool Search 依赖运行环境和 Provider（第三方代理端点不一定支持），声称延迟加载节省之前须核实其已生效。Desktop Chat 可通过获准的桌面扩展/本地 MCP Server 访问本机资源；远程连接器访问远端服务；两者均须核对具体工具权限，不推断本地 shell、无限制文件系统或独立 Agent。
 
 官方依据：[Claude Code MCP Tool Search](https://code.claude.com/docs/en/mcp)、[Desktop 连接器边界](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors)、[本地 MCP 扩展](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)。
+
+Claude Code 的项目／用户自定义 subagent 可将内联 `mcpServers` 限于子代理，避免无关工具说明占用父级上下文；插件附带的 Agent 定义不一定遵循此字段。普通 Desktop Chat 的 connector Tool access `On demand` 仅是可选上下文加载优化，不代表 Worker 隔离或访问授权。[Anthropic：子代理 MCP 范围](https://code.claude.com/docs/en/sub-agents)、[Anthropic：连接器工具访问](https://support.claude.com/en/articles/13730515-manage-claude-s-tool-access)。
 
 ## 相关概念
 

@@ -25,7 +25,7 @@ If several Workers share one OS identity, ordinary Unix ownership is not reliabl
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Current Codex offers custom child-agent `sandbox_mode` and per-agent MCP configuration, and, when hooks are supported/enabled in this runtime, `PreToolUse` for supported `Bash`, `apply_patch`, and MCP calls. Match all actually exposed write-capable paths and test a denied cross-Worker write rather than treating `workspace-write`, a worktree, or `AGENTS.md` as a complete filesystem policy. Some specialized tool paths bypass Codex hooks; where that gap matters, enforce the path boundary through OS/filesystem/container permissions or block the dependent slice. The Claude `permissions.deny` syntax does not transfer to Codex. [OpenAI: subagent configuration](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: hook coverage](https://learn.chatgpt.com/docs/hooks).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
@@ -36,6 +36,8 @@ When the task releases worktree isolation or tool restrictions, Claude Code may 
 For a genuinely required additional checkout, an authorized custom agent may use `isolation: worktree`; verify the resulting directory and keep the parent-owned Context root and named imports reachable under the approved policy. Claude Code's worktree/isolation feature separates checkouts but is **not** an OS sandbox or a guarantee of Worker-only path access. Where available, pair a real filesystem sandbox/container/path allowlist with a reviewed `PreToolUse` guard matching relevant `Read`/`Write`/`Edit`/shell or MCP filesystem operations; validate canonical paths and the shell's possible indirect writes, not merely a literal string prefix. `PreToolUse` does not intercept every way context can enter the prompt (such as file mentions); do not claim that a Hook alone meets a hard RO/RW/DENY boundary. If required enforcement is absent, block that slice under the general capability rule rather than treating `disallowedTools` or a worktree as security isolation.
 
 Official references: [subagent worktree isolation](https://code.claude.com/docs/en/sub-agents), [PreToolUse coverage and restrictions](https://code.claude.com/docs/en/hooks).
+
+Where authorized and available, combine Claude Code's `permissions.deny` with a deterministic `PreToolUse` guard on *all exposed write-capable paths*, including indirect shell and MCP filesystem writes; test an actual prohibited cross-Worker write before relying on it. `PostToolUse` is too late to prevent the operation, and `SubagentStart` cannot veto creation. A local Desktop Extension runs with its own OS/filesystem permissions; mere installation does not prove it respects Worker RW/RO/DENY. [Anthropic: permissions](https://code.claude.com/docs/en/permissions), [Anthropic: hooks](https://code.claude.com/docs/en/hooks), [Anthropic: local MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop).
 
 ## Related concepts
 

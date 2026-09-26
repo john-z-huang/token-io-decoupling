@@ -28,7 +28,9 @@ Freshness 对照 `HEAD`/tree、tracked-delta fingerprint、列出的 source hash
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+
+
+仅在已放行 Slice 确实需要连接源时，才为 Claude Code 子代理配置窄范围 `mcpServers`；权威性仍来自原文件或工具结果，只传具名来源指针，不复制无关工具输出。Claude Desktop 的本地 Desktop Extension 可访问明确授权的本地文件／应用；远程 MCP connector 经 Anthropic 云端执行，不得推断它可以访问私有 localhost 或仅 VPN 可达的文件。接收方没有获授权的连接器或路径时，按通用规则使用父级准备的只读交接文档；不能满足则阻塞，不能擅自扩大连接器权限。[Anthropic：子代理 MCP 范围](https://code.claude.com/docs/en/sub-agents)、[Anthropic：桌面与远程连接器](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors)、[Anthropic：远程 MCP](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)。
 
 ## 相关概念
 

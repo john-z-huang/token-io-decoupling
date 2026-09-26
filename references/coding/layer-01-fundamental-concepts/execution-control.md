@@ -27,17 +27,17 @@ At a material boundary, consume the Progress Signal owned by [execution stage fe
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Where enabled, Codex `PreToolUse` can deny a supported `Bash`, edit, or MCP call before it executes; `PostToolUse` is observation **after** the call. Codex's plan/read-only or other permission modes are tool controls, not this Skill's `Continue` decision. Coverage has exceptions, so do not use a hook as the only proof of a filesystem or semantic authorization boundary. [OpenAI: hooks](https://learn.chatgpt.com/docs/hooks).
 
 ## Claude Code CLI / Claude Desktop optimizations
-
-No provider-specific optimization instructions at present; follow the general rules above.
 
 ### Tool-boundary guard versus semantic Control
 
 An authorized Claude Code `PreToolUse` Hook may deny a concrete `Bash`, `Write`, `Edit`, or external-effect MCP operation that crosses a machine-checkable released path/permission boundary. A `Stop` hook can request a final evidence check before the current agent finishes. These are *guards*, not an alternate authority for deciding `Continue`, `Amend`, or `Stop`: the parent must still consume the Progress Signal and authorize each new slice under the general rules. Hook exit/deny signals, Desktop visual review, or an MCP connector must not silently enlarge the Contract or child budget. Do not claim these native Hooks exist in Desktop Chat/Cowork.
 
 Official reference: [Claude Code Hooks and decisions](https://code.claude.com/docs/en/hooks).
+
+In Claude Code, `PostToolUse` reports observations after an action; it cannot authorize that action retroactively. In Desktop Code, the permission-mode selector manages tool approvals, not this Skill's Contract/Control decision. [Anthropic: hooks](https://code.claude.com/docs/en/hooks), [Anthropic: Desktop Code](https://code.claude.com/docs/en/desktop).
 
 ## Related concepts
 

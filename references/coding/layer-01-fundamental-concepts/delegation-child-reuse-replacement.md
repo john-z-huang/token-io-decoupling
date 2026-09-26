@@ -28,6 +28,8 @@ Resume an authorized persistent `general-purpose` or custom subagent with `SendM
 
 Official reference: [resume subagents](https://code.claude.com/docs/en/sub-agents).
 
+An agent-team message, `/branch`, or a separate Desktop pane cannot substitute for resuming the recorded Agent identity. If the original child ID is no longer resumable, keep its evidence and block the dependent slice; do not spend an unapproved replacement slot. [Anthropic: subagent resume](https://code.claude.com/docs/en/sub-agents).
+
 ## Related concepts
 
 - [Coding Child Creation](delegation-child-creation.md) — locate child creation capability.

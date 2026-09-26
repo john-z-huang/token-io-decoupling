@@ -16,17 +16,17 @@ Worker 只能通过父级控制的 Dispatch 接收相关的已放行快照。不
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Codex 已配置的 `PreToolUse` Hook 可以通过 `Agent` 别名匹配本地 `spawn_agent` 工具；可用时，经测试后将其作为阻止未授权递归委派的辅助保护，同时遵循运行时真实工具／sandbox 限制。部分专用工具绕过 Hook，因此仅有提示词或 Hook 不证明递归或 peer 消息完全不可用。父级控制的创建／follow-up 权限与 Worker 权限必须分离。[OpenAI：Hooks 工具覆盖](https://learn.chatgpt.com/docs/hooks)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
-
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
 
 ### Worker 工具范围
 
 对获准的 Claude Code 自定义 Worker，用 frontmatter `tools` 白名单和/或 `disallowedTools` 排除 `Agent` 及 peer messaging 工具。当前 Claude Code 中，Worker 具有 `Agent` 工具时可能继续创建嵌套子代理；纯文字禁止并不等于工具层边界。需要 MCP 时，只授予必需 Server/Tool，使用受支持的 `mcp__<server>` 模式禁止无关 MCP 工具；这限制的是工具可用性，不改变父级状态记录的所有权。项目/个人 Agent 定义可使用 `mcpServers` 限定范围，但插件自带 Agent 的该 frontmatter 字段会被忽略。不得假定 Desktop Chat 已安装同样的限制。
 
 官方依据：[子代理工具、disallowedTools 与 MCP 范围](https://code.claude.com/docs/en/sub-agents)。
+
+派发前应核验继承配置后**实际生效**的自定义 Agent 工具池符合已放行职责。父级到子代理的 `SendMessage` 和恢复权限留在 Worker 之外，不得把收窄的 `tools` 白名单当成已验证的逐路径文件系统边界。[Anthropic：子代理工具范围](https://code.claude.com/docs/en/sub-agents)。
 
 ## 相关概念
 

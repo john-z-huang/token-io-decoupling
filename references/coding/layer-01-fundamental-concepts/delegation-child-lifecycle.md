@@ -16,7 +16,7 @@ On error or interruption, preserve the original child's identity, explicit lifec
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Codex can also expose configured `SubagentStart`/`SubagentStop` hooks for child IDs and observed lifecycle; `SubagentStart` with `continue: false` does **not** block spawning. Preserve the actual child ID and final evidence in the parent record even if the task UI or hook report disappears. These events are observational and do not authorize replacement or prove verification passed. [OpenAI: lifecycle hooks](https://learn.chatgpt.com/docs/hooks).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
@@ -27,6 +27,8 @@ Use the `Agent` result and `/tasks` when available to observe a running child; u
 In a Claude Code session that actually exposes Hooks, an optional `SubagentStart` hook can record the emitted `agent_id`/`agent_type`; an optional `SubagentStop` hook can observe `agent_id`, `agent_transcript_path`, and `last_assistant_message` without copying the full transcript into the parent context. Reconcile those signals with the actual `Agent` result and parent state record; a hook event alone does not prove successful completion or grant permission to close, replace, or create a child. Record failures and partial output distinctly. `/tasks` is a convenience view, not the durable source of truth; retain ID and evidence when a row disappears. Hooks require actual Claude Code runtime support and are not assumed for Desktop Chat or Cowork.
 
 Official references: [SubagentStart/SubagentStop event inputs](https://code.claude.com/docs/en/hooks), [subagent lifecycle and resume](https://code.claude.com/docs/en/sub-agents).
+
+An exhausted `maxTurns`, failed `Agent` call or incomplete/background result is partial or interrupted until the parent verifies actual output and return conditions. Disappearance from `/tasks` is not completion evidence. [Anthropic: subagent execution limits](https://code.claude.com/docs/en/sub-agents).
 
 ## Related concepts
 

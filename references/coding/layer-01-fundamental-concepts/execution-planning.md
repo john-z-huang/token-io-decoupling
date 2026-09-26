@@ -20,7 +20,7 @@ No provider-specific optimization instructions at present; follow the general ru
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+In Claude Code, Plan mode may help draft the approved direction without making repository changes; use the stage/evidence outline from the general rules rather than converting a `/plan` transcript into another policy owner. After planning, confirm the permitted interaction slice and executable tool permissions before any edit. `/tasks` is a view of running/background Agent work, not a durable plan database or a substitute for stage checkpoints. In Desktop Code, the graphical plan/permission selector applies only to that Code session. [Anthropic: workflows](https://code.claude.com/docs/en/common-workflows), [Anthropic: background agents](https://code.claude.com/docs/en/sub-agents), [Anthropic: desktop mode selector](https://code.claude.com/docs/en/desktop).
 
 ## Related concepts
 

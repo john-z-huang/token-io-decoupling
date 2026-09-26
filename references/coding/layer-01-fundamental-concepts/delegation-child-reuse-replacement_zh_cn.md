@@ -28,6 +28,8 @@
 
 官方依据：[恢复子代理](https://code.claude.com/docs/en/sub-agents)。
 
+Agent team 消息、`/branch` 或独立的 Desktop 面板都不能替代恢复已记录的 Agent 身份。原子代理 ID 不可继续时，保留其证据并阻塞依赖 Slice，不得消耗未经批准的替代名额。[Anthropic：子代理恢复](https://code.claude.com/docs/en/sub-agents)。
+
 ## 相关概念
 
 - [Coding Child Creation](delegation-child-creation_zh_cn.md) — 定位子 Agent 创建能力。
