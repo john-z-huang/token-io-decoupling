@@ -4,6 +4,79 @@
 
 本路线由 Coding 工作流选择；只有模式检查点放行多代理 Coding 后才有效。执行前，该检查点组合[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)、[状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[子代理创建](../layer-01-fundamental-concepts/delegation-child-creation_zh_cn.md)、[子代理职责分配](../layer-01-fundamental-concepts/delegation-child-role-allocation_zh_cn.md)、[子代理派发](../layer-01-fundamental-concepts/delegation-child-dispatch_zh_cn.md)、[子代理复用/替换](../layer-01-fundamental-concepts/delegation-child-reuse-replacement_zh_cn.md)和[子代理生命周期](../layer-01-fundamental-concepts/delegation-child-lifecycle_zh_cn.md) owner。
 
+## 工作流路线图
+
+```mermaid
+flowchart TD
+    M01["01 Contract / 契约"]
+    M02["02 Environment / 环境与能力"]
+    M03["03 Mode / 模式与数量"]
+    M04["04 Session / 会话职责"]
+    M05["05 Allocation / 分配名额"]
+    M06["06 Context / 上下文"]
+    M07["07 Decision / 决策"]
+    M08["08 Slice / 切片放行"]
+    M09["09 Child Creation / 创建子代理"]
+    M10["10 Dispatch / 派发"]
+    M11["11 Implementation / 实现与控制"]
+    M12["12 Verification / 验证"]
+    M13["13 Repair / 修复"]
+    M14["14 Documentation / 文档"]
+    M15["15 Git / 版本控制"]
+    M16["16 Acceptance / 验收"]
+    D_BOOT{"是否需要 Bootstrap？"}
+    ACT_BOOT_PLAN["只预留 Bootstrap 角色，不创建代理"]
+    D_RECON{"是否仍需事实？"}
+    ACT_RECON_PLAN["规划有界侦察，不放行实现"]
+    D_MEMO{"是否启用 Memo？"}
+    ACT_MEMO["写入本地 Memo 与索引"]
+    D_CONTROL{"控制：继续／修订／停止"}
+    D_VERIFY{"当前 Epoch 是否通过？"}
+    D_DOC{"文档是否改变内容或 Contract？"}
+    D_GIT{"Git 是否已授权并验证？"}
+    BLOCK["阻塞：报告缺失条件"]
+    DONE["完成验收"]
+    M01 --> M02
+    M02 --> M03
+    M03 --> M04
+    M04 --> M05
+    M05 --> D_BOOT
+    D_BOOT -- 需要 --> ACT_BOOT_PLAN
+    ACT_BOOT_PLAN --> M06
+    D_BOOT -- 不需要 --> M06
+    M06 --> M07
+    M07 --> D_RECON
+    D_RECON -- 需要 --> ACT_RECON_PLAN
+    ACT_RECON_PLAN --> M08
+    D_RECON -- 不需要 --> M08
+    M08 --> M09
+    M09 --> M10
+    M10 --> D_MEMO
+    D_MEMO -- 启用 --> ACT_MEMO
+    ACT_MEMO --> M11
+    D_MEMO -- 关闭／不适用 --> M11
+    M11 --> D_CONTROL
+    D_CONTROL -- 继续／取证 --> M06
+    D_CONTROL -- 修订 --> M07
+    D_CONTROL -- 已完成 --> M12
+    D_CONTROL -- 停止 --> BLOCK
+    M12 --> D_VERIFY
+    D_VERIFY -- 可修复 --> M13
+    D_VERIFY -- 通过 --> M14
+    D_VERIFY -- 必需证据不可用 --> BLOCK
+    M13 --> M12
+    M14 --> D_DOC
+    D_DOC -- 内容变化 --> M12
+    D_DOC -- 契约变化 --> M07
+    D_DOC -- 无变化／不适用 --> M15
+    M15 --> D_GIT
+    D_GIT -- 获授权／不适用 --> M16
+    D_GIT -- 未授权 --> BLOCK
+    M16 --> DONE
+```
+
+编号节点与下方唯一路线顺序检查清单一一对应。未触发的条件概念记录 `Not applicable` 原因；路线图只负责概念选择和排序，具体动作、证据与失败处理以清单及同语言 owner 为准。
+
 ## 模式 Contract
 
 - Worker 接收一个已发布的 Interaction Slice，只能通过父级控制的通道返回；不得递归创建层级，也不得把其他 Worker 的进度当作授权。

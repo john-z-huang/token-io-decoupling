@@ -4,6 +4,65 @@
 
 This route is selected by the Coding workflow and is valid only after the Mode checkpoint releases Single-Agent Coding. Before execution, the checkpoint composes the [delegation state record](../layer-01-fundamental-concepts/delegation-state-record.md), [mode confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [mode/count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), and [mode re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md) references.
 
+## Workflow map
+
+```mermaid
+flowchart TD
+    S01["01 Contract"]
+    S02["02 Environment"]
+    S03["03 Mode"]
+    S04["04 Session"]
+    S05["05 Context"]
+    S06["06 Decision"]
+    S07["07 Implementation"]
+    S08["08 Stage Feedback"]
+    S09["09 Control"]
+    S10["10 Verification"]
+    S11["11 Repair"]
+    S12["12 Documentation"]
+    S13["13 Git"]
+    S14["14 Acceptance"]
+    D_RECON{"More facts required?"}
+    ACT_RECON["Current Session: bounded reconnaissance"]
+    D_CONTROL{"Control: Continue / Amend / Stop"}
+    D_VERIFY{"Current epoch passed?"}
+    D_DOC{"Documentation changed content or Contract?"}
+    D_GIT{"Git authorized and verified?"}
+    BLOCK["Blocked: report missing boundary"]
+    DONE["Acceptance complete"]
+    S01 --> S02
+    S02 --> S03
+    S03 --> S04
+    S04 --> S05
+    S05 --> D_RECON
+    D_RECON -- yes --> ACT_RECON
+    ACT_RECON --> S05
+    D_RECON -- no / N/A --> S06
+    S06 --> S07
+    S07 --> S08
+    S08 --> S09
+    S09 --> D_CONTROL
+    D_CONTROL -- continue / evidence --> S05
+    D_CONTROL -- amend --> S06
+    D_CONTROL -- done --> S10
+    D_CONTROL -- stop --> BLOCK
+    S10 --> D_VERIFY
+    D_VERIFY -- repairable --> S11
+    D_VERIFY -- passed --> S12
+    D_VERIFY -- required evidence unavailable --> BLOCK
+    S11 --> S10
+    S12 --> D_DOC
+    D_DOC -- content change --> S10
+    D_DOC -- Contract change --> S06
+    D_DOC -- no change / N/A --> S13
+    S13 --> D_GIT
+    D_GIT -- authorized / N/A --> S14
+    D_GIT -- no permission --> BLOCK
+    S14 --> DONE
+```
+
+Numbered nodes match the sole ordered checklist below. Record the `Not applicable` reason for a skipped conditional concept. The map selects and orders concepts; the checklist and same-language owner links provide concrete actions, evidence, and failure handling.
+
 ## Mode contract
 
 - Keep all work in the current Session. Treat Input-side Reasoning, Primary Output, documentation, and applicable checks as logical phases, not separate agents.

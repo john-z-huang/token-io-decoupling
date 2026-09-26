@@ -4,6 +4,79 @@
 
 This route is selected by the Coding workflow and is valid only after the Mode checkpoint releases Multi-Agent Coding. Before execution, the checkpoint composes the [mode-confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [count-gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), [mode-reentry](../layer-01-fundamental-concepts/delegation-mode-reentry.md), [state-record](../layer-01-fundamental-concepts/delegation-state-record.md), [child-creation](../layer-01-fundamental-concepts/delegation-child-creation.md), [child-role-allocation](../layer-01-fundamental-concepts/delegation-child-role-allocation.md), [child-dispatch](../layer-01-fundamental-concepts/delegation-child-dispatch.md), [child-reuse/replacement](../layer-01-fundamental-concepts/delegation-child-reuse-replacement.md), and [child-lifecycle](../layer-01-fundamental-concepts/delegation-child-lifecycle.md) owners.
 
+## Workflow map
+
+```mermaid
+flowchart TD
+    M01["01 Contract"]
+    M02["02 Environment"]
+    M03["03 Mode"]
+    M04["04 Session"]
+    M05["05 Allocation"]
+    M06["06 Context"]
+    M07["07 Decision"]
+    M08["08 Slice"]
+    M09["09 Child Creation"]
+    M10["10 Dispatch"]
+    M11["11 Implementation"]
+    M12["12 Verification"]
+    M13["13 Repair"]
+    M14["14 Documentation"]
+    M15["15 Git"]
+    M16["16 Acceptance"]
+    D_BOOT{"Bootstrap justified?"}
+    ACT_BOOT_PLAN["Reserve Bootstrap role only; no child yet"]
+    D_RECON{"More facts required?"}
+    ACT_RECON_PLAN["Plan bounded reconnaissance; no implementation release"]
+    D_MEMO{"Memo enabled?"}
+    ACT_MEMO["Write owned memo and index"]
+    D_CONTROL{"Control: Continue / Amend / Stop"}
+    D_VERIFY{"Current epoch passed?"}
+    D_DOC{"Documentation changed content or Contract?"}
+    D_GIT{"Git authorized and verified?"}
+    BLOCK["Blocked: report missing boundary"]
+    DONE["Acceptance complete"]
+    M01 --> M02
+    M02 --> M03
+    M03 --> M04
+    M04 --> M05
+    M05 --> D_BOOT
+    D_BOOT -- yes --> ACT_BOOT_PLAN
+    ACT_BOOT_PLAN --> M06
+    D_BOOT -- no / N/A --> M06
+    M06 --> M07
+    M07 --> D_RECON
+    D_RECON -- yes --> ACT_RECON_PLAN
+    ACT_RECON_PLAN --> M08
+    D_RECON -- no / N/A --> M08
+    M08 --> M09
+    M09 --> M10
+    M10 --> D_MEMO
+    D_MEMO -- enabled --> ACT_MEMO
+    ACT_MEMO --> M11
+    D_MEMO -- disabled / N/A --> M11
+    M11 --> D_CONTROL
+    D_CONTROL -- continue / evidence --> M06
+    D_CONTROL -- amend --> M07
+    D_CONTROL -- done --> M12
+    D_CONTROL -- stop --> BLOCK
+    M12 --> D_VERIFY
+    D_VERIFY -- repairable --> M13
+    D_VERIFY -- passed --> M14
+    D_VERIFY -- required evidence unavailable --> BLOCK
+    M13 --> M12
+    M14 --> D_DOC
+    D_DOC -- content change --> M12
+    D_DOC -- Contract change --> M07
+    D_DOC -- no change / N/A --> M15
+    M15 --> D_GIT
+    D_GIT -- authorized / N/A --> M16
+    D_GIT -- no permission --> BLOCK
+    M16 --> DONE
+```
+
+Numbered nodes match the sole ordered checklist below. Record the `Not applicable` reason for a skipped conditional concept. The map selects and orders concepts; the checklist and same-language owner links provide concrete actions, evidence, and failure handling.
+
 ## Mode contract
 
 - A Worker receives one released Interaction Slice and returns only through the parent-controlled channel; it never creates a recursive hierarchy or treats another Worker's progress as permission.

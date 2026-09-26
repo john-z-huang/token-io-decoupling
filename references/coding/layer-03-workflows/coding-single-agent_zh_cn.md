@@ -4,6 +4,65 @@
 
 本路线由 Coding 工作流选择；只有模式检查点放行单代理 Coding 后才有效。执行前，该检查点组合[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[模式/数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)和[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md) reference。
 
+## 工作流路线图
+
+```mermaid
+flowchart TD
+    S01["01 Contract / 契约"]
+    S02["02 Environment / 环境与能力"]
+    S03["03 Mode / 模式与数量"]
+    S04["04 Session / 会话职责"]
+    S05["05 Context / 上下文"]
+    S06["06 Decision / 决策"]
+    S07["07 Implementation / 实现"]
+    S08["08 Stage Feedback / 阶段反馈"]
+    S09["09 Control / 控制"]
+    S10["10 Verification / 验证"]
+    S11["11 Repair / 修复"]
+    S12["12 Documentation / 文档"]
+    S13["13 Git / 版本控制"]
+    S14["14 Acceptance / 验收"]
+    D_RECON{"是否仍需事实？"}
+    ACT_RECON["当前 Session 有界侦察"]
+    D_CONTROL{"控制：继续／修订／停止"}
+    D_VERIFY{"当前 Epoch 是否通过？"}
+    D_DOC{"文档是否改变内容或 Contract？"}
+    D_GIT{"Git 是否已授权并验证？"}
+    BLOCK["阻塞：报告缺失条件"]
+    DONE["完成验收"]
+    S01 --> S02
+    S02 --> S03
+    S03 --> S04
+    S04 --> S05
+    S05 --> D_RECON
+    D_RECON -- 需要 --> ACT_RECON
+    ACT_RECON --> S05
+    D_RECON -- 不需要 --> S06
+    S06 --> S07
+    S07 --> S08
+    S08 --> S09
+    S09 --> D_CONTROL
+    D_CONTROL -- 继续／取证 --> S05
+    D_CONTROL -- 修订 --> S06
+    D_CONTROL -- 已完成 --> S10
+    D_CONTROL -- 停止 --> BLOCK
+    S10 --> D_VERIFY
+    D_VERIFY -- 可修复 --> S11
+    D_VERIFY -- 通过 --> S12
+    D_VERIFY -- 必需证据不可用 --> BLOCK
+    S11 --> S10
+    S12 --> D_DOC
+    D_DOC -- 内容变化 --> S10
+    D_DOC -- 契约变化 --> S06
+    D_DOC -- 无变化／不适用 --> S13
+    S13 --> D_GIT
+    D_GIT -- 获授权／不适用 --> S14
+    D_GIT -- 未授权 --> BLOCK
+    S14 --> DONE
+```
+
+编号节点与下方唯一路线顺序检查清单一一对应。未触发的条件概念记录 `Not applicable` 原因；路线图只负责概念选择和排序，具体动作、证据与失败处理以清单及同语言 owner 为准。
+
 ## 模式 Contract
 
 - 所有工作保留在当前 Session 中。将 Input-side Reasoning、Primary Output、文档和适用检查视为逻辑阶段，而不是独立代理。
