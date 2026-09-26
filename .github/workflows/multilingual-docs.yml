@@ -7,6 +7,7 @@ on:
       - "agents/openai.yaml"
       - "scripts/check-multilingual-docs.py"
       - "scripts/check-layer-01-sections.py"
+      - "scripts/check-layer-02-03-provider-neutrality.py"
       - "scripts/check-context-exchange.py"
       - "tests/test_check_context_exchange.py"
       - ".gitignore"
@@ -19,6 +20,7 @@ on:
       - "agents/openai.yaml"
       - "scripts/check-multilingual-docs.py"
       - "scripts/check-layer-01-sections.py"
+      - "scripts/check-layer-02-03-provider-neutrality.py"
       - "scripts/check-context-exchange.py"
       - "tests/test_check_context_exchange.py"
       - ".gitignore"
@@ -36,6 +38,9 @@ jobs:
 
       - name: Validate Layer-01 document sections
         run: python3 scripts/check-layer-01-sections.py
+
+      - name: Validate Layer-02 and Layer-03 provider neutrality
+        run: python3 scripts/check-layer-02-03-provider-neutrality.py
 
       - name: Validate Context Exchange preservation
         run: python3 scripts/check-context-exchange.py

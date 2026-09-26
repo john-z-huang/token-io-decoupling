@@ -23,6 +23,13 @@ Every existing or new Layer-01 Markdown owner and its Chinese mirror must have t
 
 Keep concept subtopics under these sections as level-three headings. When a provider has no special optimization for this concept, retain its section and state explicitly that there is currently none and that the Agent follows the general rules. Keep `Related concepts` / `相关概念` as a separate navigation section after the three modules. Run `python3 scripts/check-layer-01-sections.py` after every Layer-01 edit or addition; a missing, duplicate, reordered, or empty module is not complete.
 
+## Layer-02 and Layer-03 provider neutrality
+
+- Layer-02 owns only provider-independent workflow checkpoints; Layer-03 owns only the provider-independent composition and ordered description of complete routes. Neither layer may name a model vendor, an Agent product, a provider-specific model, tool, parameter, command, configuration path, or launch procedure, or introduce a provider-specific optimization.
+- Put every provider-specific instruction in the applicable Layer-01 owner and its Codex or Claude section. Layer-02 and Layer-03 may link to that owner and require a generic capability or result, but must not restate the provider-specific operation, even as an example or parenthetical list.
+- When moving a provider detail out of Layer-02 or Layer-03, preserve the generic action, evidence, and failure boundary there. Update both language mirrors and the relevant Layer-01 provider sections in the same change set.
+- Run `python3 scripts/check-layer-02-03-provider-neutrality.py` for every change to either layer. Any vendor or Agent-product term reported by the script blocks completion; do not hide the term in code fences, links, or altered spelling to evade the check.
+
 ## Layer-03 route completeness
 
 - Each final Layer-03 workflow must contain one primary numbered execution checklist. Start with evidence that Contract, Environment, capability inventory, and Mode have passed before route entry; then order every Layer-02 checkpoint and Layer-01 concept that the route actually consumes, including concepts reached through operational checkpoint requirements. A `Related concepts` navigation link alone does not make an owner an execution dependency.
@@ -39,7 +46,7 @@ For each such change, complete this sequence in both language mirrors:
 1. Name the source runtime's exact tool, instruction, or control and the behavior the Skill relies on; retain a verifiable source-code or official-documentation pointer, or a runtime observation.
 2. Identify and verify the other runtime's corresponding tool or control. When it exists, specify its concrete invocation, capability limits, and any different lifecycle or parameter behavior.
 3. When no corresponding capability exists, explicitly say so in the other runtime's section and state whether its Agent must use the runtime default, maintain equivalent evidence through an available mechanism, or mark that optimization `Not applicable`. Do not imply feature parity or block unrelated work solely because an optional optimization is absent.
-4. Update the affected Layer-01 provider sections, workflow checkpoints, and Layer-03 route checks in the same change set. Keep cross-cutting provider controls in the runtime owner and confirm the English and Chinese instructions remain equivalent before completing the documentation checks.
+4. Update the affected Layer-01 provider sections and the generic outcomes in workflow checkpoints and Layer-03 route checks in the same change set. Keep cross-cutting provider controls in the runtime owner, keep Layer-02/03 provider-neutral, and confirm the English and Chinese instructions remain equivalent before completing the documentation checks.
 
 ## Markdown references and layer direction
 
@@ -80,6 +87,7 @@ Before completing any documentation slice, run all of the following from the rep
 python3 scripts/check-multilingual-docs.py
 python3 scripts/check-doc-layer-links.py
 python3 scripts/check-layer-01-sections.py
+python3 scripts/check-layer-02-03-provider-neutrality.py
 git diff --check
 ```
 
