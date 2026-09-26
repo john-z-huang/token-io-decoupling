@@ -4,10 +4,10 @@
 
 ## 动作
 
-1. 报告 `Status`、`Findings`、`Changed`、`Verification`、`Issue`、`Need` 和 `Unreleased boundary`。
-2. 检查下一步是否引入公共接口、schema 或迁移、兼容性变化、安全敏感行为、新风险域、难以逆转的修改、范围扩大或外部影响。
-3. 选择一个结果：在已批准范围内继续、修改 Contract 和决策、停止，或请求 Evidence-on-Demand。
-4. 只有结果明确后才能发布下一切片。单代理模式将其作为逻辑暂停；多代理模式由父级控制发布。
+1. 消费 Stage Feedback owner 的压缩 Progress Signal，补充当前 `Unreleased boundary`，不额外生成第二份进度报告。
+2. 检查下一动作是否跨越接口、schema、兼容性、安全、风险、难以逆转修改、范围或外部影响边界。
+3. 需要更多证据时发出 Evidence-on-Demand，并**暂停**放行；取得证据后返回本检查点。这是中间动作，不是第四种最终授权结果。
+4. 最终只选择 `Continue`、`Amend` 或 `Stop`；只有明确的 `Continue` 才放行已批准范围内的下一 Slice，`Amend` 返回 Contract 与 Decision。单代理作为逻辑暂停；多代理由父级控制放行。
 
 ## 通过条件
 

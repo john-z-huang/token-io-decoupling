@@ -4,13 +4,13 @@
 
 ## 动作
 
-1. 加载[状态记录 reference](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式确认 reference](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[模式/数量门禁 reference](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)和[模式重新进入 reference](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)。如果已发布模式分配了子代理，还要加载[子代理创建](../layer-01-fundamental-concepts/delegation-child-creation_zh_cn.md)、[子代理职责分配](../layer-01-fundamental-concepts/delegation-child-role-allocation_zh_cn.md)、[子代理派发](../layer-01-fundamental-concepts/delegation-child-dispatch_zh_cn.md)、[子代理复用/替换](../layer-01-fundamental-concepts/delegation-child-reuse-replacement_zh_cn.md)和[子代理生命周期](../layer-01-fundamental-concepts/delegation-child-lifecycle_zh_cn.md)。
-2. 路线选择前读取父级控制的任务记录，并验证当前 `gate_status`、`mode`、`child_count`、分配、生命周期和不可用能力。如果记录尚未放行，则停留在本检查点，不得继续。
-3. 同一会话后续根指令沿用已锁定的模式/数量选择，只更新任务专属状态。若与已锁定拓扑冲突，停止依赖工作并应用重新进入 owner；不得重启 15 秒计时。本检查点负责组合和验证这些 reference；不自行决定模式、数量、创建、分配、复用、例外或生命周期。
+1. 加载[状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)和[重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md) owner。不得在实际执行步骤前预先加载子代理创建、派发、生命周期或复用的完整策略。
+2. 核对父级记录：Single-Agent 使用 `child_count: 0`、`allocations: []`；Multi-Agent 数量已锁定，具有恰好 `child_count` 个初始未绑定、未分配、待放行的预留名额。本门禁放行**不**等于具体 Interaction Slice 已放行，也不授权创建子代理。
+3. 后续指令沿用已锁定 mode/count，只更新任务专属证据，不重新计时。记录或必需能力证据缺失时阻塞依赖路线。职责分配和子代理操作在路线指定的执行阶段核验。
 
 ## 通过条件
 
-任务控制记录已经包含一条已发布的有效模式结果和所需的委派状态：单代理为 `child_count: 0`，多代理为已锁定的正整数数量、有效分配和生命周期；且所选路线的能力和禁止事项得到满足。
+父级记录具有唯一有效的已放行模式、固定数量及适用时有效的预留 allocation 结构，并满足路线入口能力；不得推断已有具体子代理或 Slice 获准。
 
 ## 边界
 
