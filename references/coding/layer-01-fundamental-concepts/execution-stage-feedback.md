@@ -24,6 +24,12 @@ No provider-specific optimization instructions at present; follow the general ru
 
 No provider-specific optimization instructions at present; follow the general rules above.
 
+### Hook-assisted compact stage evidence
+
+For a persistent Claude Code child, `SubagentStop` exposes `last_assistant_message`, allowing the parent to consume a short stage result without replaying the child transcript. When a tool execution itself fails, `PostToolUseFailure` can expose its error information for the executor to report at the *existing* stage boundary; do not convert every failed command into a new high-value decision checkpoint. Neither event substitutes for explicit progress evidence, final verification, or the parent Control choice. Use native Hooks only where installed in the current Claude Code runtime, not in an unrelated Desktop Chat conversation.
+
+Official reference: [SubagentStop and PostToolUseFailure event data](https://code.claude.com/docs/en/hooks).
+
 ## Related concepts
 
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice boundaries.

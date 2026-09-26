@@ -31,6 +31,12 @@
 
 当前任务放行 worktree 隔离或工具限制时，Claude Code 可使用 `EnterWorktree`/`ExitWorktree` 或自定义 Agent 的 `isolation: worktree`，并使用 `tools`/`disallowedTools` 限定工具范围。这些控制本身不能强制执行具名文件系统路径权限；必需的路径边界无法落实时阻塞依赖切片，其余情况使用普通共享 worktree 和默认工具。
 
+### Claude Code Worktree 与路径约束
+
+确有额外 checkout 隔离需要时，获准的自定义 Agent 可使用 `isolation: worktree`；必须核验实际目录，且父级维护的 Context 根目录及具名 imports 仍符合已批准的访问策略。Claude Code 的 worktree/isolation 只隔离 checkout，**不是** OS 沙箱，也不保证 Worker 只能访问自己的路径。可用时应组合真实的文件系统沙箱/容器/路径白名单，以及经过审查、匹配相关 `Read`/`Write`/`Edit`/shell 或 MCP 文件系统操作的 `PreToolUse` 守卫；校验规范化路径与 shell 可能导致的间接写入，而不是简单比较字面前缀。`PreToolUse` 不能拦截全部上下文进入方式（如文件 mention），不能声称仅靠 Hook 就满足严格的 RO/RW/DENY 边界。必需的约束无法实施时，按通用能力规则阻塞对应 Slice，不能把 `disallowedTools` 或 worktree 当成安全沙箱。
+
+官方依据：[子代理 Worktree 隔离](https://code.claude.com/docs/en/sub-agents)、[PreToolUse 覆盖和限制](https://code.claude.com/docs/en/hooks)。
+
 ## 相关概念
 
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位 capsule 和 freshness 归属。

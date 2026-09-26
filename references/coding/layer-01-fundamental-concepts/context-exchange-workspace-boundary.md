@@ -31,6 +31,12 @@ No provider-specific optimization instructions at present; follow the general ru
 
 When the task releases worktree isolation or tool restrictions, Claude Code may use `EnterWorktree`/`ExitWorktree` or a custom agent with `isolation: worktree`, and `tools`/`disallowedTools` for tool scope. These controls alone do not enforce named filesystem path permissions. If a required path boundary cannot be enforced, block the dependent slice; otherwise use the ordinary shared worktree and default tools.
 
+### Claude Code worktree and path enforcement
+
+For a genuinely required additional checkout, an authorized custom agent may use `isolation: worktree`; verify the resulting directory and keep the parent-owned Context root and named imports reachable under the approved policy. Claude Code's worktree/isolation feature separates checkouts but is **not** an OS sandbox or a guarantee of Worker-only path access. Where available, pair a real filesystem sandbox/container/path allowlist with a reviewed `PreToolUse` guard matching relevant `Read`/`Write`/`Edit`/shell or MCP filesystem operations; validate canonical paths and the shell's possible indirect writes, not merely a literal string prefix. `PreToolUse` does not intercept every way context can enter the prompt (such as file mentions); do not claim that a Hook alone meets a hard RO/RW/DENY boundary. If required enforcement is absent, block that slice under the general capability rule rather than treating `disallowedTools` or a worktree as security isolation.
+
+Official references: [subagent worktree isolation](https://code.claude.com/docs/en/sub-agents), [PreToolUse coverage and restrictions](https://code.claude.com/docs/en/hooks).
+
 ## Related concepts
 
 - [Coding Context Exchange](context-exchange.md) — locate capsule and freshness ownership.

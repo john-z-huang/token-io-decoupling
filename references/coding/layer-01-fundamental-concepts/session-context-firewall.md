@@ -24,6 +24,12 @@ No provider-specific optimization instructions at present; follow the general ru
 
 No provider-specific optimization instructions at present; follow the general rules above.
 
+### Native bounded reads and deferred MCP discovery
+
+On local Claude Code, start repository localization with targeted `Glob`/`Grep` and small `Read` ranges, then return paths, line pointers, and compressed facts; do not route an entire recursive listing or build log through the parent. If MCP tools are configured, use Claude Code's **MCP Tool Search** to discover the relevant tool only when needed rather than forcing every MCP schema into the session. Tool Search is runtime/provider dependent (not guaranteed through third-party proxy endpoints); verify it is active before claiming deferred-loading savings. An authorized desktop extension/local MCP server may expose local resources in Desktop Chat, whereas a remote connector accesses its remote service; in both cases inspect the actual tool scope and avoid assuming local shell, unrestricted filesystem, or an independent Agent.
+
+Official references: [MCP Tool Search in Claude Code](https://code.claude.com/docs/en/mcp), [Desktop connector boundary](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors), [local MCP extension](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop).
+
 ## Related concepts
 
 - [Coding Session Model](session-model.md) — locate Session semantics and affinity.

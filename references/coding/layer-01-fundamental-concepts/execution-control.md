@@ -33,6 +33,12 @@ No provider-specific optimization instructions at present; follow the general ru
 
 No provider-specific optimization instructions at present; follow the general rules above.
 
+### Tool-boundary guard versus semantic Control
+
+An authorized Claude Code `PreToolUse` Hook may deny a concrete `Bash`, `Write`, `Edit`, or external-effect MCP operation that crosses a machine-checkable released path/permission boundary. A `Stop` hook can request a final evidence check before the current agent finishes. These are *guards*, not an alternate authority for deciding `Continue`, `Amend`, or `Stop`: the parent must still consume the Progress Signal and authorize each new slice under the general rules. Hook exit/deny signals, Desktop visual review, or an MCP connector must not silently enlarge the Contract or child budget. Do not claim these native Hooks exist in Desktop Chat/Cowork.
+
+Official reference: [Claude Code Hooks and decisions](https://code.claude.com/docs/en/hooks).
+
 ## Related concepts
 
 - [Coding Execution Planning](execution-planning.md) — locate bounded planning and reconnaissance-to-implementation relations.

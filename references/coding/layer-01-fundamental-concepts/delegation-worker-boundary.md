@@ -22,6 +22,12 @@ No provider-specific optimization instructions at present; follow the general ru
 
 No provider-specific optimization instructions at present; follow the general rules above.
 
+### Scoped worker tools
+
+For an approved Claude Code custom Worker, restrict the frontmatter `tools` allowlist and/or `disallowedTools` so the Worker cannot call `Agent` or peer-messaging tools. An Agent tool made available to the Worker can create nested subagents in current Claude Code; a prose-only prohibition is not a reliable tool boundary. If an MCP server is needed, grant only the required server/tool scope and deny unrelated MCP tools (for example, supported `mcp__<server>` patterns); this narrows tool availability, not the parent's record ownership. Project/user agent definitions can also scope `mcpServers`, but plugin-shipped agent frontmatter ignores that field. Do not assume the same restrictions are installed in Desktop Chat.
+
+Official reference: [subagent tools, disallowedTools and MCP scope](https://code.claude.com/docs/en/sub-agents).
+
 ## Related concepts
 
 - [Coding Delegation State Record](delegation-state-record.md) — locate record ownership and field constraints.
