@@ -71,6 +71,10 @@ Claude Code 仅在所选 Sonnet 版本暴露相应档位时应用以下 effort �
 
 修改 `CLAUDE.md`、本 Skill 或 Agent 定义后，若当前会话无法证实已加载新指令，则启动新的 Claude Code 会话；`/tasks` 和 `/agents` 不能作为已加载的证据。
 
+### Claude Code Plan mode 启动与 Session 边界
+
+`claude --permission-mode plan` 只在**启动新的 Claude Code CLI Session 时**选择只读 Plan mode；它不是切换已运行 Parent 或 Worker Session 权限模式的命令。不得仅为规划当前 Slice 就从当前 Session 的 Shell 中执行该命令。对于已运行的 Session，只能使用同一 Session 实际暴露且已获授权的 Plan-mode 控制；如果不存在，则遵循通用的有界规划与决策流程，不得声称获得了 Plan mode 的只读保护。另行启动的 CLI Session 既不是已记录的 Parent，也不是已分配的 Child，不能仅凭启动参数继承本 Skill 已锁定的 mode/count、已放行 Interaction Slice 或实时任务记录。Plan mode 的工具权限不授权实现，也不改变 Skill 的 Contract 与放行门禁。[Anthropic：CLI 权限模式](https://code.claude.com/docs/en/cli-reference)、[Anthropic：Plan mode](https://code.claude.com/docs/en/common-workflows)。
+
 ### Claude Desktop 连接器与工具清单
 
 Claude Desktop Session 可能暴露 Claude Code 能力、远程连接器或本地 MCP 工具；不能只凭应用名称判断具体能力。只有当前 Session 直接暴露时，才能调用 `Agent`、`SendMessage`、`/tasks`、Shell 或 Hooks。访问云端资源时调用获准的远程连接器；访问本机资源时使用获准的本地 MCP／桌面扩展工具。使用前核对已暴露工具的读写范围。连接器提供数据或操作，不等于独立 Coding Session、父级可控 Agent 身份或锁定的子代理名额。缺少必需能力时记录并阻塞依赖路线或 Slice。
