@@ -20,7 +20,7 @@ In an interactive Codex CLI or an Agent Session that exposes the direct `/plan` 
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-In Claude Code, start read-only planning with `claude --permission-mode plan`. Plan mode reads files and proposes a plan but makes no edits until the plan is approved. Use the stage/evidence outline from the general rules rather than converting a `/plan` transcript into another policy owner. After planning, confirm the permitted interaction slice and executable tool permissions before any edit. `/tasks` reports running/background Agent work; it is not a durable plan record or a substitute for stage checkpoints. In another Session, use Plan mode only through a direct command or API actually exposed to the Agent. [Anthropic: workflows](https://code.claude.com/docs/en/common-workflows), [Anthropic: background agents](https://code.claude.com/docs/en/sub-agents).
+In an existing Claude Code Session, use Plan mode for read-only stage drafting only when that Session directly exposes and authorizes the control; the launch-only flag and Session-identity boundary are owned by [Runtime and Model Provider Support](runtime-provider-support.md). Otherwise use the general bounded planning process. Preserve the stage/evidence outline in the approved plan artifact or parent task record rather than turning a Plan-mode transcript into another policy owner. Before editing, confirm both the released Interaction Slice and effective tool permissions. `/tasks` reports running/background Agent work; it is not a durable plan record or a substitute for stage checkpoints. [Anthropic: workflows](https://code.claude.com/docs/en/common-workflows), [Anthropic: background agents](https://code.claude.com/docs/en/sub-agents).
 
 ## Related concepts
 
