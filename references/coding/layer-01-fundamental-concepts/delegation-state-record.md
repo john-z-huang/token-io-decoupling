@@ -42,11 +42,13 @@ An allocation's role becomes assigned at Role Allocation. A concrete `slice_stat
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+In Codex, `AGENTS.md` is an instruction source, not a writable live mode/count record; hook events such as `SessionStart` and `SubagentStart` can refresh approved context only when configured and supported. The actual parent record, allocated identities and epoch must be read back before route release, even if a task UI or hook event reports an Agent as running. [OpenAI: hooks](https://learn.chatgpt.com/docs/hooks), [OpenAI: AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
 Claude Code has no equivalent durable Codex parent task panel. Maintain the structured mode, count, and slice record in the parent conversation and read it back before route release. `/tasks` is only a temporary subagent status view, not the canonical record.
+
+Claude Code's `/tasks` lists observable current/background subagent work, whereas `/context` inspects loaded instruction/memory files. Neither is the canonical mode/count/allocation record, and `CLAUDE.md` and auto memory are **instruction or learning context**, not a place to rewrite the live task record. If the parent resumes a conversation after compaction or restart, read back its retained task record and validate the locked gate and current epoch before releasing a new slice. A configured `SessionStart` hook may provide approved initial context, but its output alone cannot create an allocation or overwrite the locked count. [Anthropic: memory](https://code.claude.com/docs/en/memory), [Anthropic: hooks](https://code.claude.com/docs/en/hooks), [Anthropic: subagent status](https://code.claude.com/docs/en/sub-agents).
 
 ## Related concepts
 

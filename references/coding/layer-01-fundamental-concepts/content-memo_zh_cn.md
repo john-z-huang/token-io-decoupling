@@ -30,7 +30,7 @@ Memo 是用于保存稳定、可复用事实的精简执行状态文档。Worker
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Claude Code 的 `CLAUDE.md` 和 auto memory 保存长期指令或复用性学习偏好；`/compact` 压缩的是**会话历史**，`PreCompact`／`PostCompact` 只观察该过程。它们都不能代替本 Worker 拥有、受路径限制、可追溯来源的 `content-memo.md`。启用 memo 时，只将稳定决策、来源引用、变更路径、阻塞与下一步写入获授权文件；不应倾倒整个 transcript，也不应把 auto memory 复制一份进去。[Anthropic：memory](https://code.claude.com/docs/en/memory)、[Anthropic：compaction Hooks](https://code.claude.com/docs/en/hooks)。
 
 ## 相关概念
 

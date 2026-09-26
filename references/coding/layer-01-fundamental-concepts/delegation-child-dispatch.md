@@ -16,17 +16,17 @@ Check each Worker's named-path and directory permissions under [context workspac
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Codex custom agents can hold role-specific `developer_instructions`; the parent still sends the released objective, named sources, scope, and return conditions through the actual child-task invocation. An `AGENTS.md` file may contribute repository instructions but does not replace this task-specific bundle. If Codex hooks are configured, `SubagentStart` can add small context, but cannot prevent child creation and must not silently expand the authorized slice. [OpenAI: subagent profiles](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: SubagentStart](https://learn.chatgpt.com/docs/hooks).
 
 ## Claude Code CLI / Claude Desktop optimizations
-
-No provider-specific optimization instructions at present; follow the general rules above.
 
 ### Pre-dispatch tool guard
 
 For a locally configured Claude Code host, an authorized `PreToolUse` Hook matching `Agent` may inspect the proposed invocation before it executes and deny a spawn when the parent record does not show the reserved slot, released slice, and approved return path. Use an explicit deny result rather than relying on a `SubagentStart` event, which occurs after spawn and cannot veto it. Keep the human-readable Dispatch Preview in the parent conversation **before** the `Agent` tool call; a Hook alone is not evidence that the parent reviewed or exposed the preview. Guard scripts must read the actual record and fail closed on missing authorization without logging secrets or full prompts. If no reviewed Hook is installed, the semantic pre-dispatch checks remain mandatory.
 
 Official reference: [PreToolUse and SubagentStart semantics](https://code.claude.com/docs/en/hooks).
+
+A Claude Code custom subagent starts with its own context and does not automatically inherit the parent's full conversation history or previously invoked Skills. Put the released objective, limited source pointers and return conditions in the actual `Agent` task prompt. The `skills` frontmatter preloads the **entire named Skill** into that child, so configure it only if the role needs it rather than treating it as a selective concept-loading mechanism. Keep any exposed `SendMessage`/peer control out of Worker tools, preserving authorized parent-to-child follow-up. [Anthropic: subagent context and skills](https://code.claude.com/docs/en/sub-agents).
 
 ## Related concepts
 

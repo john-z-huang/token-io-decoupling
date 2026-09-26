@@ -16,11 +16,11 @@ Assign Context Bootstrap/Refresh only when reuse is likely to outweigh setup: at
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Codex `.codex/agents/*.toml` profiles can name a planned role, but registering one never creates an Agent or changes a reserved slot's child identity. Select the role and its effective `model`/`model_reasoning_effort`/`sandbox_mode` within the locked budget; a configurable global concurrent-agent limit is separate from this Skill's total child-count gate. [OpenAI: custom subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Claude Code custom subagent definitions in `.claude/agents/` or `~/.claude/agents/` may specialize a *planned* role through `description`, `tools`, `model`, and `effort`; defining or discovering such a file does not create an Agent instance or consume another locked slot. Assign any reusable role to a slot before the creation owner invokes `Agent`. The built-in Explore/Plan agents are one-shot, so do not allocate them as durable Primary Output, verifier, or follow-up roles. Preserve the locked count even if the host exposes additional built-in agents. [Anthropic: subagent scopes and one-shot agents](https://code.claude.com/docs/en/sub-agents).
 
 ## Related concepts
 

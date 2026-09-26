@@ -33,7 +33,7 @@
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Claude Code 的实质性决策阶段，如果运行环境暴露 Plan mode（通过 `/plan` 或 Desktop Code 标签页的模式选择器），可以用它在调查和拟定方案期间保持只读。这是**工具权限模式**，并非 Semantic Contract、获准修改、用户确认或父级 Slice Release 已通过的证据。不能因为生成了 Plan 就退出 Plan mode 并直接写文件；必须先经过通用 Decision Brief 与当前路线的放行边界。普通 Desktop Chat 不继承 Code 标签页的执行控制。[Anthropic：常见工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：权限](https://code.claude.com/docs/en/permissions)、[Anthropic：Desktop Code](https://code.claude.com/docs/en/desktop)。
 
 ## 相关概念
 

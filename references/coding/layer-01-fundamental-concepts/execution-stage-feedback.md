@@ -18,17 +18,17 @@ When stage evidence shows that the next stage depends on high-value judgment, ro
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+A configured Codex `PostToolUse` or `SubagentStop` hook can supply observed tool or child results for the parent's compressed Progress Signal, while `PreCompact` can mark a pending context-loss boundary. These optional events never prove semantic acceptance and must not trigger a full tool-log or transcript dump. [OpenAI: tool and lifecycle hooks](https://learn.chatgpt.com/docs/hooks).
 
 ## Claude Code CLI / Claude Desktop optimizations
-
-No provider-specific optimization instructions at present; follow the general rules above.
 
 ### Hook-assisted compact stage evidence
 
 For a persistent Claude Code child, `SubagentStop` exposes `last_assistant_message`, allowing the parent to consume a short stage result without replaying the child transcript. When a tool execution itself fails, `PostToolUseFailure` can expose its error information for the executor to report at the *existing* stage boundary; do not convert every failed command into a new high-value decision checkpoint. Neither event substitutes for explicit progress evidence, final verification, or the parent Control choice. Use native Hooks only where installed in the current Claude Code runtime, not in an unrelated Desktop Chat conversation.
 
 Official reference: [SubagentStop and PostToolUseFailure event data](https://code.claude.com/docs/en/hooks).
+
+A configured `PostToolUse` can provide actual tool outcomes at a stage boundary but cannot replace the compressed Progress Signal. Desktop Code diff review is evidence of changed lines, not proof of tests or independent verification. [Anthropic: hooks](https://code.claude.com/docs/en/hooks), [Anthropic: Desktop diff review](https://code.claude.com/docs/en/desktop).
 
 ## Related concepts
 

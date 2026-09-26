@@ -27,17 +27,17 @@ Slice 是控制单元，不是逐命令脚本。只要 Contract 和边界未变�
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+可用且已启用时，Codex `PreToolUse` 可在受支持的 `Bash`、编辑或 MCP 调用执行前拒绝操作；`PostToolUse` 只能在调用**结束后**观察。Codex 的 plan／只读及其他权限模式属于工具控制，不等于本 Skill 的 `Continue` 决策。Hook 覆盖并非完整，不能把它作为文件系统或语义授权边界的唯一证明。[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
-
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
 
 ### 工具边界守卫与语义 Control 的区分
 
 已获准的 Claude Code `PreToolUse` Hook 可以拒绝某项具体 `Bash`、`Write`、`Edit` 或具有外部影响的 MCP 操作，防止其越过可机器校验的已放行路径/权限边界。`Stop` Hook 可以在当前 Agent 结束前请求最终证据检查。这些都只是**守卫**，不是 `Continue`、`Amend`、`Stop` 的替代决策权：父级仍须消费 Progress Signal，并按通用规则批准每个新 Slice。Hook 的退出/deny 信号、Desktop 可视化审查或 MCP 连接器不得暗中扩大 Contract 或子代理预算。不得声称 Desktop Chat/Cowork 具备这些原生 Hooks。
 
 官方依据：[Claude Code Hooks 与决策](https://code.claude.com/docs/en/hooks)。
+
+Claude Code 的 `PostToolUse` 在操作后提供观察结果，不能倒过来授权已经执行的操作。Desktop Code 的 permission-mode selector 管理工具审批，不是本 Skill 的 Contract／Control 决策。[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)、[Anthropic：Desktop Code](https://code.claude.com/docs/en/desktop)。
 
 ## 相关概念
 

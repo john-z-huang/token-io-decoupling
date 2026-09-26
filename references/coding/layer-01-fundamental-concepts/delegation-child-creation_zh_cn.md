@@ -14,6 +14,8 @@
 
 本地 Codex 使用当前暴露的 MultiAgentV1/V2 spawn 操作；模型与能力绑定遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)。
 
+对于 Codex 自定义子代理，获准的 `.codex/agents/<name>.toml` 可设置 `name`、`description`、`developer_instructions`、`model`、`model_reasoning_effort`、`sandbox_mode` 和 `mcp_servers`。经父级控制的创建操作放行前，核验继承后实际生效的模型、effort 和 sandbox。注册 profile 不是创建或分配新子代理；宿主全局并发上限不等于本次会话锁定数量。Claude 的 `.claude/agents/*.md` frontmatter 不能作为 Codex 配置格式。[OpenAI：自定义子代理](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 本地 Claude Code 在数量和 allocation 放行后使用内建 `Agent` 工具，显式指定 `subagent_type`（`general-purpose` 或已命名自定义子代理）、合规模型、有界任务提示和返回条件。模型与 effort 绑定遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)；可用时在 `/tasks` 核验实际模型，因为被禁模型可能回退到继承模型。内建 Explore/Plan Agent 不返回可复用 Agent ID，不得作为持久子代理。
@@ -27,6 +29,8 @@
 实际 `Agent` 调用仍须等待已放行的具体 Slice 和未绑定的预留名额。`SubagentStart` Hook 可以注入上下文，**不能阻止创建**，不可替代创建前门禁。Claude Desktop **Code** 的本地 Session 在实际暴露能力时可复用这些 Claude Code 控制；普通 Desktop Chat 不提供等价的子代理创建工具。以 Runtime owner 核实 `Agent` 能力和实际模型，不得仅凭桌面应用名称推断。
 
 官方依据：[自定义子代理与 frontmatter](https://code.claude.com/docs/en/sub-agents)、[SubagentStart Hook](https://code.claude.com/docs/en/hooks)、[Desktop Code 标签页](https://code.claude.com/docs/en/desktop)。
+
+已审查的项目／用户自定义 subagent 若支持 `background` 和 `isolation: worktree`，两者仅控制**已经获准名额**的执行方式。后台子代理的交互式权限／工具可能受限：已放行任务需要这些能力时，应使用可用的前台调用，不可默默省略要求。Worktree 隔离的是仓库副本，不是父级 Context 根目录中的逐 Worker 路径权限。[Anthropic：subagents](https://code.claude.com/docs/en/sub-agents)。
 
 ## 相关概念
 

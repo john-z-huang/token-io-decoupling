@@ -32,6 +32,10 @@
 
 能力清单必须核验每项已分配绑定实际暴露的模型身份和 reasoning 参数。必需绑定缺失或未知时，将其记录到 `unavailable_capabilities`，并阻塞依赖的切片或路线。只有具体复杂性或重复失败/阻塞足以支持时，才将受影响切片局部提高至 `high`，随后恢复常规档位。只有 `high` 不足且重复失败/阻塞仍持续时，才升级到 `max`，之后恢复常规档位。
 
+### Codex 指令加载对应关系
+
+Codex 原生读取指令层级中的 `AGENTS.md`；不得为 Codex 创建冗余 `CLAUDE.md` 副本，也不要求 Claude Code 的 `@AGENTS.md` 导入机制。已获准的指令变更后，必须确认运行中 Session 实际加载了最新指令，无法确认则重新启动；子代理状态界面不代表指令已更新。[OpenAI：AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 ### 本地 Claude Code 模型选择
@@ -64,6 +68,10 @@ Desktop Chat 需要工具时，云端服务优先使用已授权的**远程连�
 Desktop Code 本地 Session 可通过模型下拉菜单选择/核对模型、侧边栏恢复 Session，并使用共用设置中的权限规则；Desktop 不提供 CLI `--allowedTools`/`--disallowedTools` 的逐 Session 等价界面。Desktop Code 可加载 `claude_desktop_config.json` 中的本地 MCP 定义，但独立 CLI **不会**自动读取该文件；必须核实或导入预期 Server，不能假定两边的 Server 列表完全相同。这些 UI 操作也不是 Desktop Chat 中的 CLI 参数。
 
 官方依据：[Desktop Code 标签页](https://code.claude.com/docs/en/desktop)、[Desktop 本地 MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)、[桌面与远程连接器](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors)。
+
+### Claude Code 指令加载
+
+Claude Code 通过 `CLAUDE.md` 加载项目指令；仓库权威规范位于 `AGENTS.md` 时，可以在获准的 `CLAUDE.md` 中用 `@AGENTS.md` 导入，而不是复制一份长期策略。通过 `/context` 查看已加载的 memory／指令文件；该界面和 `CLAUDE.md` 都不是父级实时 mode/count 记录。Desktop 远程 MCP connector 经 Anthropic 云端执行，并非从桌面本机 localhost 发起，因此须核对真实网络可达性和权限。[Anthropic：memory](https://code.claude.com/docs/en/memory)、[Anthropic：远程 MCP](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)。
 
 ## 相关概念
 

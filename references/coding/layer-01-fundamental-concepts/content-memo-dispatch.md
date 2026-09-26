@@ -28,7 +28,7 @@ No provider-specific optimization instructions at present; follow the general ru
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Claude Code's `Agent` prompt and custom subagent definition do not automatically implement this Skill's `write_content_memo` switch. Before invoking an authorized Worker, serialize `write_content_memo: true` or `false` in that Worker's released task bundle and ensure its writable memo directory exists when enabled. Do not rely on a default implicit in `Agent`, a `SubagentStop` hook, or the parent's auto memory to create the file-backed memo. When disabled, omit the memo write but retain the separately required return evidence. [Anthropic: subagent configuration](https://code.claude.com/docs/en/sub-agents), [Anthropic: memory](https://code.claude.com/docs/en/memory).
 
 ## Related concepts
 

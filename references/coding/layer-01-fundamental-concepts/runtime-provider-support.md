@@ -32,6 +32,10 @@ For independent role assignments on Local Codex, these are required bindings, no
 
 The capability inventory must verify each assigned binding's exposed model identity and reasoning parameter. If a required binding is missing or unknown, record it in `unavailable_capabilities` and block the dependent slice or route. Raise only the affected slice to `high` when concrete complexity or repeated failure/blockage warrants it; return to the normal tier afterward. Escalate to `max` only when `high` was insufficient and repeated failure/blockage continues, then return to the normal tier.
 
+### Codex instruction-loading correspondence
+
+Codex natively discovers `AGENTS.md` along its instruction hierarchy; do not create a `CLAUDE.md` copy or require Claude Code's `@AGENTS.md` import for Codex. After an authorized instruction change, verify the running Session actually loaded the current instructions or restart it; a child-status view is not proof of instruction freshness. [OpenAI: AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 ### Local Claude Code model selection
@@ -64,6 +68,10 @@ For a Desktop Chat tool need, use an authorized **remote connector** for hosted 
 In local Desktop Code sessions, use the model dropdown to select and inspect the model, the sidebar to resume a session, and shared settings for permission rules; Desktop has no per-session equivalent of CLI `--allowedTools`/`--disallowedTools`. The Desktop Code tab may load local MCP definitions from `claude_desktop_config.json`, but the standalone CLI does **not** read that file automatically; verify or import the intended server rather than assuming identical server lists. These UI paths are not available as CLI flags in Desktop Chat.
 
 Official references: [Desktop Code tab](https://code.claude.com/docs/en/desktop), [Desktop local MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop), [desktop vs remote connectors](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors).
+
+### Claude Code instruction loading
+
+In Claude Code, project instructions are loaded from `CLAUDE.md`. When a repository's canonical rules live in `AGENTS.md`, an authorized `CLAUDE.md` can import them with `@AGENTS.md` instead of copying their policy. Use `/context` to inspect loaded memory/instruction files; neither this view nor `CLAUDE.md` is the live parent mode/count record. A remote Desktop MCP connector executes through Anthropic's infrastructure, not through the desktop's localhost, so verify its actual network reachability and permissions. [Anthropic: memory](https://code.claude.com/docs/en/memory), [Anthropic: remote MCP](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 
 ## Related concepts
 

@@ -28,7 +28,9 @@ No provider-specific optimization instructions at present; follow the general ru
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+
+
+Use a Claude Code subagent's narrow `mcpServers` configuration only if its released slice actually needs the connected source; keep authority with the source document or tool result and transfer named pointers, not full unrelated tool outputs. For Claude Desktop, local Desktop Extensions can access specifically granted local files/apps, while remote MCP connectors execute through Anthropic infrastructure and cannot be assumed to reach private localhost or VPN-only files. If the receiving context has no authorized connector/path, use the parent-prepared read-only handoff document permitted by the general rules; otherwise block rather than widening connector scope. [Anthropic: subagent MCP scope](https://code.claude.com/docs/en/sub-agents), [Anthropic: Desktop vs web connectors](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors), [Anthropic: remote MCP](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 
 ## Related concepts
 

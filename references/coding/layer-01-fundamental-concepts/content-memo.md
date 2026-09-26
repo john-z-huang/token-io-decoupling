@@ -30,7 +30,7 @@ No provider-specific optimization instructions at present; follow the general ru
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Claude Code's `CLAUDE.md` and auto memory capture standing instructions or reusable learned preferences; `/compact` condenses a **conversation**, and `PreCompact`/`PostCompact` observe that operation. None is a substitute for this Worker-owned, path-scoped, evidence-linked `content-memo.md`. When a memo is enabled, write only stable decisions, source references, changed paths, blockers and next actions into the authorized file; do not dump a full transcript or copy auto memory into it. [Anthropic: memory](https://code.claude.com/docs/en/memory), [Anthropic: compaction hooks](https://code.claude.com/docs/en/hooks).
 
 ## Related concepts
 

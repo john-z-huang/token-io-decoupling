@@ -28,7 +28,7 @@ Worker 不得修改或重新解释该开关；只有父 Agent 可以为后续 sl
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Claude Code 的 `Agent` 提示与自定义 subagent 配置不会自动实现本 Skill 的 `write_content_memo` 开关。调用已获准的 Worker 前，必须在其已放行任务 bundle 中显式序列化 `write_content_memo: true` 或 `false`；开启时核验可写 memo 目录已准备好。不得依赖 `Agent` 的隐式默认值、`SubagentStop` Hook 或父级 auto memory 自动产生文件化 memo。关闭时只跳过 memo 写入，仍需返回独立要求的执行证据。[Anthropic：子代理配置](https://code.claude.com/docs/en/sub-agents)、[Anthropic：memory](https://code.claude.com/docs/en/memory)。
 
 ## 相关概念
 

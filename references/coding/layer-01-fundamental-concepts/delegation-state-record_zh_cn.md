@@ -42,11 +42,13 @@ Role Allocation 阶段分配 allocation 的职责。具体 `slice_status: releas
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Codex 中，`AGENTS.md` 是指令来源，不是可写的实时 mode/count 记录；仅在已配置且受支持时，`SessionStart`、`SubagentStart` 等 Hook 才可补充获准上下文。即使任务界面或 Hook 显示某 Agent 运行中，仍要在路线放行前读回父级规范记录、已分配身份及 epoch。[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)、[OpenAI：AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 Claude Code 没有与 Codex 父级任务面板相同的持久能力。在父级会话中维护结构化模式、数量和切片记录，每次路线放行前读回。`/tasks` 只是短暂的子代理状态界面，不是规范记录。
+
+Claude Code 的 `/tasks` 显示当前／后台子代理任务状态，`/context` 查看已加载的指令／memory 文件。它们都不是规范的 mode/count/allocation 记录；`CLAUDE.md` 与 auto memory 是**指令或学习上下文**，不能作为重写实时任务记录的位置。父会话在 compaction 或重新启动后恢复时，必须先读回保留的任务记录，核验锁定门禁与当前 epoch，再放行新 Slice。已配置的 `SessionStart` Hook 可以提供获准的初始上下文，但仅凭 Hook 输出不得创建 allocation 或覆盖已锁定数量。[Anthropic：memory](https://code.claude.com/docs/en/memory)、[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)、[Anthropic：子代理状态](https://code.claude.com/docs/en/sub-agents)。
 
 ## 相关概念
 

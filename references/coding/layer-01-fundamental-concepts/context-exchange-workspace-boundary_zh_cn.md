@@ -25,7 +25,7 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+当前 Codex 的自定义子代理可配置 `sandbox_mode` 和各自 MCP；运行环境支持且启用 Hooks 时，`PreToolUse` 可检查受支持的 `Bash`、`apply_patch` 和 MCP 调用。必须覆盖实际暴露的可写路径，并测试越界写入被拒绝；不能把 `workspace-write`、worktree 或 `AGENTS.md` 当成完整文件系统策略。Codex 的部分专用工具路径可能绕过 Hooks；若影响所需边界，必须通过操作系统／文件系统／容器权限强制保护，否则阻塞依赖 Slice。Claude 的 `permissions.deny` 语法不能照搬至 Codex。[OpenAI：子代理配置](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：Hooks 覆盖](https://learn.chatgpt.com/docs/hooks)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
@@ -36,6 +36,8 @@
 确有额外 checkout 隔离需要时，获准的自定义 Agent 可使用 `isolation: worktree`；必须核验实际目录，且父级维护的 Context 根目录及具名 imports 仍符合已批准的访问策略。Claude Code 的 worktree/isolation 只隔离 checkout，**不是** OS 沙箱，也不保证 Worker 只能访问自己的路径。可用时应组合真实的文件系统沙箱/容器/路径白名单，以及经过审查、匹配相关 `Read`/`Write`/`Edit`/shell 或 MCP 文件系统操作的 `PreToolUse` 守卫；校验规范化路径与 shell 可能导致的间接写入，而不是简单比较字面前缀。`PreToolUse` 不能拦截全部上下文进入方式（如文件 mention），不能声称仅靠 Hook 就满足严格的 RO/RW/DENY 边界。必需的约束无法实施时，按通用能力规则阻塞对应 Slice，不能把 `disallowedTools` 或 worktree 当成安全沙箱。
 
 官方依据：[子代理 Worktree 隔离](https://code.claude.com/docs/en/sub-agents)、[PreToolUse 覆盖和限制](https://code.claude.com/docs/en/hooks)。
+
+获准且可用时，组合 Claude Code 的 `permissions.deny` 与确定性的 `PreToolUse`，覆盖**所有实际可写工具路径**，包括 Shell 间接写入与 MCP 文件系统工具；依赖前必须测试一次真正被拒绝的跨 Worker 写入。`PostToolUse` 太晚，不能阻止已执行操作；`SubagentStart` 不能否决创建。本地 Desktop Extension 拥有自己的操作系统／文件权限，不能凭已安装就断言符合 Worker 的 RW/RO/DENY。[Anthropic：权限](https://code.claude.com/docs/en/permissions)、[Anthropic：Hooks](https://code.claude.com/docs/en/hooks)、[Anthropic：本地 MCP](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop)。
 
 ## 相关概念
 

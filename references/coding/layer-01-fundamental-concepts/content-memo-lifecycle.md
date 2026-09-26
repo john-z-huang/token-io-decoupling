@@ -16,17 +16,17 @@ Cleanup and compaction must preserve the `content-memo.md` content contract rath
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+When this Codex runtime has configured `PreCompact` or `SubagentStop` hooks, use the event as an observation that an owned memo may need updating; do not assume the hook serializes the memo, knows every relevant source, or can write to another Worker's directory. The Worker still updates its explicitly authorized memo/index before source evidence is lost. [OpenAI: lifecycle/compaction hooks](https://learn.chatgpt.com/docs/hooks).
 
 ## Claude Code CLI / Claude Desktop optimizations
-
-No provider-specific optimization instructions at present; follow the general rules above.
 
 ### Compaction- and exit-aware memo checkpoints
 
 Where local Claude Code Hooks are configured and `write_content_memo: true`, an optional `PreCompact` hook can detect impending compaction and check whether the existing, permitted memo/index is current **before** compaction; it cannot be assumed to prompt the Agent to write new state, and `SubagentStop` may surface the final message to the parent for a last memo/index check. These event signals do not themselves write a correct memo, and a generic hook that copies an entire transcript violates the memo content contract. Maintain the memo at ordinary material milestones independently of hooks, keep its exact named path in the Worker index, and never run the hook workflow when memo is explicitly disabled. Hooks require their scripts to be available and trusted in the actual Claude Code session; do not infer they run in Desktop Chat/Cowork.
 
 Official reference: [PreCompact and SubagentStop hooks](https://code.claude.com/docs/en/hooks).
+
+Even after `PreCompact` or `SubagentStop` fires, a hook cannot reconstruct missing source evidence or retroactively satisfy a skipped memo update. Keep ownership and write scope with the Worker rather than copying an incomplete hook transcript to the parent's memo. [Anthropic: compaction and child-stop hooks](https://code.claude.com/docs/en/hooks).
 
 ## Related concepts
 

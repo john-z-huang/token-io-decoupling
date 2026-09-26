@@ -33,7 +33,7 @@ No provider-specific optimization instructions at present; follow the general ru
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+For a substantive Claude Code decision, the available Plan mode (via `/plan`, or the Desktop Code-tab mode selector) can keep the session read-only during research and proposed-plan drafting. It is a **tool permission mode**, not evidence that the Semantic Contract, authorized mutations, user confirmation, or parent Slice Release has passed. Do not leave Plan mode and mutate files merely because a plan was generated; use the general Decision Brief and the active workflow's release boundary first. Ordinary Desktop Chat does not inherit this Code-tab execution control. [Anthropic: common workflows](https://code.claude.com/docs/en/common-workflows), [Anthropic: permissions](https://code.claude.com/docs/en/permissions), [Anthropic: Desktop Code](https://code.claude.com/docs/en/desktop).
 
 ## Related concepts
 
