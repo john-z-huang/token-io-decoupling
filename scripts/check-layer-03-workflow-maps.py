@@ -151,6 +151,88 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
         errors.append(f'{path}: checklist numbering must be {wanted_steps}, got {recorded_steps}')
     for edge in sorted(spec['edges'] - edges):
         errors.append(f'{path}: required map edge {edge[0]} -> {edge[1]} is missing')
+    for edge in sorted(edges - spec['edges']):
+        errors.append(f'{path}: unexpected map edge {edge[0]} -> {edge[1]}; update the approved route contract explicitly')
+    skip_edges = (
+        (('D_RECON', 'S06'), ('D_DOC', 'S13'), ('D_GIT', 'S14'))
+        if route == 'single-agent' else
+        (('D_BOOT', 'M06'), ('D_RECON', 'M08'), ('D_MEMO', 'M10'),
+         ('D_DOC', 'M15'), ('D_GIT', 'M16'))
+    )
+    skip_words = (r'\b(?:no|N/A|disabled|not applicable)\b'
+                  if lang == 'en' else r'不适用|不需要|关闭|无变化')
+    for source, target in skip_edges:
+        match = re.search(
+            r'(?m)^\s*' + source + r'\s+--\s+(.+?)\s+-->\s+' + target + r'\s*
+    # Extra edges are allowed only when they cannot bypass the permission/verification gates.
+    forbidden_shortcuts = {
+        (f'{prefix}03', f'{prefix}09'),
+        (f'{prefix}07', f'{prefix}12' if route == 'multi-agent' else f'{prefix}10'),
+        (f'{prefix}11' if route == 'multi-agent' else f'{prefix}09', 'DONE'),
+        ('BLOCK', 'DONE'),
+    }
+    for edge in sorted(forbidden_shortcuts & edges):
+        errors.append(f'{path}: unauthorized shortcut {edge[0]} -> {edge[1]}')
+    if route == 'single-agent' and (bad := spec['forbidden'].search(maps[0].group(2))):
+        errors.append(f'{path}: Single-Agent map contains an inapplicable child branch: {bad.group()}')
+    for target in ('BLOCK', 'DONE'):
+        if any(source == target for source, _ in edges):
+            errors.append(f'{path}: terminal node {target} must have no outgoing edges')
+    return set(nodes), edges
+
+
+def check_repository(root: Path) -> list[str]:
+    errors: list[str] = []
+    for lang, policy_name in (('en', 'AGENTS.md'), ('zh', 'AGENTS_zh_cn.md')):
+        path = root / policy_name
+        if not path.is_file():
+            errors.append(f'missing policy file: {path}')
+            continue
+        policy = path.read_text(encoding='utf-8')
+        if RULE_TITLE[lang] not in policy:
+            errors.append(f'{path}: missing workflow-map ownership section {RULE_TITLE[lang]}')
+        if SCRIPT not in policy:
+            errors.append(f'{path}: required validator command is not documented')
+    for route in ROUTE_SPECS:
+        english = validate_route(root, route, 'en', errors)
+        chinese = validate_route(root, route, 'zh', errors)
+        if english and chinese and english != chinese:
+            errors.append(f'{route}: English and Chinese Mermaid node IDs/edges differ')
+    path = root / WORKFLOW
+    if not path.is_file():
+        errors.append(f'missing workflow file: {path}')
+    else:
+        ci = path.read_text(encoding='utf-8')
+        for required in (SCRIPT, TEST, f'python3 {SCRIPT}',
+                         f"python3 -m unittest discover -s tests -p 'test_check_layer_03_workflow_maps.py'"):
+            if required not in ci:
+                errors.append(f'{path}: missing CI trigger or command: {required}')
+        if '"**/*.md"' not in ci and "'**/*.md'" not in ci:
+            errors.append(f'{path}: Markdown changes must trigger CI')
+    return errors
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[1])
+    args = parser.parse_args()
+    errors = check_repository(args.root.resolve())
+    if errors:
+        print('Layer-03 workflow map validation failed:', file=sys.stderr)
+        for error in errors:
+            print(f'- {error}', file=sys.stderr)
+        return 1
+    print('Layer-03 workflow map validation passed (2 routes x 2 languages; map/checklist/CI aligned).')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
+,
+            maps[0].group(2),
+        )
+        if not match or not re.search(skip_words, match.group(1), re.I):
+            errors.append(f'{path}: conditional {source} -> {target} must label its skip/Not applicable path')
     # Extra edges are allowed only when they cannot bypass the permission/verification gates.
     forbidden_shortcuts = {
         (f'{prefix}03', f'{prefix}09'),

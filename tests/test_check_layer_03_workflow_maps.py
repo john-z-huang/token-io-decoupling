@@ -94,6 +94,18 @@ class WorkflowMapTests(unittest.TestCase):
         self.mutate(self.route(), 'S11 --> S10', 'S11 --> S12')
         self.reject('required map edge S11 -> S10')
 
+    def test_missing_skip_label(self) -> None:
+        self.mutate(self.route(), 'D_RECON --> S06', 'D_RECON --> S06')
+        # The fixture has no label; the structure requires a visible skip reason.
+        self.reject('must label its skip/Not applicable path')
+
+    def test_extra_unapproved_edge(self) -> None:
+        path = self.route()
+        text = path.read_text(encoding='utf-8').replace('    S14 --> DONE\n',
+                            '    S14 --> DONE\n    S04 --> S14\n', 1)
+        path.write_text(text, encoding='utf-8')
+        self.reject('unexpected map edge')
+
     def test_language_topology_drift(self) -> None:
         path = self.route(lang='zh')
         text = path.read_text(encoding='utf-8')
