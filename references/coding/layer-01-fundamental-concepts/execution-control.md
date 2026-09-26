@@ -23,7 +23,7 @@ Release slices in parallel only when they are independent and non-conflicting. D
 
 ### Control Checkpoint
 
-At a material boundary, use a compressed Control Checkpoint with the status, findings, changed scope, verification, issue, need, and unreleased boundary that matter to the next decision. The input-side responsibility chooses `Continue`, `Amend`, or `Stop`; `Continue` releases only the next bounded slice, and `Amend` changes the Contract or boundary before work resumes. In a Single-Agent route, this is an internal reasoning pause rather than a simulated self-message.
+At a material boundary, consume the Progress Signal owned by [execution stage feedback](execution-stage-feedback.md), append the current `Unreleased boundary`, and make one final control choice: `Continue`, `Amend`, or `Stop`. `Continue` releases only the next bounded slice; `Amend` changes the Contract or boundary before work resumes. `Evidence-on-Demand` is an intermediate evidence request that pauses release and returns to this checkpoint; it is not a fourth final authorization outcome. In a Single-Agent route, this is an internal reasoning pause, not a simulated self-message.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
