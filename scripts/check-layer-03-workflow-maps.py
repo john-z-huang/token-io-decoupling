@@ -163,7 +163,11 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
                   if lang == 'en' else r'不适用|不需要|关闭|无变化')
     for source, target in skip_edges:
         match = re.search(
-            r'(?m)^\s*' + source + r'\s+--\s+(.+?)\s+-->\s+' + target + r'\s*
+            r'(?m)^\s*' + source + r'\s+--\s+(.+?)\s+-->\s+' + target,
+            maps[0].group(2),
+        )
+        if not match or not re.search(skip_words, match.group(1), re.I):
+            errors.append(f'{path}: conditional {source} -> {target} must label its skip/Not applicable path')
     # Extra edges are allowed only when they cannot bypass the permission/verification gates.
     forbidden_shortcuts = {
         (f'{prefix}03', f'{prefix}09'),
