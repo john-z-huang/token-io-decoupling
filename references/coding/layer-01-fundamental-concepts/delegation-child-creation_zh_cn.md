@@ -6,7 +6,7 @@
 
 ## 创建能力
 
-创建子 Agent 意味着使用真实的 MultiAgentV1 或 MultiAgentV2 spawn 操作，而不是 peer chat 或通用 task。运行时必须暴露子 Agent identity、由父级控制的发送/返回路径、有界等待和生命周期状态。子 Agent 接收一个 role、一个 Interaction Slice、authorized scope/mutations、return conditions 和必要 context。若任何能力缺失或无法验证，则停止并报告阻塞，不改变 mode、count，也不创建额外名额。
+使用运行环境真实且由父级控制的子代理机制。本地 Codex 使用当前暴露的 MultiAgentV1/V2 spawn 操作。本地 Claude Code 使用内建 `Agent` 工具，并显式指定符合要求的 `subagent_type`、单次调用模型、有界任务提示和返回条件；厂商专属控制与缺失的对应能力统一写在[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)。不得把 peer chat、无法跟踪的通用任务或自动触发的内建 Explore/Plan Agent 当作持久子代理。必须具备子代理身份、父级控制的返回/继续路径、有界等待和可观察生命周期。创建后将实际身份和生命周期绑定到计划 allocation。能力缺失或无法核实时阻塞创建，不更改模式或数量。
 
 ## 相关概念
 

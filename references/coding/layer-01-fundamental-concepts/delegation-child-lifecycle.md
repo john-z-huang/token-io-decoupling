@@ -6,7 +6,7 @@ This module owns persistence and lifecycle states for created Multi-Agent childr
 
 ## Lifecycle states
 
-Keep created children visible and persistent. Do not close, shut down, archive, delete, or remove them from the task panel. While pending or running, wait or send only authorized input. A child may become completed only after returning its final result and evidence.
+Keep each created child's identity and lifecycle persistent in the parent record. On runtimes with a durable task panel, do not close, shut down, archive, delete, or remove a child merely as cleanup. If a runtime status view is temporary, retain the child ID and status in the parent record after its UI row disappears. While pending or running, wait or send only authorized input. A child may become completed only after returning its final result and evidence.
 
 ## Error and interruption
 

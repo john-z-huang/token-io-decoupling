@@ -6,7 +6,7 @@ This module owns the only capability to create a Multi-Agent child. Its entry re
 
 ## Creation capability
 
-Creating a child means using a real MultiAgentV1 or MultiAgentV2 spawn operation, not a peer chat or generic task. The runtime must expose a child identity, a parent-controlled send/return path, bounded waiting, and lifecycle status. The child receives a role, an Interaction Slice, authorized scope/mutations, return conditions, and required context. If any capability is missing or unverifiable, stop and report the block without changing mode, count, or creating an extra slot.
+Use the runtime's real parent-controlled child mechanism. On Local Codex, use the exposed MultiAgentV1/V2 spawn operation. On Local Claude Code, use the built-in `Agent` tool with an explicit eligible `subagent_type`, per-invocation model, bounded task prompt, and return conditions; the exact provider controls and unavailable equivalents are centralized in [Runtime and Model Provider Support](runtime-provider-support.md). Never use a peer chat, an untracked generic task, or an automatic built-in Explore/Plan agent as a persistent child. Require a child identity, parent-controlled return/resume path, bounded wait, and observable lifecycle. After creation, bind its actual identity and lifecycle to the planned allocation. Missing or unverifiable capabilities block creation; they do not change the mode or count.
 
 ## Related concepts
 

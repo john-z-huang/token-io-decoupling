@@ -8,16 +8,16 @@
 
 模式、拓扑、职责分配、生命周期、复用、替换、例外和不可用处理由当前工作流提供。职责名称本身不能授权新建 Session 或改变拓扑。
 
-单代理 Coding 中，当前 Session 执行逻辑上的决策、实现、文档、Git 和允许的检查阶段；逻辑职责不表示存在独立 Agent。多代理 Coding 中，只使用当前工作流明确提供的独立 Session：
+单代理 Coding 中，当前 Session 执行逻辑上的决策、实现、文档、Git 和允许的检查阶段；逻辑职责不表示存在独立 Agent。多代理 Coding 中，只使用当前工作流明确提供的子级执行上下文；具体 Session 隔离由运行环境决定：
 
 ```text
-根父 Session → Input-side Reasoning
-已分配 Primary Session → Primary Output
-已分配 verifier Session → Change Verification
-已分配文档/Git Session → Documentation/Comments & Git Operations
+根父上下文 → Input-side Reasoning
+已分配 Primary 子级上下文 → Primary Output
+已分配 verifier 子级上下文 → Change Verification
+已分配文档/Git 子级上下文 → Documentation/Comments & Git Operations
 ```
 
-未分配的职责在独立 Session 层面不可用。不得通过给同一 Session 的工作改名来模拟独立性。
+未分配的职责在独立子级上下文层面不可用。不得通过给同一上下文的工作改名来模拟独立性。描述厂商子级的实际隔离时，遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)。
 
 ## Primary Execution Session 与 Affinity
 

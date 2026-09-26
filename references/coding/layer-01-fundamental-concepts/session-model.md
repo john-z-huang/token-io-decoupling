@@ -8,16 +8,16 @@ This module owns Coding Session semantics, Single-Agent and Multi-Agent Session 
 
 The active workflow supplies mode, topology, role allocation, lifecycle, reuse, replacement, exceptions, and unavailable handling. A role label never authorizes a new Session or topology change.
 
-In Single-Agent Coding, the current Session performs the logical decision, implementation, documentation, Git, and allowed-check phases; logical roles do not imply independent Agents. In Multi-Agent Coding, use only the independent Sessions explicitly supplied by the active workflow:
+In Single-Agent Coding, the current Session performs the logical decision, implementation, documentation, Git, and allowed-check phases; logical roles do not imply independent Agents. In Multi-Agent Coding, use only the child execution contexts explicitly supplied by the active workflow; their exact Session isolation depends on the runtime provider:
 
 ```text
-root parent Session → Input-side Reasoning
-assigned Primary Session → Primary Output
-assigned verifier Session → Change Verification
-assigned docs/Git Session → Documentation/Comments & Git Operations
+root parent context → Input-side Reasoning
+assigned Primary child context → Primary Output
+assigned verifier child context → Change Verification
+assigned docs/Git child context → Documentation/Comments & Git Operations
 ```
 
-An unassigned role is unavailable as an independent Session. Do not simulate independence by relabeling same-Session work.
+An unassigned role is unavailable as an independent child context. Do not simulate independence by relabeling same-context work. Apply [Runtime and Model Provider Support](runtime-provider-support.md) when describing the actual isolation of a provider's child.
 
 ## Primary Execution Session and affinity
 

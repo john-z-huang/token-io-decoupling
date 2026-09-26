@@ -6,7 +6,7 @@ This module owns re-entry into the mode and count gates and the blocking boundar
 
 ## Gate re-entry
 
-Every new root directive reopens the mode and count gates, including when work continues in the same project. A later directive that materially changes delegation must re-apply those gates before changing topology or continuing the changed route.
+A later root directive in the same conversation reuses the locked mode and child-count budget; it does not reopen the selection timer or replace the session decision. Refresh task-specific Contract, slices, allocations' current lifecycle, and capability evidence as needed. Re-enter mode and count selection only in a new conversation. If a later same-conversation instruction conflicts with the locked topology, stop dependent work and explain that a new conversation is required for a different mode or count.
 
 ## Higher-priority constraints and capability blocks
 
