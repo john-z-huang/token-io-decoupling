@@ -24,7 +24,18 @@ Use the inventory and shared runtime rules from the [Environment capability inve
 
 ## Composed checkpoint sequence
 
-The Coding selector has already completed the Contract, Environment, and Mode checkpoints as pre-route gates; do not re-run them here. Follow the common catalog by composing [Context](../layer-02-workflow-concepts/context.md), [Decision](../layer-02-workflow-concepts/decision.md), [Implementation](../layer-02-workflow-concepts/implementation.md), [Control](../layer-02-workflow-concepts/control.md), [Verification](../layer-02-workflow-concepts/verification.md), [Verification independence](../layer-02-workflow-concepts/verification-independence.md), [Verification reporting](../layer-02-workflow-concepts/verification-reporting.md), [Verification epoch](../layer-02-workflow-concepts/verification-epoch.md), [Repair](../layer-02-workflow-concepts/repair.md), [Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate.md), [Repair execution](../layer-02-workflow-concepts/repair-execution.md), [Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff.md), [Documentation](../layer-02-workflow-concepts/documentation.md), [Git](../layer-02-workflow-concepts/git.md), and [Acceptance](../layer-02-workflow-concepts/acceptance.md). Multi-Agent deltas: load Context when a Worker needs reusable state; make a Decision before material dispatch; pair each released Implementation slice with a Control boundary; use a fresh independent Verification Session when allocated; route failures through Repair and a new verification epoch; then continue to Documentation, Git, and Acceptance.
+The Coding selector has already completed Contract, Environment, and Mode as pre-route gates; confirm their released state without re-running them. Execute the numbered checkpoints in order. At each item, read its linked owner, confirm its required outcome, and record completion or the reason a conditional item does not apply. Do not advance with an unresolved required outcome.
+
+1. Confirm the task record still permits this route, with a locked child count and planned allocations under [child role allocation](../layer-01-fundamental-concepts/delegation-child-role-allocation.md). Do not create or dispatch a child before the needed task facts and slice are confirmed.
+2. [Context](../layer-02-workflow-concepts/context.md): confirm whether a Worker needs reusable state; load and complete this checkpoint only when it does.
+3. [Decision](../layer-02-workflow-concepts/decision.md): confirm the direction, constraints, acceptance, and released Interaction Slice before material dispatch.
+4. [Implementation](../layer-02-workflow-concepts/implementation.md): apply [child creation](../layer-01-fundamental-concepts/delegation-child-creation.md), [child lifecycle](../layer-01-fundamental-concepts/delegation-child-lifecycle.md), and [child dispatch](../layer-01-fundamental-concepts/delegation-child-dispatch.md) as applicable to one released slice; confirm the Worker returns evidence within the authorized scope.
+5. [Control](../layer-02-workflow-concepts/control.md): record the returned result and unreleased boundary; resolve or re-decide before another material dispatch. Repeat steps 2–5 when another slice is needed, following [child reuse/replacement](../layer-01-fundamental-concepts/delegation-child-reuse-replacement.md) and lifecycle limits.
+6. [Verification](../layer-02-workflow-concepts/verification.md): check the current final-state fingerprint or epoch. Apply [Verification independence](../layer-02-workflow-concepts/verification-independence.md), [Verification reporting](../layer-02-workflow-concepts/verification-reporting.md), and [Verification epoch](../layer-02-workflow-concepts/verification-epoch.md); confirm whether an allocated verifier produced an independent verdict or independent verification is unavailable.
+7. If verification finds a concrete failure, apply [Repair](../layer-02-workflow-concepts/repair.md), [Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate.md), [Repair execution](../layer-02-workflow-concepts/repair-execution.md), and [Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff.md) in that order. Confirm the narrow repair scope, then return to step 6 for the new epoch. Record why Repair does not apply when no failure exists.
+8. [Documentation](../layer-02-workflow-concepts/documentation.md): confirm whether documentation or comments are required, then release applicable bounded work after the verification boundary permits it.
+9. [Git](../layer-02-workflow-concepts/git.md): confirm authorization and the verification boundary before each applicable repository or remote effect; record why this checkpoint does not apply when there is no Git work.
+10. [Acceptance](../layer-02-workflow-concepts/acceptance.md): match every acceptance criterion to current evidence, account for unavailable checks and effects, and only then report completion.
 
 ## Context and dispatch
 
@@ -63,3 +74,8 @@ Mark a section `Not applicable` with a reason instead of creating a no-op Worker
 ## Completion
 
 Apply the root Coding completion gate for documentation, Git, and final acceptance. The final report must distinguish real independent Sessions from same-Session logical phases and map every acceptance criterion to current evidence.
+
+## Related concepts
+
+- [Shared protocols](../../share/shared-protocols.md) — locate common Session conventions.
+- [Session role ownership](../layer-01-fundamental-concepts/session-role-ownership.md) — locate parent and Worker responsibilities.

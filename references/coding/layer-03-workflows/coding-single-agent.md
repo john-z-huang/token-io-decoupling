@@ -25,7 +25,17 @@ Use the inventory and shared runtime rules from the [Environment capability inve
 
 ## Composed checkpoint sequence
 
-The Coding selector has already completed the Contract, Environment, and Mode checkpoints as pre-route gates; do not re-run them here. Follow the common catalog by composing [Context](../layer-02-workflow-concepts/context.md), [Decision](../layer-02-workflow-concepts/decision.md), [Implementation](../layer-02-workflow-concepts/implementation.md), [Control](../layer-02-workflow-concepts/control.md), [Verification](../layer-02-workflow-concepts/verification.md), [Verification independence](../layer-02-workflow-concepts/verification-independence.md), [Verification reporting](../layer-02-workflow-concepts/verification-reporting.md), [Verification epoch](../layer-02-workflow-concepts/verification-epoch.md), [Repair](../layer-02-workflow-concepts/repair.md), [Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate.md), [Repair execution](../layer-02-workflow-concepts/repair-execution.md), [Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff.md), [Documentation](../layer-02-workflow-concepts/documentation.md), [Git](../layer-02-workflow-concepts/git.md), and [Acceptance](../layer-02-workflow-concepts/acceptance.md). Single-Agent deltas: load Context only for bounded reconnaissance or recovery; make a Decision before each material direction; implement one approved slice with a Control boundary; verify the current final-state fingerprint; use Repair only after a concrete failure and re-run Verification for the new epoch; then continue to Documentation, Git, and Acceptance in the current Session.
+The Coding selector has already completed Contract, Environment, and Mode as pre-route gates; confirm their released state without re-running them. Execute the numbered checkpoints in order in the current Session. At each item, read its linked owner, confirm its required outcome, and record completion or the reason a conditional item does not apply. Do not advance with an unresolved required outcome.
+
+1. [Context](../layer-02-workflow-concepts/context.md): confirm whether bounded reconnaissance or recovery is needed; load and complete this checkpoint only when it is.
+2. [Decision](../layer-02-workflow-concepts/decision.md): confirm the direction, constraints, and acceptance for the next material slice before implementing it.
+3. [Implementation](../layer-02-workflow-concepts/implementation.md): execute one approved Interaction Slice; confirm that its changes remain within the released scope.
+4. [Control](../layer-02-workflow-concepts/control.md): record the slice result and unreleased boundary; resolve or re-decide before releasing another material slice. Repeat steps 1–4 when another slice is needed.
+5. [Verification](../layer-02-workflow-concepts/verification.md): check the current final-state fingerprint or epoch. Apply [Verification independence](../layer-02-workflow-concepts/verification-independence.md), [Verification reporting](../layer-02-workflow-concepts/verification-reporting.md), and [Verification epoch](../layer-02-workflow-concepts/verification-epoch.md); confirm that same-Session checks are reported as such.
+6. If verification finds a concrete failure, apply [Repair](../layer-02-workflow-concepts/repair.md), [Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate.md), [Repair execution](../layer-02-workflow-concepts/repair-execution.md), and [Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff.md) in that order. Confirm the narrow repair scope, then return to step 5 for the new epoch. Record why Repair does not apply when no failure exists.
+7. [Documentation](../layer-02-workflow-concepts/documentation.md): confirm whether documentation or comments are required, then complete the applicable work and checks after the verification boundary permits it.
+8. [Git](../layer-02-workflow-concepts/git.md): confirm authorization and the verification boundary before each applicable repository or remote effect; record why this checkpoint does not apply when there is no Git work.
+9. [Acceptance](../layer-02-workflow-concepts/acceptance.md): match every acceptance criterion to current evidence, account for unavailable checks and effects, and only then report completion.
 
 ## Single-Session execution rules
 
@@ -44,3 +54,8 @@ For trivial behavior-preserving or documentation-only work, use the applicable f
 ## Completion
 
 Apply the root Coding completion gate. The final report must identify the work as Single-Agent, distinguish provisional checks from final checks, state any unavailable independent verification, and map every acceptance criterion to current evidence.
+
+## Related concepts
+
+- [Shared protocols](../../share/shared-protocols.md) — locate common Session conventions.
+- [Session role ownership](../layer-01-fundamental-concepts/session-role-ownership.md) — locate phase responsibilities.

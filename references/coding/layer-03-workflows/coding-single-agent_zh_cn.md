@@ -25,7 +25,17 @@
 
 ## 已组合的检查点顺序
 
-Coding 选择器已经将 Contract、Environment 和 Mode 检查点作为路线前门禁完成；本路线不得重复执行。遵循 Coding 工作流，并从[Context](../layer-02-workflow-concepts/context_zh_cn.md)开始组合[Decision](../layer-02-workflow-concepts/decision_zh_cn.md)、[Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)、[Control](../layer-02-workflow-concepts/control_zh_cn.md)、[Verification](../layer-02-workflow-concepts/verification_zh_cn.md)、[Verification independence](../layer-02-workflow-concepts/verification-independence_zh_cn.md)、[Verification reporting](../layer-02-workflow-concepts/verification-reporting_zh_cn.md)、[Verification epoch](../layer-02-workflow-concepts/verification-epoch_zh_cn.md)、[Repair](../layer-02-workflow-concepts/repair_zh_cn.md)、[Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate_zh_cn.md)、[Repair execution](../layer-02-workflow-concepts/repair-execution_zh_cn.md)、[Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff_zh_cn.md)、[Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)、[Git](../layer-02-workflow-concepts/git_zh_cn.md)和[Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)。单代理差异：仅在需要有界侦察或恢复时加载上下文；每个实质性方向前执行决策；每次只实现一个获批准切片并设置控制边界；针对当前最终状态指纹验证；只有具体失败时才修复，并针对新的 epoch 重新验证；然后在当前 Session 中进入文档、Git 和验收。
+Coding 选择器已经将 Contract、Environment 和 Mode 作为路线前门禁完成；确认其已放行状态，不要重新执行。在当前 Session 中按编号顺序执行以下检查点。每一项均须读取所链接的 owner，确认其要求的结果，并记录已完成或条件步骤不适用的原因。必需结果未解决时不得进入下一项。
+
+1. [Context](../layer-02-workflow-concepts/context_zh_cn.md)：确认是否需要有界侦察或恢复；仅在需要时加载并完成该检查点。
+2. [Decision](../layer-02-workflow-concepts/decision_zh_cn.md)：实现下一个实质性切片前，确认方向、约束和验收条件。
+3. [Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)：执行一个已批准的 Interaction Slice；确认改动保持在已放行范围内。
+4. [Control](../layer-02-workflow-concepts/control_zh_cn.md)：记录切片结果及未发布边界；发布另一实质性切片前先解决问题或重新决策。需要其他切片时重复第 1–4 项。
+5. [Verification](../layer-02-workflow-concepts/verification_zh_cn.md)：检查当前最终状态指纹或 epoch。应用[Verification independence](../layer-02-workflow-concepts/verification-independence_zh_cn.md)、[Verification reporting](../layer-02-workflow-concepts/verification-reporting_zh_cn.md)和[Verification epoch](../layer-02-workflow-concepts/verification-epoch_zh_cn.md)；确认如实报告同一 Session 检查的性质。
+6. 验证发现具体失败时，依次应用[Repair](../layer-02-workflow-concepts/repair_zh_cn.md)、[Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate_zh_cn.md)、[Repair execution](../layer-02-workflow-concepts/repair-execution_zh_cn.md)和[Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff_zh_cn.md)。确认窄范围修复后，返回第 5 项验证新 epoch。没有失败时记录 Repair 不适用的原因。
+7. [Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)：确认是否需要文档或注释；验证边界允许后，完成适用工作和检查。
+8. [Git](../layer-02-workflow-concepts/git_zh_cn.md)：每次适用的仓库或远程影响前确认授权和验证边界；没有 Git 工作时记录该检查点不适用的原因。
+9. [Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)：将每个验收条件对应到当前证据，说明不可用检查和实际影响，然后才能报告完成。
 
 ## 单 Session 执行规则
 
@@ -44,3 +54,8 @@ Coding 选择器已经将 Contract、Environment 和 Mode 检查点作为路线�
 ## 完成
 
 执行根 Coding 完成门禁。最终报告必须说明这是单代理工作，区分临时检查和最终检查，说明不可用的独立验证，并把每个验收条件映射到当前证据。
+
+## 相关概念
+
+- [共享协议](../../share/shared-protocols_zh_cn.md)——定位共用 Session 约定。
+- [Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md)——定位各阶段职责。

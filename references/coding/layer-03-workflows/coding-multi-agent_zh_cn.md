@@ -24,7 +24,18 @@
 
 ## 已组合的检查点顺序
 
-Coding 选择器已经将 Contract、Environment 和 Mode 检查点作为路线前门禁完成；本路线不得重复执行。遵循 Coding 工作流，并从[Context](../layer-02-workflow-concepts/context_zh_cn.md)开始组合[Decision](../layer-02-workflow-concepts/decision_zh_cn.md)、[Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)、[Control](../layer-02-workflow-concepts/control_zh_cn.md)、[Verification](../layer-02-workflow-concepts/verification_zh_cn.md)、[Verification independence](../layer-02-workflow-concepts/verification-independence_zh_cn.md)、[Verification reporting](../layer-02-workflow-concepts/verification-reporting_zh_cn.md)、[Verification epoch](../layer-02-workflow-concepts/verification-epoch_zh_cn.md)、[Repair](../layer-02-workflow-concepts/repair_zh_cn.md)、[Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate_zh_cn.md)、[Repair execution](../layer-02-workflow-concepts/repair-execution_zh_cn.md)、[Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff_zh_cn.md)、[Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)、[Git](../layer-02-workflow-concepts/git_zh_cn.md)和[Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)。多代理差异：Worker 需要可复用状态时加载上下文；实质性派发前执行决策；每个已发布实现切片配套控制边界；分配了 verifier 时使用新的独立验证 Session；失败经过修复和新的验证 epoch 后，再进入文档、Git 和验收。
+Coding 选择器已经将 Contract、Environment 和 Mode 作为路线前门禁完成；确认其已放行状态，不要重新执行。按编号顺序执行以下检查点。每一项均须读取所链接的 owner，确认其要求的结果，并记录已完成或条件步骤不适用的原因。必需结果未解决时不得进入下一项。
+
+1. 确认任务记录仍允许本路线，且已按[子代理职责分配](../layer-01-fundamental-concepts/delegation-child-role-allocation_zh_cn.md)锁定子代理数量和计划分配。确认任务事实及所需切片前，不得创建或派发子代理。
+2. [Context](../layer-02-workflow-concepts/context_zh_cn.md)：确认 Worker 是否需要可复用状态；仅在需要时加载并完成该检查点。
+3. [Decision](../layer-02-workflow-concepts/decision_zh_cn.md)：实质性派发前确认方向、约束、验收条件和已发布 Interaction Slice。
+4. [Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)：对一个已发布切片按需应用[子代理创建](../layer-01-fundamental-concepts/delegation-child-creation_zh_cn.md)、[子代理生命周期](../layer-01-fundamental-concepts/delegation-child-lifecycle_zh_cn.md)和[子代理派发](../layer-01-fundamental-concepts/delegation-child-dispatch_zh_cn.md)；确认 Worker 返回的证据保持在授权范围内。
+5. [Control](../layer-02-workflow-concepts/control_zh_cn.md)：记录返回结果和未发布边界；再次实质性派发前先解决问题或重新决策。需要其他切片时重复第 2–5 项，并遵循[子代理复用/替换](../layer-01-fundamental-concepts/delegation-child-reuse-replacement_zh_cn.md)和生命周期限制。
+6. [Verification](../layer-02-workflow-concepts/verification_zh_cn.md)：检查当前最终状态指纹或 epoch。应用[Verification independence](../layer-02-workflow-concepts/verification-independence_zh_cn.md)、[Verification reporting](../layer-02-workflow-concepts/verification-reporting_zh_cn.md)和[Verification epoch](../layer-02-workflow-concepts/verification-epoch_zh_cn.md)；确认已分配 verifier 是否给出独立结论，或独立验证不可用。
+7. 验证发现具体失败时，依次应用[Repair](../layer-02-workflow-concepts/repair_zh_cn.md)、[Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate_zh_cn.md)、[Repair execution](../layer-02-workflow-concepts/repair-execution_zh_cn.md)和[Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff_zh_cn.md)。确认窄范围修复后，返回第 6 项验证新 epoch。没有失败时记录 Repair 不适用的原因。
+8. [Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)：确认是否需要文档或注释；验证边界允许后，发布适用的有界工作。
+9. [Git](../layer-02-workflow-concepts/git_zh_cn.md)：每次适用的仓库或远程影响前确认授权和验证边界；没有 Git 工作时记录该检查点不适用的原因。
+10. [Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)：将每个验收条件对应到当前证据，说明不可用检查和实际影响，然后才能报告完成。
 
 ## 上下文与派发
 
@@ -63,3 +74,8 @@ Unreleased boundary: ...
 ## 完成
 
 执行根 Coding 完成门禁，处理文档、Git 和最终验收。最终报告必须区分真实独立 Session 与同一 Session 的逻辑阶段，并把每个验收条件映射到当前证据。
+
+## 相关概念
+
+- [共享协议](../../share/shared-protocols_zh_cn.md)——定位共用 Session 约定。
+- [Session 职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md)——定位父级与 Worker 的职责。

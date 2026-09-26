@@ -15,11 +15,14 @@ The Skill defines orchestration conventions only. It cannot bypass higher-priori
 
 ## Start here
 
-1. Read [Coding workflow](workflows/coding.md), complete the Contract checkpoint, then complete the Environment checkpoint and establish or load the Environment capability inventory. The Mode checkpoint then consumes that established inventory and releases exactly one mode workflow:
-   - [Single-Agent route](references/coding/layer-03-workflows/coding-single-agent.md) when the task control record contains `mode: Single-Agent Coding`;
-   - [Multi-Agent route](references/coding/layer-03-workflows/coding-multi-agent.md) when it contains `mode: Multi-Agent Coding` and a locked positive `child_count`.
-2. Load only the references required by the selected workflow and current step.
-3. Return to `workflows/coding.md` only when the task changes direction or before final acceptance.
+Follow these steps in order. Confirm each checkpoint's outcome before advancing; if a conditional step does not apply, record why instead of silently skipping it.
+
+1. Read the [Coding workflow](workflows/coding.md) and complete its Contract checkpoint; confirm the task constraints and acceptance criteria.
+2. Complete the Environment checkpoint; establish or load the Environment capability inventory and confirm the capabilities needed by this task.
+3. Complete the Mode checkpoint using that inventory; confirm the task control record contains a released mode and its required state.
+4. Select exactly one route from that record: [Single-Agent](references/coding/layer-03-workflows/coding-single-agent.md) for `mode: Single-Agent Coding`, or [Multi-Agent](references/coding/layer-03-workflows/coding-multi-agent.md) for `mode: Multi-Agent Coding` with a locked positive `child_count`.
+5. Follow the selected route's numbered checkpoint sequence one step at a time. Load only the references needed for the current step; complete or explicitly disposition each step before moving to the next.
+6. Return to the [Coding workflow](workflows/coding.md) when the task changes direction or before final acceptance; confirm the route's completion evidence before reporting `COMPLETE`.
 
 ## Scope
 
