@@ -71,6 +71,10 @@ For Single-Agent Coding, use Sonnet at `medium` for material work, with the same
 
 After changing `CLAUDE.md`, this Skill, or an agent definition, start a new Claude Code session if the current session cannot prove it loaded the changed instructions; `/tasks` and `/agents` do not establish that proof.
 
+### Claude Code Plan-mode startup and Session boundary
+
+`claude --permission-mode plan` selects read-only Plan mode **when launching a new Claude Code CLI Session**. It is not a command for switching an already running Parent or Worker Session into Plan mode: do not invoke it from the active Session's shell merely to plan the current slice. For an existing Session, use only a Plan-mode control actually exposed and authorized within that same Session; if none exists, follow the general bounded planning and decision process without claiming Plan-mode protection. A separately launched CLI Session is not the recorded Parent or an allocated Child and does not inherit this Skill's locked mode/count, released Interaction Slice, or live task record by virtue of its launch flags. Plan-mode tool permissions do not authorize implementation or change the Skill's Contract and release gates. [Anthropic: CLI permission mode](https://code.claude.com/docs/en/cli-reference), [Anthropic: Plan mode](https://code.claude.com/docs/en/common-workflows).
+
 ### Claude Desktop connectors and tool inventory
 
 Claude Desktop Sessions can expose Claude Code capabilities, remote connectors, or local MCP tools; the app identity alone does not establish which are available. Use `Agent`, `SendMessage`, `/tasks`, shell, or hooks only when the current Session directly exposes them. For hosted resources, call an authorized remote connector; for machine-local resources, use an authorized local MCP/desktop-extension tool. Check the exposed tool's read/write scope before use. A connector provides data or actions, not an independent Coding Session, a parent-controlled Agent identity, or a locked child slot. If a required capability is absent, record it and block the dependent route or slice.
