@@ -9,9 +9,16 @@ Any Agent or contributor that creates, edits, renames, moves, or deletes documen
 - Every maintained Markdown document must have one clear, reusable responsibility. Its filename, title, opening ownership statement, sections, and links must describe the same responsibility.
 - If a document combines independently reusable concepts, split it into separate English and `_zh_cn.md` owner pairs. Do not preserve a complex reverse-concept combination merely to avoid creating files.
 - Do not leave duplicated former sections or an old tail after a split. The original document must retain only its declared owner responsibility; moved content belongs only to the new owner.
-- Layer-01 documents own fundamental concepts. Layer-02 documents own individual workflow checkpoints or narrowly scoped checkpoint owners. Layer-03 documents may compose lower-layer owners into a route, but must not redefine their policies.
-- A route-composition document may list and order owners; it must not become a second owner for mode gates, delegation lifecycle, environment capability rules, repair execution, verification independence/reporting/epochs, or other lower-layer concepts.
+- Layer-01 documents own fundamental concepts. Layer-02 documents own individual workflow checkpoints or narrowly scoped checkpoint owners. Layer-03 documents compose lower-layer owners into an executable route with explicit checks, but must not redefine their policies.
+- A route-composition document may order owners and restate their operational checks and required evidence; it must not become a second owner for mode gates, delegation lifecycle, environment capability rules, repair execution, verification independence/reporting/epochs, or other lower-layer concepts.
 - New owner files and any composition entries that consume them must be updated in the same change set. Keep English and Simplified Chinese files semantically mirrored with equivalent constraints and action strength.
+
+## Layer-03 route completeness
+
+- Each final Layer-03 workflow must contain one primary numbered execution checklist. Start with evidence that Contract, Environment, capability inventory, and Mode have passed before route entry; then order every Layer-02 checkpoint and Layer-01 concept that the route actually consumes, including concepts reached through operational checkpoint requirements. A `Related concepts` navigation link alone does not make an owner an execution dependency.
+- For every consumed owner, link its same-language file at the step where it applies and state the concrete action to confirm, the required result or evidence, and what to do when it fails or is unavailable. For conditional owners, state the trigger and require an explicit `Not applicable` reason when the trigger is absent. Do not replace a check with a bare link or a collective phrase such as “apply all references.”
+- Make the order executable: pre-route gates; Session/role and capability boundaries; bounded context; Decision and planning; slice release; child creation/dispatch only when authorized; Implementation and Control; current-state Verification; conditional Repair and re-verification; Documentation; Git; final Acceptance. Include the applicable return loop and changed-epoch checks so a smaller model cannot skip a required boundary.
+- Before changing a route, compare its checklist against all operationally consumed lower-layer owners and their pass conditions. Update the checklist and both language mirrors in the same change set whenever a consumed owner or its execution requirement changes. Keep lower-layer files authoritative; route checklists summarize and sequence their requirements without inventing new policy.
 
 ## Markdown references and layer direction
 
