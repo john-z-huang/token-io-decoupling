@@ -35,7 +35,7 @@ class WorkflowMapTests(unittest.TestCase):
                 checklist = validator.CHECKLIST_TITLE[lang]
                 lines = ''.join(f'{i}. **{name}.** Content and link.\n'
                                 for i, name in enumerate(spec['steps'], 1))
-                file.write_text(f'# route\n\n{header}\n\n\x60\x60\x60mermaid\n{diagram}\x60\x60\x60\n\n'
+                skip_edges = ((('D_RECON', 'S06'), ('D_DOC', 'S13'), ('D_GIT', 'S14'))\n                              if route == 'single-agent' else\n                              (('D_BOOT', 'M06'), ('D_RECON', 'M08'), ('D_MEMO', 'M10'),\n                               ('D_DOC', 'M15'), ('D_GIT', 'M16')))\n                localized = diagram\n                for source, target in skip_edges:\n                    old = f'    {source} --> {target}\\n'\n                    new = f'    {source} -- {"no / N/A" if lang == "en" else "不适用"} --> {target}\\n'\n                    localized = localized.replace(old, new)\n                file.write_text(f'# route\n\n{header}\n\n\x60\x60\x60mermaid\n{localized}\x60\x60\x60\n\n'
                                 f'{checklist}\n\n{lines}', encoding='utf-8')
         for lang, filename in (('en', 'AGENTS.md'), ('zh', 'AGENTS_zh_cn.md')):
             (self.root / filename).write_text(validator.RULE_TITLE[lang] + '\n' +
@@ -95,7 +95,7 @@ class WorkflowMapTests(unittest.TestCase):
         self.reject('required map edge S11 -> S10')
 
     def test_missing_skip_label(self) -> None:
-        self.mutate(self.route(), 'D_RECON --> S06', 'D_RECON --> S06')
+        self.mutate(self.route(), 'D_RECON -- no / N/A --> S06', 'D_RECON --> S06')
         # The fixture has no label; the structure requires a visible skip reason.
         self.reject('must label its skip/Not applicable path')
 
