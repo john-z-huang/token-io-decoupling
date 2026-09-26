@@ -35,7 +35,16 @@ class WorkflowMapTests(unittest.TestCase):
                 checklist = validator.CHECKLIST_TITLE[lang]
                 lines = ''.join(f'{i}. **{name}.** Content and link.\n'
                                 for i, name in enumerate(spec['steps'], 1))
-                skip_edges = ((('D_RECON', 'S06'), ('D_DOC', 'S13'), ('D_GIT', 'S14'))\n                              if route == 'single-agent' else\n                              (('D_BOOT', 'M06'), ('D_RECON', 'M08'), ('D_MEMO', 'M10'),\n                               ('D_DOC', 'M15'), ('D_GIT', 'M16')))\n                localized = diagram\n                for source, target in skip_edges:\n                    old = f'    {source} --> {target}\\n'\n                    new = f'    {source} -- {"no / N/A" if lang == "en" else "不适用"} --> {target}\\n'\n                    localized = localized.replace(old, new)\n                file.write_text(f'# route\n\n{header}\n\n\x60\x60\x60mermaid\n{localized}\x60\x60\x60\n\n'
+                skip_edges = ((('D_RECON', 'S06'), ('D_DOC', 'S13'), ('D_GIT', 'S14'))
+                              if route == 'single-agent' else
+                              (('D_BOOT', 'M06'), ('D_RECON', 'M08'), ('D_MEMO', 'M10'),
+                               ('D_DOC', 'M15'), ('D_GIT', 'M16')))
+                localized = diagram
+                for source, target in skip_edges:
+                    old = f'    {source} --> {target}\n'
+                    new = f'    {source} -- {"no / N/A" if lang == "en" else "不适用"} --> {target}\n'
+                    localized = localized.replace(old, new)
+                file.write_text(f'# route\n\n{header}\n\n\x60\x60\x60mermaid\n{localized}\x60\x60\x60\n\n'
                                 f'{checklist}\n\n{lines}', encoding='utf-8')
         for lang, filename in (('en', 'AGENTS.md'), ('zh', 'AGENTS_zh_cn.md')):
             (self.root / filename).write_text(validator.RULE_TITLE[lang] + '\n' +
