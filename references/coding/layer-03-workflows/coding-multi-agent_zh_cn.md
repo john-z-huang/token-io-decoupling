@@ -29,7 +29,7 @@ flowchart TD
     D_RECON{"是否仍需事实？"}
     ACT_RECON_PLAN["规划有界侦察，不放行实现"]
     D_MEMO{"是否启用 Memo？"}
-    ACT_MEMO["写入本地 Memo 与索引"]
+    ACT_MEMO["核验 Memo 工作区与开关"]
     D_CONTROL{"控制：继续／修订／停止"}
     D_VERIFY{"当前 Epoch 是否通过？"}
     D_DOC{"文档是否改变内容或 Contract？"}
@@ -50,11 +50,11 @@ flowchart TD
     ACT_RECON_PLAN --> M08
     D_RECON -- 不需要 --> M08
     M08 --> M09
-    M09 --> M10
-    M10 --> D_MEMO
+    M09 --> D_MEMO
+    M10 --> M11
     D_MEMO -- 启用 --> ACT_MEMO
-    ACT_MEMO --> M11
-    D_MEMO -- 关闭／不适用 --> M11
+    ACT_MEMO --> M10
+    D_MEMO -- 关闭／不适用 --> M10
     M11 --> D_CONTROL
     D_CONTROL -- 继续／取证 --> M06
     D_CONTROL -- 修订 --> M07

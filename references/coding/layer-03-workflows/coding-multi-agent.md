@@ -29,7 +29,7 @@ flowchart TD
     D_RECON{"More facts required?"}
     ACT_RECON_PLAN["Plan bounded reconnaissance; no implementation release"]
     D_MEMO{"Memo enabled?"}
-    ACT_MEMO["Write owned memo and index"]
+    ACT_MEMO["Verify memo workspace and switch"]
     D_CONTROL{"Control: Continue / Amend / Stop"}
     D_VERIFY{"Current epoch passed?"}
     D_DOC{"Documentation changed content or Contract?"}
@@ -50,11 +50,11 @@ flowchart TD
     ACT_RECON_PLAN --> M08
     D_RECON -- no / N/A --> M08
     M08 --> M09
-    M09 --> M10
-    M10 --> D_MEMO
+    M09 --> D_MEMO
+    M10 --> M11
     D_MEMO -- enabled --> ACT_MEMO
-    ACT_MEMO --> M11
-    D_MEMO -- disabled / N/A --> M11
+    ACT_MEMO --> M10
+    D_MEMO -- disabled / N/A --> M10
     M11 --> D_CONTROL
     D_CONTROL -- continue / evidence --> M06
     D_CONTROL -- amend --> M07
