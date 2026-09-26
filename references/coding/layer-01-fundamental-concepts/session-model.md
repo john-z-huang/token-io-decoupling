@@ -25,7 +25,7 @@ An unassigned role is unavailable as an independent child context. Do not simula
 
 Maintain one Primary Execution Session: the assigned Primary Output Session in multi-agent mode, otherwise the current Session. Reuse it for related exploration, implementation, diagnosis, tests, repairs, and local execution to preserve stable context. A Session is sticky but not immortal; lifecycle changes use the active workflow's recorded state.
 
-Session separation and Git worktree separation are distinct. Workers for one development request normally share its primary worktree; an isolated worktree requires an explicitly released isolation scope. Do not claim cache hits or other runtime savings merely from Session reuse.
+Session isolation and Git worktree isolation are distinct. Workspace and filesystem isolation requirements belong to [Coding Context Exchange Workspace Boundary](context-exchange-workspace-boundary.md); Session reuse alone does not prove cache hits or runtime savings.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 

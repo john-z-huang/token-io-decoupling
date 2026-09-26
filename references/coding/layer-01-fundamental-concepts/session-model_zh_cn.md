@@ -23,9 +23,9 @@
 
 ### Primary Execution Session 与 Affinity
 
-维持一个 Primary Execution Session：多代理模式下是已分配的 Primary Output Session，否则是当前 Session。相关探索、实现、诊断、测试、修复和局部执行优先复用它，以保留稳定上下文。Session 应保持 sticky but not immortal；生命周期变化遵循当前工作流的已记录状态。
+维持一个 Primary Execution Session：多代理模式下为已分配的 Primary Output Session，否则为当前 Session。相关探索、实现、诊断、测试、修复和局部执行优先复用它，以保留稳定上下文。Session 应保持 sticky but not immortal；生命周期变化遵循当前工作流的已记录状态。
 
-Session 隔离与 Git worktree 隔离不同。同一开发需求的 Worker 通常共享 primary worktree；隔离 worktree 必须有明确放行的隔离范围。不得仅因复用 Session 就宣称一定命中缓存或获得其他运行时收益。
+Session 隔离与 Git worktree 隔离不同。工作区和文件系统隔离条件由[上下文工作区边界](context-exchange-workspace-boundary_zh_cn.md)定义；不得仅因复用 Session 就声称命中缓存或获得其他运行时收益。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
