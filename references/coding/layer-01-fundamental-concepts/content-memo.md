@@ -26,7 +26,7 @@ Do not write a per-command journal or record complete logs, complete diffs, larg
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Codex local memories (when enabled) summarize reusable cross-chat experience, while `/compact` reduces one chat's context. Neither guarantees an up-to-date Worker-owned memo for the current authorized slice, and neither carries the required source hashes, changed paths or next-action contract by itself. Keep stable execution state in the explicit `content-memo.md`, with only bounded evidence pointers; do not copy local memory files or entire CLI transcripts. [OpenAI: local memories](https://learn.chatgpt.com/docs/customization/memories), [OpenAI: compact command](https://learn.chatgpt.com/docs/developer-commands).
 
 ## Claude Code CLI / Claude Desktop optimizations
 

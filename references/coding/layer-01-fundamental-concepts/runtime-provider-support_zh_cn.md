@@ -36,6 +36,14 @@
 
 Codex 原生读取指令层级中的 `AGENTS.md`；不得为 Codex 创建冗余 `CLAUDE.md` 副本，也不要求 Claude Code 的 `@AGENTS.md` 导入机制。已获准的指令变更后，必须确认运行中 Session 实际加载了最新指令，无法确认则重新启动；子代理状态界面不代表指令已更新。[OpenAI：AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)。
 
+### Desktop 界面与宿主能力清单
+
+当前 ChatGPT Desktop 整合了 **Chat**、**Work** 和 **Codex**。声称具备本地 Codex Session 前，必须识别实际界面：Codex 视图可提供项目／worktree 对话与开发者工具；Chat 是对话界面；Work 可以运行自己的云端子代理流程，但它属于不同运行环境，不能因此视为本地 Codex Child 或具有本地 Shell。Codex quick chat 也不自动成为绑定项目的主执行 Session。移动端 Remote 的仓库与 worktree 仍位于连接的宿主，而不是手机。依据实际工具与审批检查能力，不能仅凭桌面窗口推断。[OpenAI：桌面体验](https://learn.chatgpt.com/docs/use-chatgpt)、[OpenAI：子代理可用性](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 宿主](https://learn.chatgpt.com/docs/environments/git-worktrees)。
+
+### 实际生效的本地配置
+
+Codex CLI、IDE 与 ChatGPT Desktop 中的 Codex 可以共享当前宿主的 `~/.codex/config.toml` 和受信任项目的 `.codex/config.toml`；不受信任的项目不会加载项目级 config、rules 和 hooks。按照命令行覆盖、项目、profile、用户及系统层解析当前设置；子代理还继承父级当前回合的实时权限／sandbox 覆盖。声称完整加载较大的指令文件前，检查 `AGENTS.override.md`、嵌套指令优先级与 `project_doc_max_bytes`。上述能力检查不修改本 Skill 固定的职责模型绑定。[OpenAI：配置优先级](https://learn.chatgpt.com/docs/config-file/config-basic)、[OpenAI：指令发现](https://learn.chatgpt.com/docs/agent-configuration/agents-md)、[OpenAI：子代理覆盖设置](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 ### 本地 Claude Code 模型选择

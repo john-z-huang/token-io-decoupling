@@ -18,6 +18,10 @@ Worker 只能通过父级控制的 Dispatch 接收相关的已放行快照。不
 
 Codex 已配置的 `PreToolUse` Hook 可以通过 `Agent` 别名匹配本地 `spawn_agent` 工具；可用时，经测试后将其作为阻止未授权递归委派的辅助保护，同时遵循运行时真实工具／sandbox 限制。部分专用工具绕过 Hook，因此仅有提示词或 Hook 不证明递归或 peer 消息完全不可用。父级控制的创建／follow-up 权限与 Worker 权限必须分离。[OpenAI：Hooks 工具覆盖](https://learn.chatgpt.com/docs/hooks)。
 
+### Worker 实际生效权限
+
+Codex 自定义 Agent 文件可以设置 `developer_instructions`、`sandbox_mode`、具名 `mcp_servers` 和 `skills.config`，但省略字段会继承父级，spawn 时还可能重新应用父级的实时权限覆盖。必须检查最终 Child，而不是只信任文件内的目标 profile。安装并信任 `PreToolUse` Hook 时，可以在调用前匹配本地 `spawn_agent`／`Agent` 及实际暴露的 peer 操作；但覆盖范围之外的工具不受其完整保护，必须使用真实运行时／操作系统限制，否则阻塞依赖 Worker。[OpenAI：继承的子代理设置](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：工具 Hook 覆盖例外](https://learn.chatgpt.com/docs/hooks)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 ### Worker 工具范围

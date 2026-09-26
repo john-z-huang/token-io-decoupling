@@ -27,6 +27,10 @@
 
 当前 Codex 的自定义子代理可配置 `sandbox_mode` 和各自 MCP；运行环境支持且启用 Hooks 时，`PreToolUse` 可检查受支持的 `Bash`、`apply_patch` 和 MCP 调用。必须覆盖实际暴露的可写路径，并测试越界写入被拒绝；不能把 `workspace-write`、worktree 或 `AGENTS.md` 当成完整文件系统策略。Codex 的部分专用工具路径可能绕过 Hooks；若影响所需边界，必须通过操作系统／文件系统／容器权限强制保护，否则阻塞依赖 Slice。Claude 的 `permissions.deny` 语法不能照搬至 Codex。[OpenAI：子代理配置](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：Hooks 覆盖](https://learn.chatgpt.com/docs/hooks)。
 
+### Codex 管理的 Worktree 与强制路径边界
+
+只有用户确实授权额外 checkout 时，Desktop Codex 的 `Worktree` 才用于创建 chat 对应的独立 Git checkout；`Handoff` 可以在 Local 与 Worktree 间移动该 chat。管理的 worktree 可能使用 detached HEAD，且后续可能被清理；它**不是** Child Agent 名额，不能保证父级 `CONTEXT_ROOT` 可达，也不是操作系统级 RW/RO/DENY 隔离。建立 checkout 后核验真实路径，再分别通过可用的操作系统／文件系统／容器控制以及可信且启用时已测试的 `PreToolUse` 防护限制 Worker 写入。Hooks 不能覆盖所有专用路径，也不能撤回已经执行的命令；必须隔离而无法强制时阻塞 Slice。[OpenAI：worktree 行为](https://learn.chatgpt.com/docs/environments/git-worktrees)、[OpenAI：Hooks 覆盖](https://learn.chatgpt.com/docs/hooks)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 当前任务放行 worktree 隔离或工具限制时，Claude Code 可使用 `EnterWorktree`/`ExitWorktree` 或自定义 Agent 的 `isolation: worktree`，并使用 `tools`/`disallowedTools` 限定工具范围。这些控制本身不能强制执行具名文件系统路径权限；必需的路径边界无法落实时阻塞依赖切片，其余情况使用普通共享 worktree 和默认工具。

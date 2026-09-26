@@ -16,7 +16,9 @@ A plan-level revision is allowed for an `agent: unbound` reserved allocation aft
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+### Reuse the allocated Codex thread
+
+When the host exposes parent-controlled steering or an actual follow-up to a recorded Codex child thread, address that same identity for its authorized repair or next epoch. `/agent` in CLI and the subagent panel in Desktop are useful to **locate** the thread; opening a view or a separate Codex chat/worktree does not create continuity with the allocated child. Requesting a fresh subagent creates a distinct identity and must not be disguised as reuse after count locking. If the original thread cannot be steered or continued, keep its evidence and block the dependent Multi-Agent slice; do not infer a cross-session resume capability from a sidebar. [OpenAI: subagent orchestration and thread controls](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: worktree chats](https://learn.chatgpt.com/docs/environments/git-worktrees).
 
 ## Claude Code CLI / Claude Desktop optimizations
 

@@ -18,6 +18,10 @@ Check each Worker's named-path and directory permissions under [context workspac
 
 Codex custom agents can hold role-specific `developer_instructions`; the parent still sends the released objective, named sources, scope, and return conditions through the actual child-task invocation. An `AGENTS.md` file may contribute repository instructions but does not replace this task-specific bundle. If Codex hooks are configured, `SubagentStart` can add small context, but cannot prevent child creation and must not silently expand the authorized slice. [OpenAI: subagent profiles](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: SubagentStart](https://learn.chatgpt.com/docs/hooks).
 
+### Observable dispatch and pre-spawn guard
+
+In interactive Codex CLI, the parent may use `/agent` to inspect the selected Agent thread, but the command is a navigation aid rather than the Dispatch Preview. In ChatGPT Desktop's Codex view, open the subagent thread to inspect its work and the summary returned to the main chat. Before the real spawn, keep the brief task instruction in the parent turn and put objective, authorized paths, source pointers, explicit `write_content_memo` and return conditions in the child's actual task prompt. If a reviewed `PreToolUse` hook matches `spawn_agent`/`Agent`, it can deny a tool invocation missing a released slice; `SubagentStart` is too late to veto creation. Check installed hook trust and coverage rather than claiming this guard exists by default. [OpenAI: subagent surfaces](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: hook tool coverage](https://learn.chatgpt.com/docs/hooks).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 ### Pre-dispatch tool guard

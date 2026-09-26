@@ -29,6 +29,10 @@ Slice 是控制单元，不是逐命令脚本。只要 Contract 和边界未变�
 
 可用且已启用时，Codex `PreToolUse` 可在受支持的 `Bash`、编辑或 MCP 调用执行前拒绝操作；`PostToolUse` 只能在调用**结束后**观察。Codex 的 plan／只读及其他权限模式属于工具控制，不等于本 Skill 的 `Continue` 决策。Hook 覆盖并非完整，不能把它作为文件系统或语义授权边界的唯一证明。[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)。
 
+### 原生审批与聚焦审查
+
+已配置且可信时，Codex `PreToolUse` 可通过受支持的阻止决策拒绝本地工具调用；对该事件返回 `continue: false` **不是**受支持的阻止格式。`PostToolUse` 在副作用发生后才报告，不能追认授权。阶段边界可用 Desktop Codex review pane 或 CLI `/diff` 检查真实工作树 diff，再由父级完成语义上的 `Continue`／`Amend`／`Stop` 选择。review pane 的 stage／revert 是独立仓库修改，不证明 Contract 或最终 Verification 已通过。[OpenAI：PreToolUse 输出契约](https://learn.chatgpt.com/docs/hooks)、[OpenAI：Code review](https://learn.chatgpt.com/docs/code-review)、[OpenAI：CLI diff](https://learn.chatgpt.com/docs/developer-commands)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 ### 工具边界守卫与语义 Control 的区分

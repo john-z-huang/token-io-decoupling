@@ -16,7 +16,7 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+交互式 Codex CLI 或支持的 Desktop Codex chat 可以通过 `/plan` 将获准方向组织为简短阶段及预期证据，并在编辑前检查。最终阶段大纲应保留在父级任务记录或获准计划产物中，不能以 Plan mode transcript 另立政策 owner。Desktop local environment 的 setup scripts 与可复用 actions 只作用于所选项目／worktree；它们准备执行环境，不授权新增阶段、Agent 或文件修改。[OpenAI：Slash commands](https://learn.chatgpt.com/docs/developer-commands)、[OpenAI：本地环境](https://learn.chatgpt.com/docs/environments/local-environment)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 

@@ -29,7 +29,7 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Codex 暴露 `/plan` 或 Plan permission mode 时，可用于实质写入前的有界调查及 Decision Brief 草拟。`/review` 能在不修改工作树的情况下检查既有 diff，为重要的修复决策提供依据。生成计划或得到 review 结果都不等于本 Skill 的 Contract／实施 Slice 已放行；新开的独立 review chat 也不自动计为已分配验证 Child。[OpenAI：CLI plan 与 review 命令](https://learn.chatgpt.com/docs/developer-commands)、[OpenAI：review 行为](https://learn.chatgpt.com/docs/code-review)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 

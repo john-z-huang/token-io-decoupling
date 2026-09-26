@@ -31,6 +31,10 @@ Session isolation and Git worktree isolation are distinct. Workspace and filesys
 
 An allocated Codex child uses an independent child Session and task UI. Report only the isolation actually exposed by the runtime.
 
+### Desktop chat, child and worktree are different identities
+
+In Desktop Codex, the project chat is a root Session and the visible spawned subagent thread is a child of that chat when the runtime reports that parent-child relationship. A separate chat started in `Worktree` is an independent chat and Git checkout; `Handoff` moves one chat between Local and Worktree, not between parent and child identities. Codex-managed worktrees can be detached-HEAD and disposable; neither workspace reuse nor a pinned chat is proof that a verifier used an independent model context. An ordinary Chat or Work conversation in the same app is not silently the active Codex child. [OpenAI: subagent threads](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: worktree and Handoff](https://learn.chatgpt.com/docs/environments/git-worktrees), [OpenAI: Desktop modes](https://learn.chatgpt.com/docs/use-chatgpt).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 A Claude Code subagent has its own context inside the parent session; it has no identical independent Codex task UI. Treat it as the allocated child context, return only to the parent, and report actual isolation and verification independence. Do not use an agent team or peer channel as a substitute. A Codex-only UI convenience needs no Claude Code equivalent when the parent record and result supply the required evidence.

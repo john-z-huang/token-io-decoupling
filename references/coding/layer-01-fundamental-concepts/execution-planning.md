@@ -16,7 +16,7 @@ When project facts are needed before a material decision, plan a bounded reconna
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+In an interactive Codex CLI or supported Desktop Codex chat, `/plan` can organize the approved direction as short stages and expected evidence before edits. Keep the final stage outline in the parent task record or approved plan artifact rather than relying on the plan-mode transcript as a second policy owner. A Desktop local environment's setup scripts and reusable actions apply to the selected project/worktree only; they prepare execution but do not authorize new stages, agents or mutations. [OpenAI: slash commands](https://learn.chatgpt.com/docs/developer-commands), [OpenAI: local environments](https://learn.chatgpt.com/docs/environments/local-environment).
 
 ## Claude Code CLI / Claude Desktop optimizations
 

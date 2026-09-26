@@ -20,6 +20,10 @@ The firewall limits raw-state ingress without transferring semantic authority; f
 
 Codex custom agent profiles may narrow source/tool exposure with `sandbox_mode: read-only` and selected `mcp_servers`; `developer_instructions` can request bounded source pointers but is not a permission boundary. Inspect inherited settings because omitted custom-agent fields inherit the parent. These settings are not Claude's `tools`/`disallowedTools` frontmatter and do not imply Claude Desktop Chat's connector Tool-access mode. [OpenAI: custom subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
+### Local bounded tools and Skill/MCP disclosure
+
+Use the runtime's exposed local code-search/file-reading tools for targeted symbols and small source ranges, returning stable paths and evidence pointers instead of complete build logs or recursive repository dumps. For Codex role-specific access, a reviewed custom agent may set `sandbox_mode: read-only` and narrow `mcp_servers`; an omitted key can inherit parent settings and a live permission override can affect the spawned child. Local Codex skills reveal metadata first, load `SKILL.md` when selected and references only on demand; select only concept owners needed by the current slice. The CLI/IDE/Desktop Codex host can share MCP configuration; `/mcp` verifies available connections. Do not treat a plugin or the Chat view's tool access as a separate Codex child or a permission grant. [OpenAI: skills progressive disclosure](https://learn.chatgpt.com/docs/build-skills), [OpenAI: MCP host configuration](https://learn.chatgpt.com/docs/extend/mcp), [OpenAI: custom agents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 ### Native bounded reads and deferred MCP discovery

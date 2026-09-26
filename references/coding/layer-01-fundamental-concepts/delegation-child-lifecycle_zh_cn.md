@@ -18,6 +18,10 @@
 
 Codex 也可通过已配置的 `SubagentStart`／`SubagentStop` Hooks 观察子代理 ID 与生命周期；在 `SubagentStart` 中返回 `continue: false` **不会**阻止创建。即使任务界面或 Hook 报告消失，仍要把实际子代理 ID 与完成证据保留在父级记录中。这些事件只用于观察，不授权替换，也不能证明验证通过。[OpenAI：生命周期 Hooks](https://learn.chatgpt.com/docs/hooks)。
 
+### Codex 线程观察
+
+Codex CLI 的 `/agent` 线程界面和 Desktop Codex 子代理线程／活动面板可查看执行中工作及返回摘要，避免把完整 transcript 输入父级上下文。非当前 CLI Child 的审批请求可能出现在现有线程上方，并标明来源线程；核对其身份与操作授权后才能处理。非交互宿主不能提供新的审批时，操作会失败，父级必须记录 Slice 阻塞。`SubagentStop` Hook 只提供观察；Done 标记或空白活动面板都不能取代最终证据，也不授权清理／替换。[OpenAI：子代理线程与审批](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 可用时通过 `Agent` 结果和 `/tasks` 观察运行中的子代理；以有界运行时等待取得结果。`/tasks` 是短暂状态界面，其条目消失后仍在父级记录保留返回的 Agent ID 和完成或错误状态。

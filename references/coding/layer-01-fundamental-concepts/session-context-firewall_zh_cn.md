@@ -20,6 +20,10 @@ Firewall 只限制原始状态进入，不转移语义责任；语义权威性�
 
 Codex 的自定义 Agent profile 可以用只读 `sandbox_mode` 和指定 `mcp_servers` 收窄源码及工具访问范围；`developer_instructions` 可以要求有界来源指针，但不是权限边界。必须检查继承设置，因为自定义 Agent 中省略的字段可继承父级。这些设置不等同于 Claude 的 `tools`／`disallowedTools` frontmatter，也不代表 Claude Desktop Chat 的 connector Tool-access 模式。[OpenAI：自定义子代理](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
 
+### 有界本地工具与 Skill／MCP 按需披露
+
+使用运行环境实际暴露的本地代码检索／文件读取工具定位符号和少量源代码区间，返回稳定路径与证据指针，而非完整构建日志或仓库递归列表。Codex 自定义 Agent 可以通过经审查的 `sandbox_mode: read-only` 和窄范围 `mcp_servers` 限定职责访问；省略的字段可能继承父级设置，父级实时权限覆盖还可能影响创建后的 Child。本地 Codex Skill 先暴露元数据，选中后才加载 `SKILL.md`，references 则按需读取；只选择当前 Slice 所需的概念 owner。CLI／IDE／Desktop Codex 宿主可共享 MCP 配置，通过 `/mcp` 核实连接；不能把插件或 Chat 视图工具访问当成额外 Codex Child 或权限授权。[OpenAI：Skills 渐进式披露](https://learn.chatgpt.com/docs/build-skills)、[OpenAI：MCP 宿主配置](https://learn.chatgpt.com/docs/extend/mcp)、[OpenAI：自定义 Agent](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 ### 原生有界读取与 MCP 按需发现

@@ -29,7 +29,7 @@ If material decisions remain open, release reconnaissance only. After it returns
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Where Codex exposes `/plan` or Plan permission mode, use it for bounded investigation and drafting the Decision Brief before a substantive write. `/review` can inspect an existing diff without changing the tree and may inform a material repair decision. Neither a generated plan nor a review result releases the Skill's Contract or implementation slice, and a new independent review chat does not count as an allocated verification child. [OpenAI: CLI plan and review commands](https://learn.chatgpt.com/docs/developer-commands), [OpenAI: review behavior](https://learn.chatgpt.com/docs/code-review).
 
 ## Claude Code CLI / Claude Desktop optimizations
 

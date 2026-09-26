@@ -18,6 +18,10 @@ On error or interruption, preserve the original child's identity, explicit lifec
 
 Codex can also expose configured `SubagentStart`/`SubagentStop` hooks for child IDs and observed lifecycle; `SubagentStart` with `continue: false` does **not** block spawning. Preserve the actual child ID and final evidence in the parent record even if the task UI or hook report disappears. These events are observational and do not authorize replacement or prove verification passed. [OpenAI: lifecycle hooks](https://learn.chatgpt.com/docs/hooks).
 
+### Codex thread observation
+
+The Codex CLI `/agent` thread view and the Desktop Codex subagent thread/activity panel can show active work and returned summaries without moving whole transcripts into the parent context. An approval for an inactive CLI child can surface over the current thread and identifies the originating thread; resolve it only after checking the source and authorized operation. If a non-interactive host cannot surface a fresh approval, the action fails and the parent must record the blocked slice. A `SubagentStop` hook is observational; neither a Done label nor an empty activity panel supersedes final evidence or grants cleanup/replacement authority. [OpenAI: subagent thread controls and approvals](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: hooks](https://learn.chatgpt.com/docs/hooks).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 Use the `Agent` result and `/tasks` when available to observe a running child; use a bounded runtime wait for its result. `/tasks` is temporary, so retain the returned Agent ID and completed or error state in the parent record after its entry disappears.

@@ -16,6 +16,10 @@
 
 对于 Codex 自定义子代理，获准的 `.codex/agents/<name>.toml` 可设置 `name`、`description`、`developer_instructions`、`model`、`model_reasoning_effort`、`sandbox_mode` 和 `mcp_servers`。经父级控制的创建操作放行前，核验继承后实际生效的模型、effort 和 sandbox。注册 profile 不是创建或分配新子代理；宿主全局并发上限不等于本次会话锁定数量。Claude 的 `.claude/agents/*.md` frontmatter 不能作为 Codex 配置格式。[OpenAI：自定义子代理](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
 
+### 原生子代理 Profile 与继承权限
+
+当前本地 Codex 暴露内置 `default`、`worker` 和 `explorer` profile；获准的 `.codex/agents/` 或 `~/.codex/agents/` 自定义 profile 可以细化已放行职责。创建 Child 前核验 `agents.enabled` 与实际 spawn 能力。按官方规则解析自定义文件、显式 spawn、`[agents]` 默认值和父级模型／effort，并检查继承的 `sandbox_mode`／`mcp_servers`／`skills.config`。父级实时 `/permissions` 或 CLI sandbox 覆盖可能被重新应用到子代理；不能把 TOML 中的只读默认值当成已强制生效的证明。宿主的 `agents.max_concurrent_threads_per_session` 限制的是**同时打开的线程数**，不是会话已锁定的 Child 总数。[OpenAI：子代理 Profile、优先级与权限](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 本地 Claude Code 在数量和 allocation 放行后使用内建 `Agent` 工具，显式指定 `subagent_type`（`general-purpose` 或已命名自定义子代理）、合规模型、有界任务提示和返回条件。模型与 effort 绑定遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)；可用时在 `/tasks` 核验实际模型，因为被禁模型可能回退到继承模型。内建 Explore/Plan Agent 不返回可复用 Agent ID，不得作为持久子代理。

@@ -16,7 +16,7 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Desktop Codex 的 `Handoff` 在 Local 与 Codex 管理的 Worktree 间转移的是**同一个 chat**；它不是本 Skill 的跨 Worker context handoff，不会自动把具名 capsule 送给其他已分配 Agent。真正的 Worker 交接必须使用父级获准的来源／import 路径并记录接收 Child 身份。归档的 chat 或已清理的管理型 worktree 可能需要恢复保存的 snapshot，因此依赖旧导出文件前先核验来源新鲜度。[OpenAI：worktree Handoff 与清理](https://learn.chatgpt.com/docs/environments/git-worktrees)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 

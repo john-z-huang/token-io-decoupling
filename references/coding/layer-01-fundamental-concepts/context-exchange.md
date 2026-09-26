@@ -24,7 +24,7 @@ Check freshness against `HEAD`/tree, tracked-delta fingerprint, listed source ha
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+If an authorized receiving Codex Worker needs an external source, prefer a named MCP source or exact read-only file pointer; the active Codex host may share its MCP configuration across CLI, IDE and Desktop Codex, but a project-scoped MCP server requires that project configuration be trusted. The parent's ChatGPT Work plugin connection or a Chat attachment is not automatically exposed to a local spawned Codex child. Confirm that the intended Worker can actually read the source, preserve original paths and freshness data, and use the parent-prepared read-only import if direct access is absent; never broaden MCP/tool scope merely to make a capsule load. [OpenAI: MCP clients and trust](https://learn.chatgpt.com/docs/extend/mcp), [OpenAI: config trust](https://learn.chatgpt.com/docs/config-file/config-basic), [OpenAI: Desktop surfaces](https://learn.chatgpt.com/docs/use-chatgpt).
 
 ## Claude Code CLI / Claude Desktop optimizations
 

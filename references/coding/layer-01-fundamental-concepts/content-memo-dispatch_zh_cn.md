@@ -24,7 +24,7 @@ Worker 不得修改或重新解释该开关；只有父 Agent 可以为后续 sl
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Codex 自定义 Agent TOML、`AGENTS.md`、可选 memories 和 `/compact` 都不会实现本 Skill 的派发开关。spawn 前必须在**实际放行的子任务提示**中显式写明 `write_content_memo: true` 或 `false`，并指定获准的 memo 路径。启用时核验所选 checkout 中目录及允许的写能力已存在。`SubagentStart` 或 `PreCompact` Hook 是可选上下文，不能代替显式 bundle 或 Worker 真正写入的文件。[OpenAI：子代理提示](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：本地 memories](https://learn.chatgpt.com/docs/customization/memories)、[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 

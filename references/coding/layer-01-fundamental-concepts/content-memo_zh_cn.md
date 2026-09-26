@@ -26,7 +26,7 @@ Memo 是用于保存稳定、可复用事实的精简执行状态文档。Worker
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+Codex 本地 memories（启用时）总结跨会话可复用经验，`/compact` 则压缩单个 chat 的上下文。两者都不能保证当前获准 Slice 的 Worker 自有 memo 已更新，也不会自行满足来源 hash、修改路径或下一步契约的要求。稳定执行状态应写入明确的 `content-memo.md`，只携带有界证据指针；不复制本地 memory 文件或完整 CLI transcript。[OpenAI：本地 memories](https://learn.chatgpt.com/docs/customization/memories)、[OpenAI：compact 命令](https://learn.chatgpt.com/docs/developer-commands)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 

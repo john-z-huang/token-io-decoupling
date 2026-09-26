@@ -20,6 +20,8 @@ When stage evidence shows that the next stage depends on high-value judgment, ro
 
 A configured Codex `PostToolUse` or `SubagentStop` hook can supply observed tool or child results for the parent's compressed Progress Signal, while `PreCompact` can mark a pending context-loss boundary. These optional events never prove semantic acceptance and must not trigger a full tool-log or transcript dump. [OpenAI: tool and lifecycle hooks](https://learn.chatgpt.com/docs/hooks).
 
+Codex `/diff` or the Desktop Codex review pane can locate the changed files and lines at a stage boundary; `/agent` or a spawned thread's summary can identify which Worker produced the result. Return a compact Progress Signal with changed paths, actual checks, blocker and source pointers, not screenshots of the whole chat or complete tool transcripts. When available, `/review` produces independent **review findings of a diff**, but only a truly separate authorized verifier context can satisfy any required independent-agent verification. [OpenAI: diff and review](https://learn.chatgpt.com/docs/code-review), [OpenAI: CLI commands](https://learn.chatgpt.com/docs/developer-commands), [OpenAI: subagent threads](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 ### Hook-assisted compact stage evidence

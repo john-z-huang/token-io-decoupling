@@ -18,6 +18,8 @@ Cleanup and compaction must preserve the `content-memo.md` content contract rath
 
 When this Codex runtime has configured `PreCompact` or `SubagentStop` hooks, use the event as an observation that an owned memo may need updating; do not assume the hook serializes the memo, knows every relevant source, or can write to another Worker's directory. The Worker still updates its explicitly authorized memo/index before source evidence is lost. [OpenAI: lifecycle/compaction hooks](https://learn.chatgpt.com/docs/hooks).
 
+A trusted, enabled Codex `PreCompact` or `SubagentStop` hook may identify an imminent context-loss or exit boundary; after compaction, a `SessionStart` hook with `source: compact` can supply small approved context to the continuation. Hooks do not serialize a correct Worker memo automatically, and concurrent hook outputs are not an ordered write transaction. The Worker must update its own allowed memo/index at actual material milestones while evidence is still available, and must not write another Worker's folder. [OpenAI: hook lifecycle, trust and compact restart](https://learn.chatgpt.com/docs/hooks).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 ### Compaction- and exit-aware memo checkpoints

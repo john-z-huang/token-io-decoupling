@@ -44,6 +44,8 @@ Role Allocation 阶段分配 allocation 的职责。具体 `slice_status: releas
 
 Codex 中，`AGENTS.md` 是指令来源，不是可写的实时 mode/count 记录；仅在已配置且受支持时，`SessionStart`、`SubagentStart` 等 Hook 才可补充获准上下文。即使任务界面或 Hook 显示某 Agent 运行中，仍要在路线放行前读回父级规范记录、已分配身份及 epoch。[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)、[OpenAI：AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)。
 
+Codex 的 `/agent`、Desktop 子代理面板与 `/status` 可观察运行时状态；`AGENTS.md`、可选本地 memories 和 `/compact` 则分别用于项目指令、回忆与会话压缩，都不是实时 mode/count/allocation/epoch 权威记录。CLI resume、compact 或 Desktop chat handoff 后，放行新路线前必须读回父级保留的状态记录。可信且实际启用的 `SessionStart` Hook 在 `compact` 时可以提供获准上下文，但不能重新锁定数量。[OpenAI：子代理](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)、[OpenAI：memories](https://learn.chatgpt.com/docs/customization/memories)、[OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 Claude Code 没有与 Codex 父级任务面板相同的持久能力。在父级会话中维护结构化模式、数量和切片记录，每次路线放行前读回。`/tasks` 只是短暂的子代理状态界面，不是规范记录。

@@ -31,6 +31,10 @@ Session 隔离与 Git worktree 隔离不同。工作区和文件系统隔离条�
 
 已分配的 Codex 子代理使用独立子 Session 和任务界面。只报告运行环境实际暴露的隔离能力。
 
+### 桌面对话、Child 和 Worktree 是不同身份
+
+Desktop Codex 的项目 chat 是根 Session；只有运行时报告明确的父子关系时，显示的 spawned subagent thread 才是该 chat 的 Child。在 `Worktree` 新建的 chat 属于独立对话及 Git checkout；`Handoff` 只在 Local 和 Worktree 间移动**同一个 chat**，不会转换父子代理身份。Codex 管理的 worktree 可能是 detached HEAD 且可清理；复用工作目录或 pin 住 chat 都不能证明验证者具有独立模型上下文。同一应用内的普通 Chat 或 Work 会话也不会默默成为当前 Codex Child。[OpenAI：子代理线程](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 与 Handoff](https://learn.chatgpt.com/docs/environments/git-worktrees)、[OpenAI：Desktop 模式](https://learn.chatgpt.com/docs/use-chatgpt)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 Claude Code 子代理在父会话中拥有独立上下文，没有完全相同的 Codex 独立任务界面。把它视为已分配的子级上下文，只向父级返回，并准确报告实际隔离和验证独立性。不得以 agent team 或 peer channel 替代。父级记录和结果已提供所需证据时，不必为 Codex 专有界面便利功能寻找 Claude Code 对应项。

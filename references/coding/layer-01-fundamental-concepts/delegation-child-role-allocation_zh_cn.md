@@ -18,6 +18,8 @@
 
 Codex 的 `.codex/agents/*.toml` profile 可以命名计划职责，但注册 profile 不能创建 Agent 或改变预留名额中的子代理身份。必须在已锁定预算内选择角色及实际生效的 `model`／`model_reasoning_effort`／`sandbox_mode`；可配置的全局并发 Agent 上限与本 Skill 的总数量门禁不同。[OpenAI：自定义子代理](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
 
+将已放行名额分配给 Codex 职责时，应区分内置 `explorer`（偏读取）、`worker`（偏执行）、`default`（兜底）与已审查的项目／用户自定义 profile。选择 profile 只确定预期工具／模型策略，不绑定 Agent ID、不创建 Session，也不授权新增名额。把 `sandbox_mode: read-only` 视作验证者或 context 读取者的实际限制前，先解析父级当前回合的覆盖设置。非交互宿主无法提供所需审批时，标记依赖 Slice 阻塞，不得通过重新分配 profile／Child 绕过。[OpenAI：原生职责与审批](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
+
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
 Claude Code 可以利用 `.claude/agents/` 或 `~/.claude/agents/` 中自定义 subagent 的 `description`、`tools`、`model`、`effort` 细化**计划中的**职责；定义或发现文件不会创建 Agent 实例，也不会额外消耗锁定名额。先将可复用职责分配至已有名额，之后才由创建 owner 调用 `Agent`。内置 Explore／Plan 为一次性 Agent，不应被分配为需要持久身份的 Primary Output、verifier 或 follow-up 职责。即使宿主暴露额外内置 Agent，也不能改变已锁定数量。[Anthropic：subagent 作用域与一次性 Agent](https://code.claude.com/docs/en/sub-agents)。

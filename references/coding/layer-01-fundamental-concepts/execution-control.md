@@ -29,6 +29,10 @@ At a material boundary, consume the Progress Signal owned by [execution stage fe
 
 Where enabled, Codex `PreToolUse` can deny a supported `Bash`, edit, or MCP call before it executes; `PostToolUse` is observation **after** the call. Codex's plan/read-only or other permission modes are tool controls, not this Skill's `Continue` decision. Coverage has exceptions, so do not use a hook as the only proof of a filesystem or semantic authorization boundary. [OpenAI: hooks](https://learn.chatgpt.com/docs/hooks).
 
+### Native approvals and focused review
+
+Where configured and trusted, Codex `PreToolUse` can veto a supported local tool invocation with a blocking permission decision; returning `continue: false` for that event is **not** the supported blocking format. A `PostToolUse` report arrives after the effect and cannot retroactively approve it. In the Desktop Codex review pane or CLI `/diff`, inspect the actual working-tree diff at a stage boundary before the parent's semantic `Continue`/`Amend`/`Stop` choice. Review-pane staging or revert is a separate repository mutation, not proof that the Contract or final Verification passed. [OpenAI: PreToolUse output contract](https://learn.chatgpt.com/docs/hooks), [OpenAI: code review](https://learn.chatgpt.com/docs/code-review), [OpenAI: CLI diff](https://learn.chatgpt.com/docs/developer-commands).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 ### Tool-boundary guard versus semantic Control

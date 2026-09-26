@@ -36,6 +36,14 @@ The capability inventory must verify each assigned binding's exposed model ident
 
 Codex natively discovers `AGENTS.md` along its instruction hierarchy; do not create a `CLAUDE.md` copy or require Claude Code's `@AGENTS.md` import for Codex. After an authorized instruction change, verify the running Session actually loaded the current instructions or restart it; a child-status view is not proof of instruction freshness. [OpenAI: AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
 
+### Desktop surface and host inventory
+
+The current ChatGPT desktop app combines **Chat**, **Work**, and **Codex**. Select the actual surface before claiming a local Codex Session: the Codex view can expose project/worktree chats and developer tools; Chat is conversational; Work can run its own hosted subagent workflows but is a different runtime branch, not a Local Codex child or a local shell by implication. A Codex quick chat is not automatically the project-bound primary execution Session. On mobile Remote, the worktree and repository remain on the connected host, not the phone. Check available tools and approvals rather than inferring them from the app window. [OpenAI: desktop experiences](https://learn.chatgpt.com/docs/use-chatgpt), [OpenAI: subagent availability](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: worktree host](https://learn.chatgpt.com/docs/environments/git-worktrees).
+
+### Effective local configuration
+
+Codex CLI, IDE, and Codex in the ChatGPT desktop app can share the active host's `~/.codex/config.toml` and trusted project `.codex/config.toml`; project-local config, rules, and hooks are skipped for an untrusted project. Resolve current settings after command-line overrides, project, profile, user and system layers; a spawned subagent also inherits the parent turn's live permission/sandbox overrides. Check `AGENTS.override.md`, nested instruction precedence and `project_doc_max_bytes` before claiming a large instruction file loaded in full. These checks do not change this Skill's fixed role-model profile. [OpenAI: config precedence](https://learn.chatgpt.com/docs/config-file/config-basic), [OpenAI: instruction discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md), [OpenAI: child overrides](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+
 ## Claude Code CLI / Claude Desktop optimizations
 
 ### Local Claude Code model selection
