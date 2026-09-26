@@ -25,7 +25,6 @@
 ## 相关概念
 
 - [Coding Delegation Mode Confirmation](delegation-mode-confirmation_zh_cn.md) — 定位根模式确认归属。
-- [Coding Delegation Count Gate](delegation-mode-count-gate_zh_cn.md) — 定位数量锁定归属。
 - [Coding Delegation Re-entry](delegation-mode-reentry_zh_cn.md) — 定位门禁重新进入归属。
 - [Coding Delegation State Record](delegation-state-record_zh_cn.md) — 定位状态记录归属。
 - [Coding Child Creation](delegation-child-creation_zh_cn.md) — 定位子 Agent 创建归属。

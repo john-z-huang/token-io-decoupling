@@ -25,7 +25,6 @@ No provider-specific optimization instructions at present; follow the general ru
 ## Related concepts
 
 - [Coding Delegation Mode Confirmation](delegation-mode-confirmation.md) — locate root mode confirmation ownership.
-- [Coding Delegation Count Gate](delegation-mode-count-gate.md) — locate count locking ownership.
 - [Coding Delegation Re-entry](delegation-mode-reentry.md) — locate gate re-entry ownership.
 - [Coding Delegation State Record](delegation-state-record.md) — locate state record ownership.
 - [Coding Child Creation](delegation-child-creation.md) — locate child creation ownership.
