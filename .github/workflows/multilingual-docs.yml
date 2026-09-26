@@ -5,6 +5,7 @@ on:
     paths:
       - "**/*.md"
       - "agents/openai.yaml"
+      - "scripts/check-doc-layer-links.py"
       - "scripts/check-multilingual-docs.py"
       - "scripts/check-layer-01-sections.py"
       - "scripts/check-layer-02-03-provider-neutrality.py"
@@ -39,6 +40,9 @@ jobs:
 
       - name: Validate multilingual documentation
         run: python3 scripts/check-multilingual-docs.py
+
+      - name: Validate Markdown layer links
+        run: python3 scripts/check-doc-layer-links.py
 
       - name: Validate Layer-01 document sections
         run: python3 scripts/check-layer-01-sections.py
