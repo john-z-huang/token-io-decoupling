@@ -2,17 +2,23 @@
 
 [English](delegation-mode-count-gate.md) | [简体中文](delegation-mode-count-gate_zh_cn.md)
 
-This module owns Multi-Agent child-count recommendation, confirmation, locking, and count-budget boundaries. It consumes a confirmed mode and the state record; it does not define root mode confirmation, re-entry, child creation, or lifecycle.
+This module owns Multi-Agent child-count selection, locking, and count-budget boundaries. It consumes the selected mode and the state record; it does not define mode selection, re-entry, child creation, or lifecycle.
 
-## Count recommendation and confirmation
+## General rules
 
-After Multi-Agent confirmation, recommend the exact positive integer child count, ask the user to confirm it, and wait. The count is the total budget for the root directive, not a per-stage or per-role number.
+### Count selection and lock
 
-## Count locking
+For a selected Multi-Agent conversation, take the explicit positive child count supplied with the mode choice, if any. Otherwise use one child, including after the 15-second timeout. Do not ask a second blocking count question. Reject an invalid explicit count and keep the route unreleased until the user supplies a valid positive integer; do not reinterpret it as consent to a different count. The count is a conversation-wide total child budget, not a per-task, per-stage, or per-role number.
 
-After count confirmation, lock it before the first Dispatch. Form exactly the locked number of planned allocations before route release; these entries may remain `agent: unbound` until creation. If a replacement need is discovered before the first Dispatch, the parent may update only the still-unlocked proposed count or allocation; it must not create, spawn, or hand off to a new child while the count is unlocked. The parent must then re-confirm or update the proposal, lock the revised count, and re-satisfy the route's release conditions. The released record then authorizes the child-creation owner to consume those planned allocations and create exactly the locked number of children if the runtime can safely do so; after creation, that owner binds each agent identity and actual lifecycle. If any step or capability fails, block rather than silently changing the count or creating extra slots. Every independently assigned role consumes a slot. Reuse does not create a slot. After the count is locked, replacement, fork, handoff to a new child, or an additional verifier is a new creation: each is forbidden and must not increase `child_count` for this directive.
+Lock the count before the first Dispatch and form exactly that many planned allocations before route release; entries may use `agent: unbound` until creation. With one child, allocate Primary Output; independent Change Verification and documentation/Git child roles remain unallocated, so label same-Session checks as logical and independence unavailable. Every independently assigned role consumes a slot. Reuse does not. After locking, never create a replacement, fork, handoff successor, extra verifier, or other child that would exceed the count. If a required slot or capability is unavailable, block the dependent work instead of changing the count silently.
 
-An unavailable capability blocks this count route; it never authorizes silently changing the confirmed count.
+## Codex CLI / ChatGPT Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
+
+## Claude Code CLI / Claude Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
 
 ## Related concepts
 

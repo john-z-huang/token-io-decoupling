@@ -2,25 +2,33 @@
 
 [English](delegation-mode-confirmation.md) | [简体中文](delegation-mode-confirmation_zh_cn.md)
 
-This module owns root-directive mode recommendation and explicit confirmation, pre-confirmation restrictions, and Single-Agent route restrictions. It consumes and updates the state record; it does not define count locking, re-entry, child creation, or lifecycle.
+This module owns the conversation's initial mode question, explicit selection or timed default, pre-selection restrictions, and Single-Agent route restrictions. It consumes and updates the state record; it does not define count locking, re-entry, child creation, or lifecycle.
 
-## Root-directive mode confirmation
+## General rules
 
-For every new root user directive, the root parent must:
+### Session mode selection
 
-1. Confirm that the runtime exposes the parent-controlled task panel or equivalent task-control record capability.
-2. If it does, create or initialize the record in `gate_status: awaiting-mode` before asking the confirmation question. If it is missing or unknown, block the dependent route and do not assume that a record exists.
-3. Analyze the task enough to make a useful recommendation.
-4. Recommend Single-Agent Coding or Multi-Agent Coding with a concise reason.
-5. Ask the user to choose and wait for an unambiguous confirmation.
+On the first Coding directive of a conversation, the root parent must:
 
-A mode stated in the directive is input to the recommendation, not a substitute for confirmation. Until confirmation, do not create/manage Agents or Sessions, release Dispatch, or begin substantive reconnaissance, implementation, verification, documentation, or Git work. Mandatory instruction loading and capability checks needed to form the question are allowed.
+1. Check whether the user already explicitly chose Single-Agent or Multi-Agent Coding in that directive. If so, record that choice without asking again.
+2. Otherwise ask once: `For this conversation, choose Single-Agent Coding or Multi-Agent Coding. If choosing Multi-Agent, you may specify a positive child count. I will wait 15 seconds; without a clear reply, I will use Multi-Agent Coding with one child.` Recommend a mode with a short reason in the same message.
+3. Start a 15-second wall-clock timer when the question is sent. Use a non-blocking input channel if exposed; never use an indefinitely blocking question tool for this gate. During the wait, only mandatory instruction loading and capability checks may proceed; do not create children, release Dispatch, or begin substantive project work.
+4. If an unambiguous choice is observable by the deadline, use it. If none is observable, select Multi-Agent Coding with one child. A late reply does not silently change the locked conversation mode.
+5. Record the selected mode and its source (`explicit` or `timeout-default`) in the parent-controlled state record. Apply the count owner before route release. Keep the mode fixed for the current conversation.
 
-Record the confirmed mode in the task-control record. For confirmed Multi-Agent Coding, transition the record to `gate_status: awaiting-count`; for confirmed Single-Agent Coding, set `child_count: 0` and release the route only after the required release conditions are satisfied. Ambiguous or non-responsive input does not release it.
+A timeout selects a workflow mode only; it does not grant missing user authorization, bypass a task-level prohibition, or create a capability. If a higher-priority restriction forbids children, it controls; do not start a child under the timeout default. If the required record capability is absent, block the dependent route rather than pretending it exists.
 
-## Single-Agent Coding
+### Single-Agent Coding
 
 After confirmation, keep all work in the current Session. Do not create, fork, hand off to, message, replace, or otherwise manage a child Agent or additional Session. Structural benefit, verification, documentation/Git needs, bootstrap, recovery, or runtime convenience are not exceptions. Independent verification remains a semantic requirement, but is unavailable on this route.
+
+## Codex CLI / ChatGPT Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
+
+## Claude Code CLI / Claude Desktop optimizations
+
+Claude Code has no documented native timeout for `AskUserQuestion` or equivalent asynchronous reply tool. Send the mode question as ordinary progress text, keep the turn active for the 15-second wall-clock interval, and inspect any reply surfaced by the host before the deadline. Do not call the blocking `AskUserQuestion` for this gate. If the host cannot surface a reply during the active turn, record that limitation and apply the default after 15 seconds; do not wait indefinitely.
 
 ## Related concepts
 

@@ -4,13 +4,23 @@
 
 This module owns released Worker snapshots, Worker read/write boundaries, parent-controlled Dispatch entry, and the block that applies when the task-control record cannot be persisted or returned. It consumes the record defined by [the delegation state record](delegation-state-record.md); it does not define record shape, mode/count policy, child lifecycle, or Dispatch Preview strategy.
 
-## Worker snapshot and access boundary
+## General rules
+
+### Worker snapshot and access boundary
 
 Workers receive only the relevant released snapshot through the parent-controlled Dispatch. They must not infer, mutate, or replace the root record. The Worker may use the snapshot only within the released scope and return the required facts through the parent-controlled path.
 
-## Dispatch entry and persistence block
+### Dispatch entry and persistence block
 
 After release, a Worker enters through the parent-provided Dispatch Preview and does not reopen the root-user mode or count gates. If the runtime cannot persist or return the task-control record, the dependent route is blocked.
+
+## Codex CLI / ChatGPT Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
+
+## Claude Code CLI / Claude Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
 
 ## Related concepts
 

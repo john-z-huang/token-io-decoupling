@@ -4,7 +4,9 @@
 
 本文档负责 Interaction Slice 控制：slice 放行字段、边界行为和 Control Checkpoint 选择。它假定规划、决策门禁、阶段反馈、角色/Session 上下文、运行环境能力、上下文传输和委派生命周期由各自 owner 概念提供，不定义这些策略。
 
-## Interaction Slice
+## 通用规范
+
+### Interaction Slice
 
 对于非简单工作，每次只放行一个 **Interaction Slice**。每个 slice 必须写明：
 
@@ -15,13 +17,21 @@
 
 Slice 是控制单元，不是逐命令脚本。只要 Contract 和边界未变，执行者可以继续处理低决策密度的机械步骤；到达 return conditions 或跨越未放行边界前必须暂停。简单的快路径任务可以将实现和聚焦检查保留在一个 slice 中。
 
-## Slice 顺序
+### Slice 顺序
 
 只有相互独立且不冲突的 slice 才可并行放行。存在依赖、共享写入目标或有序结果时必须顺序放行。上下文传输和仅限父级的反馈遵循各自 owner 协议，本文档不定义这些内容。
 
-## Control Checkpoint
+### Control Checkpoint
 
 到达实质性边界时，使用压缩的 Control Checkpoint，只报告下一步决策所需的状态、发现、变更范围、验证、问题、所需动作和未放行边界。输入侧职责选择 `Continue`、`Amend` 或 `Stop`；`Continue` 只放行下一个有界 slice，`Amend` 必须在恢复前修改 Contract 或边界。在单代理路线中，这是内部推理暂停，不模拟发给自己的消息。
+
+## Codex CLI / ChatGPT Desktop 特别优化指令
+
+目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+
+## Claude Code CLI / Claude Desktop 特别优化指令
+
+目前没有针对该厂商的特别优化指令；遵循上述通用规范。
 
 ## 相关概念
 

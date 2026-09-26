@@ -4,7 +4,9 @@
 
 This module defines the transport capsule for already-assigned Coding Workers: its content restrictions, freshness/invalidation checks, and authoritative-source rules. It does not define workspace layout, directory ownership, capability boundaries, handoff records, task meaning, Agent topology, execution planning, or acceptance.
 
-## Transport capsule
+## General rules
+
+### Transport capsule
 
 Pass only the context needed by the receiving Worker. Prefer a targeted read-only view of the original document. If that is unavailable, the parent or filesystem layer may create and mechanically copy the named documents into the parent-prepared read-only directory `CONTEXT_ROOT/<worker-context-id>/imports/<source-context-id>/`; the Worker may read the import but must not rewrite it. The parent must name the source documents in the concrete handoff or dependency, and the authoritative source remains preferred and binding. Use a compact parent-mediated handoff only when neither filesystem option is safe.
 
@@ -19,6 +21,14 @@ policy-context.md  policy-routing pointers and authoritative sections
 ```
 
 Check freshness against `HEAD`/tree, tracked-delta fingerprint, listed source hashes, relevant untracked state, and the active task/scope. If a material field changes, refresh only affected sections before relying on the capsule; otherwise read the named authoritative sources directly. A capsule never replaces independent final-state verification.
+
+## Codex CLI / ChatGPT Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
+
+## Claude Code CLI / Claude Desktop optimizations
+
+No provider-specific optimization instructions at present; follow the general rules above.
 
 ## Related concepts
 

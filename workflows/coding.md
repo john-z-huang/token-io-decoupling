@@ -2,7 +2,7 @@
 
 [English](coding.md) | [简体中文](coding_zh_cn.md)
 
-Use this workflow when repository text, developer-tool output, implementation, tests, documentation, or Git state is the main work state. This file is only the Coding route selector and completion index. The selected layer-03 workflow template composes the layer-01 concepts and layer-02 workflow concepts needed for execution. Root-directive mode and delegation rules are owned by the atomic delegation references composed by the Mode checkpoint; the task control record stores the current state.
+Use this workflow when repository text, developer-tool output, implementation, tests, documentation, or Git state is the main work state. This file is only the Coding route selector and completion index. The selected layer-03 workflow template composes the layer-01 concepts and layer-02 workflow concepts needed for execution. Root-directive mode and delegation rules are owned by the atomic delegation references composed by the Mode checkpoint; the parent-controlled record stores the conversation-wide mode/count decision and current task state.
 
 ## Entry
 
