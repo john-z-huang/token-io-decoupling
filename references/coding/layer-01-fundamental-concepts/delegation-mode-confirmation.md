@@ -11,12 +11,14 @@ This module owns the conversation's initial mode question, explicit selection or
 On the first Coding directive of a conversation, the root parent must:
 
 1. Check whether the user already explicitly chose Single-Agent or Multi-Agent Coding in that directive. If so, record that choice without asking again.
-2. Otherwise ask once: `For this conversation, choose Single-Agent Coding or Multi-Agent Coding. If choosing Multi-Agent, you may specify a positive child count. I will wait 15 seconds; without a clear reply, I will use Multi-Agent Coding with one child.` Recommend a mode with a short reason in the same message.
+2. Otherwise ask once: `For this conversation, choose Single-Agent Coding or Multi-Agent Coding. If choosing Multi-Agent, you may specify a positive child count. I will wait 15 seconds; without a clear reply, I will use Single-Agent Coding and complete the directive-related work in this Session.` Recommend Single-Agent as the default with a short reason in the same message.
 3. Start a 15-second wall-clock timer when the question is sent. Use a non-blocking input channel if exposed; never use an indefinitely blocking question tool for this gate. During the wait, only mandatory instruction loading and capability checks may proceed; do not create children, release Dispatch, or begin substantive project work.
-4. If an unambiguous choice is observable by the deadline, use it. If none is observable, select Multi-Agent Coding with one child. A late reply does not silently change the locked conversation mode.
+4. If an unambiguous choice is observable by the deadline, use it. If none is observable, select Single-Agent Coding with `child_count: 0` and `allocations: []`; complete the directive-related work in the current Session. Silence, timeout, or inferred need never authorizes child creation. A late reply does not silently change the locked conversation mode.
 5. Record the selected mode and its source (`explicit` or `timeout-default`) in the parent-controlled state record. Apply the count owner before route release. Keep the mode fixed for the current conversation.
 
 A timeout selects a workflow mode only; it does not grant missing user authorization, bypass a task-level prohibition, or create a capability. If a higher-priority restriction forbids children, it controls; do not start a child under the timeout default. If the required record capability is absent, block the dependent route rather than pretending it exists.
+
+No child may be created unless the user has explicitly instructed the root parent to use Multi-Agent Coding and the count gate has released a valid positive child count. If the conversation is already locked to Single-Agent Coding, apply the Re-entry owner before considering any conflicting later instruction.
 
 ### Single-Agent Coding
 
@@ -28,7 +30,7 @@ No provider-specific optimization instructions at present; follow the general ru
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-Claude Code has no documented native timeout for `AskUserQuestion` or equivalent asynchronous reply tool. Send the mode question as ordinary progress text, keep the turn active for the 15-second wall-clock interval, and inspect any reply surfaced by the host before the deadline. Do not call the blocking `AskUserQuestion` for this gate. If the host cannot surface a reply during the active turn, record that limitation and apply the default after 15 seconds; do not wait indefinitely.
+Claude Code has no documented native timeout for `AskUserQuestion` or equivalent asynchronous reply tool. Send the mode question as ordinary progress text, keep the turn active for the 15-second wall-clock interval, and inspect any reply surfaced by the host before the deadline. Do not call the blocking `AskUserQuestion` for this gate. If the host cannot surface a reply during the active turn, record that limitation and apply the Single-Agent default after 15 seconds; do not wait indefinitely.
 
 ## Related concepts
 

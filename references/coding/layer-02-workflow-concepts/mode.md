@@ -5,7 +5,7 @@
 ## Actions
 
 1. Load the [state record](../layer-01-fundamental-concepts/delegation-state-record.md), [mode confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), and [re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md) owners. Do not eagerly load child creation, dispatch, lifecycle, or reuse policies before their actual route step.
-2. Confirm the parent-controlled record contains a selected mode and locked count, with `child_count: 0` and `allocations: []` for Single-Agent or exactly `child_count` reserved, initially unbound/unassigned/pending slots for Multi-Agent. Releasing this gate does **not** release a concrete Interaction Slice or authorize child creation.
+2. Confirm the parent-controlled record contains a selected mode and locked count, with `child_count: 0` and `allocations: []` for Single-Agent or exactly `child_count` reserved, initially unbound/unassigned/pending slots for Multi-Agent. If `mode_source: timeout-default`, verify Single-Agent and the zero-child shape. Releasing this gate does **not** release a concrete Interaction Slice or authorize child creation.
 3. For a later directive, reuse the locked mode/count; refresh task-specific evidence without reopening the timer. If required record/capability evidence is missing, block the dependent route. Role allocation and child operations are performed and checked at their designated route steps.
 
 ## Pass condition

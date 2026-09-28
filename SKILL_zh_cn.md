@@ -19,7 +19,7 @@ Coding 的委派和 Session 拓扑规则拆分为原子 reference：状态记录
 
 1. 读取 [Coding 工作流](workflows/coding_zh_cn.md)并完成 Contract 检查点；确认任务约束和验收条件。
 2. 完成运行环境检查点；建立或加载运行环境能力清单，确认本任务所需能力。
-3. 使用该清单完成模式检查点。本次会话首次 Coding 指令使用用户明确选择；否则只询问一次并等待 15 秒，未观察到明确回复则默认多代理及 1 个子代理。确认任务控制记录包含已放行模式及其必需状态；后续指令沿用已锁定模式/数量。
+3. 使用该清单完成模式检查点。本次会话首次 Coding 指令使用用户明确选择；否则只询问一次并等待 15 秒，未观察到明确回复则默认单代理并设置 `child_count: 0`。与该指令相关的任务事项在当前 Session 中完成。不得因沉默或推断出的需要创建子代理；创建子代理必须有用户明确选择多代理 Coding 的指令。确认任务控制记录包含已放行模式及其必需状态；后续指令沿用已锁定模式/数量。
 4. 根据该记录只选择一条路线：`mode: Single-Agent Coding` 时使用[单代理路线](references/coding/layer-03-workflows/coding-single-agent_zh_cn.md)；`mode: Multi-Agent Coding` 且已锁定正整数 `child_count` 时使用[多代理路线](references/coding/layer-03-workflows/coding-multi-agent_zh_cn.md)。
 5. 按所选路线的编号检查点顺序逐项执行。只加载当前步骤需要的 reference；每项完成或明确处置后才能进入下一项。
 6. 任务改变方向或最终验收前，返回 [Coding 工作流](workflows/coding_zh_cn.md)；报告 `COMPLETE` 前确认路线的完成证据。
@@ -33,7 +33,7 @@ Coding 的委派和 Session 拓扑规则拆分为原子 reference：状态记录
 - 采取行动前记录用户、运行环境、仓库、权限、安全和 Session 硬约束。
 - “不要创建子代理”“不要使用浏览器”等任务级禁止条件在整个任务中持续有效。
 - 绝对禁止 Computer Use：不得通过图形界面控制计算机、浏览器或桌面应用——包括以操纵控件为目的的截图、鼠标／键盘模拟、点击、辅助功能 API、窗口自动化、远程桌面控制或 GUI 脚本——也不得把此类交互包装为 API、CLI、MCP Server、辅助程序或其他 Agent 调用来绕过。本节是黑名单而非允许渠道清单：当前 Session 实际暴露且已获授权的其他工具、命令或能力仍然允许。若必需步骤需要借助被禁止的操作，应停止并报告阻塞，而不是尝试、委派或跳过。
-- 路线选择或任何委派/Session 拓扑工作前，模式检查点必须组合并验证委派 references；这些 references 在各自的原子边界内规定会话级模式选择及 15 秒默认值、子代理数量、创建、分配、复用、替换、例外和限制。
+- 路线选择或任何委派/Session 拓扑工作前，模式检查点必须组合并验证委派 references；这些 references 在各自的原子边界内规定会话级模式选择及 15 秒单代理默认值、子代理数量、创建、分配、复用、替换、例外和限制。沉默不得授权创建子代理。
 - 不得虚构授权、能力、证据、产品支持，或为未维护场景推导可执行路线。
 - Core 规则不依赖具体产品；受支持的运行环境分支和模型绑定见[运行环境与模型厂商支持](references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)。
 - 按需读取 reference。不要仅因为可能以后有用，就预加载整个 Skill、`references/` 或原始项目状态。
