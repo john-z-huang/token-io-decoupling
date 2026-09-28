@@ -31,7 +31,7 @@ block_reason: <required only when gate_status is blocked>
 | `gate_status` | Mode and count | Allocations and lifecycle | Additional requirement |
 | --- | --- | --- | --- |
 | `awaiting-mode` | Unset | `[]`; top-level lifecycle `pending` | Initialize before an unanswered first mode question. |
-| `awaiting-count` | Multi-Agent; count unset | `[]`; top-level lifecycle `pending` | Only an invalid explicit count enters this state; an omitted count defaults to one. |
+| `awaiting-count` | Multi-Agent; count unset | `[]`; top-level lifecycle `pending` | Only an invalid explicit count enters this state; an omitted count defaults to one after an explicit Multi-Agent selection. |
 | `released` — Single-Agent | Single-Agent; count `0` | `[]`; top-level lifecycle required | Releases the single route, not an independent Session. |
 | `released` — Multi-Agent | Multi-Agent; locked positive count | Exactly `child_count` reserved allocations; each starts `agent: unbound`, `role: unassigned`, `slice_status: pending`, `lifecycle: pending` | Releases the route and count budget, **not** each child or Interaction Slice. |
 | `blocked` | Preserve confirmed values | Preserve existing allocations/lifecycle | `unavailable_capabilities` and `block_reason` required; cannot enter a dependent route. |
@@ -39,6 +39,8 @@ block_reason: <required only when gate_status is blocked>
 An allocation's role becomes assigned at Role Allocation. A concrete `slice_status: released` requires `role`, `interaction_slice`, `scope`, `mutations`, `return_conditions`, and an explicit boolean `write_content_memo`; pending slices may leave these fields unset. Before serializing each released Worker bundle, include `write_content_memo: true` or `false`; the Worker never infers a default. Child Creation may bind `agent` and lifecycle only after the target role and slice are released. A later slice may be prepared on the **same** created child without creating or recycling a slot.
 
 `mode_source` records the explicit choice or 15-second default and remains fixed for this conversation. Allocation lifecycle may differ from top-level task lifecycle. Blocking preserves all confirmed values; later directives use the Re-entry owner without changing locked mode/count.
+
+When `mode_source: timeout-default`, the released record must be Single-Agent with `child_count: 0` and `allocations: []`. The directive-related work remains in the current Session; no child may be inferred or created from the timeout.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 

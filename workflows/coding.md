@@ -13,8 +13,8 @@ Use this workflow when repository text, developer-tool output, implementation, t
 
 ## Routes
 
-- [Single-Agent Coding](../references/coding/layer-03-workflows/coding-single-agent.md): use only when the task record says `mode: Single-Agent Coding`.
-- [Multi-Agent Coding](../references/coding/layer-03-workflows/coding-multi-agent.md): use only when it says `mode: Multi-Agent Coding` with a locked positive `child_count`.
+- [Single-Agent Coding](../references/coding/layer-03-workflows/coding-single-agent.md): use when the task record says `mode: Single-Agent Coding`; this is also the 15-second no-reply default with `child_count: 0`, and directive-related work stays in the current Session.
+- [Multi-Agent Coding](../references/coding/layer-03-workflows/coding-multi-agent.md): use only when the user explicitly selects `mode: Multi-Agent Coding` and the count gate locks a positive `child_count`; silence or inferred need never authorizes this route or child creation.
 
 Do not load both routes. If a later material fact invalidates the selected route, stop the current slice, amend the Contract as needed, and return to route selection.
 

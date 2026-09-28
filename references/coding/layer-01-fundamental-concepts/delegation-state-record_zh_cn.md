@@ -31,7 +31,7 @@ block_reason: <仅 blocked 时必需>
 | `gate_status` | 模式与数量 | Allocation 和 lifecycle | 其他要求 |
 | --- | --- | --- | --- |
 | `awaiting-mode` | 未设置 | `[]`；顶层 `pending` | 首轮模式问题尚未答复时先初始化。 |
-| `awaiting-count` | Multi-Agent；数量未设置 | `[]`；顶层 `pending` | 仅明确给出无效数量时进入；省略数量默认 1。 |
+| `awaiting-count` | Multi-Agent；数量未设置 | `[]`；顶层 `pending` | 仅明确给出无效数量时进入；用户明确选择多代理后省略数量才默认 1。 |
 | `released` — Single-Agent | Single-Agent；数量 `0` | `[]`；顶层 lifecycle 必需 | 放行单代理路线，不授予独立 Session。 |
 | `released` — Multi-Agent | Multi-Agent；已锁定正整数 | 恰好 `child_count` 个预留 allocation；初始 `agent: unbound`、`role: unassigned`、`slice_status: pending`、`lifecycle: pending` | 只放行路线与数量预算，**不**放行具体子代理或 Interaction Slice。 |
 | `blocked` | 保留已确认值 | 保留现有 allocation/lifecycle | `unavailable_capabilities` 与 `block_reason` 必需；不得进入依赖路线。 |
@@ -39,6 +39,8 @@ block_reason: <仅 blocked 时必需>
 Role Allocation 阶段分配 allocation 的职责。具体 `slice_status: released` 必须具备已分配 `role`、`interaction_slice`、`scope`、`mutations`、`return_conditions` 和显式布尔 `write_content_memo`；pending Slice 可以暂不设置这些字段。序列化每个已放行 Worker bundle 前，必须显式写入 `write_content_memo: true` 或 `false`，Worker 不得推断默认值。Child Creation 只能在相应职责和 Slice 已放行后绑定 `agent` 与 lifecycle。后续 Slice 可在**同一个**已创建子代理上准备，不创建或回收名额。
 
 `mode_source` 记录明确选择或 15 秒默认，并在整次会话固定。各 allocation 的 lifecycle 可不同于顶层任务的 lifecycle。阻塞保留已确认值；后续指令遵循 Re-entry owner，不改变已锁定的 mode/count。
+
+当 `mode_source: timeout-default` 时，已放行记录必须是单代理、`child_count: 0` 和 `allocations: []`。与该指令相关的任务事项保留在当前 Session 中；不得从超时推断或创建子代理。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
