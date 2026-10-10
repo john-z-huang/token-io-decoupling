@@ -37,6 +37,7 @@ Claude Code 自定义 subagent 具有自己的上下文，不会自动继承父�
 - [Coding Child Creation](delegation-child-creation_zh_cn.md) — 定位子 Agent 创建能力。
 - [Coding Child Role Allocation](delegation-child-role-allocation_zh_cn.md) — 定位名额和职责分配。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态和恢复归属。
+- [Coding Child Message Visibility](delegation-child-message-visibility_zh_cn.md) — 定位父级会话中的消息可见性要求。
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement_zh_cn.md) — 定位获准的复用和替换。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位 named-path 上下文传输归属。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 边界控制。
