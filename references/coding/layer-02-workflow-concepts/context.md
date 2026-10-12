@@ -9,7 +9,8 @@
 3. Before reusing cached or file-backed context, check its scope, owner, source paths, freshness, and final-state epoch.
 4. Treat stale, incomplete, or conflicting context as unusable. Refresh only the affected context and record what changed.
 5. Keep context factual and routing-oriented; do not use it as a replacement for the Contract, source documents, or verification.
-6. When a released Worker enables a file-backed memo, require its context workspace, permissions, and local index even when no cross-Worker exchange is needed; the file-backed-exchange and memo triggers are independent.
+6. When a released Worker must persist a memo or exchange record, require the named persistent-memory capability and confirm its availability; memo and cross-Worker exchange remain independent triggers. Apply the linked Layer-01 owner for logical ownership. If the capability is unavailable, report it and block dependent work; do not fall back to file storage.
+7. When answering the current question requires reusable Agent project knowledge from prior work, use the [project-memory and code-structure capability](../layer-01-fundamental-concepts/LSP-MCP-Tools.md) to list memories and read relevant entries, then check their source pointers and freshness against authoritative project files. If memory listing is available and contains no relevant entry, or cross-session knowledge is unnecessary, record `Not applicable` with the reason. If the capability is unavailable, report it and return to approved authoritative project files; do not infer that no relevant memory exists. Pause only when an essential fact cannot be confirmed from another approved source. A memory does not replace an authoritative project file in the approved paths.
 
 ## Pass condition
 
@@ -21,5 +22,6 @@ This checkpoint gathers and qualifies context. It does not make material decisio
 
 ## Related concepts
 
-- [Coding Context Exchange](../layer-01-fundamental-concepts/context-exchange.md) — locate file-backed capsule and freshness ownership.
+- [Coding Context Exchange](../layer-01-fundamental-concepts/context-exchange.md) — locate Memory capsule and freshness ownership.
 - [Coding Session Context Firewall](../layer-01-fundamental-concepts/session-context-firewall.md) — locate raw-state ingress and fact-return ownership.
+- [Project-memory and code-structure capability](../layer-01-fundamental-concepts/LSP-MCP-Tools.md) — locate reusable project knowledge and structured code navigation.

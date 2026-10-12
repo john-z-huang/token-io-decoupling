@@ -2,35 +2,25 @@
 
 [English](content-memo-lifecycle.md) | [简体中文](content-memo-lifecycle_zh_cn.md)
 
-本文档只定义 Worker 文件化执行 memo 的创建、更新、清理和本地索引可发现性。不定义 memo 内容、dispatch 开关、handoff 或 replacement 策略，也不定义任务验收。
+本文档定义 Serena Memory Worker memo 的创建、更新、清理和可发现性，不定义 memo 内容、dispatch、handoff 授权或验收。
 
 ## 通用规范
 
-### 创建与更新
+### 创建、更新与发现
 
-在首次出现可复用执行状态，以及实质里程碑、阻塞边界、handoff、replacement 或正常退出时，创建或更新 `content-memo.md`，或一个已被明确标识为 memo 的等价既有文档。
+`write_content_memo` 为 true 时，使用 `list_memories` 检查具名条目，并在首次出现可复用状态以及实质里程碑、阻塞、handoff、replacement 或正常退出时，使用 `write_memory` 创建或更新 `context-exchange/workers/<worker-context-id>/content-memo`。只在状态/证据实质变化时更新，不要逐命令记录。父级或后继者只有在已放行指令具名或授权该记录时才能读取；Serena 本身不强制该归属规则。这些记录不另建本地文件索引；名称可通过 Serena Memory 列表发现。
 
-### 清理与可发现性
-
-清理和压缩必须遵守 `content-memo.md` 内容契约，不得把 memo 写成命令日志。Memo 必须能从 Worker 的本地索引定位。
+Memory 能力失败时必须报告，并阻塞依赖该记录的工作；不得回退为文件写入。遵守 memo 内容契约，不得写成命令日志。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-当前 Codex 已配置 `PreCompact` 或 `SubagentStop` Hooks 时，可以把事件作为检查本 Worker memo 是否需要更新的观察信号；不能假定 Hook 自动写入 memo、掌握所有相关来源或能够跨 Worker 目录写文件。Worker 仍应在证据丢失前更新其明确获准的 memo／索引。[OpenAI：生命周期与 compaction Hooks](https://learn.chatgpt.com/docs/hooks)。
-
-可信且已启用的 Codex `PreCompact` 或 `SubagentStop` Hook 可识别即将压缩上下文或退出的边界；压缩后，`source: compact` 的 `SessionStart` Hook 可以给继续执行的上下文补充少量获准信息。Hooks 不会自动序列化正确的 Worker memo，并发 Hook 输出也不是有序写入事务。Worker 必须在来源证据仍可用的实质节点更新自己的获准 memo／索引，不得写入其他 Worker 的目录。[OpenAI：Hooks 生命周期、信任与 compact 恢复](https://learn.chatgpt.com/docs/hooks)。
+Hooks 可以提示 compaction 或退出边界，但不会写入或验证具名 Memory。使用实际暴露且获准的 Serena 工具并确认写入结果；除非父级明确授权该记录，否则不得写入其他 Worker 的 Memory 名称。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-### 压缩与退出时的 Memo 检查点
-
-Claude Code 已配置 Hooks 且 `write_content_memo: true` 时，可选 `PreCompact` Hook 可在压缩**之前**识别压缩事件并检查现有、获准的 Memo/索引是否最新；不可假定该 Hook 能提醒 Agent 生成新状态；`SubagentStop` 可以把末条回复提供给父级以核对 Memo/索引。这些事件信号本身不会自动写出正确 Memo，把整个 transcript 复制进去也违反 Memo 内容契约。无论是否装有 Hook，均须在普通实质性里程碑维护 Memo，并在 Worker Index 保留准确具名路径；Memo 明确关闭时不得执行该 Hook 工作流。Hooks 的脚本必须在当前 Session 中可用且获信任；Desktop 连接器工具不代表该 Session 支持 Hooks。
-
-官方依据：[PreCompact 与 SubagentStop Hooks](https://code.claude.com/docs/en/hooks)。
-
-即使 `PreCompact` 或 `SubagentStop` 已触发，Hook 也不能重建丢失的来源证据，更不能追认被跳过的 memo 更新。memo 的拥有者及写入范围仍属于 Worker，不得把残缺的 Hook transcript 复制到父级 memo。[Anthropic：compaction 与子代理结束 Hooks](https://code.claude.com/docs/en/hooks)。
+仅在 Serena MCP Memory 工具暴露且获准时使用具名 Memory，并核验写入结果。Hooks 或 auto memory 不能替代该记录。工具不可用时，报告限制并阻塞依赖工作。
 
 ## 相关概念
 
 - [Worker Content Memo](content-memo_zh_cn.md) — 定位 memo 内容契约。
-- [Worker Content Memo Dispatch](content-memo-dispatch_zh_cn.md) — 定位 memo dispatch 开关。
+- [Worker Content Memo Dispatch](content-memo-dispatch_zh_cn.md) — 定位 memo 开关。

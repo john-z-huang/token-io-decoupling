@@ -2,37 +2,29 @@
 
 [English](content-memo.md) | [简体中文](content-memo_zh_cn.md)
 
-This module defines the reusable content contract for a Worker's file-backed execution memo: its purpose, language and format rules, recordable state, and prohibited material. It does not define the dispatch switch or memo lifecycle.
+This owner defines the content contract for a Worker execution memo persisted as a Serena project Memory. It does not define the dispatch switch or lifecycle.
 
 ## General rules
 
-### Purpose and language
+### Purpose and content
 
-The memo is a compact execution-state document for stable, reusable facts. Worker-authored context prose uses **Chinese**. Preserve paths, filenames, commands, symbols, keys, hashes, exact errors, and log fragments in their original form. Mechanically copied source documents retain their source language and content. This rule does not change the language of code comments, commits, Issues/PRs, READMEs, product documentation, or user messages.
+Use the memory name `context-exchange/workers/<worker-context-id>/content-memo`, which Serena maps to `.serena/memories/context-exchange/workers/<worker-context-id>/content-memo.md` under its default project data directory. Serena configuration may change that directory. The name identifies logical ownership only: Serena does not enforce Worker-specific visibility, read-only access, or filesystem isolation, and any Session with the relevant tools may see or change the Memory. Follow the released task's ownership instructions and never claim technical isolation.
 
-### Recordable state
+Worker-authored prose uses Chinese. Preserve paths, filenames, commands, symbols, keys, hashes, exact errors, and log fragments in original form. Record only stable, reusable execution state: completed results, findings, changed paths/symbols, verification evidence, failed approaches, remaining work, blockers, and handoff needs. Keep accurate pointers to authoritative sources; do not store their full text as an authoritative copy.
 
-Use `content-memo.md`, or an existing equivalent document identified as the memo. Record only stable, reusable state:
+### Prohibited material and unavailable capability
 
-- completed result and relevant findings;
-- changed paths or symbols;
-- verification state and exact evidence pointers;
-- failed approaches that prevent repetition;
-- remaining work, blockers, or handoff needs.
-
-### Prohibited material
-
-Do not write a per-command journal or record complete logs, complete diffs, large source copies, secrets, private reasoning, or unrelated history.
+Do not write a per-command journal, full logs/diffs, large source copies, secrets, private reasoning, complete transcripts, unrelated history, or live parent mode/count/allocation/epoch state. If Serena Memory read/write is unavailable, report the limitation and block work that depends on this record; do not write the record to a file as fallback. Independent work may continue.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-Codex local memories (when enabled) summarize reusable cross-chat experience, while `/compact` reduces one chat's context. Neither guarantees an up-to-date Worker-owned memo for the current authorized slice, and neither carries the required source hashes, changed paths or next-action contract by itself. Keep stable execution state in the explicit `content-memo.md`, with only bounded evidence pointers; do not copy local memory files or entire CLI transcripts. [OpenAI: local memories](https://learn.chatgpt.com/docs/customization/memories), [OpenAI: compact command](https://learn.chatgpt.com/docs/developer-commands).
+Use only Serena Memory tools actually exposed and authorized in the current Session. Codex-local memories and `/compact` do not replace the named Serena Memory. Confirm a successful write result and verify the stored entry with `read_memory` when the active workflow requires it.
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-Claude Code auto memory is stored under `~/.claude/projects/<project>/memory/`; `MEMORY.md` is its index, and only its first 200 lines or 25 KB (whichever comes first) load at session start. Topic files load on demand. The host derives that project scope from the working directory, so which worktrees, subdirectories, or subagents share one memory directory is environment-dependent; verify what a given Session or subagent actually loaded instead of assuming repository-wide sharing or assuming the main conversation's auto memory reaches a subagent. Use `/memory` to browse the memory files and `/context` to check which `CLAUDE.md` and rules files loaded when those commands are exposed. `CLAUDE.md` carries standing instructions, while auto memory records learned preferences; `/compact` condenses a **conversation**, and `PreCompact`/`PostCompact` observe that operation. None is a substitute for this Worker-owned, path-scoped, evidence-linked `content-memo.md` or the live parent state record. When a memo is enabled, write only stable decisions, source references, changed paths, blockers and next actions into the authorized file; do not dump a full transcript or copy auto memory into it. [Anthropic: memory locations, loading limits, and commands](https://code.claude.com/docs/en/memory), [Anthropic: compaction hooks](https://code.claude.com/docs/en/hooks).
+Use Serena Memory only if the current Session exposes and authorizes the relevant Serena MCP tools. Claude auto memory and compaction do not replace this named project Memory. Confirm the actual tool availability and write result; Serena Memory access is not shared or isolated by assumption.
 
 ## Related concepts
 
-- [Worker Content Memo Dispatch](content-memo-dispatch.md) — locate the memo dispatch switch.
-- [Worker Content Memo Lifecycle](content-memo-lifecycle.md) — locate memo lifecycle rules.
+- [Worker Content Memo Dispatch](content-memo-dispatch.md) — locate the memory-write switch.
+- [Worker Content Memo Lifecycle](content-memo-lifecycle.md) — locate update and discovery rules.

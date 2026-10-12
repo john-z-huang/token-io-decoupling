@@ -9,7 +9,8 @@
 3. 复用缓存或文件上下文前，检查其范围、所有者、来源路径、新鲜度和最终状态 epoch。
 4. 将过期、不完整或互相冲突的上下文视为不可用。只刷新受影响的上下文，并记录发生了什么变化。
 5. 保持上下文以事实和路由信息为主；不能用它替代 Contract、源文档或验证。
-6. 已放行的 Worker 启用文件化 memo 时，即使不需要跨 Worker 交换，也必须具有相应 context 工作区、权限和本地索引；文件化交换与 memo 是独立触发条件。
+6. 已放行 Worker 需要持久化 memo 或交换记录时，必须确认具名持久 Memory 能力可用；memo 与跨 Worker 交换仍是独立触发条件。逻辑归属遵循所链接的 Layer-01 owner。能力不可用时报告并阻塞依赖工作；不得回退为文件存储。
+7. 当前问题需要复用先前积累的 Agent 项目知识时，使用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)列出 Memory 并读取相关条目，再对照权威项目文件核验来源指针和新鲜度。Memory 列表可用但不含相关条目，或无需跨会话知识时，记录 `Not applicable` 及原因。能力不可用时，报告不可用并回到获准的权威项目文件；不得据此推断不存在相关 Memory。只有必需事实无法从其他获准来源确认时才暂停。Memory 不能替代获准路径中的权威项目文件。
 
 ## 通过条件
 
@@ -21,5 +22,6 @@
 
 ## 相关概念
 
-- [Coding Context Exchange](../layer-01-fundamental-concepts/context-exchange_zh_cn.md) — 定位文件化 capsule 和 freshness 归属。
+- [Coding Context Exchange](../layer-01-fundamental-concepts/context-exchange_zh_cn.md) — 定位 Memory capsule 和新鲜度归属。
 - [Coding Session Context Firewall](../layer-01-fundamental-concepts/session-context-firewall_zh_cn.md) — 定位原始状态进入和事实返回归属。
+- [项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md) — 定位可复用项目知识和结构化代码浏览。

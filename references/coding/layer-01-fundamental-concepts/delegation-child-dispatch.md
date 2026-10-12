@@ -12,7 +12,7 @@ Before assigning or materially dispatching to a child, verify that Input-side Re
 
 ### Named paths and slice release
 
-Check each Worker's named-path and directory permissions under [context workspace boundary](context-exchange-workspace-boundary.md); consume the released Interaction Slice under [execution control](execution-control.md). Dispatch one slice at a time unless independent, non-conflicting parallel work is explicitly allowed. Do not redefine directory layout or slice fields here.
+Check the released task's authorized Memory names and logical ownership under [context workspace boundary](context-exchange-workspace-boundary.md); source and code path access remains subject to its separately approved boundary. Consume the released Interaction Slice under [execution control](execution-control.md). Dispatch one slice at a time unless independent, non-conflicting parallel work is explicitly allowed. Do not redefine Memory names or slice fields here.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
@@ -20,7 +20,7 @@ Codex custom agents can hold role-specific `developer_instructions`; the parent 
 
 ### Observable dispatch and pre-spawn guard
 
-In interactive Codex CLI, `/agent` can report the selected Agent thread. In ChatGPT Desktop, retrieve a subagent's work and returned summary only through a thread/result tool directly exposed to the active Session; if none is exposed, record that capability as unavailable. Before the real spawn, keep the brief task instruction in the parent turn and put objective, authorized paths, source pointers, explicit `write_content_memo` and return conditions in the child's actual task prompt. If a reviewed `PreToolUse` hook matches `spawn_agent`/`Agent`, it can deny a tool invocation missing a released slice; `SubagentStart` is too late to veto creation. Check installed hook trust and coverage rather than claiming this guard exists by default. [OpenAI: subagent tools and threads](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: hook tool coverage](https://learn.chatgpt.com/docs/hooks).
+In interactive Codex CLI, `/agent` can report the selected Agent thread. In ChatGPT Desktop, retrieve a subagent's work and returned summary only through a thread/result tool directly exposed to the active Session; if none is exposed, record that capability as unavailable. Before the real spawn, keep the brief task instruction in the parent turn and put objective, authorized source/document paths, authorized Memory names, source pointers, explicit `write_content_memo` and return conditions in the child's actual task prompt. If a reviewed `PreToolUse` hook matches `spawn_agent`/`Agent`, it can deny a tool invocation missing a released slice; `SubagentStart` is too late to veto creation. Check installed hook trust and coverage rather than claiming this guard exists by default. [OpenAI: subagent tools and threads](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: hook tool coverage](https://learn.chatgpt.com/docs/hooks).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
@@ -39,5 +39,5 @@ A Claude Code custom subagent starts with its own context and does not automatic
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state and recovery ownership.
 - [Coding Child Message Visibility](delegation-child-message-visibility.md) — locate parent-conversation message visibility requirements.
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.md) — locate authorized reuse and replacement.
-- [Coding Context Exchange](context-exchange.md) — locate named-path context transport ownership.
+- [Coding Context Exchange](context-exchange.md) — locate context-record Memory naming and authorization.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice boundary controls.

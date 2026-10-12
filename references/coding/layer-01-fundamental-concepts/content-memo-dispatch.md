@@ -2,35 +2,26 @@
 
 [English](content-memo-dispatch.md) | [简体中文](content-memo-dispatch_zh_cn.md)
 
-This module defines the parent-controlled `write_content_memo` dispatch switch for a Worker's file-backed execution memo. It does not define memo content, memo lifecycle, context transport, or child lifecycle.
+This owner defines the parent-controlled `write_content_memo` switch for a Worker's Serena Memory memo. It does not define memo content or lifecycle.
 
 ## General rules
 
 ### Dispatch switch
 
-The parent sets:
+Every released bundle explicitly includes `write_content_memo: true` or `false`; a Worker never infers a default. `true` enables writes to `context-exchange/workers/<worker-context-id>/content-memo`; `false` disables that memo only. Include the exact memory name in the released bundle. The parent controls the switch and name, but this is logical ownership only: Serena does not enforce per-Worker access or read-only ACLs.
 
-```text
-write_content_memo: true
-```
-
-`true` is the default, including when the field is omitted. It enables the file-backed memo for the dispatch. `false` suppresses only the file-backed memo and is appropriate only when memo cost clearly exceeds likely reuse, recovery, or handoff value.
-
-Internal dispatch configuration may omit the field and use this `true` default. Before the parent serializes a released task bundle, it must write `write_content_memo: true` or `write_content_memo: false` explicitly. A Worker consumes only the explicit value in its released bundle; if the released bundle omits the field, the dispatch is incomplete and the Worker must not infer a default.
-
-### Parent authority
-
-The Worker cannot change or reinterpret the switch. Only the parent may choose a value for a later slice. This authority controls memo file materialization only; it does not grant any other scope or capability.
+If Memory tools are not exposed and authorized, report the limitation and block the memo-dependent slice; do not materialize the memo as a file. Other independent work may continue.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-Codex custom agent TOML, `AGENTS.md`, optional memories and `/compact` do not implement this Skill's dispatch switch. Serialize `write_content_memo: true` or `false` in the **actual released child-task prompt** and name the authorized memo path before spawning. If enabled, confirm that the parent has provisioned the memo directory at the exact authorized absolute path and that the receiving Worker Session can actually write there under its approved RW boundary. When a Worker uses a separate checkout, independently verify that the primary-worktree `CONTEXT_ROOT` is reachable; do not relocate the memo into the Worker's checkout or infer access from checkout ownership. The canonical layout and path rights belong to [Context Exchange Workspace Boundary](context-exchange-workspace-boundary.md). A `SubagentStart` or `PreCompact` hook is optional context, not a replacement for the explicit bundle or the Worker's file write. [OpenAI: subagent prompts](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: local memories](https://learn.chatgpt.com/docs/customization/memories), [OpenAI: hooks](https://learn.chatgpt.com/docs/hooks).
+Serialize the switch and exact memory name in the actual released child-task prompt. Use only exposed, authorized Serena Memory tools and confirm the write result. Codex configuration, hooks, local memory, or compaction do not themselves implement this switch.
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-Claude Code's `Agent` prompt and custom subagent definition do not automatically implement this Skill's `write_content_memo` switch. Before invoking an authorized Worker, serialize `write_content_memo: true` or `false` in that Worker's released task bundle and ensure its writable memo directory exists when enabled. Do not rely on a default implicit in `Agent`, a `SubagentStop` hook, or the parent's auto memory to create the file-backed memo. When disabled, omit the memo write but retain the separately required return evidence. [Anthropic: subagent configuration](https://code.claude.com/docs/en/sub-agents), [Anthropic: memory](https://code.claude.com/docs/en/memory).
+When the current Agent Session exposes and authorizes Serena MCP Memory tools, include the switch and name in the released bundle and confirm the write result. Claude auto memory, hooks, or compaction do not replace the named project Memory. If tools are unavailable, follow the general block/report rule.
 
 ## Related concepts
 
 - [Worker Content Memo](content-memo.md) — locate the memo content contract.
-- [Worker Content Memo Lifecycle](content-memo-lifecycle.md) — locate memo lifecycle rules.
+- [Worker Content Memo Lifecycle](content-memo-lifecycle.md) — locate update rules.
+- [Coding Context Exchange Workspace Boundary](context-exchange-workspace-boundary.md) — locate logical memory ownership rules.
