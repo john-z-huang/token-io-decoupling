@@ -2,7 +2,7 @@
 
 [English](session-context-firewall.md) | [简体中文](session-context-firewall_zh_cn.md)
 
-本文档负责 Context Firewall：原始状态进入限制、有界检查、事实返回边界和临时项目定位。不定义职责责任、Session 语义、文件化上下文传输或工作流验收。
+本文档负责 Context Firewall：原始状态进入限制、有界检查、事实返回边界和临时项目定位。不定义职责责任、Session 语义、Memory 上下文传输或工作流验收。
 
 ## 通用规范
 
@@ -14,7 +14,7 @@
 
 ### 语义 ownership 和临时定位
 
-Firewall 只限制原始状态进入，不转移语义责任；语义权威性遵循[职责归属](session-role-ownership_zh_cn.md)。临时项目定位事实只属于观察它的 Session，不提升为长期 Contract 状态。
+Firewall 只限制原始状态进入，不转移语义责任；语义权威性遵循[职责归属](session-role-ownership_zh_cn.md)。临时项目定位事实不自动提升为长期 Contract 状态，也不应倾倒原始状态。经授权且可复用的上下文记录可按 [Coding Context Exchange](context-exchange_zh_cn.md) 和 [Coding Context Exchange Workspace Boundary](context-exchange-workspace-boundary_zh_cn.md) 使用具名项目 Memory 持久化；Memory 名称只表达逻辑归属，不提供技术隔离。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
@@ -38,6 +38,6 @@ Claude Code 的项目／用户自定义 subagent 可将内联 `mcpServers` 限�
 
 - [Coding Session Model](session-model_zh_cn.md) — 定位 Session 语义和 Affinity。
 - [Coding Session Role Ownership](session-role-ownership_zh_cn.md) — 定位职责责任归属。
-- [Coding Context Exchange](context-exchange_zh_cn.md) — 定位文件化上下文传输。
+- [Coding Context Exchange](context-exchange_zh_cn.md) — 定位 Memory 上下文传输。
 - [Coding Delegation State Record](delegation-state-record_zh_cn.md) — 定位任务控制状态归属。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位有界阶段和 slice 归属。

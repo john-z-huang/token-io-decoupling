@@ -12,7 +12,7 @@
 
 ### Named path 和 slice 放行
 
-通过[上下文工作区边界](context-exchange-workspace-boundary_zh_cn.md)核验各 Worker 的目录与具名权限；通过[执行控制](execution-control_zh_cn.md)消费获准的 Interaction Slice，一次只派发一个 Slice，除非明确允许相互独立且不冲突的并行工作。本模块不重新定义目录布局或 Slice 字段。
+按[上下文工作区边界](context-exchange-workspace-boundary_zh_cn.md)检查已放行任务授权的 Memory 名称及逻辑归属；源码和代码路径访问仍遵守单独批准的边界。通过[执行控制](execution-control_zh_cn.md)消费获准的 Interaction Slice，一次只派发一个 Slice，除非明确允许相互独立且不冲突的并行工作。本模块不重新定义 Memory 名称或 Slice 字段。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
@@ -20,7 +20,7 @@ Codex 自定义 Agent 可通过 `developer_instructions` 保存职责专属指�
 
 ### 可观察的派发与创建前守卫
 
-交互式 Codex CLI 可用 `/agent` 查看所选 Agent 线程。ChatGPT Desktop 只有在当前 Session 直接暴露线程／结果工具时，才能通过该工具读取子代理工作与返回摘要；否则将此能力记录为不可用。实际 spawn 前，父级回合应保留简短任务指令，并将目标、获准路径、来源指针、显式 `write_content_memo` 与返回条件写入 Child 的真实任务提示。若已经审查并启用的 `PreToolUse` Hook 匹配 `spawn_agent`／`Agent`，可拒绝缺少已放行 Slice 的调用；`SubagentStart` 太晚，不能否决创建。应检查 Hook 的信任与覆盖情况，不得声称该守卫默认存在。[OpenAI：子代理工具与线程](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：Hooks 工具覆盖](https://learn.chatgpt.com/docs/hooks)。
+交互式 Codex CLI 可用 `/agent` 查看所选 Agent 线程。ChatGPT Desktop 只有在当前 Session 直接暴露线程／结果工具时，才能通过该工具读取子代理工作与返回摘要；否则将此能力记录为不可用。实际 spawn 前，父级回合应保留简短任务指令，并将目标、获准源码/权威文档路径、已授权 Memory 名称、来源指针、显式 `write_content_memo` 与返回条件写入 Child 的真实任务提示。若已经审查并启用的 `PreToolUse` Hook 匹配 `spawn_agent`／`Agent`，可拒绝缺少已放行 Slice 的调用；`SubagentStart` 太晚，不能否决创建。应检查 Hook 的信任与覆盖情况，不得声称该守卫默认存在。[OpenAI：子代理工具与线程](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：Hooks 工具覆盖](https://learn.chatgpt.com/docs/hooks)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
@@ -39,5 +39,5 @@ Claude Code 自定义 subagent 具有自己的上下文，不会自动继承父�
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态和恢复归属。
 - [Coding Child Message Visibility](delegation-child-message-visibility_zh_cn.md) — 定位父级会话中的消息可见性要求。
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement_zh_cn.md) — 定位获准的复用和替换。
-- [Coding Context Exchange](context-exchange_zh_cn.md) — 定位 named-path 上下文传输归属。
+- [Coding Context Exchange](context-exchange_zh_cn.md) — 定位上下文记录的 Memory 命名与授权。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 边界控制。

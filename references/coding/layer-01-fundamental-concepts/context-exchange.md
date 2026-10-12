@@ -2,39 +2,29 @@
 
 [English](context-exchange.md) | [简体中文](context-exchange_zh_cn.md)
 
-This module defines the transport capsule for already-assigned Coding Workers: its content restrictions, freshness/invalidation checks, and authoritative-source rules. It does not define workspace layout, directory ownership, capability boundaries, handoff records, task meaning, Agent topology, execution planning, or acceptance.
+This owner defines content and freshness rules for context capsules persisted as Serena project Memories for already-assigned Coding Workers. It does not define memory naming/authorization, handoff records, task meaning, Agent topology, or acceptance.
 
 ## General rules
 
-### Transport capsule
+### Capsule content and authoritative sources
 
-Pass only the context needed by the receiving Worker. Prefer a targeted read-only view of the original document. If that is unavailable, the parent or filesystem layer may create and mechanically copy the named documents into the parent-prepared read-only directory `CONTEXT_ROOT/<worker-context-id>/imports/<source-context-id>/`; the Worker may read the import but must not rewrite it. The parent must name the source documents in the concrete handoff or dependency, and the authoritative source remains preferred and binding. Use a compact parent-mediated handoff only when neither filesystem option is safe.
+Persist a capsule only when an authorized handoff or context bootstrap needs a durable record. Use concise neutral facts, exact pointers to authoritative sources, hashes, freshness/invalidation data, and narrow evidence pointers. Do not copy the full source documents into Memory; authoritative repository files remain binding. Receiving Workers read only capsule memories named in their released task, then verify needed facts against named approved sources.
 
-A reusable capsule may contain neutral facts, exact paths and source pointers, hashes, freshness/invalidation data, and narrow evidence pointers. It must not contain implementation reasoning, Contract verdicts, private chain-of-thought, secrets, complete diffs, complete logs, or large source copies. Receiving Workers read the capsule first and then only the named source paths they need; authoritative source files remain binding.
+Use these bootstrap Memory names, preserving former filenames: `context-exchange/context-bootstrap/MANIFEST`, `context-exchange/context-bootstrap/project-context`, and `context-exchange/context-bootstrap/policy-context`. `MANIFEST` records snapshot identity, hashes, and freshness rules; the other memories hold neutral project facts/pointers and policy-routing pointers. Other exchange/import records use their existing basename and subdirectory intent under `context-exchange/`.
 
-For a capsule under `CONTEXT_ROOT/context-bootstrap/`, use:
-
-```text
-MANIFEST.md        snapshot identity, hashes, freshness rules
-project-context.md neutral project facts and source pointers
-policy-context.md  policy-routing pointers and authoritative sections
-```
-
-Check freshness against `HEAD`/tree, tracked-delta fingerprint, listed source hashes, relevant untracked state, and the active task/scope. If a material field changes, refresh only affected sections before relying on the capsule; otherwise read the named authoritative sources directly. A capsule never replaces independent final-state verification.
+Check freshness against `HEAD`/tree, tracked-delta fingerprint, listed source hashes, relevant untracked state, and active task/scope. Refresh only affected entries when material fields change; otherwise read named authoritative sources directly. A capsule never replaces Contract or independent final-state verification. Memory listing/read/write capability unavailable means report the limitation and block dependent work; do not use file-backed fallback.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-If an authorized receiving Codex Worker needs an external source, prefer a named MCP source or exact read-only file pointer; the active Codex host may share its MCP configuration across CLI, IDE and Desktop Codex, but a project-scoped MCP server requires that project configuration be trusted. The parent's ChatGPT Work plugin connection or a Chat attachment is not automatically exposed to a local spawned Codex child. Confirm that the intended Worker can actually read the source, preserve original paths and freshness data, and use the parent-prepared read-only import if direct access is absent; never broaden MCP/tool scope merely to make a capsule load. [OpenAI: MCP clients and trust](https://learn.chatgpt.com/docs/extend/mcp), [OpenAI: config trust](https://learn.chatgpt.com/docs/config-file/config-basic).
+Use only exposed, authorized Serena Memory tools. Name the exact capsule Memory in the released task, read it before use, verify source pointers/freshness, and confirm writes. Do not broaden source or tool access just to make a capsule available.
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-
-
-Use a Claude Code subagent's narrow `mcpServers` configuration only if its released slice actually needs the connected source; keep authority with the source document or tool result and transfer named pointers, not full unrelated tool outputs. For Claude Desktop, local Desktop Extensions can access specifically granted local files/apps, while remote MCP connectors execute through Anthropic infrastructure and cannot be assumed to reach private localhost or VPN-only files. If the receiving context has no authorized connector/path, use the parent-prepared read-only handoff document permitted by the general rules; otherwise block rather than widening connector scope. [Anthropic: subagent MCP scope](https://code.claude.com/docs/en/sub-agents), [Anthropic: Desktop vs web connectors](https://support.claude.com/en/articles/11725091-when-to-use-desktop-and-web-connectors), [Anthropic: remote MCP](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
+Use Serena Memory only when the current Agent Session exposes and authorizes its MCP tools. Claude Code MCP Tool Search may defer definitions; discover and verify the tools before relying on them. Claude auto memory or compaction is not a replacement for a named exchange capsule.
 
 ## Related concepts
 
-- [Coding Context Exchange Workspace Boundary](context-exchange-workspace-boundary.md) — locate workspace and capability boundaries.
-- [Coding Context Exchange Handoff](context-exchange-handoff.md) — locate handoff record ownership.
-- [Coding Session Context Firewall](session-context-firewall.md) — locate raw-state ingress boundaries.
-- [Coding Child Dispatch](delegation-child-dispatch.md) — locate named-path dispatch boundaries.
+- [Coding Context Exchange Workspace Boundary](context-exchange-workspace-boundary.md) — locate logical naming and authorization.
+- [Coding Context Exchange Handoff](context-exchange-handoff.md) — locate handoff record content.
+- [Coding Session Context Firewall](session-context-firewall.md) — locate bounded ingress rules.
+- [Coding Child Dispatch](delegation-child-dispatch.md) — locate released-task authorization.

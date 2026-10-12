@@ -2,35 +2,25 @@
 
 [English](content-memo-lifecycle.md) | [简体中文](content-memo-lifecycle_zh_cn.md)
 
-This module defines creation, update, cleanup, and local-index discoverability for a Worker's file-backed execution memo. It does not define memo content, the dispatch switch, handoff or replacement strategy, or task acceptance.
+This owner defines creation, update, cleanup, and discoverability for a Worker's Serena Memory memo. It does not define memo content, dispatch, handoff authorization, or acceptance.
 
 ## General rules
 
-### Creation and update
+### Creation, update, and discovery
 
-Create or update `content-memo.md`, or an existing equivalent document identified as the memo, when reusable execution state first appears and at material milestones, a blocking boundary, handoff, replacement, or normal exit.
+When `write_content_memo` is true, use `list_memories` to check the named entry and `write_memory` to create or update `context-exchange/workers/<worker-context-id>/content-memo` when reusable state first appears and at material milestones, blockers, handoff, replacement, or normal exit. Update only when state/evidence materially changes, not after every command. A parent or successor may read it only when the released instructions name or authorize it; Serena itself does not enforce that ownership rule. Do not create a local file index for these records; the name is discoverable through Serena's memory listing.
 
-### Cleanup and discoverability
-
-Cleanup and compaction must preserve the `content-memo.md` content contract rather than turn the memo into a command journal. The memo must remain discoverable from the Worker's local index.
+Memory capability failure must be reported and blocks dependent record use; never fall back to writing the record as a file. Preserve the content contract and do not turn it into a command journal.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-When this Codex runtime has configured `PreCompact` or `SubagentStop` hooks, use the event as an observation that an owned memo may need updating; do not assume the hook serializes the memo, knows every relevant source, or can write to another Worker's directory. The Worker still updates its explicitly authorized memo/index before source evidence is lost. [OpenAI: lifecycle/compaction hooks](https://learn.chatgpt.com/docs/hooks).
-
-A trusted, enabled Codex `PreCompact` or `SubagentStop` hook may identify an imminent context-loss or exit boundary; after compaction, a `SessionStart` hook with `source: compact` can supply small approved context to the continuation. Hooks do not serialize a correct Worker memo automatically, and concurrent hook outputs are not an ordered write transaction. The Worker must update its own allowed memo/index at actual material milestones while evidence is still available, and must not write another Worker's folder. [OpenAI: hook lifecycle, trust and compact restart](https://learn.chatgpt.com/docs/hooks).
+Hooks may signal a compaction or exit boundary but do not write or validate the named Memory. Use exposed, authorized Serena tools and confirm the write result; do not write another Worker's memory name unless the parent explicitly authorizes that record.
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-### Compaction- and exit-aware memo checkpoints
-
-Where Claude Code Hooks are configured and `write_content_memo: true`, an optional `PreCompact` hook can detect impending compaction and check whether the existing, permitted memo/index is current **before** compaction; it cannot be assumed to prompt the Agent to write new state, and `SubagentStop` may surface the final message to the parent for a last memo/index check. These event signals do not themselves write a correct memo, and a generic hook that copies an entire transcript violates the memo content contract. Maintain the memo at ordinary material milestones independently of hooks, keep its exact named path in the Worker index, and never run the hook workflow when memo is explicitly disabled. Hooks require their scripts to be available and trusted in the active Session; Desktop connector tools do not imply Hook support.
-
-Official reference: [PreCompact and SubagentStop hooks](https://code.claude.com/docs/en/hooks).
-
-Even after `PreCompact` or `SubagentStop` fires, a hook cannot reconstruct missing source evidence or retroactively satisfy a skipped memo update. Keep ownership and write scope with the Worker rather than copying an incomplete hook transcript to the parent's memo. [Anthropic: compaction and child-stop hooks](https://code.claude.com/docs/en/hooks).
+Only when Serena MCP Memory tools are exposed and authorized, use the named memory and verify the write result. Hooks or auto memory do not replace it. If unavailable, report the limitation and block dependent work.
 
 ## Related concepts
 
 - [Worker Content Memo](content-memo.md) — locate the memo content contract.
-- [Worker Content Memo Dispatch](content-memo-dispatch.md) — locate the memo dispatch switch.
+- [Worker Content Memo Dispatch](content-memo-dispatch.md) — locate the memo switch.

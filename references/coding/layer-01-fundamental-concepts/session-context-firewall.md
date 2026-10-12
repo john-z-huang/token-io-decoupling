@@ -2,7 +2,7 @@
 
 [English](session-context-firewall.md) | [简体中文](session-context-firewall_zh_cn.md)
 
-This module owns the Context Firewall: raw-state ingress limits, bounded inspection, fact-return boundaries, and ephemeral project localization. It does not define role responsibilities, Session semantics, file-backed context transport, or workflow acceptance.
+This module owns the Context Firewall: raw-state ingress limits, bounded inspection, fact-return boundaries, and temporary project localization. It does not define role responsibilities, Session semantics, Memory context transport, or workflow acceptance.
 
 ## General rules
 
@@ -14,7 +14,7 @@ Raw-state ingress is bounded by potential output volume, state sensitivity, and 
 
 ### Semantic ownership and ephemeral localization
 
-The firewall limits raw-state ingress without transferring semantic authority; follow [session role ownership](session-role-ownership.md). Temporary project-localization facts belong to the observing Session and are not promoted to long-lived Contract state.
+The firewall limits raw-state ingress without transferring semantic authority; follow [session role ownership](session-role-ownership.md). Temporary project-localization facts are not automatically promoted to long-lived Contract state, and raw state must not be dumped. Authorized reusable context records may be persisted as named project Memories under [Coding Context Exchange](context-exchange.md) and [Coding Context Exchange Workspace Boundary](context-exchange-workspace-boundary.md); memory names express logical ownership only and provide no technical isolation.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
@@ -38,6 +38,6 @@ A Claude Code project/user custom subagent can scope an inline `mcpServers` defi
 
 - [Coding Session Model](session-model.md) — locate Session semantics and affinity.
 - [Coding Session Role Ownership](session-role-ownership.md) — locate role responsibility ownership.
-- [Coding Context Exchange](context-exchange.md) — locate file-backed context transport.
+- [Coding Context Exchange](context-exchange.md) — locate Memory context transport.
 - [Coding Delegation State Record](delegation-state-record.md) — locate task-control state ownership.
 - [Coding Execution Control](execution-control.md) — locate bounded stage and slice ownership.
