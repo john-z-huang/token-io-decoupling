@@ -25,25 +25,34 @@ class WorkflowMapTests(unittest.TestCase):
             prefix = spec['prefix']
             nodes = [f'{prefix}{i:02d}["{i:02d} {title}"]'
                      for i, title in enumerate(spec['steps'], 1)]
-            nodes += [f'{name}["{name}"]' for name in sorted(spec['branches'])]
-            diagram = 'flowchart TD\n    ' + '\n    '.join(nodes) + '\n'
-            diagram += ''.join(f'    {src} --> {dst}\n' for src, dst in sorted(spec['edges']))
             for lang in ('en', 'zh'):
+                branch_nodes = []
+                for name in sorted(spec['branches']):
+                    label = validator.PLAN_NODE_LABELS.get(lang, {}).get(name, name)
+                    branch_nodes.append(f'{name}["{label}"]')
+                diagram = 'flowchart TD\n    ' + '\n    '.join(nodes + branch_nodes) + '\n'
+                diagram += ''.join(f'    {src} --> {dst}\n' for src, dst in sorted(spec['edges']))
                 suffix = '_zh_cn' if lang == 'zh' else ''
                 file = routes / f'coding-{route}{suffix}.md'
                 header = validator.MAP_TITLE[lang]
                 checklist = validator.CHECKLIST_TITLE[lang]
                 lines = ''.join(f'{i}. **{name}.** Content and link.\n'
                                 for i, name in enumerate(spec['steps'], 1))
-                skip_edges = ((('D_RECON', 'S06'), ('D_DOC', 'S13'), ('D_GIT', 'S14'))
+                skip_edges = ((('D_PLAN_MATCH', 'D_RECON'), ('D_RECON', 'S06'), ('D_PLAN', 'S07'), ('D_DOC', 'S13'), ('D_GIT', 'S14'),
+                               ('D_ARCHIVE', 'DONE'))
                               if route == 'single-agent' else
-                              (('D_BOOT', 'M06'), ('D_RECON', 'M08'), ('D_MEMO', 'M10'),
-                               ('D_DOC', 'M15'), ('D_GIT', 'M16')))
+                              (('D_BOOT', 'M06'), ('D_PLAN', 'D_RECON'), ('D_RECON', 'M08'), ('D_MEMO', 'M10'),
+                               ('D_DOC', 'M15'), ('D_GIT', 'M16'), ('D_PLAN_MATCH', 'M07'),
+                               ('D_ARCHIVE', 'DONE')))
                 localized = diagram
                 for source, target in skip_edges:
                     old = f'    {source} --> {target}\n'
                     new = f'    {source} -- {"no / N/A" if lang == "en" else "不适用"} --> {target}\n'
                     localized = localized.replace(old, new)
+                for decision in ('D_PLAN_SAVED', 'D_ARCHIVED', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ'):
+                    failure_edge = f'    {decision} --> BLOCK\n'
+                    failure_label = f'    {decision} -- {"no / unavailable" if lang == "en" else "失败／不可用"} --> BLOCK\n'
+                    localized = localized.replace(failure_edge, failure_label)
                 file.write_text(f'# route\n\n{header}\n\n\x60\x60\x60mermaid\n{localized}\x60\x60\x60\n\n'
                                 f'{checklist}\n\n{lines}', encoding='utf-8')
         for lang, filename in (('en', 'AGENTS.md'), ('zh', 'AGENTS_zh_cn.md')):
@@ -108,9 +117,50 @@ class WorkflowMapTests(unittest.TestCase):
         # The fixture has no label; the structure requires a visible skip reason.
         self.reject('must label its skip/Not applicable path')
 
+    def test_active_plan_read_branch_is_required(self) -> None:
+        self.mutate(self.route(), 'D_PLAN_MATCH --> ACT_PLAN_READ', 'D_PLAN_MATCH --> D_RECON')
+        self.reject('required map edge D_PLAN_MATCH -> ACT_PLAN_READ is missing')
+
+    def test_active_plan_scan_failure_must_block(self) -> None:
+        self.mutate(self.route(), 'ACT_PLAN_SCAN -- no / unavailable --> BLOCK', 'ACT_PLAN_SCAN --> BLOCK')
+        self.reject('unavailable or failed ACT_PLAN_SCAN must route to BLOCK')
+
+    def test_active_plan_read_failure_must_block(self) -> None:
+        self.mutate(self.route(), 'ACT_PLAN_READ -- no / unavailable --> BLOCK', 'ACT_PLAN_READ --> BLOCK')
+        self.reject('unavailable or failed ACT_PLAN_READ must route to BLOCK')
+
+    def test_plan_memory_failure_must_block(self) -> None:
+        path = self.route()
+        self.mutate(path, 'D_PLAN_SAVED -- no / unavailable --> BLOCK',
+                    'D_PLAN_SAVED --> BLOCK')
+        self.reject('failed or unavailable D_PLAN_SAVED Memory must route to BLOCK')
+
+    def test_plan_branch_must_name_user_intent_trigger(self) -> None:
+        self.mutate(self.route(), 'D_PLAN[\"User goal requests planning, exploration, or producing/updating a plan?\"]',
+                    'D_PLAN[\"Plan document produced?\"]')
+        self.reject('node D_PLAN must identify User goal requests planning, exploration, or producing/updating a plan?')
+
+    def test_plan_memory_branch_is_required(self) -> None:
+        self.mutate(self.route(), 'D_PLAN --> ACT_PLAN', 'D_PLAN --> S07')
+        self.reject('required map edge D_PLAN -> ACT_PLAN is missing')
+
+    def test_plan_archive_branch_is_required(self) -> None:
+        self.mutate(self.route(), 'S14 --> D_ARCHIVE', 'S14 --> DONE')
+        self.reject('required map edge S14 -> D_ARCHIVE is missing')
+
+    def test_multi_agent_plan_archive_skip_label_is_required(self) -> None:
+        self.mutate(self.route(mode='multi-agent'),
+                    'D_ARCHIVE -- no / N/A --> DONE', 'D_ARCHIVE --> DONE')
+        self.reject('conditional D_ARCHIVE -> DONE must label its skip/Not applicable path')
+
+    def test_plan_archive_failure_must_block(self) -> None:
+        path = self.route()
+        self.mutate(path, 'D_ARCHIVED -- no / unavailable --> BLOCK', 'D_ARCHIVED --> BLOCK')
+        self.reject('failed or unavailable D_ARCHIVED Memory must route to BLOCK')
+
     def test_extra_unapproved_edge(self) -> None:
         path = self.route()
-        text = path.read_text(encoding='utf-8').replace('    S14 --> DONE\n',
+        text = path.read_text(encoding='utf-8').replace('    S14 --> D_ARCHIVE\n',
                             '    S14 --> DONE\n    S04 --> S14\n', 1)
         path.write_text(text, encoding='utf-8')
         self.reject('unexpected map edge')
@@ -128,7 +178,7 @@ class WorkflowMapTests(unittest.TestCase):
 
     def test_shortcut_around_verification(self) -> None:
         path = self.route(mode='multi-agent')
-        text = path.read_text(encoding='utf-8').replace('    M16 --> DONE\n',
+        text = path.read_text(encoding='utf-8').replace('    M16 --> D_ARCHIVE\n',
                             '    M16 --> DONE\n    M11 --> DONE\n', 1)
         path.write_text(text, encoding='utf-8')
         self.reject('unauthorized shortcut')
