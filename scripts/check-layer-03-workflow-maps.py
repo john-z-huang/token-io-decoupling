@@ -31,16 +31,21 @@ ROUTE_SPECS = {
         'steps': ('Contract', 'Environment', 'Mode', 'Session', 'Context', 'Decision',
                   'Implementation', 'Stage Feedback', 'Control', 'Verification',
                   'Repair', 'Documentation', 'Git', 'Acceptance'),
-        'branches': {'D_RECON', 'ACT_RECON', 'D_CONTROL', 'D_VERIFY', 'D_DOC', 'D_GIT', 'BLOCK', 'DONE'},
+        'branches': {'D_PLAN', 'ACT_PLAN', 'D_PLAN_SAVED', 'D_PLAN_MATCH', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ', 'D_ARCHIVE', 'ACT_ARCHIVE', 'D_ARCHIVED', 'D_RECON', 'ACT_RECON', 'D_CONTROL', 'D_VERIFY', 'D_DOC', 'D_GIT', 'BLOCK', 'DONE'},
         'edges': {
             ('S01', 'S02'), ('S02', 'S03'), ('S03', 'S04'), ('S04', 'S05'),
-            ('S05', 'D_RECON'), ('D_RECON', 'ACT_RECON'), ('ACT_RECON', 'S05'), ('D_RECON', 'S06'),
-            ('S06', 'S07'), ('S07', 'S08'), ('S08', 'S09'), ('S09', 'D_CONTROL'),
+            ('S05', 'ACT_PLAN_SCAN'), ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_PLAN_SCAN', 'BLOCK'),
+            ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'D_RECON'),
+            ('ACT_PLAN_READ', 'D_RECON'), ('ACT_PLAN_READ', 'BLOCK'),
+            ('D_RECON', 'ACT_RECON'), ('ACT_RECON', 'S05'), ('D_RECON', 'S06'),
+            ('S06', 'D_PLAN'), ('D_PLAN', 'ACT_PLAN'), ('D_PLAN', 'S07'),
+            ('ACT_PLAN', 'D_PLAN_SAVED'), ('D_PLAN_SAVED', 'S07'), ('D_PLAN_SAVED', 'BLOCK'), ('S07', 'S08'), ('S08', 'S09'), ('S09', 'D_CONTROL'),
             ('D_CONTROL', 'S05'), ('D_CONTROL', 'S06'), ('D_CONTROL', 'S10'), ('D_CONTROL', 'BLOCK'),
             ('S10', 'D_VERIFY'), ('D_VERIFY', 'S11'), ('D_VERIFY', 'S12'), ('D_VERIFY', 'BLOCK'),
             ('S11', 'S10'), ('S12', 'D_DOC'), ('D_DOC', 'S10'), ('D_DOC', 'S06'),
             ('D_DOC', 'S13'), ('S13', 'D_GIT'), ('D_GIT', 'S14'), ('D_GIT', 'BLOCK'),
-            ('S14', 'DONE'),
+            ('S14', 'D_ARCHIVE'), ('D_ARCHIVE', 'ACT_ARCHIVE'), ('D_ARCHIVE', 'DONE'),
+            ('ACT_ARCHIVE', 'D_ARCHIVED'), ('D_ARCHIVED', 'DONE'), ('D_ARCHIVED', 'BLOCK'),
         },
         'forbidden': re.compile(r'\b(?:Child Creation|Child Dispatch|Worker Memo|Context Bootstrap|'
                                 r'Child Lifecycle|Child Role Allocation)\b|子代理创建|子代理派发|'
@@ -51,12 +56,17 @@ ROUTE_SPECS = {
         'steps': ('Contract', 'Environment', 'Mode', 'Session', 'Allocation', 'Context',
                   'Decision', 'Slice', 'Child Creation', 'Dispatch', 'Implementation',
                   'Verification', 'Repair', 'Documentation', 'Git', 'Acceptance'),
-        'branches': {'D_BOOT', 'ACT_BOOT_PLAN', 'D_RECON', 'ACT_RECON_PLAN',
-                     'D_MEMO', 'ACT_MEMO', 'D_CONTROL', 'D_VERIFY', 'D_DOC', 'D_GIT', 'BLOCK', 'DONE'},
+        'branches': {'D_BOOT', 'ACT_BOOT_PLAN', 'D_PLAN', 'ACT_PLAN', 'D_PLAN_SAVED',
+                     'D_RECON', 'ACT_RECON_PLAN', 'D_MEMO', 'ACT_MEMO', 'D_CONTROL',
+                     'D_VERIFY', 'D_DOC', 'D_GIT', 'D_PLAN_MATCH', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ', 'D_ARCHIVE', 'ACT_ARCHIVE', 'D_ARCHIVED', 'BLOCK', 'DONE'},
         'edges': {
             ('M01', 'M02'), ('M02', 'M03'), ('M03', 'M04'), ('M04', 'M05'),
             ('M05', 'D_BOOT'), ('D_BOOT', 'ACT_BOOT_PLAN'), ('ACT_BOOT_PLAN', 'M06'), ('D_BOOT', 'M06'),
-            ('M06', 'M07'), ('M07', 'D_RECON'), ('D_RECON', 'ACT_RECON_PLAN'),
+            ('M06', 'ACT_PLAN_SCAN'), ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_PLAN_SCAN', 'BLOCK'),
+            ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'M07'),
+            ('ACT_PLAN_READ', 'M07'), ('ACT_PLAN_READ', 'BLOCK'), ('M07', 'D_PLAN'), ('D_PLAN', 'ACT_PLAN'), ('D_PLAN', 'D_RECON'),
+            ('ACT_PLAN', 'D_PLAN_SAVED'), ('D_PLAN_SAVED', 'D_RECON'), ('D_PLAN_SAVED', 'BLOCK'),
+            ('D_RECON', 'ACT_RECON_PLAN'),
             ('ACT_RECON_PLAN', 'M08'), ('D_RECON', 'M08'),
             ('M08', 'M09'), ('M09', 'D_MEMO'), ('M09', 'BLOCK'),
             ('M10', 'M11'), ('M10', 'BLOCK'),
@@ -68,9 +78,22 @@ ROUTE_SPECS = {
             ('M13', 'M12'), ('M13', 'BLOCK'), ('M14', 'D_DOC'), ('M14', 'BLOCK'),
             ('D_DOC', 'M12'), ('D_DOC', 'M07'), ('D_DOC', 'M15'),
             ('M15', 'D_GIT'), ('M15', 'BLOCK'), ('D_GIT', 'M16'), ('D_GIT', 'BLOCK'),
-            ('M16', 'DONE'),
+            ('M16', 'D_ARCHIVE'), ('D_ARCHIVE', 'ACT_ARCHIVE'), ('D_ARCHIVE', 'DONE'),
+            ('ACT_ARCHIVE', 'D_ARCHIVED'), ('D_ARCHIVED', 'DONE'), ('D_ARCHIVED', 'BLOCK'),
         },
     },
+}
+
+
+PLAN_NODE_LABELS = {
+    'en': {'D_PLAN': 'User goal requests planning, exploration, or producing/updating a plan?',
+           'D_PLAN_SAVED': 'Plan Memory saved and read-verified?',
+           'D_ARCHIVE': 'Active plan Memory for this task exists?',
+           'D_PLAN_MATCH': 'Relevant active plan exists?', 'D_ARCHIVED': 'Archived plan verified?'},
+    'zh': {'D_PLAN': '用户目标是否要求规划、探索或制定／输出／更新计划？',
+           'D_PLAN_SAVED': '计划 Memory 是否写入并读回核验？',
+           'D_ARCHIVE': '是否存在本任务对应的活动计划 Memory？',
+           'D_PLAN_MATCH': '是否存在相关活动计划？', 'D_ARCHIVED': '归档计划是否已核验？'},
 }
 
 
@@ -148,6 +171,9 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
         node = f'{prefix}{number:02d}'
         if node in nodes and not re.search(r'\b' + re.escape(keyword) + r'\b', nodes[node], re.I):
             errors.append(f'{path}: node {node} must identify {keyword} checkpoint')
+    for name, label in PLAN_NODE_LABELS[lang].items():
+        if name in nodes and label not in nodes[name]:
+            errors.append(f'{path}: node {name} must identify {label}')
     recorded_steps = [int(match.group(1)) for match in STEP_RE.finditer(checklist_section[0])]
     wanted_steps = list(range(1, len(steps) + 1))
     if recorded_steps != wanted_steps:
@@ -157,10 +183,11 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
     for edge in sorted(edges - spec['edges']):
         errors.append(f'{path}: unexpected map edge {edge[0]} -> {edge[1]}; update the approved route contract explicitly')
     skip_edges = (
-        (('D_RECON', 'S06'), ('D_DOC', 'S13'), ('D_GIT', 'S14'))
+        (('D_PLAN_MATCH', 'D_RECON'), ('D_RECON', 'S06'), ('D_PLAN', 'S07'), ('D_DOC', 'S13'), ('D_GIT', 'S14'),
+         ('D_ARCHIVE', 'DONE'))
         if route == 'single-agent' else
-        (('D_BOOT', 'M06'), ('D_RECON', 'M08'), ('D_MEMO', 'M10'),
-         ('D_DOC', 'M15'), ('D_GIT', 'M16'))
+        (('D_BOOT', 'M06'), ('D_PLAN', 'D_RECON'), ('D_RECON', 'M08'), ('D_MEMO', 'M10'),
+         ('D_DOC', 'M15'), ('D_GIT', 'M16'), ('D_PLAN_MATCH', 'M07'), ('D_ARCHIVE', 'DONE'))
     )
     skip_words = (r'\b(?:no|N/A|disabled|not applicable)\b'
                   if lang == 'en' else r'不适用|不需要|关闭|无变化')
@@ -171,6 +198,22 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
         )
         if not match or not re.search(skip_words, match.group(1), re.I):
             errors.append(f'{path}: conditional {source} -> {target} must label its skip/Not applicable path')
+    failure_label = (r'\b(?:no|failed|unavailable)\b'
+                     if lang == 'en' else r'失败|不可用')
+    for decision in ('D_PLAN_SAVED', 'D_ARCHIVED'):
+        blocked_result = re.search(
+            rf'(?m)^\s*{decision}\s+--\s+(.+?)\s+-->\s+BLOCK',
+            maps[0].group(2),
+        )
+        if not blocked_result or not re.search(failure_label, blocked_result.group(1), re.I):
+            errors.append(f'{path}: failed or unavailable {decision} Memory must route to BLOCK')
+    for action in ('ACT_PLAN_SCAN', 'ACT_PLAN_READ'):
+        blocked_action = re.search(
+            rf'(?m)^\s*{action}\s+--\s+(.+?)\s+-->\s+BLOCK',
+            maps[0].group(2),
+        )
+        if not blocked_action or not re.search(failure_label, blocked_action.group(1), re.I):
+            errors.append(f'{path}: unavailable or failed {action} must route to BLOCK')
     # Extra edges are allowed only when they cannot bypass the permission/verification gates.
     forbidden_shortcuts = {
         (f'{prefix}03', f'{prefix}09'),

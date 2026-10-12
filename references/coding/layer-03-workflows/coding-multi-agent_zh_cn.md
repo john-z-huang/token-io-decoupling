@@ -14,7 +14,7 @@ flowchart TD
     M04["04 Session / 会话职责"]
     M05["05 Allocation / 分配名额"]
     M06["06 Context / 上下文与可选项目 Memory"]
-    M07["07 Decision / 决策"]
+    M07["07 Decision / 决策与两级规划"]
     M08["08 Slice / 切片放行"]
     M09["09 Child Creation / 展示完整任务正文"]
     M10["10 Dispatch / 展示完整消息正文"]
@@ -24,8 +24,17 @@ flowchart TD
     M14["14 Documentation / 适用时保存可复用项目 Memory / 展示完整通信"]
     M15["15 Git / 展示完整通信"]
     M16["16 Acceptance / 验收"]
+    D_PLAN{"用户目标是否要求规划、探索或制定／输出／更新计划？"}
+    ACT_PLAN["持久化并读回核验计划 Memory"]
+    D_PLAN_SAVED{"计划 Memory 是否写入并读回核验？"}
+    D_ARCHIVE{"是否存在本任务对应的活动计划 Memory？"}
+    ACT_ARCHIVE["移至归档并读回核验"]
+    D_ARCHIVED{"归档计划是否已核验？"}
     D_BOOT{"是否需要 Bootstrap？"}
     ACT_BOOT_PLAN["只预留 Bootstrap 角色，不创建代理"]
+    D_PLAN_MATCH{"是否存在相关活动计划？"}
+    ACT_PLAN_SCAN["列出活动 plans/ 计划"]
+    ACT_PLAN_READ["读取并核对匹配计划"]
     D_RECON{"是否仍需事实？"}
     ACT_RECON_PLAN["规划有界侦察，不放行实现"]
     D_MEMO{"是否启用 Memo？"}
@@ -44,8 +53,19 @@ flowchart TD
     D_BOOT -- 需要 --> ACT_BOOT_PLAN
     ACT_BOOT_PLAN --> M06
     D_BOOT -- 不需要 --> M06
-    M06 --> M07
-    M07 --> D_RECON
+    M06 --> ACT_PLAN_SCAN
+    ACT_PLAN_SCAN --> D_PLAN_MATCH
+    ACT_PLAN_SCAN -- 失败／不可用 --> BLOCK
+    D_PLAN_MATCH -- 是 --> ACT_PLAN_READ
+    D_PLAN_MATCH -- 无／不适用 --> M07
+    ACT_PLAN_READ --> M07
+    ACT_PLAN_READ -- 失败／不可用 --> BLOCK
+    M07 --> D_PLAN
+    D_PLAN -- 是 --> ACT_PLAN
+    D_PLAN -- 无计划文档／不适用 --> D_RECON
+    ACT_PLAN --> D_PLAN_SAVED
+    D_PLAN_SAVED -- 是 --> D_RECON
+    D_PLAN_SAVED -- 失败／不可用 --> BLOCK
     D_RECON -- 需要 --> ACT_RECON_PLAN
     ACT_RECON_PLAN --> M08
     D_RECON -- 不需要 --> M08
@@ -79,7 +99,12 @@ flowchart TD
     M15 -- Git 消息隐藏或仅显示状态 --> BLOCK
     D_GIT -- 获授权／不适用 --> M16
     D_GIT -- 未授权 --> BLOCK
-    M16 --> DONE
+    M16 --> D_ARCHIVE
+    D_ARCHIVE -- 是 --> ACT_ARCHIVE
+    D_ARCHIVE -- 无／不适用 --> DONE
+    ACT_ARCHIVE --> D_ARCHIVED
+    D_ARCHIVED -- 是 --> DONE
+    D_ARCHIVED -- 否／失败／不可用 --> BLOCK
 ```
 
 编号节点与下方唯一路线顺序检查清单一一对应。未触发的条件概念记录 `Not applicable` 原因；路线图只负责概念选择和排序，具体动作、证据与失败处理以清单及同语言 owner 为准。
@@ -111,8 +136,8 @@ flowchart TD
 3. **模式、数量与记录。** 确认[模式](../layer-02-workflow-concepts/mode_zh_cn.md)放行 Multi-Agent；根据[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)、[状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)与[重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)，核对已锁定正整数数量、`gate_status: released` 和恰好 `child_count` 个初始 `agent: unbound`、`role: unassigned`、`slice_status: pending` 的预留名额。此时只放行路线与数量预算，不授权任何具体 Slice 或 Child Creation；后续指令沿用锁定拓扑。缺少必需记录或能力则阻塞。
 4. **Session 职责与 Context Firewall。** 核对 [Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)和[职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md)：根父级直接分析指令、项目环境和定义每个子任务所需的代码细节，负责 Contract、决策和验收，并放行精确范围。获分配的 Primary Session 负责实现；已分配 verifier 负责只读独立检查；文档/Git 角色只负责各自另行发布的工作。未分配职责不构成独立 Session。应用 [Context Firewall](../layer-01-fundamental-concepts/session-context-firewall_zh_cn.md)：父级只作有界侦察，Worker 只消费已放行原始状态，返回带源指针的压缩事实。
 5. **分配与子代理预算。** 按[子代理职责分配](../layer-01-fundamental-concepts/delegation-child-role-allocation_zh_cn.md)确认每个独立职责占用一个已锁定名额，不得虚构未分配的 verifier 或辅助角色。只有至少两个独立下游 Worker、宽范围探索且需路由至少三个策略模块，或源材料约超过 20k 字符 / 5k token-equivalents 时才分配 Context Bootstrap/Refresh。只有一个小 Worker 或仅文档快速路径时跳过，并记录原因。此时不要创建子代理：先在第 6–8 阶段确认相关事实、上下文、决策和已放行切片。 在本步为未绑定的预留名额分配职责；只有一个子代理时分配 Primary Output。不得回收已创建 Agent 的名额。
-6. **上下文与传输。** 在 [Context](../layer-02-workflow-concepts/context_zh_cn.md)提出下一切片的最小问题，只读取必需源材料，并检查复用上下文的 owner、源路径、新鲜度和 epoch。回答问题需要复用 Agent 项目知识时，应用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)读取相关项目 Memory，并对照权威项目文件核验来源指针和新鲜度。不存在相关 Memory 或无需跨会话知识时，记录 `Not applicable` 及原因。能力不可用时，报告限制并读取获准的权威来源；只有必需事实无法通过其他方式确认时才阻塞。Memory 不能替代获准路径中的权威来源。Worker 需要持久化交换记录时，应用[上下文交换](../layer-01-fundamental-concepts/context-exchange_zh_cn.md)：只保存精简中性事实、准确权威指针、哈希和新鲜度；bootstrap Memory 沿用 `MANIFEST`、`project-context`、`policy-context` 名称；对照 HEAD/tree、已跟踪差异、来源哈希、相关未跟踪状态及任务/范围核验新鲜度；拒绝过期记录，且记录不能替代 Contract 或验证。按[上下文工作区边界](../layer-01-fundamental-concepts/context-exchange-workspace-boundary_zh_cn.md)将原文件名/子目录意图映射为具名 Memory，并遵守已放行任务的逻辑归属指令；Serena 不强制 Worker 级隔离，能力不可用时报告并阻塞依赖工作，不得回退为文件。仅在具体交接或恢复时应用[上下文交接](../layer-01-fundamental-concepts/context-exchange-handoff_zh_cn.md)：记录已完成状态、带证据的失败尝试、当前改动与验证、阻塞和下一步；只读取任务明确暴露的记录。无需交换或交接时分别记录原因。Worker memo 与跨 Worker 交换仍是独立触发条件。Context ID 不授予创建 Agent 的权限。
-7. **决策与两级规划。** 在 [Decision](../layer-02-workflow-concepts/decision_zh_cn.md)说明实质问题、事实、约束、选项、选定方向、舍弃方案、授权路径/修改和未发布边界。应用[决策门禁](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md)：除非符合简单快速路径，否则先形成包含 Problem、Known facts、Assumptions and unknowns、Decision questions、Solution envelope、Risks、Acceptance 和 Stages/checkpoints 的简洁 Decision Brief；实质选择未定时只发布侦察。用[执行规划](../layer-01-fundamental-concepts/execution-planning_zh_cn.md)安排有界检查、实现和聚焦检查，并写明预期证据。分配任何子代理或实质派发前，确认 Contract 允许一个具体切片。
+6. **上下文与传输。** 在 [Context](../layer-02-workflow-concepts/context_zh_cn.md)提出下一切片的最小问题，只读取必需源材料，并检查复用上下文的 owner、源路径、新鲜度和 epoch。在此 Context 阶段，始终使用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)列出 `plans/` 下的活动计划，筛选与当前任务相关的计划并逐一读取。核对任务匹配、新鲜度及与当前指令的一致性；当前指令优先，报告冲突并重新评估，Memory 不构成授权。没有匹配的活动计划时，记录 `Not applicable` 及原因。列表或相关计划读取不可用/失败时，报告并阻塞依赖该上下文的工作；不得回退到文件。回答问题需要复用 Agent 项目知识时，应用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)读取相关项目 Memory，并对照权威项目文件核验来源指针和新鲜度。不存在相关 Memory 或无需跨会话知识时，记录 `Not applicable` 及原因。能力不可用时，报告限制并读取获准的权威来源；只有必需事实无法通过其他方式确认时才阻塞。Memory 不能替代获准路径中的权威来源。Worker 需要持久化交换记录时，应用[上下文交换](../layer-01-fundamental-concepts/context-exchange_zh_cn.md)：只保存精简中性事实、准确权威指针、哈希和新鲜度；bootstrap Memory 沿用 `MANIFEST`、`project-context`、`policy-context` 名称；对照 HEAD/tree、已跟踪差异、来源哈希、相关未跟踪状态及任务/范围核验新鲜度；拒绝过期记录，且记录不能替代 Contract 或验证。按[上下文工作区边界](../layer-01-fundamental-concepts/context-exchange-workspace-boundary_zh_cn.md)将原文件名/子目录意图映射为具名 Memory，并遵守已放行任务的逻辑归属指令；Serena 不强制 Worker 级隔离，能力不可用时报告并阻塞依赖工作，不得回退为文件。仅在具体交接或恢复时应用[上下文交接](../layer-01-fundamental-concepts/context-exchange-handoff_zh_cn.md)：记录已完成状态、带证据的失败尝试、当前改动与验证、阻塞和下一步；只读取任务明确暴露的记录。无需交换或交接时分别记录原因。Worker memo 与跨 Worker 交换仍是独立触发条件。Context ID 不授予创建 Agent 的权限。
+7. **决策与两级规划。** 在 [Decision](../layer-02-workflow-concepts/decision_zh_cn.md)说明实质问题、事实、约束、选项、选定方向、舍弃方案、授权路径/修改和未发布边界。应用[决策门禁](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md)：除非符合简单快速路径，否则先形成包含 Problem、Known facts、Assumptions and unknowns、Decision questions、Solution envelope、Risks、Acceptance 和 Stages/checkpoints 的简洁 Decision Brief；实质选择未定时只发布侦察。用[执行规划](../layer-01-fundamental-concepts/execution-planning_zh_cn.md)安排有界检查、实现和聚焦检查，并写明预期证据。用户任务目标是规划、探索、制定/输出/更新计划时，应用[规划意图下的计划 Memory 生命周期](../layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle_zh_cn.md)持久化精简综合计划并读回确认存储结果；用户任务目标不包含规划、探索、制定/输出/更新计划时，记录 `Not applicable` 及原因。必需持久化能力不可用或写入/读回失败时，报告失败并阻塞依赖工作；不得回退到文件。分配任何子代理或实质派发前，确认 Contract 允许一个具体切片。
 8. **切片与阶段放行。** 按[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)写明 `Objective`、`Authorized scope/mutations`、`Return conditions` 和 `Unreleased boundary`；有依赖关系的写操作按顺序发布。对高不确定性工作应用[执行阶段反馈](../layer-01-fundamental-concepts/execution-stage-feedback_zh_cn.md)：预先声明短小、产出证据的阶段，将常规机械操作留在阶段内，只在实质边界返回压缩 Progress Signals。新的语义选择返回第 7 阶段。 只有 Context 和 Decision 已确认具体任务，才将其 allocation 标记为 `slice_status: released`；预留名额不授权创建子代理。
 9. **创建子代理及生命周期。** 按[子代理创建](../layer-01-fundamental-concepts/delegation-child-creation_zh_cn.md)确认当前运行环境真实且由父级控制的子代理机制、已放行记录、锁定数量、计划名额、职责、切片、允许路径、返回条件和必需上下文，然后只创建授权子代理。厂商专属操作由所链接的 Layer-01 owner 确定。把子代理的实际身份/生命周期写回计划分配。应用[子代理生命周期](../layer-01-fundamental-concepts/delegation-child-lifecycle_zh_cn.md)：在父级记录中持久保留已创建子代理的身份和生命周期；不得仅因工作结束而清理持久任务面板条目；pending/running 时只等待或发送授权输入；收到最终证据后才标记完成；保留错误/中断状态。不得为错误恢复额外创建子代理。 仅在名额尚未绑定、职责已分配、`slice_status: released` 且必要能力可核验时创建子代理；已有 Agent 通过原身份复用，不得回收名额或创建替代者。按[子代理消息可见性](../layer-01-fundamental-concepts/delegation-child-message-visibility_zh_cn.md)执行：发送每个新子代理的任务提示前，先在父级会话以普通文本展示完整安全正文，并确认与实际载荷一致。若正文被隐藏或只出现状态通知，则不得创建子代理，并阻塞该切片。复用现有子代理且无需发送新的创建提示时，记录该检查为 Not applicable 并说明复用原因；任何 follow-up 按步骤 10 检查。
 10. **派发、Worker 记录和 memo。** 应用[子代理派发](../layer-01-fundamental-concepts/delegation-child-dispatch_zh_cn.md)：父级先核实前置事实，发送约 1–3 行、80 token 的简短 Dispatch Preview，只命名获准代码/上下文路径；除非已批准独立且不冲突的工作，否则一次只发布一个切片。按 [Worker 边界](../layer-01-fundamental-concepts/delegation-worker-boundary_zh_cn.md)只传相关已放行记录快照；Worker 不得修改记录、重开门禁、协调同级或创建子代理；记录无法持久化或返回时阻塞派发。应用[内容 memo 派发](../layer-01-fundamental-concepts/content-memo-dispatch_zh_cn.md)：每个已发布任务包都显式写入 `write_content_memo: true | false`。启用时应用[内容 memo 约束](../layer-01-fundamental-concepts/content-memo_zh_cn.md)及[内容 memo 生命周期](../layer-01-fundamental-concepts/content-memo-lifecycle_zh_cn.md)：Worker 将中文 memo 写入 `context-exchange/workers/<worker-context-id>/content-memo`，只记录稳定事实/证据/修改路径，并在实质里程碑更新；不得写入秘密、完整 transcript、完整 diff 或逐命令日志。Serena 不强制该名称的 Worker 级隔离。禁用时记录父级原因；不适用的职责不得创建无操作 Worker。Memo 开启时确认 Memory 能力和具名记录可用；不可用时报告并阻塞依赖切片，不得回退为文件。关闭时记录理由并跳过写入。每次实际派发或 follow-up 都按[子代理消息可见性](../layer-01-fundamental-concepts/delegation-child-message-visibility_zh_cn.md)执行：发送前在父级会话以普通文本展示完整安全外发正文，并确认与实际载荷一致。若已放行任务提示包含完整任务包，无需另发消息，则记录 Not applicable 及原因。正文隐藏或只显示不含正文的状态/回执时，阻塞派发。
@@ -121,7 +146,7 @@ flowchart TD
 13. **修复与重新验证。** 在 [Repair](../layer-02-workflow-concepts/repair_zh_cn.md)指出失败证据、受影响路径和最小候选修复。用[修复范围门禁](../layer-02-workflow-concepts/repair-scope-gate_zh_cn.md)确认与 Contract/Decision 兼容；实质决策变化返回第 1 和第 7 阶段。在[修复执行](../layer-02-workflow-concepts/repair-execution_zh_cn.md)只向现有子代理发布授权的窄范围修复，并运行聚焦检查。按[修复验证交接](../layer-02-workflow-concepts/repair-verification-handoff_zh_cn.md)记录新状态，返回第 12 阶段，优先交回同一已分配 verifier。发生中断时遵循生命周期/复用边界；数量锁定后同一子代理无法安全继续，就将路线标为 blocked，不得替换。没有失败时记录 Repair 不适用。 修复优先复用同一已创建子代理，更新受影响 Epoch 后重新执行步骤 12；无法安全复用时阻塞。每条子代理修复指令及返回的修复结果都按[子代理消息可见性](../layer-01-fundamental-concepts/delegation-child-message-visibility_zh_cn.md)处理：发送或依赖前，在父级会话展示完整安全正文。正文隐藏/不完整或仅有状态通知时，阻塞修复交接或重新验证。由父级独立修复，或没有失败需要修复时，记录 Not applicable 及原因。
 14. **文档。** 在 [Documentation](../layer-02-workflow-concepts/documentation_zh_cn.md)确认获准路径、读者、目的、源证据及验证边界；文档/注释作为与 Git 分开的有界范围发布。获批输出包含可复用 Agent 项目知识，或用户明确要求的跨会话笔记时，应用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)，按既有名称和子目录意图持久保存。确认写入结果；能力不可用时报告并阻塞该请求输出的完成。未请求此类输出时，记录 `Not applicable` 及原因。权威仓库文档和代码注释仍写入获准仓库路径。同步受维护的语言镜像，推进文档 epoch，并运行适用的 Markdown、链接、空白、多语言和范围检查。若内容改变行为、Contract 或验收，返回实现/内容验证；否则保留有效的产品证据。报告不可用检查。使用 Documentation/Comments Worker 时，按[子代理消息可见性](../layer-01-fundamental-concepts/delegation-child-message-visibility_zh_cn.md)执行：发送前展示完整安全任务消息，依赖返回前展示完整安全返回内容。正文隐藏/不完整或仅有状态通知时，阻塞依赖文档工作。由父级继续处理或未分配文档 Worker 时，记录 Not applicable 及原因。
 15. **Git 影响。** 在 [Git](../layer-02-workflow-concepts/git_zh_cn.md)确认准确仓库、worktree、分支/ref、远端、操作和授权。检查状态/历史，保留无关改动，确认暂存/提交内容与最新已验证的内容及文档指纹一致。索引/提交/分支/历史变化属于 Git 元数据变化；commit、push、Issue、PR 等影响分别确认授权。目标不明、冲突、权限缺失或内容未经验证时停止。没有 Git 工作时记录原因。使用 Git Worker 时，按[子代理消息可见性](../layer-01-fundamental-concepts/delegation-child-message-visibility_zh_cn.md)执行：发送前展示完整安全任务消息，依赖返回前展示完整安全返回内容。正文隐藏/不完整或仅有状态通知时，阻塞依赖 Git 工作。由父级继续处理或未分配 Git Worker 时，记录 Not applicable 及原因。
-16. **验收。** 在 [Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)把每项 Contract 验收条件映射到最新实现/内容、文档和 Git 元数据 epoch 的当前证据。核对路径/影响是否在范围内；分别报告通过、失败、未运行、不可用、假设和用户授权项及剩余风险。区分真实独立 Session 与同一 Session 的阶段；只有必需事项和边界均已解决，才能报告 `COMPLETE`。
+16. **验收。** 在 [Acceptance](../layer-02-workflow-concepts/acceptance_zh_cn.md)把每项 Contract 验收条件映射到最新实现/内容、文档和 Git 元数据 epoch 的当前证据。核对路径/影响是否在范围内；分别报告通过、失败、未运行、不可用、假设和用户授权项及剩余风险。若本路线有已确认属于当前已完成任务的活动 plan Memory，应用[规划意图下的计划 Memory 生命周期](../layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle_zh_cn.md)将其归档到匹配名称，并核验活动名称已不存在且归档可读；必需归档/核验失败时阻塞完成。用户任务目标不包含规划、探索、制定/输出/更新计划时，记录 `Not applicable` 及原因。只有必需事项和边界均已解决，才能报告 `COMPLETE`。
 
 第 8–10 阶段的每个已发布 Worker 任务包都显式写明以下字段：
 
@@ -137,7 +162,6 @@ Unreleased boundary: ...
 ## 完成
 
 执行根 Coding 完成门禁，处理文档、Git 和最终验收。最终报告必须区分真实独立 Session 与同一 Session 的逻辑阶段，并把每个验收条件映射到当前证据。
-
 ## 相关概念
 
 - [共享协议](../../share/shared-protocols_zh_cn.md)——定位共用 Session 约定。

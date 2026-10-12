@@ -13,7 +13,7 @@ flowchart TD
     S03["03 Mode"]
     S04["04 Session"]
     S05["05 Context / optional project memory"]
-    S06["06 Decision"]
+    S06["06 Decision / two-level plan"]
     S07["07 Implementation / language-server code structure"]
     S08["08 Stage Feedback"]
     S09["09 Control"]
@@ -22,6 +22,15 @@ flowchart TD
     S12["12 Documentation / save reusable project memory when applicable"]
     S13["13 Git"]
     S14["14 Acceptance"]
+    D_PLAN{"User goal requests planning, exploration, or producing/updating a plan?"}
+    ACT_PLAN["Persist and read-verify plan Memory"]
+    D_PLAN_SAVED{"Plan Memory saved and read-verified?"}
+    D_ARCHIVE{"Active plan Memory for this task exists?"}
+    ACT_ARCHIVE["Move plan to archive and read-verify"]
+    D_ARCHIVED{"Archived plan verified?"}
+    D_PLAN_MATCH{"Relevant active plan exists?"}
+    ACT_PLAN_SCAN["List active plans/"]
+    ACT_PLAN_READ["Read and check matching plan"]
     D_RECON{"More facts required?"}
     ACT_RECON["Current Session: bounded reconnaissance"]
     D_CONTROL{"Control: Continue / Amend / Stop"}
@@ -34,11 +43,22 @@ flowchart TD
     S02 --> S03
     S03 --> S04
     S04 --> S05
-    S05 --> D_RECON
+    S05 --> ACT_PLAN_SCAN
+    ACT_PLAN_SCAN --> D_PLAN_MATCH
+    ACT_PLAN_SCAN -- failed / unavailable --> BLOCK
+    D_PLAN_MATCH -- yes --> ACT_PLAN_READ
+    D_PLAN_MATCH -- no / N/A --> D_RECON
+    ACT_PLAN_READ --> D_RECON
+    ACT_PLAN_READ -- failed / unavailable --> BLOCK
     D_RECON -- yes --> ACT_RECON
     ACT_RECON --> S05
     D_RECON -- no / N/A --> S06
-    S06 --> S07
+    S06 --> D_PLAN
+    D_PLAN -- yes --> ACT_PLAN
+    D_PLAN -- no / N/A --> S07
+    ACT_PLAN --> D_PLAN_SAVED
+    D_PLAN_SAVED -- yes --> S07
+    D_PLAN_SAVED -- no / unavailable --> BLOCK
     S07 --> S08
     S08 --> S09
     S09 --> D_CONTROL
@@ -58,7 +78,12 @@ flowchart TD
     S13 --> D_GIT
     D_GIT -- authorized / N/A --> S14
     D_GIT -- no permission --> BLOCK
-    S14 --> DONE
+    S14 --> D_ARCHIVE
+    D_ARCHIVE -- yes --> ACT_ARCHIVE
+    D_ARCHIVE -- no / N/A --> DONE
+    ACT_ARCHIVE --> D_ARCHIVED
+    D_ARCHIVED -- yes --> DONE
+    D_ARCHIVED -- no / failed / unavailable --> BLOCK
 ```
 
 Numbered nodes match the sole ordered checklist below. Record the `Not applicable` reason for a skipped conditional concept. The map selects and orders concepts; the checklist and same-language owner links provide concrete actions, evidence, and failure handling.
@@ -90,8 +115,8 @@ Run every numbered stage in order in the current Session. For every linked owner
 2. **Environment and capabilities.** Confirm the [Environment checkpoint](../layer-02-workflow-concepts/environment.md) classified exactly one runtime from explicit metadata, using tools and workspace facts only as corroboration; do not use a browser, GUI, or visual content to identify the runtime. If classification is ambiguous, use the provider owner's exact fallback question and pause. Check the [Environment capability inventory](../layer-02-workflow-concepts/environment-capability-inventory.md) for the actual model, every profile-required parameter, tools, filesystem/permission scope, and Session capabilities. Apply [Runtime and Model Provider Support](../layer-01-fundamental-concepts/runtime-provider-support.md) for this branch's model rules. Record missing or unknown requirements in `unavailable_capabilities`; block dependent work instead of inferring or substituting a capability.
 3. **Mode and task record.** Confirm the [Mode checkpoint](../layer-02-workflow-concepts/mode.md) released exactly `Single-Agent Coding`. Check [mode confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), and [state record](../layer-01-fundamental-concepts/delegation-state-record.md): `gate_status: released`, `child_count: 0`, `allocations: []`, and no unresolved capability block. Keep the conversation mode/count fixed under [mode re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md); a conflicting later directive blocks dependent work until a new conversation. Never create, fork, message, hand off to, or simulate an additional Agent or Session on this route.
 4. **Session and role boundaries.** Check the [session model](../layer-01-fundamental-concepts/session-model.md) and [role ownership](../layer-01-fundamental-concepts/session-role-ownership.md): the current Session holds Input-side Reasoning, Primary Output, documentation/Git, and allowed-check phases; role labels do not create independent verification. Apply the [Context Firewall](../layer-01-fundamental-concepts/session-context-firewall.md) by reading progressively and keeping raw project state bounded. Keep semantic decisions and final acceptance with the input-side phase.
-5. **Context.** At the [Context checkpoint](../layer-02-workflow-concepts/context.md), name the smallest question needed for the next slice and read only the source, metadata, history, or evidence required to answer it. Check scope, owner, source pointers, freshness, and epoch before reusing context; refresh only affected facts. When answering the question requires reusable Agent project knowledge, apply [project-memory and code-structure capability](../layer-01-fundamental-concepts/LSP-MCP-Tools.md) to read relevant project memories and verify their source pointers and freshness against authoritative project files. If no relevant memory exists or no cross-session knowledge is needed, record `Not applicable` and why. If the capability is unavailable, report it and use approved authoritative sources; block only when a required fact cannot otherwise be established. A memory never replaces an authoritative source, the Contract, or verification. If bounded reconnaissance or recovery is unnecessary, record why.
-6. **Decision and two-level plan.** At [Decision](../layer-02-workflow-concepts/decision.md), state the material question, facts, constraints, options, chosen direction, rejected alternatives, authorized paths/mutations, and unreleased boundary. Apply the [decision gate](../layer-01-fundamental-concepts/execution-decision-gate.md): prepare a concise Decision Brief with Problem, Known facts, Assumptions and unknowns, Decision questions, Solution envelope, Risks, Acceptance, and Stages/checkpoints unless the task qualifies for its simple fast path; release only reconnaissance while a material choice is open. Use [execution planning](../layer-01-fundamental-concepts/execution-planning.md) to order bounded inspection, implementation, and focused checks with expected evidence. Confirm the Contract permits the chosen direction before releasing one slice.
+5. **Context.** At the [Context checkpoint](../layer-02-workflow-concepts/context.md), name the smallest question needed for the next slice and read only the source, metadata, history, or evidence required to answer it. Check scope, owner, source pointers, freshness, and epoch before reusing context; refresh only affected facts. At this Context stage, always use the [project-memory and code-structure capability](../layer-01-fundamental-concepts/LSP-MCP-Tools.md) to list active plan memories in `plans/`, identify any relevant to this task, and read each match. Check task match, freshness, and consistency with current instructions; current instructions take precedence, report conflicts and re-evaluate, and never treat Memory as authorization. If no matching active plan exists, record `Not applicable` and why. If listing or reading a relevant plan is unavailable or fails, report it and block work that depends on that context; do not fall back to filesystem files. When answering the question requires reusable Agent project knowledge, apply [project-memory and code-structure capability](../layer-01-fundamental-concepts/LSP-MCP-Tools.md) to read relevant project memories and verify their source pointers and freshness against authoritative project files. If no relevant memory exists or no cross-session knowledge is needed, record `Not applicable` and why. If the capability is unavailable, report it and use approved authoritative sources; block only when a required fact cannot otherwise be established. A memory never replaces an authoritative source, the Contract, or verification. If bounded reconnaissance or recovery is unnecessary, record why.
+6. **Decision and two-level plan.** At [Decision](../layer-02-workflow-concepts/decision.md), state the material question, facts, constraints, options, chosen direction, rejected alternatives, authorized paths/mutations, and unreleased boundary. Apply the [decision gate](../layer-01-fundamental-concepts/execution-decision-gate.md): prepare a concise Decision Brief with Problem, Known facts, Assumptions and unknowns, Decision questions, Solution envelope, Risks, Acceptance, and Stages/checkpoints unless the task qualifies for its simple fast path; release only reconnaissance while a material choice is open. Use [execution planning](../layer-01-fundamental-concepts/execution-planning.md) to order bounded inspection, implementation, and focused checks with expected evidence. If the user’s task goal is planning, exploration, or producing/updating a plan, apply [Planning Intent Plan Memory Lifecycle](../layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle.md) to persist the concise synthesized plan and read it back to confirm the stored result; if the user’s task goal does not include planning, exploration, or producing/updating a plan, record `Not applicable` and why. If required persistence capability is unavailable or writing/readback fails, report the failure and block dependent work; do not use a filesystem fallback. Confirm the Contract permits the chosen direction before releasing one slice.
 7. **Interaction Slice and implementation.** Use [execution control](../layer-01-fundamental-concepts/execution-control.md) to state `Objective`, `Authorized scope/mutations`, `Return conditions`, and `Unreleased boundary`. At [Implementation](../layer-02-workflow-concepts/implementation.md), re-read that release and inspect only needed files. When understanding code structure is needed, apply [project-memory and code-structure capability](../layer-01-fundamental-concepts/LSP-MCP-Tools.md): use available language-server queries and retain exact symbol/path pointers as evidence. If the capability or required language semantics are unavailable, state the limitation and use targeted text search and small reads; do not claim LSP evidence, and block if the required relationship remains unverified. If code-structure queries are not needed, record `Not applicable` and why. Then make the smallest authorized change, exclude unrelated cleanup and external effects, run focused provisional checks, and return changed paths, evidence, issues, and the still-unreleased boundary. Provisional checks are not final acceptance.
 8. **Stage feedback.** Apply [execution stage feedback](../layer-01-fundamental-concepts/execution-stage-feedback.md) when uncertainty requires bounded evidence-producing stages. At material observations, retain only compressed status, findings, changed scope, verification, issue, and need; keep routine reads, edits, and repeated checks inside the approved stage. Send a new material choice back to stage 6 before more implementation.
 9. **Control boundary.** At [Control](../layer-02-workflow-concepts/control.md), record `Status`, `Findings`, `Changed`, `Verification`, `Issue`, `Need`, and `Unreleased boundary`. Check for interface, schema, compatibility, security, risk, irreversible, scope, or external-effect changes; explicitly choose Continue, Amend, Stop, or Evidence-on-Demand. Continue only within the current envelope; amend Contract and Decision before crossing it. Repeat stages 5–9 for another approved slice. `Evidence-on-Demand` is an intermediate evidence request, not a fourth final outcome; return here for `Continue`, `Amend`, or `Stop` and consume the Stage Feedback Progress Signal rather than duplicating it.
@@ -99,7 +124,7 @@ Run every numbered stage in order in the current Session. For every linked owner
 11. **Repair only after concrete failure.** At [Repair](../layer-02-workflow-concepts/repair.md), name failing evidence, affected paths, and the smallest candidate. Use the [Repair scope gate](../layer-02-workflow-concepts/repair-scope-gate.md) to confirm Contract/Decision compatibility before authorization; return to stages 1 and 6 for a material change. At [Repair execution](../layer-02-workflow-concepts/repair-execution.md), apply only the authorized narrow change and focused checks. Use [Repair verification handoff](../layer-02-workflow-concepts/repair-verification-handoff.md) to capture the new state and repeat stage 10 before dependent work. If no failure exists, record Repair as not applicable.
 12. **Documentation.** At [Documentation](../layer-02-workflow-concepts/documentation.md), confirm approved paths, audience, purpose, source evidence, and applicable verification boundary. If approved output includes reusable Agent project knowledge or a cross-session note the user explicitly requested, apply [project-memory and code-structure capability](../layer-01-fundamental-concepts/LSP-MCP-Tools.md) to persist it with the existing name and subdirectory intent. Confirm the write result; if the capability is unavailable, report it and block completion of that requested output. If no such output was requested, record `Not applicable` and why. Keep authoritative repository documents and code comments in their approved repository paths. Synchronize maintained language mirrors, advance the documentation epoch, and run applicable Markdown, link, whitespace, multilingual, and scope checks. If content changes behavior, the Contract, or acceptance, return to implementation/content Verification; otherwise retain valid product evidence. Record checks that could not run.
 13. **Git effects.** At [Git](../layer-02-workflow-concepts/git.md), confirm the exact repository, worktree, branch/ref, remote, operation, and authorization. Inspect status/history, preserve unrelated changes, and confirm staged/committed content matches the latest verified content and documentation fingerprints. Treat index/commit/branch/history changes as Git metadata changes; keep commit, push, Issue, PR, and other effects separately authorized. Stop on ambiguous target, conflict, missing permission, or unverified content. If no Git work applies, record why.
-14. **Acceptance.** At [Acceptance](../layer-02-workflow-concepts/acceptance.md), map every Contract criterion to current evidence for the latest implementation/content, documentation, and Git metadata epochs. Check paths/effects against scope; report passed, failed, not-run, unavailable, assumed, and user-authorized items separately with residual risks. Report `COMPLETE` only when every required item and boundary is resolved; identify this route as Single-Agent and the checks as same-Session where applicable.
+14. **Acceptance.** At [Acceptance](../layer-02-workflow-concepts/acceptance.md), map every Contract criterion to current evidence for the latest implementation/content, documentation, and Git metadata epochs. Check paths/effects against scope; report passed, failed, not-run, unavailable, assumed, and user-authorized items separately with residual risks. If this route has an active plan Memory confirmed to belong to the task being completed, apply [Planning Intent Plan Memory Lifecycle](../layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle.md) to archive it under the matching archive name and verify the active name is absent and archive is readable; block completion if required archive/verification fails. If no matching active plan belongs to the task being completed, record `Not applicable` and why. Report `COMPLETE` only when every required item and boundary is resolved; identify this route as Single-Agent and the checks as same-Session where applicable.
 
 ## Verification limitation
 
@@ -110,7 +135,6 @@ For trivial behavior-preserving or documentation-only work, use the applicable f
 ## Completion
 
 Apply the root Coding completion gate. The final report must identify the work as Single-Agent, distinguish provisional checks from final checks, state any unavailable independent verification, and map every acceptance criterion to current evidence.
-
 ## Related concepts
 
 - [Shared protocols](../../share/shared-protocols.md) — locate common Session conventions.
