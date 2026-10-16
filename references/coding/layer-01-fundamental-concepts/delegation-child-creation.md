@@ -8,6 +8,7 @@ This module owns the only capability to create a Multi-Agent child. It consumes 
 
 ### Creation capability
 
+Before spawning, apply [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata.md): write the per-child Serena Memory at `agent-session-context/<run-id>/<allocation-id>`, read it back to verify, store the exact `mem:` reference in the allocation, and include that reference in the complete child prompt. Confirm the parent has the required Memory tools and the child runtime is expected to access the same project Memory. If child access or effective settings cannot be established until startup, send only a configuration-verification prompt; require the child to read the Memory, then have the parent update it and read it back before releasing task work. Block dependent work if the Memory is inaccessible or its binding remains unresolved.
 Use the runtime's real parent-controlled child mechanism. Before creating a child, require the released Multi-Agent gate, locked positive count, a reserved unbound allocation with an assigned role, and a current `slice_status: released` Interaction Slice with explicit objective, allowed paths/mutations, return conditions, and memo dispatch switch. Do not treat a reserved slot or released mode alone as child-creation authorization. Never use a peer chat or an untracked generic task as a persistent child. Require a child identity, parent-controlled return/resume path, bounded wait, and observable lifecycle. After creation, bind its actual identity and lifecycle to the same allocation; never free the slot for another child. Missing or unverifiable capabilities block creation; they do not change mode or count.
 
 ## Codex CLI / ChatGPT Desktop optimizations
@@ -38,6 +39,7 @@ When available on a reviewed project/user custom subagent, `background` and `iso
 
 ## Related concepts
 
+- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata.md) — locate the per-child Memory schema and pre-creation verification.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state ownership.
 - [Coding Child Role Allocation](delegation-child-role-allocation.md) — locate slot and role allocation.
 - [Coding Child Dispatch](delegation-child-dispatch.md) — locate material dispatch boundaries.

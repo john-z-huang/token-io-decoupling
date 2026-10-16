@@ -2,7 +2,7 @@
 
 [English](delegation-state-record.md) | [简体中文](delegation-state-record_zh_cn.md)
 
-本文档负责 Coding 委派使用的任务控制记录，定义记录的规范位置、ownership、结构、字段约束和分阶段字段存在语义。不决定模式，不定义 Worker 读写边界，不创建子 Agent，不分配职责，也不定义生命周期转换。
+本文档负责 Coding 委派使用的任务控制记录，定义记录的规范位置、ownership、结构、字段约束和分阶段字段存在语义。不决定模式，不定义 Worker 读写边界，不创建子 Agent，不分配职责，也不定义生命周期转换。每个子代理的模型配置元数据保存在独立的 Serena 项目 Memory 中；本记录只保存准确的 `mem:` 引用。
 
 ## 通用规范
 
@@ -10,19 +10,26 @@
 
 根父级负责一份会话级模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，不通过编辑 policy 文件保存。在父级上下文中维护可于每次路线放行前读回的显式结构化记录。短暂的子代理状态结果不能作为规范记录。
 
+### 运行时模型配置 Memory 引用
+
+每次 Multi-Agent 委派运行具有稳定的 `run_id`，每个预留子代理 allocation 具有稳定的 `allocation_id`。准备子代理模型配置 Memory 前分配这两个标识，并在恢复和 follow-up 期间保持不变。Single-Agent 记录将 `run_id` 保持为 `unset`。allocation 的运行时模型配置 Memory 引用在名额仅处于预留状态时保持 unset。创建子代理前，父级将 Memory 写入并读回核验 `agent-session-context/<run-id>/<allocation-id>`，随后只在此处保存 `mem:agent-session-context/<run-id>/<allocation-id>`。只要同一子代理仍可能恢复或接收 follow-up，就保留该引用。不得将模型元数据复制到父级任务状态记录。
+
 ### 记录结构
 
 路线放行前维护以下规范状态记录：
 
 ```text
 owner: <根父级身份>
+run_id: unset | <本次 Multi-Agent 委派运行的稳定标识>
 gate_status: awaiting-mode | awaiting-count | released | blocked
 mode_source: unset | explicit | timeout-default
 mode: unset | Single-Agent Coding | Multi-Agent Coding
 child_count: unset | 0 | <已锁定正整数>
-allocations: [{agent: unbound | <已创建代理身份>, role: unassigned | <职责>,
+allocations: [{allocation_id: <稳定的子代理 allocation 标识>,
+               agent: unbound | <已创建代理身份>, role: unassigned | <职责>,
                slice_status: pending | released, interaction_slice, scope, mutations,
-               return_conditions, lifecycle, write_content_memo}]
+               return_conditions, lifecycle, write_content_memo,
+               runtime_model_config_memory: unset | mem:agent-session-context/<run-id>/<allocation-id>}]
 lifecycle: pending | running | completed | interrupted
 unavailable_capabilities: [<能力名称>]
 block_reason: <仅 blocked 时必需>
@@ -33,7 +40,7 @@ block_reason: <仅 blocked 时必需>
 | `awaiting-mode` | 未设置 | `[]`；顶层 `pending` | 首轮模式问题尚未答复时先初始化。 |
 | `awaiting-count` | Multi-Agent；数量未设置 | `[]`；顶层 `pending` | 仅明确给出无效数量时进入；用户明确选择多代理后省略数量才默认 1。 |
 | `released` — Single-Agent | Single-Agent；数量 `0` | `[]`；顶层 lifecycle 必需 | 放行单代理路线，不授予独立 Session。 |
-| `released` — Multi-Agent | Multi-Agent；已锁定正整数 | 恰好 `child_count` 个预留 allocation；初始 `agent: unbound`、`role: unassigned`、`slice_status: pending`、`lifecycle: pending` | 只放行路线与数量预算，**不**放行具体子代理或 Interaction Slice。 |
+| `released` — Multi-Agent | Multi-Agent；已锁定正整数 | 恰好 `child_count` 个预留 allocation；`run_id` 已设置；每个 allocation 有唯一且稳定的 `allocation_id`，并初始为 `agent: unbound`、`role: unassigned`、`slice_status: pending`、`lifecycle: pending` | 只放行路线与数量预算，**不**放行具体子代理或 Interaction Slice。 |
 | `blocked` | 保留已确认值 | 保留现有 allocation/lifecycle | `unavailable_capabilities` 与 `block_reason` 必需；不得进入依赖路线。 |
 
 Role Allocation 阶段分配 allocation 的职责。具体 `slice_status: released` 必须具备已分配 `role`、`interaction_slice`、`scope`、`mutations`、`return_conditions` 和显式布尔 `write_content_memo`；pending Slice 可以暂不设置这些字段。序列化每个已放行 Worker bundle 前，必须显式写入 `write_content_memo: true` 或 `false`，Worker 不得推断默认值。Child Creation 只能在相应职责和 Slice 已放行后绑定 `agent` 与 lifecycle。后续 Slice 可在**同一个**已创建子代理上准备，不创建或回收名额。
@@ -60,5 +67,6 @@ Claude Code 的 `/tasks` 显示当前／后台子代理任务状态，`/context`
 - [Coding Delegation Mode Confirmation](delegation-mode-confirmation_zh_cn.md) — 定位根模式确认归属。
 - [Coding Delegation Count Gate](delegation-mode-count-gate_zh_cn.md) — 定位子 Agent 数量门禁归属。
 - [Coding Delegation Re-entry](delegation-mode-reentry_zh_cn.md) — 定位模式/数量重新进入归属。
+- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位每个子代理模型配置 Memory 的结构及读写核验。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 字段归属。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 生命周期字段归属。
