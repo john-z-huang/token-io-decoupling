@@ -8,6 +8,8 @@
 
 ### Dispatch Preview 和返回边界
 
+初始任务提示和每条 follow-up 都必须包含准确的[子代理运行时模型配置元数据](delegation-child-runtime-model-configuration-metadata_zh_cn.md)引用 `mem:agent-session-context/<run-id>/<allocation-id>`。执行依赖配置门禁的工作前，要求子代理使用不带 `mem:` 前缀的名称调用 Serena `read_memory`，确认 `record_status: verified` 且记录与当前运行时一致；compaction、中断或恢复后还须重新读取。Memory 缺失、不可访问、未解决、不可读或与实时配置冲突时，阻塞派发；不得回退为文件。
+
 分配或实质派发前，检查输入侧推理职责已完成指令、环境和定义任务所需代码事实的前置确认，具有 source pointer，且具体 Interaction Slice 已放行。父级展示获准目标、修改和返回条件的简洁 Dispatch Preview；前置条件缺失时仍由父级持有 Slice。Worker 只向直接父级返回，不得创建、fork、handoff、向其他 Agent 或 Session 发消息、替换或协调其他 Agent 或 Session，也不得联系任意线程。与已确认前提冲突的发现返回父级重新决策，不得改变模式或数量。
 
 ### Named path 和 slice 放行
@@ -40,4 +42,5 @@ Claude Code 自定义 subagent 具有自己的上下文，不会自动继承父�
 - [Coding Child Message Visibility](delegation-child-message-visibility_zh_cn.md) — 定位父级会话中的消息可见性要求。
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement_zh_cn.md) — 定位获准的复用和替换。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位上下文记录的 Memory 命名与授权。
+- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位 Memory 引用和子代理读取要求。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 边界控制。

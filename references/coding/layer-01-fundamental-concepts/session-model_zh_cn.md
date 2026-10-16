@@ -2,7 +2,7 @@
 
 [English](session-model.md) | [简体中文](session-model_zh_cn.md)
 
-本模块负责 Coding 的 Session 语义、单代理与多代理 Session 映射、Primary Execution Session Affinity，以及复用/worktree 隔离边界。它消费 owner 概念提供的职责归属和当前工作流的状态；不定义职责责任、Context Firewall、运行环境 eligibility、执行参数、dispatch 格式、上下文文件传输或验收流程。
+本模块负责 Coding 的 Session 语义、单代理与多代理 Session 映射、Primary Execution Session Affinity，以及复用/worktree 隔离边界。它消费 owner 概念提供的职责归属和当前工作流的状态；不定义职责责任、Context Firewall、运行环境 eligibility、执行参数、dispatch 格式、项目上下文传输、子代理运行时模型配置元数据或验收流程。
 
 ## 通用规范
 
@@ -48,5 +48,6 @@ Claude Desktop 只有在当前 Session 直接暴露内建 `Agent` 或 `SendMessa
 - [Coding Session Role Ownership](session-role-ownership_zh_cn.md) — 定位职责责任归属。
 - [Coding Session Context Firewall](session-context-firewall_zh_cn.md) — 定位原始状态进入边界。
 - [Coding Delegation State Record](delegation-state-record_zh_cn.md) — 定位任务控制状态归属。
+- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位每个子代理的运行时模型配置元数据持久化。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位文件化上下文传输归属。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 和 Session 边界控制。

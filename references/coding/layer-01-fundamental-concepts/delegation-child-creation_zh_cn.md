@@ -8,6 +8,8 @@
 
 ### 创建能力
 
+创建子代理前，应用[子代理运行时模型配置元数据](delegation-child-runtime-model-configuration-metadata_zh_cn.md)：将每个子代理的 Serena Memory 写入 `agent-session-context/<run-id>/<allocation-id>` 并读回核验，在 allocation 中保存准确的 `mem:` 引用，并将其放入完整的子代理提示。确认父级已暴露所需 Memory 工具，且子代理运行环境预期能访问同一项目 Memory。若子代理访问能力或生效配置要到启动后才能确认，只发送配置核验提示；要求子代理读取 Memory，再由父级更新 Memory 并读回核验后放行任务工作。Memory 不可访问或生效绑定仍未解决时，阻塞依赖工作。
+
 必须使用运行环境真实且由父级控制的子代理机制。创建前必须具有已放行的 Multi-Agent 门禁、锁定的正整数数量、已分配职责且尚未绑定子代理的预留名额，以及本次 `slice_status: released` 的 Interaction Slice（明确目标、路径/修改、返回条件和 memo 派发开关）。预留名额或模式放行本身不授权创建子代理。不得将 peer chat 或无法跟踪的通用任务当作持久子代理。必须具备子代理身份、父级控制的返回/继续路径、有界等待和可观察生命周期。创建后把实际身份与生命周期绑定到同一 allocation；不得将该名额释放给另一个子代理。能力缺失或无法核实时阻塞创建，不更改模式或数量。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
@@ -38,6 +40,7 @@
 
 ## 相关概念
 
+- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位每个子代理的 Memory 结构和创建前核验要求。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态归属。
 - [Coding Child Role Allocation](delegation-child-role-allocation_zh_cn.md) — 定位名额和职责分配。
 - [Coding Child Dispatch](delegation-child-dispatch_zh_cn.md) — 定位实际派发边界。

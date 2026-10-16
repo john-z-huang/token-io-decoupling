@@ -2,7 +2,7 @@
 
 [English](delegation-state-record.md) | [简体中文](delegation-state-record_zh_cn.md)
 
-This module owns the task-control record used by Coding delegation. It defines the record's canonical location, ownership, shape, field constraints, and staged presence semantics. It does not decide the mode, define Worker read/write boundaries, create children, allocate roles, or define lifecycle transitions.
+This module owns the task-control record used by Coding delegation. It defines the record's canonical location, ownership, shape, field constraints, and staged presence semantics. It does not decide the mode, define Worker read/write boundaries, create children, allocate roles, or define lifecycle transitions. Per-child model configuration metadata is stored in a separate Serena project Memory; this record stores only its exact `mem:` reference.
 
 ## General rules
 
@@ -10,19 +10,26 @@ This module owns the task-control record used by Coding delegation. It defines t
 
 The root parent owns one conversation-level mode/count decision and updates task-specific slices and lifecycle in the same record. The record is task state; it is not stored by editing a policy file. Maintain an explicit structured record in the parent context that can be read back before each route release. A transient child-status result is not the canonical record.
 
+### Runtime model configuration Memory reference
+
+Each Multi-Agent delegation run has a stable `run_id`, and each reserved child allocation has a stable `allocation_id`. Assign both before preparing the child's model configuration Memory and retain them through resume and follow-up. Single-Agent records keep `run_id: unset`. The allocation's runtime model configuration Memory reference stays unset while the allocation is only reserved. Before creating a child, the parent writes and reads back the Memory at `agent-session-context/<run-id>/<allocation-id>`, then stores only `mem:agent-session-context/<run-id>/<allocation-id>` here. Keep the reference attached while the same child can be resumed or receive follow-up. Do not copy model metadata into the parent task-state record.
+
 ### Record shape
 
 Before route release, maintain this canonical record:
 
 ```text
 owner: <root-parent identity>
+run_id: unset | <stable identifier for this Multi-Agent delegation run>
 gate_status: awaiting-mode | awaiting-count | released | blocked
 mode_source: unset | explicit | timeout-default
 mode: unset | Single-Agent Coding | Multi-Agent Coding
 child_count: unset | 0 | <locked positive integer>
-allocations: [{agent: unbound | <created-agent-identity>, role: unassigned | <role>,
+allocations: [{allocation_id: <stable child allocation identifier>,
+               agent: unbound | <created-agent-identity>, role: unassigned | <role>,
                slice_status: pending | released, interaction_slice, scope, mutations,
-               return_conditions, lifecycle, write_content_memo}]
+               return_conditions, lifecycle, write_content_memo,
+               runtime_model_config_memory: unset | mem:agent-session-context/<run-id>/<allocation-id>}]
 lifecycle: pending | running | completed | interrupted
 unavailable_capabilities: [<capability names>]
 block_reason: <required only when gate_status is blocked>
@@ -33,7 +40,7 @@ block_reason: <required only when gate_status is blocked>
 | `awaiting-mode` | Unset | `[]`; top-level lifecycle `pending` | Initialize before an unanswered first mode question. |
 | `awaiting-count` | Multi-Agent; count unset | `[]`; top-level lifecycle `pending` | Only an invalid explicit count enters this state; an omitted count defaults to one after an explicit Multi-Agent selection. |
 | `released` — Single-Agent | Single-Agent; count `0` | `[]`; top-level lifecycle required | Releases the single route, not an independent Session. |
-| `released` — Multi-Agent | Multi-Agent; locked positive count | Exactly `child_count` reserved allocations; each starts `agent: unbound`, `role: unassigned`, `slice_status: pending`, `lifecycle: pending` | Releases the route and count budget, **not** each child or Interaction Slice. |
+| `released` — Multi-Agent | Multi-Agent; locked positive count | Exactly `child_count` reserved allocations; `run_id` is set; each has a unique stable `allocation_id` and starts `agent: unbound`, `role: unassigned`, `slice_status: pending`, `lifecycle: pending` | Releases the route and count budget, **not** each child or Interaction Slice. |
 | `blocked` | Preserve confirmed values | Preserve existing allocations/lifecycle | `unavailable_capabilities` and `block_reason` required; cannot enter a dependent route. |
 
 An allocation's role becomes assigned at Role Allocation. A concrete `slice_status: released` requires `role`, `interaction_slice`, `scope`, `mutations`, `return_conditions`, and an explicit boolean `write_content_memo`; pending slices may leave these fields unset. Before serializing each released Worker bundle, include `write_content_memo: true` or `false`; the Worker never infers a default. Child Creation may bind `agent` and lifecycle only after the target role and slice are released. A later slice may be prepared on the **same** created child without creating or recycling a slot.
@@ -60,5 +67,6 @@ Claude Code's `/tasks` lists observable current/background subagent work, wherea
 - [Coding Delegation Mode Confirmation](delegation-mode-confirmation.md) — locate root mode confirmation ownership.
 - [Coding Delegation Count Gate](delegation-mode-count-gate.md) — locate child-count gate ownership.
 - [Coding Delegation Re-entry](delegation-mode-reentry.md) — locate mode/count re-entry ownership.
+- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata.md) — locate the per-child model configuration Memory schema and read/write checks.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice field ownership.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child lifecycle field ownership.

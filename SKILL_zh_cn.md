@@ -9,7 +9,7 @@ description: "面向 Coding 的高体量 Agent Token I/O 解耦：将输入侧�
 
 当前本 Skill 只维护一套可执行工作流：Coding。它用于把高价值语义决策与高体量项目状态消费、输出物化分离。Multimodal 和 Mixed 内容目前不作为本仓库中的可执行工作流维护。
 
-Coding 的委派和 Session 拓扑规则拆分为原子 reference：状态记录、模式/数量门禁，以及按条件加载的子代理派发/生命周期策略。模式检查点在路线选择前组合并验证这些 reference；父级控制的记录保存会话级模式/数量选择和当前任务状态。
+Coding 的委派和 Session 拓扑规则拆分为原子 reference：状态记录、模式/数量门禁，以及按条件加载的子代理派发/生命周期策略。模式检查点在路线选择前组合并验证这些 reference；父级控制的记录保存会话级模式/数量选择和当前任务状态。每个 Multi-Agent 子代理还拥有独立的[运行时模型配置元数据记录](references/coding/layer-01-fundamental-concepts/delegation-child-runtime-model-configuration-metadata_zh_cn.md)，保存在 Serena 项目 Memory 中；父级记录保留其 `mem:` 引用供重新进入时读取。
 
 本 Skill 只定义调度约定，不能绕过更高优先级的权限、用户授权、产品限制、仓库指令或安全规则，也不把价格、缓存命中、额度节省、延迟或 Runtime 质量表述为未经实测的事实。
 
