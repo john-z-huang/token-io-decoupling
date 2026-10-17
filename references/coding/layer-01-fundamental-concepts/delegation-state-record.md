@@ -2,17 +2,13 @@
 
 [English](delegation-state-record.md) | [简体中文](delegation-state-record_zh_cn.md)
 
-This module owns the task-control record used by Coding delegation. It defines the record's canonical location, ownership, shape, field constraints, and staged presence semantics. It does not decide the mode, define Worker read/write boundaries, create children, allocate roles, or define lifecycle transitions. Per-child model configuration metadata is stored in a separate Serena project Memory; this record stores only its exact `mem:` reference.
+This module owns the task-control record used by Coding delegation. It defines the record's canonical location, ownership, shape, field constraints, and staged presence semantics. It does not decide the mode, define Worker read/write boundaries, create children, allocate roles, or define lifecycle transitions.
 
 ## General rules
 
 ### Ownership
 
 The root parent owns one conversation-level mode/count decision and updates task-specific slices and lifecycle in the same record. The record is task state; it is not stored by editing a policy file. Maintain an explicit structured record in the parent context that can be read back before each route release. A transient child-status result is not the canonical record.
-
-### Runtime model configuration Memory reference
-
-Each Multi-Agent delegation run has a stable `run_id`, and each reserved child allocation has a stable `allocation_id`. Assign both before preparing the child's model configuration Memory and retain them through resume and follow-up. Single-Agent records keep `run_id: unset`. The allocation's runtime model configuration Memory reference stays unset while the allocation is only reserved. Before creating a child, the parent writes and reads back the Memory at `agent-session-context/<run-id>/<allocation-id>`, then stores only `mem:agent-session-context/<run-id>/<allocation-id>` here. Keep the reference attached while the same child can be resumed or receive follow-up. Do not copy model metadata into the parent task-state record.
 
 ### Record shape
 
@@ -28,8 +24,7 @@ child_count: unset | 0 | <locked positive integer>
 allocations: [{allocation_id: <stable child allocation identifier>,
                agent: unbound | <created-agent-identity>, role: unassigned | <role>,
                slice_status: pending | released, interaction_slice, scope, mutations,
-               return_conditions, lifecycle, write_content_memo,
-               runtime_model_config_memory: unset | mem:agent-session-context/<run-id>/<allocation-id>}]
+               return_conditions, lifecycle, write_content_memo}]
 lifecycle: pending | running | completed | interrupted
 unavailable_capabilities: [<capability names>]
 block_reason: <required only when gate_status is blocked>
@@ -67,6 +62,5 @@ Claude Code's `/tasks` lists observable current/background subagent work, wherea
 - [Coding Delegation Mode Confirmation](delegation-mode-confirmation.md) — locate root mode confirmation ownership.
 - [Coding Delegation Count Gate](delegation-mode-count-gate.md) — locate child-count gate ownership.
 - [Coding Delegation Re-entry](delegation-mode-reentry.md) — locate mode/count re-entry ownership.
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata.md) — locate the per-child model configuration Memory schema and read/write checks.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice field ownership.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child lifecycle field ownership.

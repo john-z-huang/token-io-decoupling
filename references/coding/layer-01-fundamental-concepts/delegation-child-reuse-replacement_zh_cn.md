@@ -8,7 +8,7 @@
 
 ### 获准复用
 
-在 compaction、中断或恢复后继续任务前，父级控制的 follow-up 必须包含 allocation 中准确的 `mem:agent-session-context/<run-id>/<allocation-id>` 引用，并要求子代理再次调用 Serena `read_memory`。同一子代理身份始终沿用同一引用。子代理使用已核验的保存值，不得仅因压缩后的历史省略了这些值就报告 `unknown`。只有父级能通过 Serena `write_memory` 更新 Memory，且每次更新后都要用 `read_memory` 核验；Memory 缺失、不可访问、未解决、不可读或与实时运行时证据冲突时，阻塞后续工作。
+模型和 reasoning-effort 设置仅在创建子代理时核验。对同一子代理的 follow-up、修复、compaction、中断、唤醒或恢复不得重复核验，也不得要求子代理检查/报告这些设置。本模块中的子代理身份、生命周期、授权、范围和返回路径规则仍须执行。
 
 对已授权 follow-up、修复 epoch 和中断，在安全时复用同一个已创建子代理。优先通过该子代理尝试获准修复；无法安全继续时报告阻塞，并将依赖的 Multi-Agent 工作置为 `blocked`。复用不得创建递归层级或 peer 协调。已创建子代理的身份和证据遵循生命周期 owner 保留。
 
@@ -20,13 +20,9 @@
 
 ### 复用已分配的 Codex 线程
 
-每条获准 follow-up 都要包含父级 allocation 记录中的 Memory 引用，并要求同一个子线程在继续前调用 Serena `read_memory`。
-
 宿主提供父级可控的 steering 或能够向已记录 Codex 子线程 follow-up 时，必须对**同一身份**发起获准的修复或后续 epoch。当前 Session 暴露的 `/agent` 或直接子线程工具可定位已记录身份。通过暴露工具返回的不同 Session 或 worktree 不足以证明与已分配 Child 身份连续。请求新的 subagent 会产生不同身份，在数量锁定后不得伪装为复用。原线程无法通过暴露工具继续或 steering 失败时，保留证据并阻塞依赖 Multi-Agent Slice。[OpenAI：子代理编排与线程控制](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 行为](https://learn.chatgpt.com/docs/environments/git-worktrees)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
-
-每条获准 follow-up 都要包含父级 allocation 记录中的 Memory 引用，并要求恢复的子代理在继续前调用 Serena `read_memory`。
 
 获准跟进或修复同一子代理时，使用返回的 Agent ID 调用 `SendMessage`。再次调用 `Agent` 会创建另一个子代理并消耗另一个名额；数量锁定后不得将其用于复用。
 
@@ -45,4 +41,3 @@ Agent team 消息或 `/branch` 都不能替代恢复已记录的 Agent 身份。
 - [Coding Child Dispatch](delegation-child-dispatch_zh_cn.md) — 定位实际派发边界。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态和恢复归属。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位 handoff 和上下文传输归属。
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位每个子代理模型元数据持久化与读回核验要求。

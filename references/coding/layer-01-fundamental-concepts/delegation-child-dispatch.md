@@ -8,7 +8,7 @@ This module owns material Dispatch Preview and the Worker boundary. It consumes 
 
 ### Dispatch Preview and return boundary
 
-Include the exact [child runtime model configuration metadata](delegation-child-runtime-model-configuration-metadata.md) reference `mem:agent-session-context/<run-id>/<allocation-id>` in the initial task prompt and every follow-up. Before profile-gated work, require the child to call Serena `read_memory` with the name without the `mem:` prefix and verify `record_status: verified` against its current runtime. Require another read after compaction, interruption, or resume. Missing, inaccessible, unresolved, unreadable, or conflicting Memory blocks dispatch; do not use a filesystem fallback.
+Model and reasoning-effort settings are established during child creation. Do not check them during dispatch, task work, or follow-up, or ask the child to inspect or report them. Apply the remaining task authorization, scope, and context checks below independently.
 
 Before assigning or materially dispatching to a child, verify that Input-side Reasoning has completed its prerequisite instruction, environment, and task-defining code-fact confirmations with source pointers, and that a concrete Interaction Slice was released. The parent shows a concise Dispatch Preview of the authorized objective, mutations, and return conditions; a missing prerequisite keeps the slice with the parent. A Worker returns only to its direct parent and cannot create, fork, hand off to, message, replace, or coordinate another Agent or Session, or contact arbitrary threads. Contradictory findings return to the parent for a new decision, not a new mode or count.
 
@@ -42,5 +42,4 @@ A Claude Code custom subagent starts with its own context and does not automatic
 - [Coding Child Message Visibility](delegation-child-message-visibility.md) — locate parent-conversation message visibility requirements.
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.md) — locate authorized reuse and replacement.
 - [Coding Context Exchange](context-exchange.md) — locate context-record Memory naming and authorization.
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata.md) — locate the Memory reference and child-read requirement.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice boundary controls.

@@ -2,7 +2,7 @@
 
 [English](session-model.md) | [简体中文](session-model_zh_cn.md)
 
-This module owns Coding Session semantics, Single-Agent and Multi-Agent Session mapping, Primary Execution Session affinity, and reuse/worktree separation boundaries. It consumes role ownership from its owner concept and state from the active workflow; it does not define role responsibilities, the Context Firewall, runtime eligibility, execution parameters, dispatch formatting, project-context transport, child runtime model configuration metadata, or acceptance procedures.
+This module owns Coding Session semantics, Single-Agent and Multi-Agent Session mapping, Primary Execution Session affinity, and reuse/worktree separation boundaries. It consumes role ownership from its owner concept and state from the active workflow; it does not define role responsibilities, the Context Firewall, runtime eligibility, execution parameters, dispatch formatting, project-context transport, or acceptance procedures.
 
 ## General rules
 
@@ -48,6 +48,5 @@ In Claude Desktop, use the built-in `Agent` or `SendMessage` tool only when dire
 - [Coding Session Role Ownership](session-role-ownership.md) — locate role responsibility ownership.
 - [Coding Session Context Firewall](session-context-firewall.md) — locate raw-state ingress boundaries.
 - [Coding Delegation State Record](delegation-state-record.md) — locate task-control state ownership.
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata.md) — locate per-child runtime model configuration metadata persistence.
 - [Coding Context Exchange](context-exchange.md) — locate file-backed context transport ownership.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice and session-boundary controls.
