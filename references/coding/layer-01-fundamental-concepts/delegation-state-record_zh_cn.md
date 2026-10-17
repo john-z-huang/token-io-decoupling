@@ -2,17 +2,13 @@
 
 [English](delegation-state-record.md) | [简体中文](delegation-state-record_zh_cn.md)
 
-本文档负责 Coding 委派使用的任务控制记录，定义记录的规范位置、ownership、结构、字段约束和分阶段字段存在语义。不决定模式，不定义 Worker 读写边界，不创建子 Agent，不分配职责，也不定义生命周期转换。模型/effort 元数据若有记录，仅为父级持有的可选审计信息；本任务控制记录不保存元数据引用，也不以此作为后续工作的门禁。
+本文档负责 Coding 委派使用的任务控制记录，定义记录的规范位置、ownership、结构、字段约束和分阶段字段存在语义。不决定模式，不定义 Worker 读写边界，不创建子 Agent，不分配职责，也不定义生命周期转换。
 
 ## 通用规范
 
 ### Ownership
 
 根父级负责一份会话级模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，不通过编辑 policy 文件保存。在父级上下文中维护可于每次路线放行前读回的显式结构化记录。短暂的子代理状态结果不能作为规范记录。
-
-### 模型与 effort 审计信息
-
-模型和 reasoning-effort 绑定仅在创建子代理时核验。任务控制记录不包含模型元数据字段或其引用。任何可选的创建审计记录均由父级持有，仅作信息记录；不得作为后续派发、工作、修复、compaction、唤醒或恢复的门禁。
 
 ### 记录结构
 
@@ -66,6 +62,5 @@ Claude Code 的 `/tasks` 显示当前／后台子代理任务状态，`/context`
 - [Coding Delegation Mode Confirmation](delegation-mode-confirmation_zh_cn.md) — 定位根模式确认归属。
 - [Coding Delegation Count Gate](delegation-mode-count-gate_zh_cn.md) — 定位子 Agent 数量门禁归属。
 - [Coding Delegation Re-entry](delegation-mode-reentry_zh_cn.md) — 定位模式/数量重新进入归属。
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位可选创建审计元数据；该记录不作为后续工作的门禁。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 字段归属。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 生命周期字段归属。

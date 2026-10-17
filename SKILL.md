@@ -9,7 +9,7 @@ description: "High-volume Agent Token I/O decoupling for Coding. Coding separate
 
 This Skill maintains one executable workflow: Coding. It separates high-value semantic decisions from high-volume project-state consumption and output materialization. Multimodal and Mixed concepts are not maintained as executable workflows in this repository.
 
-Coding delegation and Session-topology rules are split into atomic references: the state record, mode/count gate, and conditional child dispatch/lifecycle policy. The Mode checkpoint composes and validates them before route selection; the parent-controlled record stores a conversation-wide mode/count decision and current task state. Model and reasoning-effort bindings are checked only as part of child creation. Optional per-child metadata is parent-owned informational audit data and is not read by the child or used as a later gate.
+Coding delegation and Session-topology rules are split into atomic references: the state record, mode/count gate, and conditional child dispatch/lifecycle policy. The Mode checkpoint composes and validates them before route selection; the parent-controlled record stores a conversation-wide mode/count decision and current task state. Model and reasoning-effort binding checks are limited to child creation; the child never inspects or reports its settings, and the parent does not re-check them in later child operations.
 
 The Skill defines orchestration conventions only. It cannot bypass higher-priority permissions, user authorization, product limitations, repository instructions, or safety rules, and it must not present unmeasured claims about price, cache hits, quota savings, latency, or runtime quality as facts.
 

@@ -8,7 +8,7 @@
 
 ### 获准复用
 
-模型和 reasoning-effort 设置仅在创建子代理时核验。对同一子代理的 follow-up、修复、compaction、中断或恢复不得重复核验、包含模型元数据 Memory 引用，或要求子代理检查/报告这些设置。本模块中的子代理身份、生命周期、授权、范围和返回路径规则仍须执行。
+模型和 reasoning-effort 设置仅在创建子代理时核验。对同一子代理的 follow-up、修复、compaction、中断、唤醒或恢复不得重复核验，也不得要求子代理检查/报告这些设置。本模块中的子代理身份、生命周期、授权、范围和返回路径规则仍须执行。
 
 对已授权 follow-up、修复 epoch 和中断，在安全时复用同一个已创建子代理。优先通过该子代理尝试获准修复；无法安全继续时报告阻塞，并将依赖的 Multi-Agent 工作置为 `blocked`。复用不得创建递归层级或 peer 协调。已创建子代理的身份和证据遵循生命周期 owner 保留。
 
@@ -20,13 +20,9 @@
 
 ### 复用已分配的 Codex 线程
 
-复用时不得包含或读取模型配置 Memory 引用；模型/effort 核验仅属于创建环节。
-
 宿主提供父级可控的 steering 或能够向已记录 Codex 子线程 follow-up 时，必须对**同一身份**发起获准的修复或后续 epoch。当前 Session 暴露的 `/agent` 或直接子线程工具可定位已记录身份。通过暴露工具返回的不同 Session 或 worktree 不足以证明与已分配 Child 身份连续。请求新的 subagent 会产生不同身份，在数量锁定后不得伪装为复用。原线程无法通过暴露工具继续或 steering 失败时，保留证据并阻塞依赖 Multi-Agent Slice。[OpenAI：子代理编排与线程控制](https://learn.chatgpt.com/docs/agent-configuration/subagents)、[OpenAI：worktree 行为](https://learn.chatgpt.com/docs/environments/git-worktrees)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
-
-恢复时不得包含或读取模型配置 Memory 引用；模型/effort 核验仅属于创建环节。
 
 获准跟进或修复同一子代理时，使用返回的 Agent ID 调用 `SendMessage`。再次调用 `Agent` 会创建另一个子代理并消耗另一个名额；数量锁定后不得将其用于复用。
 
@@ -45,4 +41,3 @@ Agent team 消息或 `/branch` 都不能替代恢复已记录的 Agent 身份。
 - [Coding Child Dispatch](delegation-child-dispatch_zh_cn.md) — 定位实际派发边界。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态和恢复归属。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位 handoff 和上下文传输归属。
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位可选的信息性创建元数据；后续复用不核验该记录。

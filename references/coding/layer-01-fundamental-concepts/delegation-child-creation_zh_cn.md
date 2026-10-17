@@ -8,7 +8,7 @@
 
 ### 创建能力
 
-创建子代理时，父级必须在子代理创建操作中选择并设置该职责要求的模型与 reasoning-effort 参数，并应用适用的运行时绑定。若创建操作无法设置或确认必需配置，则阻止创建。此核验仅限创建环节。若创建操作已接受必需参数，但没有提供额外的运行时解析观察，父级可将该观察记录为未解决，任务工作仍可继续。不得要求子代理自行检查或报告模型、effort。创建后的逐子代理元数据记录由父级持有，仅作信息性审计资料，不得作为启动、任务工作或后续继续的门禁。
+创建子代理时，父级必须在子代理创建操作中选择并设置该职责要求的模型与 reasoning-effort 参数，并应用适用的运行时绑定。若创建操作无法设置或确认必需配置，则阻止创建。此核验仅限创建环节。若创建操作已接受必需参数，但没有提供额外的运行时解析观察，可直接继续任务，无需额外观察。不得要求子代理自行检查或报告模型、effort。
 
 必须使用运行环境真实且由父级控制的子代理机制。创建前必须具有已放行的 Multi-Agent 门禁、锁定的正整数数量、已分配职责且尚未绑定子代理的预留名额，以及本次 `slice_status: released` 的 Interaction Slice（明确目标、路径/修改、返回条件和 memo 派发开关）。预留名额或模式放行本身不授权创建子代理。不得将 peer chat 或无法跟踪的通用任务当作持久子代理。必须具备子代理身份、父级控制的返回/继续路径、有界等待和可观察生命周期。创建后把实际身份与生命周期绑定到同一 allocation；不得将该名额释放给另一个子代理。能力缺失或无法核实时阻塞创建，不更改模式或数量。
 
@@ -16,17 +16,17 @@
 
 本地 Codex 使用当前暴露的 MultiAgentV1/V2 spawn 操作；模型与能力绑定遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)。
 
-对于 Codex 自定义子代理，获准的 `.codex/agents/<name>.toml` 可设置 `name`、`description`、`developer_instructions`、`model`、`model_reasoning_effort`、`sandbox_mode` 和 `mcp_servers`。父级必须在 spawn 操作中设置该职责要求的模型与 effort；若无法应用必需参数，则阻止创建。若创建操作接受了参数但未提供额外运行时解析观察，可按需将该观察记录为未解决并继续。不得要求子代理检查或报告这些设置。注册 profile 不是创建或分配新子代理；宿主全局并发上限不等于本次会话锁定数量。Claude 的 `.claude/agents/*.md` frontmatter 不能作为 Codex 配置格式。[OpenAI：自定义子代理](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
+对于 Codex 自定义子代理，获准的 `.codex/agents/<name>.toml` 可设置 `name`、`description`、`developer_instructions`、`model`、`model_reasoning_effort`、`sandbox_mode` 和 `mcp_servers`。父级必须在 spawn 操作中设置该职责要求的模型与 effort；若无法应用必需参数，则阻止创建。若创建操作接受了参数但未提供额外运行时解析观察，无需额外观察即可继续。不得要求子代理检查或报告这些设置。注册 profile 不是创建或分配新子代理；宿主全局并发上限不等于本次会话锁定数量。Claude 的 `.claude/agents/*.md` frontmatter 不能作为 Codex 配置格式。[OpenAI：自定义子代理](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
 
 ### 原生子代理 Profile 与继承权限
 
-当前本地 Codex 暴露内置 `default`、`worker` 和 `explorer` profile；获准的 `.codex/agents/` 或 `~/.codex/agents/` 自定义 profile 可以细化已放行职责。创建 Child 前核验 `agents.enabled` 与实际 spawn 能力。在 spawn 操作中设置职责要求的模型与 effort，并在此处解析适用的自定义文件和运行时优先级；无法设置或确认必需参数时阻止创建。创建操作已接受必需参数、但没有额外运行时解析观察时，该观察可保持未解决。继承的 `sandbox_mode`／`mcp_servers`／`skills.config` 属于独立权限边界，仍须检查。父级实时 `/permissions` 或 CLI sandbox 覆盖可能被重新应用到子代理；不能把 TOML 中的只读默认值当成已强制生效的证明。宿主的 `agents.max_concurrent_threads_per_session` 限制的是**同时打开的线程数**，不是会话已锁定的 Child 总数。[OpenAI：子代理 Profile、优先级与权限](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
+当前本地 Codex 暴露内置 `default`、`worker` 和 `explorer` profile；获准的 `.codex/agents/` 或 `~/.codex/agents/` 自定义 profile 可以细化已放行职责。创建 Child 前核验 `agents.enabled` 与实际 spawn 能力。在 spawn 操作中设置职责要求的模型与 effort，并在此处解析适用的自定义文件和运行时优先级；无法设置或确认必需参数时阻止创建。继承的 `sandbox_mode`／`mcp_servers`／`skills.config` 属于独立权限边界，仍须检查。父级实时 `/permissions` 或 CLI sandbox 覆盖可能被重新应用到子代理；不能把 TOML 中的只读默认值当成已强制生效的证明。宿主的 `agents.max_concurrent_threads_per_session` 限制的是**同时打开的线程数**，不是会话已锁定的 Child 总数。[OpenAI：子代理 Profile、优先级与权限](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-本地 Claude Code 在数量和 allocation 放行后使用内建 `Agent` 工具，显式指定 `subagent_type`（`general-purpose` 或已命名自定义子代理）、职责要求的模型与 effort、有界任务提示和返回条件。模型与 effort 绑定遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)；若创建操作无法设置或确认必需参数，则阻止创建。若操作已接受必需参数但没有提供额外运行时解析观察，该观察可保持未解决。不得要求子代理检查或报告自身设置。内建 Explore/Plan Agent 不返回可复用 Agent ID，不得作为持久子代理。
+本地 Claude Code 在数量和 allocation 放行后使用内建 `Agent` 工具，显式指定 `subagent_type`（`general-purpose` 或已命名自定义子代理）、职责要求的模型与 effort、有界任务提示和返回条件。模型与 effort 绑定遵循[运行环境与模型厂商支持](runtime-provider-support_zh_cn.md)；若创建操作无法设置或确认必需参数，则阻止创建。若操作已接受必需参数，无需额外的运行时解析观察即可继续。不得要求子代理检查或报告自身设置。内建 Explore/Plan Agent 不返回可复用 Agent ID，不得作为持久子代理。
 
-通用 `Agent` 调用没有逐次 effort 参数。需要 Sonnet 职责专属 effort 时，使用获准的 `.claude/agents/<name>.md` 或 `~/.claude/agents/<name>.md` 定义，填写 `name`、`description`、`model: sonnet`、必需的 `effort` 和适当的工具白名单。否则在启动前显式设置父级会话 `/effort`；Haiku 省略 effort。优先使用工具白名单中排除 `Agent` 和 peer 消息的具名可复用子代理，防止递归委派。自定义定义不在获准修改范围内时，只有在创建操作可以设置或确认必需模型与 effort 时才使用 `general-purpose`。无法应用必需参数时阻止创建；若已接受必需参数但缺少额外运行时观察，该观察可保持未解决。
+通用 `Agent` 调用没有逐次 effort 参数。需要 Sonnet 职责专属 effort 时，使用获准的 `.claude/agents/<name>.md` 或 `~/.claude/agents/<name>.md` 定义，填写 `name`、`description`、`model: sonnet`、必需的 `effort` 和适当的工具白名单。否则在启动前显式设置父级会话 `/effort`；Haiku 省略 effort。优先使用工具白名单中排除 `Agent` 和 peer 消息的具名可复用子代理，防止递归委派。自定义定义不在获准修改范围内时，只有在创建操作可以设置或确认必需模型与 effort 时才使用 `general-purpose`。无法应用必需参数时阻止创建。
 
 ### 原生子代理定义与创建门禁
 
@@ -40,7 +40,6 @@
 
 ## 相关概念
 
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位可选的父级创建审计记录。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态归属。
 - [Coding Child Role Allocation](delegation-child-role-allocation_zh_cn.md) — 定位名额和职责分配。
 - [Coding Child Dispatch](delegation-child-dispatch_zh_cn.md) — 定位实际派发边界。

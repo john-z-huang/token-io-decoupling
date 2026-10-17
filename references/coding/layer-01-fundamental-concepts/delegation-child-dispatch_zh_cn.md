@@ -8,7 +8,7 @@
 
 ### Dispatch Preview 和返回边界
 
-模型和 reasoning-effort 绑定核验仅属于[子代理创建](delegation-child-creation_zh_cn.md)。派发、任务工作和 follow-up 不检查这些设置；提示词不得包含模型元数据 Memory 引用，也不得要求子代理检查或报告自身设置。以下任务授权、范围和上下文检查仍须分别执行。
+模型和 reasoning-effort 设置在创建子代理时确定。派发、任务工作和 follow-up 不检查这些设置，也不得要求子代理检查或报告自身设置。以下任务授权、范围和上下文检查仍须分别执行。
 
 分配或实质派发前，检查输入侧推理职责已完成指令、环境和定义任务所需代码事实的前置确认，具有 source pointer，且具体 Interaction Slice 已放行。父级展示获准目标、修改和返回条件的简洁 Dispatch Preview；前置条件缺失时仍由父级持有 Slice。Worker 只向直接父级返回，不得创建、fork、handoff、向其他 Agent 或 Session 发消息、替换或协调其他 Agent 或 Session，也不得联系任意线程。与已确认前提冲突的发现返回父级重新决策，不得改变模式或数量。
 
@@ -42,5 +42,4 @@ Claude Code 自定义 subagent 具有自己的上下文，不会自动继承父�
 - [Coding Child Message Visibility](delegation-child-message-visibility_zh_cn.md) — 定位父级会话中的消息可见性要求。
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement_zh_cn.md) — 定位获准的复用和替换。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位上下文记录的 Memory 命名与授权。
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位仅限创建时的绑定边界；派发不检查或读取此元数据。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 边界控制。

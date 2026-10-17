@@ -8,7 +8,7 @@ This module owns authorized follow-up, repaired epochs, and reuse or replacement
 
 ### Authorized reuse
 
-Model and reasoning-effort settings are checked only during creation. A follow-up, repair, compaction, interruption, or resume of the same child must not repeat the check, include a model-metadata Memory reference, or ask the child to inspect or report those settings. Continue to apply the child identity, lifecycle, authorization, scope, and return-path rules in this module.
+Model and reasoning-effort settings are checked only during creation. A follow-up, repair, compaction, interruption, wake, or resume of the same child must not repeat the check or ask the child to inspect or report those settings. Continue to apply the child identity, lifecycle, authorization, scope, and return-path rules in this module.
 
 For authorized follow-ups, repaired epochs, and interruptions, reuse the same created child when safe. First attempt an authorized repair through that child; if it cannot safely continue, report the blocker and set dependent Multi-Agent work to `blocked`. Reuse must not create a recursive hierarchy or peer coordination. Retain the created child's identity and evidence according to the lifecycle owner.
 
@@ -20,13 +20,9 @@ A plan-level revision is allowed for an `agent: unbound` reserved allocation aft
 
 ### Reuse the allocated Codex thread
 
-Do not include or read a model-configuration Memory reference during reuse; model/effort checks belong only to creation.
-
 When the host exposes parent-controlled steering or an actual follow-up to a recorded Codex child thread, address that same identity for its authorized repair or next epoch. A Session-exposed `/agent` or direct child-thread tool can locate the recorded identity. A distinct Session or worktree returned by an exposed tool does not establish continuity with the allocated child. Requesting a fresh subagent creates a distinct identity and must not be disguised as reuse after count locking. If the original thread cannot be steered or continued through an exposed tool, keep its evidence and block the dependent Multi-Agent slice. [OpenAI: subagent orchestration and thread controls](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: worktree behavior](https://learn.chatgpt.com/docs/environments/git-worktrees).
 
 ## Claude Code CLI / Claude Desktop optimizations
-
-Do not include or read a model-configuration Memory reference during resume; model/effort checks belong only to creation.
 
 Use `SendMessage` with the returned Agent ID for an authorized follow-up or repair of the same child. Calling `Agent` again creates another child and consumes another slot; do not use it for reuse after count locking.
 
@@ -45,4 +41,3 @@ An agent-team message or `/branch` cannot substitute for resuming the recorded A
 - [Coding Child Dispatch](delegation-child-dispatch.md) — locate material dispatch boundaries.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state and recovery ownership.
 - [Coding Context Exchange](context-exchange.md) — locate handoff and context transport ownership.
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata.md) — locate optional informational creation metadata; later reuse does not check it.

@@ -2,17 +2,13 @@
 
 [English](delegation-state-record.md) | [简体中文](delegation-state-record_zh_cn.md)
 
-This module owns the task-control record used by Coding delegation. It defines the record's canonical location, ownership, shape, field constraints, and staged presence semantics. It does not decide the mode, define Worker read/write boundaries, create children, allocate roles, or define lifecycle transitions. Model/effort metadata, if recorded, is optional parent-owned audit information; this task-control record does not store a metadata reference or use it to gate later work.
+This module owns the task-control record used by Coding delegation. It defines the record's canonical location, ownership, shape, field constraints, and staged presence semantics. It does not decide the mode, define Worker read/write boundaries, create children, allocate roles, or define lifecycle transitions.
 
 ## General rules
 
 ### Ownership
 
 The root parent owns one conversation-level mode/count decision and updates task-specific slices and lifecycle in the same record. The record is task state; it is not stored by editing a policy file. Maintain an explicit structured record in the parent context that can be read back before each route release. A transient child-status result is not the canonical record.
-
-### Model and effort audit information
-
-Model and reasoning-effort binding checks occur only as part of child creation. The task-control record has no field for model metadata and no reference to such metadata. Any optional creation audit record is parent-owned and informational; it cannot gate later dispatch, work, repair, compaction, wake, or resume.
 
 ### Record shape
 
@@ -66,6 +62,5 @@ Claude Code's `/tasks` lists observable current/background subagent work, wherea
 - [Coding Delegation Mode Confirmation](delegation-mode-confirmation.md) — locate root mode confirmation ownership.
 - [Coding Delegation Count Gate](delegation-mode-count-gate.md) — locate child-count gate ownership.
 - [Coding Delegation Re-entry](delegation-mode-reentry.md) — locate mode/count re-entry ownership.
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata.md) — locate optional creation-time audit metadata, which does not gate later work.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice field ownership.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child lifecycle field ownership.
