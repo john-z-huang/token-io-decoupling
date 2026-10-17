@@ -48,6 +48,6 @@ Claude Desktop 只有在当前 Session 直接暴露内建 `Agent` 或 `SendMessa
 - [Coding Session Role Ownership](session-role-ownership_zh_cn.md) — 定位职责责任归属。
 - [Coding Session Context Firewall](session-context-firewall_zh_cn.md) — 定位原始状态进入边界。
 - [Coding Delegation State Record](delegation-state-record_zh_cn.md) — 定位任务控制状态归属。
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位每个子代理的运行时模型配置元数据持久化。
+- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位可选的父级创建审计记录；它不作为启动或后续工作的门禁。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位文件化上下文传输归属。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 和 Session 边界控制。

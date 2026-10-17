@@ -2,7 +2,7 @@
 
 [English](delegation-state-record.md) | [简体中文](delegation-state-record_zh_cn.md)
 
-本文档负责 Coding 委派使用的任务控制记录，定义记录的规范位置、ownership、结构、字段约束和分阶段字段存在语义。不决定模式，不定义 Worker 读写边界，不创建子 Agent，不分配职责，也不定义生命周期转换。每个子代理的模型配置元数据保存在独立的 Serena 项目 Memory 中；本记录只保存准确的 `mem:` 引用。
+本文档负责 Coding 委派使用的任务控制记录，定义记录的规范位置、ownership、结构、字段约束和分阶段字段存在语义。不决定模式，不定义 Worker 读写边界，不创建子 Agent，不分配职责，也不定义生命周期转换。模型/effort 元数据若有记录，仅为父级持有的可选审计信息；本任务控制记录不保存元数据引用，也不以此作为后续工作的门禁。
 
 ## 通用规范
 
@@ -10,9 +10,9 @@
 
 根父级负责一份会话级模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，不通过编辑 policy 文件保存。在父级上下文中维护可于每次路线放行前读回的显式结构化记录。短暂的子代理状态结果不能作为规范记录。
 
-### 运行时模型配置 Memory 引用
+### 模型与 effort 审计信息
 
-每次 Multi-Agent 委派运行具有稳定的 `run_id`，每个预留子代理 allocation 具有稳定的 `allocation_id`。准备子代理模型配置 Memory 前分配这两个标识，并在恢复和 follow-up 期间保持不变。Single-Agent 记录将 `run_id` 保持为 `unset`。allocation 的运行时模型配置 Memory 引用在名额仅处于预留状态时保持 unset。创建子代理前，父级将 Memory 写入并读回核验 `agent-session-context/<run-id>/<allocation-id>`，随后只在此处保存 `mem:agent-session-context/<run-id>/<allocation-id>`。只要同一子代理仍可能恢复或接收 follow-up，就保留该引用。不得将模型元数据复制到父级任务状态记录。
+模型和 reasoning-effort 绑定仅在创建子代理时核验。任务控制记录不包含模型元数据字段或其引用。任何可选的创建审计记录均由父级持有，仅作信息记录；不得作为后续派发、工作、修复、compaction、唤醒或恢复的门禁。
 
 ### 记录结构
 
@@ -28,8 +28,7 @@ child_count: unset | 0 | <已锁定正整数>
 allocations: [{allocation_id: <稳定的子代理 allocation 标识>,
                agent: unbound | <已创建代理身份>, role: unassigned | <职责>,
                slice_status: pending | released, interaction_slice, scope, mutations,
-               return_conditions, lifecycle, write_content_memo,
-               runtime_model_config_memory: unset | mem:agent-session-context/<run-id>/<allocation-id>}]
+               return_conditions, lifecycle, write_content_memo}]
 lifecycle: pending | running | completed | interrupted
 unavailable_capabilities: [<能力名称>]
 block_reason: <仅 blocked 时必需>
@@ -67,6 +66,6 @@ Claude Code 的 `/tasks` 显示当前／后台子代理任务状态，`/context`
 - [Coding Delegation Mode Confirmation](delegation-mode-confirmation_zh_cn.md) — 定位根模式确认归属。
 - [Coding Delegation Count Gate](delegation-mode-count-gate_zh_cn.md) — 定位子 Agent 数量门禁归属。
 - [Coding Delegation Re-entry](delegation-mode-reentry_zh_cn.md) — 定位模式/数量重新进入归属。
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位每个子代理模型配置 Memory 的结构及读写核验。
+- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata_zh_cn.md)——定位可选创建审计元数据；该记录不作为后续工作的门禁。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 字段归属。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 生命周期字段归属。

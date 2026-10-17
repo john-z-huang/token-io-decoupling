@@ -48,6 +48,6 @@ In Claude Desktop, use the built-in `Agent` or `SendMessage` tool only when dire
 - [Coding Session Role Ownership](session-role-ownership.md) — locate role responsibility ownership.
 - [Coding Session Context Firewall](session-context-firewall.md) — locate raw-state ingress boundaries.
 - [Coding Delegation State Record](delegation-state-record.md) — locate task-control state ownership.
-- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata.md) — locate per-child runtime model configuration metadata persistence.
+- [Coding Child Runtime Model Configuration Metadata](delegation-child-runtime-model-configuration-metadata.md) — locate optional parent-owned creation audit metadata, which does not gate startup or later work.
 - [Coding Context Exchange](context-exchange.md) — locate file-backed context transport ownership.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice and session-boundary controls.
