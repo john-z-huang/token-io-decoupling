@@ -21,6 +21,12 @@ This is a mandatory repository-wide constraint for **every execution of this Ski
 - A route-composition document may order owners and restate their operational checks and required evidence; it must not become a second owner for mode gates, delegation lifecycle, environment capability rules, repair execution, verification independence/reporting/epochs, or other lower-layer concepts.
 - New owner files and any composition entries that consume them must be updated in the same change set. Keep English and Simplified Chinese files semantically mirrored with equivalent constraints and action strength.
 
+## Skill development source registry
+
+- The [External References](EXTERNAL_REFERENCES.md) index is a development-only source registry for this Skill. Read or write it only when developing or maintaining this Skill's instructions. A Code Agent using the Skill for ordinary Coding work must not read or write it.
+- When external network material informs a specific Related document during Skill development, add the source name, exact URL, target document, and development purpose to the registry. Consult those links only as reference material while developing or updating this Skill's instructions; do not make the registry an execution dependency.
+- Do not add the registry to `SKILL.md`, Coding workflows, route checklists, or other runtime execution steps. Keep Code Agent runtime instructions explicit and executable without loading the registry.
+
 ## Layer-01 three-module structure
 
 Every existing or new Layer-01 Markdown owner and its Chinese mirror must have these three top-level content sections, exactly once and in this order, after the opening ownership statement:

@@ -12,7 +12,7 @@ Owns instruction analysis, project-environment confirmation, and direct confirma
 
 ### Primary Output Role
 
-Owns execution of the parent's precise, released task instructions, including bounded exploration within the confirmed scope, evidence compression, code/configuration materialization, repairs within the released slice, and provisional implementation checks. It reads progressively and reports any fact that contradicts the parent's confirmed premises; it cannot take over the prerequisite instruction analysis, environment confirmation, or code-detail confirmation, or change unresolved goals, constraints, architecture, or acceptance criteria. It does not own final acceptance or non-trivial Git work.
+Owns execution of the parent's precise, released task instructions, including bounded exploration within the confirmed scope, evidence compression, code/configuration materialization, repairs within the released slice, and provisional implementation checks. Under the Multi-Agent route, create this child only after the normal release gates and only for actual code/configuration implementation or authorship/editing of this Skill's instructions/reference documents. It reads progressively and reports any fact that contradicts the parent's confirmed premises; it cannot take over the prerequisite instruction analysis, environment confirmation, or code-detail confirmation, or change unresolved goals, constraints, architecture, or acceptance criteria. It does not own final acceptance or non-trivial Git work.
 
 ### Context Bootstrap/Refresh Responsibility
 
@@ -24,7 +24,7 @@ When assigned, independently verifies the final state of a material change again
 
 ### Documentation/Comments & Git Operations Agent
 
-When assigned, materializes only approved documentation/comments or performs only the explicitly released non-trivial Git slice. It does not change product behavior, tests, or semantic decisions; a conflict requiring new content or meaning returns to the parent. Documentation and Git work remain separate execution scopes.
+When assigned, performs only the explicitly released non-trivial Git slice. It does not change product behavior, tests, or semantic decisions; a conflict requiring new content or meaning returns to the parent. The root parent authors ordinary non-Skill documentation/comments, including documentation accompanying code changes; this work never triggers or consumes the reserved Primary Output slot. Authorship/editing of this Skill's instructions or reference documents may be assigned to the Primary Output child after all release gates, with parent review at Documentation and Acceptance. Git remains a separate execution scope.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
