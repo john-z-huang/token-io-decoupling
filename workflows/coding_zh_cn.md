@@ -13,8 +13,8 @@
 
 ## 路线
 
-- [单代理 Coding](../references/coding/layer-03-workflows/coding-single-agent_zh_cn.md)：任务记录写明 `mode: Single-Agent Coding` 时使用；它也是 15 秒无回复时的默认路线，使用 `child_count: 0`，与指令相关的任务事项留在当前 Session 中完成。
-- [多代理 Coding](../references/coding/layer-03-workflows/coding-multi-agent_zh_cn.md)：只有用户明确选择 `mode: Multi-Agent Coding` 且数量门禁锁定正整数 `child_count` 时使用；沉默或推断出的需要永远不能授权该路线或创建子代理。
+- [单代理 Coding](../references/coding/layer-03-workflows/coding-single-agent_zh_cn.md)：用户明确选择 `mode: Single-Agent Coding` 时使用；与指令相关的任务事项留在当前 Session 中完成。
+- [多代理 Coding](../references/coding/layer-03-workflows/coding-multi-agent_zh_cn.md)：用户明确选择时使用；首次 Coding 指令无有效选择时，Mode 检查点展示四项菜单；只有必须在没有有效用户选择时放行 Mode gate，才缺省为 `child_count: 1`。自定义输入无效时保持门禁未放行。锁定预算不等于初始化子代理；创建仍受已放行输出类型和切片门禁约束。
 
 不要同时加载两条路线。如果后续实质事实使路线失效，停止当前切片，按需修改 Contract，并返回路线选择。
 
