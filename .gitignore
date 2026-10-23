@@ -1,2 +1,16 @@
 .token-io-decoupling
 .serena
+
+# VS Code IDE Config files
+.vscode
+
+# MCP Tools temp files
+mcp/.venv/
+mcp/.cache/
+mcp/dist/
+mcp/.pytest_cache/
+mcp/.ruff_cache/
+mcp/.ty_cache/
+
+# Python Project Cache files
+__pycache__

@@ -11,3 +11,4 @@
 - [Skill 入口](SKILL_zh_cn.md)：主要路由入口。
 - [Coding reference](references/)：由工作流组合使用的独立 Coding 模块和共享协议模块。
 - [多语言规则](MULTI_LINGUAL_zh_cn.md)：双语文档规则。
+- [MCP 开发指南](mcp/DEVELOPMENT_zh_cn.md)：本地 Python 检查与包构建。

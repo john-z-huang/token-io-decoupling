@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "token-io-mcp"
+version = "0.1.0"
+description = "Optional structured workflow state and rule-context foundation"
+requires-python = ">=3.11"
+dependencies = [
+  "mcp>=2.3,<3",
+  "openai>=3.37,<4",
+  "pydantic>=2.12,<3",
+]
+
+[dependency-groups]
+dev = [
+  "hatchling>=1.27,<2",
+  "pytest>=8,<9",
+  "ruff>=0.14,<1",
+  "ty>=0.0.1a0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/token_io_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/pyproject.toml",
+  "/hatch_build.py",
+  "/rule-registry.json",
+  "/src/**",
+  "/tests/**",
+]
+
+[tool.hatch.build.hooks.custom]
+path = "hatch_build.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ty.environment]
+python-version = "3.11"
+
+[tool.ty.src]
+include = ["src", "tests", "hatch_build.py"]

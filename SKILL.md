@@ -28,6 +28,8 @@ Follow these steps in order. Confirm each checkpoint's outcome before advancing;
 
 Use Coding for repository or project exploration, implementation, refactoring, debugging, tests, documentation, developer-tool output, and non-trivial Git work. The Coding workflow owns the common queue, module composition, runtime-environment selection, mode routing, checkpoints, verification boundaries, documentation/Git boundaries, and acceptance.
 
+The optional enhanced subsystem is specified in the [Enhanced Workflow Architecture Contract](ENHANCED_ARCHITECTURE.md); the existing Native workflow remains applicable.
+
 ## Hard constraints
 
 - Record hard user, runtime environment, repository, permission, safety, and Session constraints before acting.

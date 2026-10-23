@@ -11,3 +11,4 @@ It maintains the **Coding** workflow for repository and development work. Multim
 - [Skill entry](SKILL.md): primary routing entry point.
 - [Coding references](references/): independent Coding and shared protocol modules used by the workflows.
 - [Multilingual rules](MULTI_LINGUAL.md): bilingual documentation rules.
+- [MCP development guide](mcp/DEVELOPMENT.md): local Python checks and package builds.

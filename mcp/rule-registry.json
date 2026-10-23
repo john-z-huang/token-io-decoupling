@@ -1,0 +1,552 @@
+{
+  "contract_version": 1,
+  "nodes": [
+    {
+      "node_id": "contract",
+      "owner_path": "references/coding/layer-02-workflow-concepts/contract.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "task objective",
+        "authorized scope",
+        "constraints",
+        "acceptance conditions"
+      ],
+      "required_evidence": [
+        "user or trusted directive",
+        "explicit task constraints"
+      ],
+      "legal_branches": [
+        "ready",
+        "amend",
+        "blocked"
+      ],
+      "evaluation_mode": "direct",
+      "failure_action": "block route entry until the Contract is complete or report the blocking uncertainty",
+      "next_checkpoint_ids": [
+        "environment"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/contract_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "environment",
+      "owner_path": "references/coding/layer-02-workflow-concepts/environment.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "runtime identity",
+        "required capabilities",
+        "available capabilities"
+      ],
+      "required_evidence": [
+        "session metadata",
+        "exposed capability inventory"
+      ],
+      "legal_branches": [
+        "available",
+        "partially unavailable",
+        "blocked"
+      ],
+      "evaluation_mode": "hybrid",
+      "failure_action": "record unavailable capabilities and block only dependent operations",
+      "next_checkpoint_ids": [
+        "mode"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/environment_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "mode",
+      "owner_path": "references/coding/layer-02-workflow-concepts/mode.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "valid mode decision",
+        "locked child-count budget when applicable",
+        "capability gate result"
+      ],
+      "required_evidence": [
+        "parent-controlled mode/count record"
+      ],
+      "legal_branches": [
+        "single-agent",
+        "multi-agent",
+        "blocked"
+      ],
+      "evaluation_mode": "hybrid",
+      "failure_action": "keep mode unreleased and do not enter a dependent route",
+      "next_checkpoint_ids": [
+        "context"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/mode_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "context",
+      "owner_path": "references/coding/layer-02-workflow-concepts/context.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "needed project context",
+        "source scope",
+        "unavailable context"
+      ],
+      "required_evidence": [
+        "direct owner references",
+        "bounded project evidence"
+      ],
+      "legal_branches": [
+        "sufficient",
+        "request evidence",
+        "blocked"
+      ],
+      "evaluation_mode": "direct",
+      "failure_action": "request bounded evidence or block decisions that depend on missing context",
+      "next_checkpoint_ids": [
+        "decision"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/context_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "decision",
+      "owner_path": "references/coding/layer-02-workflow-concepts/decision.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "decision question",
+        "available options",
+        "decision consequences"
+      ],
+      "required_evidence": [
+        "Decision Brief or equivalent decision evidence"
+      ],
+      "legal_branches": [
+        "decided",
+        "evidence-on-demand",
+        "blocked"
+      ],
+      "evaluation_mode": "hybrid",
+      "failure_action": "request the missing evidence or keep dependent implementation unreleased",
+      "next_checkpoint_ids": [
+        "slice"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/decision_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "slice",
+      "owner_path": "references/coding/layer-01-fundamental-concepts/execution-control.md",
+      "owner_section": "Interaction Slice",
+      "required_facts": [
+        "objective",
+        "authorized scope and mutations",
+        "return conditions",
+        "unreleased boundary"
+      ],
+      "required_evidence": [
+        "parent release for this bounded slice"
+      ],
+      "legal_branches": [
+        "released",
+        "amend",
+        "stop"
+      ],
+      "evaluation_mode": "deterministic",
+      "failure_action": "do not execute mutations until required slice fields and release are present",
+      "next_checkpoint_ids": [
+        "delegation",
+        "implementation"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-01-fundamental-concepts/execution-control_zh_cn.md",
+          "section": "Interaction Slice"
+        }
+      }
+    },
+    {
+      "node_id": "delegation",
+      "owner_path": "references/coding/layer-01-fundamental-concepts/delegation-state-record.md",
+      "owner_section": "Record shape",
+      "required_facts": [
+        "locked mode/count",
+        "allocation identity and role when applicable",
+        "released slice",
+        "worker identity binding when applicable"
+      ],
+      "required_evidence": [
+        "canonical parent record",
+        "trusted child identity evidence when applicable"
+      ],
+      "legal_branches": [
+        "not applicable",
+        "reserved",
+        "bound",
+        "blocked"
+      ],
+      "evaluation_mode": "deterministic",
+      "failure_action": "block child-dependent actions and preserve confirmed parent state",
+      "next_checkpoint_ids": [
+        "implementation"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-01-fundamental-concepts/delegation-state-record_zh_cn.md",
+          "section": "记录结构"
+        }
+      }
+    },
+    {
+      "node_id": "implementation",
+      "owner_path": "references/coding/layer-02-workflow-concepts/implementation.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "released objective",
+        "authorized mutation scope",
+        "current unreleased boundary"
+      ],
+      "required_evidence": [
+        "slice release",
+        "implementation result or blocker"
+      ],
+      "legal_branches": [
+        "complete",
+        "blocked",
+        "return for control"
+      ],
+      "evaluation_mode": "direct",
+      "failure_action": "stop at the boundary and report the result or blocker",
+      "next_checkpoint_ids": [
+        "control"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/implementation_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "control",
+      "owner_path": "references/coding/layer-01-fundamental-concepts/execution-control.md",
+      "owner_section": "Control Checkpoint",
+      "required_facts": [
+        "Progress Signal",
+        "current unreleased boundary",
+        "evidence request status when applicable"
+      ],
+      "required_evidence": [
+        "current slice outcome",
+        "evidence returned for any request"
+      ],
+      "legal_branches": [
+        "continue",
+        "amend",
+        "stop",
+        "evidence-on-demand"
+      ],
+      "evaluation_mode": "hybrid",
+      "failure_action": "do not release another slice until the control choice is supported",
+      "next_checkpoint_ids": [
+        "implementation",
+        "verification",
+        "decision"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-01-fundamental-concepts/execution-control_zh_cn.md",
+          "section": "Control Checkpoint"
+        }
+      }
+    },
+    {
+      "node_id": "verification",
+      "owner_path": "references/coding/layer-02-workflow-concepts/verification.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "current implementation/content epoch",
+        "applicable verification scope"
+      ],
+      "required_evidence": [
+        "current-epoch verification results"
+      ],
+      "legal_branches": [
+        "pass",
+        "failure",
+        "inconclusive",
+        "not applicable with reason"
+      ],
+      "evaluation_mode": "hybrid",
+      "failure_action": "classify the result and return affected failures through repair; do not accept stale evidence",
+      "next_checkpoint_ids": [
+        "repair",
+        "documentation",
+        "git",
+        "acceptance"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/verification_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "repair",
+      "owner_path": "references/coding/layer-02-workflow-concepts/repair.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "classified failure",
+        "authorized repair scope",
+        "affected verification epoch"
+      ],
+      "required_evidence": [
+        "repair authorization",
+        "repair result",
+        "re-verification for changed coverage"
+      ],
+      "legal_branches": [
+        "not applicable with reason",
+        "repair",
+        "blocked"
+      ],
+      "evaluation_mode": "hybrid",
+      "failure_action": "keep acceptance blocked and return changed content to current-epoch verification",
+      "next_checkpoint_ids": [
+        "verification"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/repair_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "documentation",
+      "owner_path": "references/coding/layer-02-workflow-concepts/documentation.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "documentation scope",
+        "affected documentation epoch"
+      ],
+      "required_evidence": [
+        "documentation and link checks when applicable",
+        "updated epoch state"
+      ],
+      "legal_branches": [
+        "complete",
+        "not applicable with reason",
+        "blocked"
+      ],
+      "evaluation_mode": "hybrid",
+      "failure_action": "resolve documentation failures before acceptance and invalidate affected evidence",
+      "next_checkpoint_ids": [
+        "verification",
+        "git"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/documentation_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "git",
+      "owner_path": "references/coding/layer-02-workflow-concepts/git.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "authorized Git effects",
+        "current Git metadata epoch",
+        "latest verified content fingerprints"
+      ],
+      "required_evidence": [
+        "read-only Git state and diff",
+        "staged/committed content match when applicable"
+      ],
+      "legal_branches": [
+        "no Git effect",
+        "authorized effect",
+        "blocked"
+      ],
+      "evaluation_mode": "hybrid",
+      "failure_action": "stop unauthorized Git effects and return content divergence to applicable verification",
+      "next_checkpoint_ids": [
+        "acceptance"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/git_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "acceptance",
+      "owner_path": "references/coding/layer-02-workflow-concepts/acceptance.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "all applicable checkpoint outcomes",
+        "current affected epochs",
+        "remaining limitations"
+      ],
+      "required_evidence": [
+        "latest required verification and completion evidence"
+      ],
+      "legal_branches": [
+        "complete",
+        "incomplete",
+        "blocked"
+      ],
+      "evaluation_mode": "hybrid",
+      "failure_action": "do not report completion; identify the unmet condition",
+      "next_checkpoint_ids": [],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/acceptance_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "task_intent",
+      "owner_path": "SKILL.md",
+      "owner_section": "Scope",
+      "required_facts": [
+        "user-requested outcome",
+        "task type"
+      ],
+      "required_evidence": [
+        "current user directive"
+      ],
+      "legal_branches": [
+        "coding",
+        "not coding",
+        "unclear"
+      ],
+      "evaluation_mode": "semantic",
+      "failure_action": "request clarification when intent cannot be grounded in available evidence",
+      "next_checkpoint_ids": [
+        "contract"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "SKILL_zh_cn.md",
+          "section": "适用范围"
+        }
+      }
+    },
+    {
+      "node_id": "output_class",
+      "owner_path": "references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation.md",
+      "owner_section": "Session mode selection",
+      "required_facts": [
+        "requested output class",
+        "required files or deliverables",
+        "delegation boundary"
+      ],
+      "required_evidence": [
+        "current Contract"
+      ],
+      "legal_branches": [
+        "code_configuration",
+        "skill_instructions",
+        "ordinary_documentation",
+        "other",
+        "unknown"
+      ],
+      "evaluation_mode": "semantic",
+      "failure_action": "keep output-dependent actions unreleased until the class is resolved",
+      "next_checkpoint_ids": [
+        "slice",
+        "delegation"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md",
+          "section": "会话模式选择"
+        }
+      }
+    },
+    {
+      "node_id": "contract_change",
+      "owner_path": "references/coding/layer-02-workflow-concepts/contract.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "proposed change to objective, scope, constraints, or acceptance"
+      ],
+      "required_evidence": [
+        "current Contract",
+        "new material fact or user direction"
+      ],
+      "legal_branches": [
+        "unchanged",
+        "amend",
+        "blocked"
+      ],
+      "evaluation_mode": "semantic",
+      "failure_action": "pause dependent work until the Contract change is explicitly dispositioned",
+      "next_checkpoint_ids": [
+        "contract",
+        "decision"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/contract_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    },
+    {
+      "node_id": "verification_impact",
+      "owner_path": "references/coding/layer-02-workflow-concepts/verification-epoch.md",
+      "owner_section": "Actions",
+      "required_facts": [
+        "changed state dimensions",
+        "coverage affected by the change"
+      ],
+      "required_evidence": [
+        "change summary",
+        "latest applicable verification evidence"
+      ],
+      "legal_branches": [
+        "implementation/content",
+        "documentation",
+        "Git metadata",
+        "multiple",
+        "none"
+      ],
+      "evaluation_mode": "semantic",
+      "failure_action": "treat unresolved affected coverage as stale and require applicable verification",
+      "next_checkpoint_ids": [
+        "verification",
+        "documentation",
+        "git"
+      ],
+      "owner_mirrors": {
+        "zh_cn": {
+          "path": "references/coding/layer-02-workflow-concepts/verification-epoch_zh_cn.md",
+          "section": "动作"
+        }
+      }
+    }
+  ]
+}

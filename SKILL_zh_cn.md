@@ -28,6 +28,8 @@ Coding 的委派和 Session 拓扑规则拆分为原子 reference：状态记录
 
 仓库或项目探索、实现、重构、调试、测试、文档、开发工具输出以及非简单 Git 工作均使用 Coding。Coding 工作流负责共用队列、模块组合、运行环境选择、模式路由、checkpoint、验证边界、文档/Git 边界和验收。
 
+可选增强子系统契约见[增强工作流架构契约](ENHANCED_ARCHITECTURE_zh_cn.md)；现有 Native 工作流仍然适用。
+
 ## 硬约束
 
 - 采取行动前记录用户、运行环境、仓库、权限、安全和 Session 硬约束。
