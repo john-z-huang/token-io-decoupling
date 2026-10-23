@@ -8,7 +8,7 @@
 
 ### 生命周期状态
 
-在父级记录中持久保存每个已创建子 Agent 的身份和生命周期。不得仅为清理而关闭、shutdown、归档、删除或移除子 Agent。运行时状态信息是短暂的情形下，即使状态不再可用，仍须在父级记录保留子 Agent ID 和状态。pending 或 running 时只能等待或发送已授权输入。只有返回最终结果和证据后才能进入 completed。
+在父级记录中持久保存每个已创建子 Agent 的身份和生命周期。不得仅为清理而关闭、shutdown、归档、删除或移除子 Agent。运行时状态信息是短暂的情形下，即使状态不再可用，仍须在父级记录保留子 Agent ID 和状态。pending 或 running 时，在可用情况下采用有界的事件驱动等待；只有状态变化时才更新记录，避免无变化时重复轮询或重写状态。只有返回最终结果和证据后才能进入 completed。应用配置的摘要频率，必需的里程碑反馈仍须输出。
 
 ### 错误与中断
 
@@ -41,3 +41,4 @@ Codex 也可通过已配置的 `SubagentStart`／`SubagentStop` Hooks 观察子�
 - [Coding Child Dispatch](delegation-child-dispatch_zh_cn.md) — 定位 Dispatch Preview 和 Worker 边界。
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement_zh_cn.md) — 定位获准修复和替换关系。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位上下文传输归属。
+- [Coding Session 审计可见性](session-audit-visibility_zh_cn.md) — 定位审计和摘要配置。

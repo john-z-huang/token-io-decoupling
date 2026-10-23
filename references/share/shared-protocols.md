@@ -19,7 +19,7 @@ The root parent owns the parent-controlled route for the current request. Every 
 
 ## Dispatch Preview
 
-After an authorized workflow decides to create a child or send a new instruction to an independent Worker, show a minimal preview immediately before the action. It is a visible summary, not a full prompt or hidden reasoning, and cannot replace required user confirmation.
+After an authorized workflow decides to create a child or send a new instruction to an independent Worker, show the concise preview immediately before the action only when the configured audit preset selects a preview; when it selects full display, show the complete safe message body. It is a visible summary, not a full prompt or hidden reasoning, and cannot replace required user confirmation.
 
 Use only the fields that matter:
 
@@ -27,11 +27,11 @@ Use only the fields that matter:
 Dispatch → <role> | Task: <objective>; Scope: <needed paths>; Constraints: <direct execution limits>; Runtime: <only if required>
 ```
 
-Target 1–3 lines and about 80 tokens or less; compress near 120 tokens. On Worker reuse, show only the new delta. Same-Session role changes and local work are not Dispatch and must not produce a fake self-dispatch.
+When the configured preset selects preview, use no more than 3 items (objective, allowed changes, return conditions) and 600 Unicode code points total, counting the displayed Markdown source including whitespace and link text/destinations. This is not a token estimate and requires no per-message counting-tool call. Prefer concise wording and pointers to the complete body; if material authorization or failure evidence cannot fit, exceed only as needed and state why, without truncation or splitting to evade the limit. On Worker reuse, show only the new delta. Same-Session role changes and local work are not Dispatch and must not produce a fake self-dispatch.
 
 ## Event-driven feedback
 
-Workers keep ordinary reads, local analysis, routine edits, repeated checks, and raw logs in their own context. Send the parent a short signal only for a material milestone, a decision requiring parent judgment, a block, a major deviation, or inability to meet the Contract. Return only the facts, evidence pointers, and next need required by the next decision; never attach complete logs, diffs, screenshots, OCR, or histories. Completion returns a compressed result, verification conclusion, and remaining risks.
+Workers keep ordinary reads, local analysis, routine edits, repeated checks, and raw logs in their own context. Send the parent a short signal only for a material milestone, a decision requiring parent judgment, a block, a major deviation, or inability to meet the Contract. Return only the facts, evidence pointers, and next need required by the next decision; never attach complete logs, diffs, screenshots, OCR, or histories. Completion returns a compressed result, verification conclusion, and remaining risks. The complete actual task and return bodies must remain available to the responsible parent and be read before reliance; only their displayed copies follow the configured audit preset. A compressed signal or summary never substitutes for the actual returned body or its review.
 
 ## Evidence-on-Demand
 
@@ -39,6 +39,6 @@ The decision role requests targeted evidence from the role that owns the raw sta
 
 ## Cache-aware stability
 
-Prefer `stable prefix + small delta`: preserve stable decisions and working context, then append only new goals, amendments, or verification requirements. Do not periodically rewrite the full Contract or task history. Cache keys, hit conditions, quota, latency, and quality effects are runtime-defined and must not be claimed. If stable history impairs correctness, compress or rebuild once.
+Prefer `stable prefix + small delta`: preserve stable decisions and working context, then append only new goals, amendments, or verification requirements. Do not periodically rewrite the full Contract or task history. Prefer event-driven bounded waits and update state only when it changes. Cache keys, hit conditions, quota, latency, and quality effects are runtime-defined and must not be claimed. If stable history impairs correctness, compress or rebuild once.
 
 This module cannot bypass user authorization, permissions, product restrictions, repository rules, safety limits, or runtime capability checks.

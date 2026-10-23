@@ -12,7 +12,7 @@ For high-uncertainty work, predeclare a short sequence of evidence-producing sta
 
 ### Progress Signals and stage feedback
 
-At a declared stage boundary, return only the compressed progress signals needed for the next decision: material status, findings, changed scope, verification, issue, and need. Keep ordinary reads, local edits, formatter/lint fixes, straightforward test repairs, and repeated compile/test cycles inside the approved stage. Do not add checkpoints or execution slices merely to report low-value mechanics.
+At a declared stage boundary, return only the compressed progress signals needed for the next decision: material status, findings, changed scope, verification, issue, and need. Update the parent record by delta when evidence or status changes; do not repeat unchanged progress or rewrite stable state. Keep ordinary reads, local edits, formatter/lint fixes, straightforward test repairs, and repeated compile/test cycles inside the approved stage. Do not add checkpoints or execution slices merely to report low-value mechanics. Apply [session audit visibility](session-audit-visibility.md) summary cadence while retaining required stage feedback.
 
 When stage evidence shows that the next stage depends on high-value judgment, route the signal to the Decision Gate. The Decision Gate owns solution selection and Contract updates; this module does not restate those policies.
 
@@ -37,3 +37,4 @@ A configured `PostToolUse` can provide actual tool outcomes at a stage boundary 
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice boundaries.
 - [Coding Execution Planning](execution-planning.md) — locate bounded plan and stage outline ownership.
 - [Coding Execution Decision Gate](execution-decision-gate.md) — locate high-value decision conditions.
+- [Coding Session Audit Visibility](session-audit-visibility.md) — locate summary cadence.

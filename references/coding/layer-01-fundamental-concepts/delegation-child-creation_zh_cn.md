@@ -10,7 +10,7 @@
 
 创建子代理时，父级必须在子代理创建操作中选择并设置该职责要求的模型与 reasoning-effort 参数，并应用适用的运行时绑定。若创建操作无法设置或确认必需配置，则阻止创建。此核验仅限创建环节。若创建操作已接受必需参数，但没有提供额外的运行时解析观察，可直接继续任务，无需额外观察。不得要求子代理自行检查或报告模型、effort。
 
-必须使用运行环境真实且由父级控制的子代理机制。创建前必须具有已放行的 Multi-Agent 门禁、锁定的正整数数量、已分配职责且尚未绑定子代理的预留名额，以及本次 `slice_status: released` 的 Interaction Slice（明确目标、路径/修改、返回条件和 memo 派发开关）。输出必须是实际代码/配置实现，或本 Skill 指令/参考文档的编写编辑。普通非 Skill 文档（包括伴随代码修改的文档）由根父级编写，不得触发子代理创建。不得在会话开始时或仅因选择 Multi-Agent 就初始化子代理。预留名额或模式放行本身不授权创建子代理。不得将 peer chat 或无法跟踪的通用任务当作持久子代理。必须具备子代理身份、父级控制的返回/继续路径、有界等待和可观察生命周期。创建后把实际身份与生命周期绑定到同一 allocation；不得将该名额释放给另一个子代理。能力缺失或无法核实时阻塞创建，不更改模式或数量。
+必须使用运行环境真实且由父级控制的子代理机制。创建前必须具有已放行的 Multi-Agent 门禁、锁定的正整数数量、已分配职责且尚未绑定子代理的预留名额，以及本次 `slice_status: released` 的 Interaction Slice（明确目标、路径/修改、返回条件和 memo 派发开关）。在已放行任务快照中包含锁定的[会话审计可见性](session-audit-visibility_zh_cn.md)配置，使 Worker 能遵循消息可见性和摘要频率。输出必须是实际代码/配置实现，或本 Skill 指令/参考文档的编写编辑。普通非 Skill 文档（包括伴随代码修改的文档）由根父级编写，不得触发子代理创建。不得在会话开始时或仅因选择 Multi-Agent 就初始化子代理。预留名额或模式放行本身不授权创建子代理。不得将 peer chat 或无法跟踪的通用任务当作持久子代理。必须具备子代理身份、父级控制的返回/继续路径、有界等待和可观察生命周期。创建后把实际身份与生命周期绑定到同一 allocation；不得将该名额释放给另一个子代理。能力缺失或无法核实时阻塞创建，不更改模式或数量。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
@@ -46,3 +46,4 @@
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement_zh_cn.md) — 定位获准的复用和替换。
 - [Coding Session Model](session-model_zh_cn.md) — 定位 role 和 Session 归属。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位必要的上下文传输归属。
+- [Coding Session 审计可见性](session-audit-visibility_zh_cn.md) — 定位会话审计配置。

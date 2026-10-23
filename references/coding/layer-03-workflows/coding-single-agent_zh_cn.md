@@ -11,7 +11,16 @@ flowchart TD
     S01["01 Contract / 契约"]
     S02["02 Environment / 环境与能力"]
     S03["03 Mode / 模式与数量"]
-    S04["04 Session / 会话职责与安全推理摘要"]
+    S04["04 Session / 审计配置与摘要频率"]
+    D_AUDIT_CONFIG{"复用有效显式／已完成配置、恢复 pending 提问，还是仅在 unasked 时询问？"}
+    ACT_AUDIT_PROMPT["仅在 unasked 时调用固定审计问题；记录实际提问时间与截止时间"]
+    D_AUDIT_REPLY{"有效答复、无效/歧义答复、已验证超时或不可用？"}
+    ACT_AUDIT_REPLY["记录有效答复；仅更新所选 Root 字段"]
+    ACT_AUDIT_CLARIFY["仅澄清无效/歧义字段；保留 pending 提问"]
+    D_AUDIT_CORRECTION{"有效更正、仍无效/歧义或明确选择默认值？"}
+    ACT_AUDIT_DEFAULT["记录 Root 明确选择 balanced/milestone_only；保留 Worker 值和超时历史"]
+    ACT_AUDIT_WAIT["截止前等待；保留 pending 状态"]
+    ACT_AUDIT_TIMEOUT["无回复且实际经过>=60秒；Root 默认 balanced/milestone_only；保留 Worker 值，缺失才补 full"]
     S05["05 Context / 上下文与可选项目 Memory"]
     S06["06 Decision / 决策与两级规划"]
     S07["07 Implementation / 语言服务器代码结构"]
@@ -42,7 +51,27 @@ flowchart TD
     S01 --> S02
     S02 --> S03
     S03 --> S04
-    S04 --> S05
+    S04 --> D_AUDIT_CONFIG
+    D_AUDIT_CONFIG -- 是／迁移后复用 --> S05
+    D_AUDIT_CONFIG -- unasked／仅首次符合条件时询问 --> ACT_AUDIT_PROMPT
+    D_AUDIT_CONFIG -- pending／尚无答复；恢复原截止时间 --> D_AUDIT_REPLY
+    D_AUDIT_CONFIG -- pending／已观察到无效答复 --> D_AUDIT_CORRECTION
+    D_AUDIT_CONFIG -- 配置无效／定向澄清 --> ACT_AUDIT_CLARIFY
+    D_AUDIT_CONFIG -- 不可用／未解决的 schema 冲突 --> BLOCK
+    ACT_AUDIT_PROMPT --> D_AUDIT_REPLY
+    D_AUDIT_REPLY -- 有效实际答复 --> ACT_AUDIT_REPLY
+    ACT_AUDIT_REPLY --> S05
+    D_AUDIT_REPLY -- 无效／歧义答复 --> ACT_AUDIT_CLARIFY
+    ACT_AUDIT_CLARIFY -- 沿用原问题／原截止时间 --> D_AUDIT_CORRECTION
+    D_AUDIT_CORRECTION -- 有效更正 --> ACT_AUDIT_REPLY
+    D_AUDIT_CORRECTION -- 仍无效／歧义 --> ACT_AUDIT_CLARIFY
+    D_AUDIT_CORRECTION -- 用户明确选择默认值 --> ACT_AUDIT_DEFAULT
+    ACT_AUDIT_DEFAULT --> S05
+    D_AUDIT_REPLY -- pending／尚未到期 --> ACT_AUDIT_WAIT
+    ACT_AUDIT_WAIT -- 检查答复／保留截止时间 --> D_AUDIT_REPLY
+    D_AUDIT_REPLY -- 无回复／实际经过>=60秒 --> ACT_AUDIT_TIMEOUT
+    ACT_AUDIT_TIMEOUT --> S05
+    D_AUDIT_REPLY -- 提问或计时不可用 --> BLOCK
     S05 --> ACT_PLAN_SCAN
     ACT_PLAN_SCAN --> D_PLAN_MATCH
     ACT_PLAN_SCAN -- 失败／不可用 --> BLOCK
@@ -114,7 +143,17 @@ flowchart TD
 1. **Contract 与共用协议。** 确认 [Contract 检查点](../layer-02-workflow-concepts/contract_zh_cn.md)明确目标、`ACTIVE_CONSTRAINTS` 中的用户/运行环境/仓库/权限/安全硬约束、已授权影响、已定决策、未解决问题和验收条件。应用[共享协议](../../share/shared-protocols_zh_cn.md)：维护一份当前 Semantic Contract，区分已观察事实与假设，后续变化保持稳定前缀并以小幅增量修订；必需上下文缺失时停止依赖切片。不得把未解决的问题当作实现授权。
 2. **运行环境与能力。** 确认[运行环境检查点](../layer-02-workflow-concepts/environment_zh_cn.md)依据明确元数据将环境归入唯一分支，工具和工作区信息只作辅助证据；不得用浏览器、GUI 或视觉内容识别运行环境。分类仍有歧义时，使用厂商 owner 的原文兜底问题并暂停。检查[运行环境能力清单](../layer-02-workflow-concepts/environment-capability-inventory_zh_cn.md)中的真实模型、Profile 所需的每项参数、工具、文件系统/权限范围及 Session 能力。按[运行环境与模型厂商支持](../layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)应用该分支的模型规则。把缺失或未知的要求记入 `unavailable_capabilities`；阻塞依赖工作，不得推断或替换能力。
 3. **模式与任务记录。** 确认[模式检查点](../layer-02-workflow-concepts/mode_zh_cn.md)只放行 `Single-Agent Coding`。核对[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)和[状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)：`gate_status: released`、`child_count: 0`、`allocations: []`，且没有未解决的能力阻塞。依据[模式重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md)保持本次会话模式/数量不变；后续冲突指令阻塞依赖工作，直到新会话。本路线不得创建、派生、发送消息、移交或模拟额外 Agent 或 Session。
-4. **Session 与职责边界。** 核对 [Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)和[职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md)：当前 Session 承担 Input-side Reasoning、Primary Output、文档/Git 和允许的检查阶段；职责标签不产生独立验证。按[推理摘要可见性](../layer-01-fundamental-concepts/reasoning-summary-visibility_zh_cn.md)，在每个已完成推理回合边界，使用 `[[REASONING_SUMMARY_BEGIN]]` 和 `[[REASONING_SUMMARY_END]]` 包围简洁摘要，并让每个标记各自独占一行。按会话语言依序完整填写结论/进展、关键证据及来源、简短依据、重要假设/不确定性/阻塞和下一步；普通内容放在标记外。无实质变化时保留全部字段和两个标记，并说明无新增证据、决定或假设及下一步。不得包含私有逐步推理、隐藏思维链、原始 scratchpad、秘密或未核实断言。标记块缺失、格式损坏或字段不完整时，报告限制并阻塞依赖动作。按 [Context Firewall](../layer-01-fundamental-concepts/session-context-firewall_zh_cn.md)渐进读取，限制原始项目状态。语义决策和最终验收仍由输入侧阶段负责。
+4. **Session 与职责边界。** 核对[Session 模型](../layer-01-fundamental-concepts/session-model_zh_cn.md)和[职责归属](../layer-01-fundamental-concepts/session-role-ownership_zh_cn.md)：当前 Session 承担 Input-side Reasoning、Primary Output、文档/Git 和允许的检查阶段；职责标签不产生独立验证。
+   - **审计记录与迁移。** [会话审计可见性](../layer-01-fundamental-concepts/session-audit-visibility_zh_cn.md)定义配置值和可见性语义；本路线负责解析。读取记录。对于已知 v1，逐字段保留有效值/来源；任一 Root 字段为 `explicit` 时复用该组合，只将缺失 Root 字段补为 v2 默认 `balanced`/`milestone_only`；保留有效 Worker cadence，缺失时补 `full/default`。若 Root 两字段均为 `default` 且没有已完成提问，则询问一次，并在 pending 期间保留 v1 原值。已知映射解决后（可复用显式字段组合时立即解决；默认组合则在有效答复/真实超时后解决），应用结果并设置 `revision: session-audit/v2`。非法字段、同字段冲突或未知修订版本需定向澄清；不猜测或重置无关值。
+   - **复用与恢复。** 复用有效显式启动值或已完成记录。新显式启动选择记录状态 `reused` 和 resolution `startup_explicit`；复用已完成记录时保留原状态和 resolution。若为 `pending`，不得重发模板：`response_at: null` 时按原截止时间恢复等待；已观察到答复时从该答复继续定向更正，绝不自动超时。
+   - **首次提问。** 仅对需要提问的 `unasked` 记录询问一次，使用以下固定模板且不改写：
+
+     > 当前 Coding 会话的 Root 审计偏好？选择一项：**balanced/milestone_only**（推荐默认）、**economy/off**（最低可见性）或 **full/full**。也可用 `audit_mode=<economy|balanced|full>` 和/或 `root_reasoning_cadence=<off|milestone_only|full>` 自定义这些字段。Worker cadence 保留已有有效值；缺失时默认为 `full`。若 60 秒内未回复，Root 默认 **balanced/milestone_only**；Worker cadence 保留已有有效值，缺失时才默认为 **full**。这只影响显示和可选摘要，不授予任何授权。
+
+     若有实际可用且获授权的异步输入能力则使用；否则仅在运行时允许时使用普通可见文本。记录实际观察到的 UTC 提问时间和准确的 60 秒截止时间，将状态设为 `pending`、`response_at: null`、resolution `awaiting_input`。使用可被用户输入中断、每次不超过 60 秒的间隔等待。若提问、计时或可中断有界等待不可用，记录 `unavailable`，不得猜测，并阻塞本门；独立工作可继续。
+   - **答复与澄清。** 有效答复仅更新点名 Root 字段并将来源设为 `explicit`，状态设为 `answered`，resolution 设为 `question_reply`；有效迟到答复使用 `question_reply_after_timeout`，保留超时证据，只影响后续消息，不重放。预设同时设置 Root 两字段；键值自由文本仅更新点名字段，其他缺失 Root 字段默认为 `balanced`/`milestone_only`。`response_at` 记录实际观察时间。无效/歧义答复保持 `pending`；沿原问题/截止时间只澄清受影响字段，更新 `response_at`；观察到任何答复后不得自动超时。
+   - **超时与读回核对。** 仅当从未观察到任何答复且可信时钟确认实际经过至少 60 秒时，将状态设为 `timed_out`、resolution 设为 `timeout_default`。此时 Root 使用 `balanced`/`milestone_only` 且来源为 `default`；Worker 保留有效频率，缺失时补 `full/default`。读回值、来源、提问字段和修订版本。此偏好不改变 Mode/count 或授权。记录 `worker_log_visibility: Not applicable` 和 `worker_log_evidence: 本路线不创建 Worker`。
+   - 根据已记录的 Root 频率应用[推理摘要可见性](../layer-01-fundamental-concepts/reasoning-summary-visibility_zh_cn.md)：在要求的边界使用其标记和完整安全摘要字段；必需摘要缺失或格式错误时，报告并阻塞依赖动作。按 [Context Firewall](../layer-01-fundamental-concepts/session-context-firewall_zh_cn.md)渐进读取并限制原始项目状态。语义决策和最终验收由输入侧阶段负责。
 5. **上下文。** 在 [Context 检查点](../layer-02-workflow-concepts/context_zh_cn.md)提出下一切片所需回答的最小问题，只读取回答该问题必需的源文件、元数据、历史或证据。复用上下文前核对范围、owner、源路径、新鲜度和 epoch；只刷新受影响的事实。在此 Context 阶段，始终使用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)列出 `plans/` 下的活动计划，筛选与当前任务相关的计划并逐一读取。核对任务匹配、新鲜度及与当前指令的一致性；当前指令优先，报告冲突并重新评估，Memory 不构成授权。没有匹配的活动计划时，记录 `Not applicable` 及原因。列表或相关计划读取不可用/失败时，报告并阻塞依赖该上下文的工作；不得回退到文件。回答问题需要复用 Agent 项目知识时，应用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)读取相关项目 Memory，并对照权威项目文件核验来源指针和新鲜度。不存在相关 Memory 或无需跨会话知识时，记录 `Not applicable` 及原因。能力不可用时，报告限制并读取获准的权威来源；只有必需事实无法通过其他方式确认时才阻塞。Memory 不能替代权威来源、Contract 或验证。不需要有界侦察或恢复时也记录原因。
 6. **决策与两级规划。** 在 [Decision](../layer-02-workflow-concepts/decision_zh_cn.md)说明实质问题、事实、约束、选项、选定方向、舍弃方案、授权路径/修改和未发布边界。应用[决策门禁](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md)：除非任务符合简单快速路径，否则先形成包含 Problem、Known facts、Assumptions and unknowns、Decision questions、Solution envelope、Risks、Acceptance 和 Stages/checkpoints 的简洁 Decision Brief；实质选择未定时只发布侦察。用[执行规划](../layer-01-fundamental-concepts/execution-planning_zh_cn.md)安排有界检查、实现和聚焦检查，并写明预期证据。用户任务目标是规划、探索、制定/输出/更新计划时，应用[规划意图下的计划 Memory 生命周期](../layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle_zh_cn.md)持久化精简综合计划并读回确认存储结果；用户任务目标不包含规划、探索、制定/输出/更新计划时，记录 `Not applicable` 及原因。必需持久化能力不可用或写入/读回失败时，报告失败并阻塞依赖工作；不得回退到文件。放行一个切片前确认所选方向符合 Contract。
 7. **Interaction Slice 与实现。** 按[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)写明 `Objective`、`Authorized scope/mutations`、`Return conditions` 和 `Unreleased boundary`。在 [Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)重新读取放行内容并只查看必需文件。需要理解代码结构时，应用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)：使用可用的语言服务器查询，并将准确符号/路径指针保留为证据。能力或所需语言语义不可用时，说明限制并使用定向文本搜索和小范围读取；不得声称获得 LSP 证据；必需关系仍无法核实时阻塞。无需查询代码结构时，记录 `Not applicable` 及原因。随后实施最小授权改动，排除无关清理和外部影响，运行聚焦临时检查，并返回修改路径、证据、问题及仍未发布的边界。临时检查不是最终验收。

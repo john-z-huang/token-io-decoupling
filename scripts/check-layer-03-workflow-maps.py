@@ -31,9 +31,19 @@ ROUTE_SPECS = {
         'steps': ('Contract', 'Environment', 'Mode', 'Session', 'Context', 'Decision',
                   'Implementation', 'Stage Feedback', 'Control', 'Verification',
                   'Repair', 'Documentation', 'Git', 'Acceptance'),
-        'branches': {'D_PLAN', 'ACT_PLAN', 'D_PLAN_SAVED', 'D_PLAN_MATCH', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ', 'D_ARCHIVE', 'ACT_ARCHIVE', 'D_ARCHIVED', 'D_RECON', 'ACT_RECON', 'D_CONTROL', 'D_VERIFY', 'D_DOC', 'D_GIT', 'BLOCK', 'DONE'},
+        'branches': {'D_PLAN', 'ACT_PLAN', 'D_PLAN_SAVED', 'D_PLAN_MATCH', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ', 'D_ARCHIVE', 'ACT_ARCHIVE', 'D_ARCHIVED', 'D_RECON', 'ACT_RECON', 'D_CONTROL', 'D_VERIFY', 'D_DOC', 'D_GIT', 'D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY', 'ACT_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT', 'ACT_AUDIT_WAIT', 'ACT_AUDIT_TIMEOUT', 'BLOCK', 'DONE'},
         'edges': {
-            ('S01', 'S02'), ('S02', 'S03'), ('S03', 'S04'), ('S04', 'S05'),
+            ('S01', 'S02'), ('S02', 'S03'), ('S03', 'S04'), ('S04', 'D_AUDIT_CONFIG'),
+            ('D_AUDIT_CONFIG', 'S05'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'),
+            ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'), ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'),
+            ('D_AUDIT_CONFIG', 'BLOCK'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'),
+            ('ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'),
+            ('ACT_AUDIT_REPLY', 'S05'), ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'),
+            ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'),
+            ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'),
+            ('ACT_AUDIT_DEFAULT', 'S05'), ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'),
+            ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'),
+            ('ACT_AUDIT_TIMEOUT', 'S05'), ('D_AUDIT_REPLY', 'BLOCK'),
             ('S05', 'ACT_PLAN_SCAN'), ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_PLAN_SCAN', 'BLOCK'),
             ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'D_RECON'),
             ('ACT_PLAN_READ', 'D_RECON'), ('ACT_PLAN_READ', 'BLOCK'),
@@ -58,9 +68,19 @@ ROUTE_SPECS = {
                   'Verification', 'Repair', 'Documentation', 'Git', 'Acceptance'),
         'branches': {'D_BOOT', 'ACT_BOOT_PLAN', 'D_PLAN', 'ACT_PLAN', 'D_PLAN_SAVED',
                      'D_RECON', 'ACT_RECON_PLAN', 'D_MEMO', 'ACT_MEMO', 'D_CONTROL',
-                     'D_VERIFY', 'D_DOC', 'D_GIT', 'D_PLAN_MATCH', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ', 'D_ARCHIVE', 'ACT_ARCHIVE', 'D_ARCHIVED', 'BLOCK', 'DONE'},
+                     'D_VERIFY', 'D_DOC', 'D_GIT', 'D_PLAN_MATCH', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ', 'D_ARCHIVE', 'ACT_ARCHIVE', 'D_ARCHIVED', 'D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY', 'ACT_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT', 'ACT_AUDIT_WAIT', 'ACT_AUDIT_TIMEOUT', 'BLOCK', 'DONE'},
         'edges': {
-            ('M01', 'M02'), ('M02', 'M03'), ('M03', 'M04'), ('M04', 'M05'),
+            ('M01', 'M02'), ('M02', 'M03'), ('M03', 'M04'), ('M04', 'D_AUDIT_CONFIG'),
+            ('D_AUDIT_CONFIG', 'M05'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'),
+            ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'), ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'),
+            ('D_AUDIT_CONFIG', 'BLOCK'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'),
+            ('ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'),
+            ('ACT_AUDIT_REPLY', 'M05'), ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'),
+            ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'),
+            ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'),
+            ('ACT_AUDIT_DEFAULT', 'M05'), ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'),
+            ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'),
+            ('ACT_AUDIT_TIMEOUT', 'M05'), ('D_AUDIT_REPLY', 'BLOCK'),
             ('M05', 'D_BOOT'), ('D_BOOT', 'ACT_BOOT_PLAN'), ('ACT_BOOT_PLAN', 'M06'), ('D_BOOT', 'M06'),
             ('M06', 'ACT_PLAN_SCAN'), ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_PLAN_SCAN', 'BLOCK'),
             ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'M07'),
@@ -94,6 +114,95 @@ PLAN_NODE_LABELS = {
            'D_PLAN_SAVED': '计划 Memory 是否写入并读回核验？',
            'D_ARCHIVE': '是否存在本任务对应的活动计划 Memory？',
            'D_PLAN_MATCH': '是否存在相关活动计划？', 'D_ARCHIVED': '归档计划是否已核验？'},
+}
+
+AUDIT_NODE_LABEL_REQUIREMENTS = {
+    'en': {
+        'D_AUDIT_CONFIG': ('valid explicit', 'completed', 'pending', 'unasked'),
+        'ACT_AUDIT_PROMPT': ('fixed audit question', 'only if unasked', 'deadline'),
+        'D_AUDIT_REPLY': ('valid reply', 'invalid/ambiguous', 'verified timeout', 'unavailable'),
+        'ACT_AUDIT_REPLY': ('valid reply', 'selected root fields'),
+        'ACT_AUDIT_CLARIFY': ('only invalid/ambiguous fields', 'pending prompt'),
+        'D_AUDIT_CORRECTION': ('valid correction', 'still invalid/ambiguous', 'explicit default'),
+        'ACT_AUDIT_DEFAULT': ('explicit root balanced/milestone_only', 'preserve worker value', 'timeout history'),
+        'ACT_AUDIT_WAIT': ('before deadline', 'pending state'),
+        'ACT_AUDIT_TIMEOUT': ('no reply', 'actual elapsed time >=60s', 'default root balanced/milestone_only', 'preserve worker or fill full'),
+    },
+    'zh': {
+        'D_AUDIT_CONFIG': ('有效显式', '已完成', 'pending', 'unasked'),
+        'ACT_AUDIT_PROMPT': ('固定审计问题', '仅在 unasked', '截止时间'),
+        'D_AUDIT_REPLY': ('有效答复', '无效/歧义答复', '已验证超时', '不可用'),
+        'ACT_AUDIT_REPLY': ('有效答复', '所选 root 字段'),
+        'ACT_AUDIT_CLARIFY': ('仅澄清无效/歧义字段', 'pending 提问'),
+        'D_AUDIT_CORRECTION': ('有效更正', '仍无效/歧义', '明确选择默认值'),
+        'ACT_AUDIT_DEFAULT': ('root 明确选择 balanced/milestone_only', '保留 worker 值', '超时历史'),
+        'ACT_AUDIT_WAIT': ('截止前等待', '保留 pending 状态'),
+        'ACT_AUDIT_TIMEOUT': ('无回复', '实际经过>=60秒', 'root 默认 balanced/milestone_only', '保留 worker 值，缺失才补 full'),
+    },
+}
+
+AUDIT_NODE_LABELS = {
+    'en': {
+        'D_AUDIT_CONFIG': 'Reuse valid explicit/completed settings, resume pending prompt, or ask if unasked?',
+        'ACT_AUDIT_PROMPT': 'Ask fixed audit question only if unasked; record actual prompt and deadline',
+        'D_AUDIT_REPLY': 'Valid reply, invalid/ambiguous reply, verified timeout, or unavailable?',
+        'ACT_AUDIT_REPLY': 'Record valid reply; update only selected Root fields',
+        'ACT_AUDIT_CLARIFY': 'Clarify only invalid/ambiguous fields; retain pending prompt',
+        'D_AUDIT_CORRECTION': 'Valid correction, still invalid/ambiguous, or explicit default?',
+        'ACT_AUDIT_DEFAULT': 'Record explicit Root balanced/milestone_only; preserve Worker value and timeout history',
+        'ACT_AUDIT_WAIT': 'Wait before deadline; preserve pending state',
+        'ACT_AUDIT_TIMEOUT': 'No reply and actual elapsed time >=60s; default Root balanced/milestone_only; preserve Worker or fill full',
+    },
+    'zh': {
+        'D_AUDIT_CONFIG': '复用有效显式／已完成配置、恢复 pending 提问，还是仅在 unasked 时询问？',
+        'ACT_AUDIT_PROMPT': '仅在 unasked 时调用固定审计问题；记录实际提问时间与截止时间',
+        'D_AUDIT_REPLY': '有效答复、无效/歧义答复、已验证超时或不可用？',
+        'ACT_AUDIT_REPLY': '记录有效答复；仅更新所选 Root 字段',
+        'ACT_AUDIT_CLARIFY': '仅澄清无效/歧义字段；保留 pending 提问',
+        'D_AUDIT_CORRECTION': '有效更正、仍无效/歧义或明确选择默认值？',
+        'ACT_AUDIT_DEFAULT': '记录 Root 明确选择 balanced/milestone_only；保留 Worker 值和超时历史',
+        'ACT_AUDIT_WAIT': '截止前等待；保留 pending 状态',
+        'ACT_AUDIT_TIMEOUT': '无回复且实际经过>=60秒；Root 默认 balanced/milestone_only；保留 Worker 值，缺失才补 full',
+    },
+}
+
+AUDIT_EDGE_LABELS = {
+    'en': {
+        ('D_AUDIT_CONFIG', 'AUDIT_NEXT'): 'yes / migration reuse',
+        ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'): 'unasked / first eligible question only',
+        ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'): 'pending / no reply observed; resume original deadline',
+        ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'): 'pending / invalid reply already observed',
+        ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'): 'invalid config / focused clarification',
+        ('D_AUDIT_CONFIG', 'BLOCK'): 'unavailable / unresolved schema conflict',
+        ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'): 'valid actual reply',
+        ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'): 'invalid / ambiguous reply',
+        ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'): 'same prompt / original deadline',
+        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'): 'valid correction',
+        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'): 'still invalid / ambiguous',
+        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'): 'explicit default choice',
+        ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'): 'pending / before deadline',
+        ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'): 'check reply / retain deadline',
+        ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'): 'no reply / actual elapsed >=60s',
+        ('D_AUDIT_REPLY', 'BLOCK'): 'prompt or timing unavailable',
+    },
+    'zh': {
+        ('D_AUDIT_CONFIG', 'AUDIT_NEXT'): '是／迁移后复用',
+        ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'): 'unasked／仅首次符合条件时询问',
+        ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'): 'pending／尚无答复；恢复原截止时间',
+        ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'): 'pending／已观察到无效答复',
+        ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'): '配置无效／定向澄清',
+        ('D_AUDIT_CONFIG', 'BLOCK'): '不可用／未解决的 schema 冲突',
+        ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'): '有效实际答复',
+        ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'): '无效／歧义答复',
+        ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'): '沿用原问题／原截止时间',
+        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'): '有效更正',
+        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'): '仍无效／歧义',
+        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'): '用户明确选择默认值',
+        ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'): 'pending／尚未到期',
+        ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'): '检查答复／保留截止时间',
+        ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'): '无回复／实际经过>=60秒',
+        ('D_AUDIT_REPLY', 'BLOCK'): '提问或计时不可用',
+    },
 }
 
 
@@ -174,6 +283,21 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
     for name, label in PLAN_NODE_LABELS[lang].items():
         if name in nodes and label not in nodes[name]:
             errors.append(f'{path}: node {name} must identify {label}')
+    audit_nodes = AUDIT_NODE_LABEL_REQUIREMENTS[lang]
+    for name, fragments in audit_nodes.items():
+        for fragment in fragments:
+            if name in nodes and fragment.casefold() not in nodes[name].casefold():
+                errors.append(f'{path}: node {name} must identify {fragment}')
+    audit_edges = dict(AUDIT_EDGE_LABELS[lang])
+    audit_edges[('D_AUDIT_CONFIG', f'{prefix}05')] = audit_edges.pop(('D_AUDIT_CONFIG', 'AUDIT_NEXT'))
+    map_text = maps[0].group(2)
+    for (source, target), label in audit_edges.items():
+        match = re.search(
+            r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+' + re.escape(target) + r'\s*$',
+            map_text,
+        )
+        if not match or label.casefold() not in match.group(1).casefold():
+            errors.append(f'{path}: audit edge {source} -> {target} must label {label}')
     recorded_steps = [int(match.group(1)) for match in STEP_RE.finditer(checklist_section[0])]
     wanted_steps = list(range(1, len(steps) + 1))
     if recorded_steps != wanted_steps:

@@ -12,7 +12,7 @@ Owns instruction analysis, project-environment confirmation, and direct confirma
 
 ### Primary Output Role
 
-Owns execution of the parent's precise, released task instructions, including bounded exploration within the confirmed scope, evidence compression, code/configuration materialization, repairs within the released slice, and provisional implementation checks. Under the Multi-Agent route, create this child only after the normal release gates and only for actual code/configuration implementation or authorship/editing of this Skill's instructions/reference documents. It reads progressively and reports any fact that contradicts the parent's confirmed premises; it cannot take over the prerequisite instruction analysis, environment confirmation, or code-detail confirmation, or change unresolved goals, constraints, architecture, or acceptance criteria. It does not own final acceptance or non-trivial Git work.
+Owns execution of the parent's precise, released task instructions, including bounded exploration within the confirmed scope, evidence compression, code/configuration materialization, repairs within the released slice, and provisional implementation checks. Within the existing Contract, it proactively designs and runs applicable negative, boundary, and concurrency checks; it reports gaps and evidence. A check or fix outside released scope, or one requiring a new architecture decision, returns to the parent before action. Under the Multi-Agent route, create this child only after the normal release gates and only for actual code/configuration implementation or authorship/editing of this Skill's instructions/reference documents. It reads progressively and reports any fact that contradicts the parent's confirmed premises; it cannot take over the prerequisite instruction analysis, environment confirmation, or code-detail confirmation, or change unresolved goals, constraints, architecture, or acceptance criteria. It does not own final acceptance or non-trivial Git work. Apply the configured Worker summary cadence and complete message visibility without duplicating a complete final return.
 
 ### Context Bootstrap/Refresh Responsibility
 
@@ -28,7 +28,7 @@ When assigned, performs only the explicitly released non-trivial Git slice. It d
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-No provider-specific optimization instructions at present; follow the general rules above.
+Under the default session audit policy, Worker keeps complete safe inbound and outbound messages visible in its own conversation and uses the configured Worker summary cadence. A complete final result already visible is not printed twice.
 
 ## Claude Code CLI / Claude Desktop optimizations
 
@@ -41,3 +41,4 @@ No provider-specific optimization instructions at present; follow the general ru
 - [Coding Child Role Allocation](delegation-child-role-allocation.md) — locate role allocation ownership.
 - [Coding Delegation State Record](delegation-state-record.md) — locate task-control state ownership.
 - [Coding Execution Control](execution-control.md) — locate stage and slice boundary ownership.
+- [Coding Session Audit Visibility](session-audit-visibility.md) — locate Worker message and summary policy.

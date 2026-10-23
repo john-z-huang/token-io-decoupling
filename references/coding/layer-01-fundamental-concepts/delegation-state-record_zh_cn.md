@@ -2,7 +2,7 @@
 
 [English](delegation-state-record.md) | [简体中文](delegation-state-record_zh_cn.md)
 
-本文档负责 Coding 委派使用的任务控制记录，定义记录的规范位置、ownership、结构、字段约束和分阶段字段存在语义。不决定模式，不定义 Worker 读写边界，不创建子 Agent，不分配职责，也不定义生命周期转换。
+本文档负责 Coding 委派使用的任务控制记录，定义记录的规范位置、ownership、结构、字段约束和分阶段字段存在语义。不决定模式，不定义 Worker 读写边界，不创建子 Agent，不分配职责，也不定义生命周期转换。Session 审计配置由[会话审计可见性](session-audit-visibility_zh_cn.md)负责。
 
 ## 通用规范
 
@@ -25,10 +25,29 @@ allocations: [{allocation_id: <稳定的子代理 allocation 标识>,
                agent: unbound | <已创建代理身份>, role: unassigned | <职责>,
                slice_status: pending | released, interaction_slice, scope, mutations,
                return_conditions, lifecycle, write_content_memo}]
+session_audit: {audit_mode, root_reasoning_cadence, worker_reasoning_cadence,
+                source: {audit_mode: explicit | default, root_reasoning_cadence: explicit | default,
+                        worker_reasoning_cadence: explicit | default},
+                worker_log_visibility: available | unverified | unavailable | Not applicable,
+                worker_log_evidence, audit_config_prompt: {status: unasked | pending | answered |
+                timed_out | unavailable | reused, prompted_at, deadline_at, response_at,
+                resolution: startup_explicit | prior_record | question_reply |
+                question_reply_after_timeout | timeout_default | awaiting_input | unavailable},
+                revision: session-audit/v2}
 lifecycle: pending | running | completed | interrupted
 unavailable_capabilities: [<能力名称>]
 block_reason: <仅 blocked 时必需>
 ```
+
+`audit_config_prompt` 各字段含义如下；此 schema 不定义状态转换：
+
+| 字段 | 合法值/表示 | 含义 |
+| --- | --- | --- |
+| `status` | `unasked`、`pending`、`answered`、`timed_out`、`unavailable`、`reused` | 已记录的配置问题状态。 |
+| `prompted_at`、`deadline_at`、`response_at` | 实际观察到的 ISO-8601 UTC 时间戳或 `null` | 实际提问时间、记录的截止时间、最近观察到的用户答复时间。 |
+| `resolution` | `startup_explicit`、`prior_record`、`question_reply`、`question_reply_after_timeout`、`timeout_default`、`awaiting_input`、`unavailable` | 生效配置的已记录来源或结果。 |
+
+所选工作流路线负责判定和状态更新；该记录作为任务状态保留。
 
 | `gate_status` | 模式与数量 | Allocation 和 lifecycle | 其他要求 |
 | --- | --- | --- | --- |
@@ -43,6 +62,8 @@ Role Allocation 阶段分配 allocation 的职责。具体 `slice_status: releas
 `mode_source` 记录明确选择或默认值，并在整次会话固定。新会话不再写入 `timeout-default`；仅为读回按旧规则创建的会话而接受该来源。旧 `timeout-default` 记录必须保持 Single-Agent、`child_count: 0` 和 `allocations: []`；读回时不得重新解释或迁移。各 allocation 的 lifecycle 可不同于顶层任务的 lifecycle。阻塞保留已确认值；后续指令遵循 Re-entry owner，不改变已锁定的 mode/count。
 
 当 `mode_source: default` 时，已放行记录必须是 Multi-Agent、`child_count: 1` 且恰好有一个预留 allocation；此预留不会初始化子代理。实际创建仍受输出类型和切片门禁约束。
+
+`session_audit` 遵循[会话审计可见性](session-audit-visibility_zh_cn.md)定义的字段。仅根父级写入。`audit_config_prompt.status` 表示已记录的提问状态；时间戳是实际观察到的 UTC 时间或 `null`，`resolution` 标明记录的来源/结果。所选路线负责收集和更新这些字段。日志证据仅在首次需要 Worker，或出现新的实际能力/访问证据或失败时更新，不逐消息更新。此状态不得改变 `mode`、`child_count`、授权、allocation 或 Slice 放行，也不得复制到策略文件或 Worker 控制状态中。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
@@ -64,3 +85,4 @@ Claude Code 的 `/tasks` 显示当前／后台子代理任务状态，`/context`
 - [Coding Delegation Re-entry](delegation-mode-reentry_zh_cn.md) — 定位模式/数量重新进入归属。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 字段归属。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 生命周期字段归属。
+- [Coding Session 审计可见性](session-audit-visibility_zh_cn.md) — 定位会话审计配置归属。

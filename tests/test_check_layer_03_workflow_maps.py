@@ -28,10 +28,20 @@ class WorkflowMapTests(unittest.TestCase):
             for lang in ('en', 'zh'):
                 branch_nodes = []
                 for name in sorted(spec['branches']):
-                    label = validator.PLAN_NODE_LABELS.get(lang, {}).get(name, name)
+                    label = (validator.AUDIT_NODE_LABELS.get(lang, {}).get(name)
+                             or validator.PLAN_NODE_LABELS.get(lang, {}).get(name, name))
                     branch_nodes.append(f'{name}["{label}"]')
                 diagram = 'flowchart TD\n    ' + '\n    '.join(nodes + branch_nodes) + '\n'
-                diagram += ''.join(f'    {src} --> {dst}\n' for src, dst in sorted(spec['edges']))
+                audit_labels = validator.AUDIT_EDGE_LABELS[lang]
+                lines = []
+                for src, dst in sorted(spec['edges']):
+                    target = f"{spec['prefix']}05" if (src, dst) == ('D_AUDIT_CONFIG', 'AUDIT_NEXT') else dst
+                    label = audit_labels.get((src, dst))
+                    if src == 'D_AUDIT_CONFIG' and target == f"{spec['prefix']}05":
+                        label = audit_labels[('D_AUDIT_CONFIG', 'AUDIT_NEXT')]
+                    edge = f'{src} -- {label} --> {target}' if label else f'{src} --> {target}'
+                    lines.append(f'    {edge}\n')
+                diagram += ''.join(lines)
                 suffix = '_zh_cn' if lang == 'zh' else ''
                 file = routes / f'coding-{route}{suffix}.md'
                 header = validator.MAP_TITLE[lang]
@@ -192,6 +202,145 @@ class WorkflowMapTests(unittest.TestCase):
         text = workflow.read_text(encoding='utf-8').replace(f'python3 {validator.SCRIPT}', 'python3 noop.py')
         workflow.write_text(text, encoding='utf-8')
         self.reject('missing CI trigger or command')
+
+    def test_audit_gate_rejects_direct_checkpoint_bypass(self) -> None:
+        for mode, lang, prefix in (('single-agent', 'en', 'S'), ('single-agent', 'zh', 'S'),
+                                   ('multi-agent', 'en', 'M'), ('multi-agent', 'zh', 'M')):
+            with self.subTest(mode=mode, lang=lang):
+                path = self.route(mode, lang)
+                text = path.read_text(encoding='utf-8')
+                text = text.replace(f'    {prefix}04 --> D_AUDIT_CONFIG\n',
+                                    f'    {prefix}04 --> D_AUDIT_CONFIG\n    {prefix}04 --> {prefix}05\n', 1)
+                path.write_text(text, encoding='utf-8')
+                self.reject(f'unexpected map edge {prefix}04 -> {prefix}05')
+                self.tearDown()
+                self.setUp()
+
+    def test_audit_gate_rejects_invalid_reply_as_acceptance(self) -> None:
+        for mode, lang in (('single-agent', 'en'), ('single-agent', 'zh'),
+                           ('multi-agent', 'en'), ('multi-agent', 'zh')):
+            with self.subTest(mode=mode, lang=lang):
+                path = self.route(mode, lang)
+                old = ('D_AUDIT_REPLY -- invalid / ambiguous reply --> ACT_AUDIT_CLARIFY'
+                       if lang == 'en' else
+                       'D_AUDIT_REPLY -- 无效／歧义答复 --> ACT_AUDIT_CLARIFY')
+                new = 'D_AUDIT_REPLY -- invalid / ambiguous reply --> ACT_AUDIT_REPLY' if lang == 'en' else 'D_AUDIT_REPLY -- 无效／歧义答复 --> ACT_AUDIT_REPLY'
+                self.mutate(path, old, new)
+                self.reject('required map edge D_AUDIT_REPLY -> ACT_AUDIT_CLARIFY is missing')
+                self.tearDown()
+                self.setUp()
+
+    def test_audit_pending_resume_uses_original_state_and_never_reprompts(self) -> None:
+        cases = {
+            'en': (
+                'D_AUDIT_CONFIG -- pending / no reply observed; resume original deadline --> D_AUDIT_REPLY',
+                 'D_AUDIT_CONFIG -- pending / invalid reply already observed --> D_AUDIT_CORRECTION',
+                 'D_AUDIT_CONFIG -- pending / invalid reply already observed --> D_AUDIT_REPLY',
+                 'D_AUDIT_CONFIG -- unasked / first eligible question only --> ACT_AUDIT_PROMPT'),
+            'zh': (
+                'D_AUDIT_CONFIG -- pending／尚无答复；恢复原截止时间 --> D_AUDIT_REPLY',
+                'D_AUDIT_CONFIG -- pending／已观察到无效答复 --> D_AUDIT_CORRECTION',
+                'D_AUDIT_CONFIG -- pending／已观察到无效答复 --> D_AUDIT_REPLY',
+                'D_AUDIT_CONFIG -- unasked／仅首次符合条件时询问 --> ACT_AUDIT_PROMPT'),
+        }
+        for mode, lang in (('single-agent', 'en'), ('single-agent', 'zh'),
+                           ('multi-agent', 'en'), ('multi-agent', 'zh')):
+            with self.subTest(mode=mode, lang=lang):
+                path = self.route(mode, lang)
+                resume, invalid_resume, bad_resume, first_ask = cases[lang]
+                self.mutate(path, resume, '')
+                self.reject('audit edge D_AUDIT_CONFIG -> D_AUDIT_REPLY must label')
+                self.tearDown()
+                self.setUp()
+
+                path = self.route(mode, lang)
+                self.mutate(path, invalid_resume, bad_resume)
+                self.reject('audit edge D_AUDIT_CONFIG -> D_AUDIT_CORRECTION must label')
+                self.tearDown()
+                self.setUp()
+
+                path = self.route(mode, lang)
+                self.mutate(path, first_ask, first_ask.replace('unasked', 'pending')
+                            if lang == 'en' else first_ask.replace('unasked', 'pending'))
+                self.reject('audit edge D_AUDIT_CONFIG -> ACT_AUDIT_PROMPT must label')
+                self.tearDown()
+                self.setUp()
+
+    def test_audit_clarification_wait_and_unavailable_paths_are_required(self) -> None:
+        mutations = (
+            ('ACT_AUDIT_CLARIFY -- same prompt / original deadline --> D_AUDIT_CORRECTION',
+             '',
+             'ACT_AUDIT_CLARIFY -- 沿用原问题／原截止时间 --> D_AUDIT_CORRECTION',
+             '', 'ACT_AUDIT_CLARIFY -> D_AUDIT_CORRECTION'),
+            ('D_AUDIT_REPLY -- pending / before deadline --> ACT_AUDIT_WAIT',
+             '',
+             'D_AUDIT_REPLY -- pending／尚未到期 --> ACT_AUDIT_WAIT',
+             '', 'D_AUDIT_REPLY -> ACT_AUDIT_WAIT'),
+            ('D_AUDIT_REPLY -- prompt or timing unavailable --> BLOCK',
+             '',
+             'D_AUDIT_REPLY -- 提问或计时不可用 --> BLOCK',
+             '', 'D_AUDIT_REPLY -> BLOCK'),
+        )
+        for mode, lang in (('single-agent', 'en'), ('single-agent', 'zh'),
+                           ('multi-agent', 'en'), ('multi-agent', 'zh')):
+            for old_en, new_en, old_zh, new_zh, edge in mutations:
+                with self.subTest(mode=mode, lang=lang, edge=edge):
+                    path = self.route(mode, lang)
+                    old, new = (old_en, new_en) if lang == 'en' else (old_zh, new_zh)
+                    self.mutate(path, old, new)
+                    self.reject(f'required map edge {edge.replace(" -> ", " -> ")} is missing')
+                    self.tearDown()
+                    self.setUp()
+
+    def test_audit_timeout_requires_no_reply_and_full_sixty_seconds(self) -> None:
+        replacements = {
+            'en': ('D_AUDIT_REPLY -- no reply / actual elapsed >=60s --> ACT_AUDIT_TIMEOUT',
+                   'D_AUDIT_REPLY -- pending / actual elapsed >=60s --> ACT_AUDIT_TIMEOUT'),
+            'zh': ('D_AUDIT_REPLY -- 无回复／实际经过>=60秒 --> ACT_AUDIT_TIMEOUT',
+                   'D_AUDIT_REPLY -- 等待中／实际经过>=60秒 --> ACT_AUDIT_TIMEOUT'),
+        }
+        for mode, lang in (('single-agent', 'en'), ('single-agent', 'zh'),
+                           ('multi-agent', 'en'), ('multi-agent', 'zh')):
+            with self.subTest(mode=mode, lang=lang):
+                path = self.route(mode, lang)
+                old, new = replacements[lang]
+                self.mutate(path, old, new)
+                self.reject('audit edge D_AUDIT_REPLY -> ACT_AUDIT_TIMEOUT must label')
+                self.tearDown()
+                self.setUp()
+
+    def test_audit_correction_cannot_timeout_after_user_has_replied(self) -> None:
+        for mode, lang in (('single-agent', 'en'), ('single-agent', 'zh'),
+                           ('multi-agent', 'en'), ('multi-agent', 'zh')):
+            with self.subTest(mode=mode, lang=lang):
+                path = self.route(mode, lang)
+                old = ('D_AUDIT_CORRECTION -- valid correction --> ACT_AUDIT_REPLY'
+                       if lang == 'en' else
+                       'D_AUDIT_CORRECTION -- 有效更正 --> ACT_AUDIT_REPLY')
+                new = ('D_AUDIT_CORRECTION -- valid correction --> ACT_AUDIT_TIMEOUT'
+                       if lang == 'en' else
+                       'D_AUDIT_CORRECTION -- 有效更正 --> ACT_AUDIT_TIMEOUT')
+                self.mutate(path, old, new)
+                self.reject('unexpected map edge D_AUDIT_CORRECTION -> ACT_AUDIT_TIMEOUT')
+                self.tearDown()
+                self.setUp()
+
+    def test_audit_timeout_default_is_balanced_milestone_full(self) -> None:
+        replacements = {
+            'en': ('ACT_AUDIT_TIMEOUT["No reply and actual elapsed time >=60s; default Root balanced/milestone_only; preserve Worker or fill full"]',
+                   'ACT_AUDIT_TIMEOUT["No reply and actual elapsed time >=60s; apply economy/off"]'),
+            'zh': ('ACT_AUDIT_TIMEOUT["无回复且实际经过>=60秒；Root 默认 balanced/milestone_only；保留 Worker 值，缺失才补 full"]',
+                   'ACT_AUDIT_TIMEOUT["无回复且实际经过>=60秒；应用 economy/off"]'),
+        }
+        for mode, lang in (('single-agent', 'en'), ('single-agent', 'zh'),
+                           ('multi-agent', 'en'), ('multi-agent', 'zh')):
+            with self.subTest(mode=mode, lang=lang):
+                path = self.route(mode, lang)
+                old, new = replacements[lang]
+                self.mutate(path, old, new)
+                self.reject('node ACT_AUDIT_TIMEOUT must identify')
+                self.tearDown()
+                self.setUp()
 
 
 if __name__ == '__main__':

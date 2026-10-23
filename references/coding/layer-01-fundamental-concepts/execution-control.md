@@ -23,7 +23,7 @@ Release slices in parallel only when they are independent and non-conflicting. D
 
 ### Control Checkpoint
 
-At a material boundary, consume the Progress Signal owned by [execution stage feedback](execution-stage-feedback.md), append the current `Unreleased boundary`, and make one final control choice: `Continue`, `Amend`, or `Stop`. `Continue` releases only the next bounded slice; `Amend` changes the Contract or boundary before work resumes. `Evidence-on-Demand` is an intermediate evidence request that pauses release and returns to this checkpoint; it is not a fourth final authorization outcome. In a Single-Agent route, this is an internal reasoning pause, not a simulated self-message.
+At a material boundary, consume the Progress Signal owned by [execution stage feedback](execution-stage-feedback.md), append the current `Unreleased boundary`, and make one final control choice: `Continue`, `Amend`, or `Stop`. Focus Control on material deviation, new evidence, or an actual boundary; do not turn a released slice into per-command approvals or repeat unchanged status. `Continue` releases only the next bounded slice; `Amend` changes the Contract or boundary before work resumes. `Evidence-on-Demand` is an intermediate evidence request that pauses release and returns to this checkpoint; it is not a fourth final authorization outcome. In a Single-Agent route, this is an internal reasoning pause, not a simulated self-message.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
@@ -74,3 +74,4 @@ In Claude Code, `PostToolUse` reports observations after an action; it cannot au
 - [Coding Execution Stage Feedback](execution-stage-feedback.md) — locate bounded-stage feedback rules.
 - [Coding Context Exchange](context-exchange.md) — locate context transport ownership.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate delegation lifecycle ownership for released slices.
+- [Coding Session Audit Visibility](session-audit-visibility.md) — locate audit configuration and summary cadence.
