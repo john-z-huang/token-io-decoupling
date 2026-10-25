@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import sqlite3
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -99,13 +100,132 @@ def test_empty_database_initializes_each_kind_with_supported_schema(tmp_path: Pa
         assert worker.execute("SELECT database_kind FROM database_info").fetchone() == ("worker",)
         assert workflow.execute(
             "SELECT version, name FROM schema_migrations ORDER BY version"
-        ).fetchall()[-1] == (3, "evidence_control")
+        ).fetchall()[-1] == (5, "native_resolution")
         assert worker.execute(
             "SELECT version, name FROM schema_migrations ORDER BY version"
         ).fetchall()[-1] == (3, "evidence_dispatch")
     finally:
         workflow.close()
         worker.close()
+
+
+def test_v4_to_v5_preserves_native_history_and_adds_resolution_journal(tmp_path: Path) -> None:
+    database = tmp_path / "workflow.sqlite3"
+    migrations = _package_migrations(DatabaseKind.WORKFLOW)
+    connection = _open_with_migrations(
+        database,
+        DatabaseKind.WORKFLOW,
+        trusted_root=tmp_path,
+        migrations=migrations[:4],
+    )
+    refs = [{"uri": "test://native", "content_hash": "b" * 64}]
+    snapshot = {
+        "project_id": "project-a",
+        "root_session_id": "root-a",
+        "run_id": "run-a",
+        "mode_count": {"mode": "Single-Agent Coding", "child_count": 0},
+        "mode_source": "explicit",
+        "lifecycle": "pending",
+        "source": {"uri": "test://plan", "content_hash": "c" * 64},
+        "semantic_references": [],
+        "revision": 10,
+        "allocations": [],
+        "epochs": {"implementation_content": 0, "documentation": 0, "git_metadata": 0},
+        "evidence_refs": refs,
+    }
+    snapshot_json = json.dumps(snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    snapshot_hash = hashlib.sha256(snapshot_json.encode("utf-8")).hexdigest()
+    refs_json = json.dumps(refs, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+    def legacy_row(
+        reconcile_id: str,
+        status: str,
+        observed_revision: int,
+        result_revision: int,
+        *,
+        stored_snapshot: str = snapshot_json,
+        stored_hash: str = snapshot_hash,
+    ) -> tuple[object, ...]:
+        return (
+            reconcile_id,
+            stored_hash,
+            refs_json,
+            '["Contract source"]',
+            status,
+            observed_revision,
+            result_revision,
+            "2026-10-25T00:00:00+00:00",
+            "project-a",
+            "root-a",
+            stored_snapshot,
+        )
+
+    original = legacy_row("native-v4-row", "conflict", 8, 9)
+    connection.execute(
+        "INSERT INTO native_reconciliations VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        original,
+    )
+    awaiting = legacy_row("native-v4-awaiting", "awaiting_confirmation", 10, 11)
+    matched = legacy_row("native-v4-matched", "matched", 11, 12)
+    malformed_awaiting = legacy_row(
+        "native-v4-malformed-awaiting",
+        "awaiting_confirmation",
+        20,
+        21,
+        stored_snapshot='{"prior":"snapshot"}',
+        stored_hash="d" * 64,
+    )
+    malformed_matched = legacy_row(
+        "native-v4-malformed-matched",
+        "matched",
+        21,
+        22,
+        stored_snapshot='{"prior":"snapshot"}',
+        stored_hash="d" * 64,
+    )
+    nonadjacent_awaiting = legacy_row(
+        "native-v4-nonadjacent-awaiting", "awaiting_confirmation", 30, 32
+    )
+    nonadjacent_matched = legacy_row("native-v4-nonadjacent-matched", "matched", 32, 33)
+    connection.executemany(
+        "INSERT INTO native_reconciliations VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        [
+            awaiting,
+            matched,
+            malformed_awaiting,
+            malformed_matched,
+            nonadjacent_awaiting,
+            nonadjacent_matched,
+        ],
+    )
+    connection.commit()
+    connection.close()
+
+    upgraded = _open_with_migrations(
+        database,
+        DatabaseKind.WORKFLOW,
+        trusted_root=tmp_path,
+        migrations=migrations,
+    )
+    try:
+        assert (
+            upgraded.execute(
+                "SELECT * FROM native_reconciliations WHERE reconcile_id='native-v4-row'"
+            ).fetchone()
+            == original
+        )
+        columns = {row[1] for row in upgraded.execute("PRAGMA table_info(workflow_control)")}
+        assert "recovery_revision" in columns
+        assert upgraded.execute(
+            "SELECT COUNT(*) FROM native_reconcile_resolution_targets"
+        ).fetchone() == (0,)
+        assert upgraded.execute(
+            "SELECT awaiting_reconcile_id,matched_reconcile_id,snapshot_hash,confirmed_revision "
+            "FROM native_reconcile_confirmations"
+        ).fetchall() == [("native-v4-awaiting", "native-v4-matched", snapshot_hash, 12)]
+        assert upgraded.execute("SELECT MAX(version) FROM schema_migrations").fetchone() == (5,)
+    finally:
+        upgraded.close()
 
 
 def test_read_only_status_does_not_create_or_migrate(tmp_path: Path) -> None:
@@ -207,7 +327,7 @@ def test_history_checksum_missing_and_future_versions_are_rejected(tmp_path: Pat
         path_future, DatabaseKind.WORKFLOW, trusted_root=tmp_path
     )
     connection.execute(
-        "INSERT INTO schema_migrations VALUES (4, 'future', ?, 'now', 0)", ("b" * 64,)
+        "INSERT INTO schema_migrations VALUES (6, 'future', ?, 'now', 0)", ("b" * 64,)
     )
     connection.close()
     with pytest.raises(FutureSchemaError):
@@ -280,7 +400,7 @@ def test_restore_rejects_incompatible_backup_and_preserves_target(
             connection.execute("UPDATE schema_migrations SET checksum = ?", ("0" * 64,))
         else:
             connection.execute(
-                "INSERT INTO schema_migrations VALUES (3, 'future', ?, 'now', 0)",
+                "INSERT INTO schema_migrations VALUES (5, 'future', ?, 'now', 0)",
                 ("f" * 64,),
             )
 

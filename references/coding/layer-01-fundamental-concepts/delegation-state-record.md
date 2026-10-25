@@ -8,7 +8,7 @@ This module owns the task-control record used by Coding delegation. It defines t
 
 ### Ownership
 
-The root parent owns one conversation-level mode/count decision and updates task-specific slices and lifecycle in the same record. The record is task state; it is not stored by editing a policy file. Maintain an explicit structured record in the parent context that can be read back before each route release. A transient child-status result is not the canonical record.
+The root parent owns one conversation-level mode/count decision and updates task-specific slices and lifecycle in the same record. The record is task state; it is not stored by editing a policy file. In Native operation, maintain the canonical structured record in parent context and read it back before each route release; a transient child-status result is not canonical. In Enhanced operation, after an authorized Root store is initialized and its identity and schema are validated, the Root SQLite record is canonical for persistent Enhanced state. Parent context then keeps a readable snapshot or reference, not a competing writable authority. Native-to-Enhanced reconciliation follows [Native Reconciliation](native-reconciliation.md); return to Native follows [Native Authority Transfer](native-authority-transfer.md). Neither transition changes this record's field owners or permits overwriting a valid canonical record.
 
 ### Record shape
 
@@ -63,7 +63,7 @@ An allocation's role becomes assigned at Role Allocation. A concrete `slice_stat
 
 When `mode_source: default`, the released record must be Multi-Agent with `child_count: 1` and exactly one reserved allocation; this reservation does not initialize a child. Actual child creation remains governed by the output-type and slice gates.
 
-`session_audit` follows the field definitions in [session audit visibility](session-audit-visibility.md). The root parent alone writes it. `audit_config_prompt.status` describes the recorded prompt state; its timestamps are actual UTC observations or `null`, and `resolution` identifies the recorded source/result. The selected route collects and updates these fields. Update log evidence only at first Worker need or on new actual capability/access evidence or failure, never per message. This state never changes `mode`, `child_count`, authorization, allocations, or slice release. Do not copy it into policy files or Worker-controlled state.
+`session_audit` follows the field definitions in [session audit visibility](session-audit-visibility.md). The root parent alone writes it. `audit_config_prompt.status` describes the recorded prompt state; its timestamps are actual UTC observations or `null`, and `resolution` identifies the recorded source/result. The selected route collects and updates these fields. Update log evidence only at first Worker need or on new actual capability/access evidence or failure, never per message. This state never changes `mode`, `child_count`, authorization, allocations, or slice release. Do not copy the complete Root audit record into policy files or Worker-controlled state. An actual `pending` state remains pending until resolved; missing persistence or a failed audit update is not evidence of a reply, default, or completion.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
@@ -86,3 +86,6 @@ Claude Code's `/tasks` lists observable current/background subagent work, wherea
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice field ownership.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child lifecycle field ownership.
 - [Coding Session Audit Visibility](session-audit-visibility.md) — locate session audit configuration ownership.
+- [Enhanced State Store](enhanced-state-store.md) — locate Native versus Enhanced persistent-record authority.
+- [Native Reconciliation](native-reconciliation.md) — locate explicit Native-to-Enhanced Root reconciliation.
+- [Native Authority Transfer](native-authority-transfer.md) — locate explicit Enhanced-to-Native Root authority transfer.

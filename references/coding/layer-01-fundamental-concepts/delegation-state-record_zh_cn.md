@@ -8,7 +8,7 @@
 
 ### Ownership
 
-根父级负责一份会话级模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，不通过编辑 policy 文件保存。在父级上下文中维护可于每次路线放行前读回的显式结构化记录。短暂的子代理状态结果不能作为规范记录。
+根父级负责一份会话级模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，不通过编辑 policy 文件保存。Native 运行时，parent context 中的结构化记录是 canonical，并须在每次路线放行前读回；短暂子代理状态不是 canonical。Enhanced 运行时，获授权的 Root store 初始化且身份和 Schema 核验通过后，Root SQLite 记录才是 Enhanced 持久状态的 canonical。此后 parent context 只保留可读快照或引用，不能成为竞争的可写权威。从 Native 到 Enhanced 的对账遵循[Native 对账](native-reconciliation_zh_cn.md)；回切 Native 遵循[Native 权威转移](native-authority-transfer_zh_cn.md)。两种转换都不改变本记录的字段归属，也不允许覆盖有效规范记录。
 
 ### 记录结构
 
@@ -63,7 +63,7 @@ Role Allocation 阶段分配 allocation 的职责。具体 `slice_status: releas
 
 当 `mode_source: default` 时，已放行记录必须是 Multi-Agent、`child_count: 1` 且恰好有一个预留 allocation；此预留不会初始化子代理。实际创建仍受输出类型和切片门禁约束。
 
-`session_audit` 遵循[会话审计可见性](session-audit-visibility_zh_cn.md)定义的字段。仅根父级写入。`audit_config_prompt.status` 表示已记录的提问状态；时间戳是实际观察到的 UTC 时间或 `null`，`resolution` 标明记录的来源/结果。所选路线负责收集和更新这些字段。日志证据仅在首次需要 Worker，或出现新的实际能力/访问证据或失败时更新，不逐消息更新。此状态不得改变 `mode`、`child_count`、授权、allocation 或 Slice 放行，也不得复制到策略文件或 Worker 控制状态中。
+`session_audit` 遵循[会话审计可见性](session-audit-visibility_zh_cn.md)定义的字段。仅根父级写入。`audit_config_prompt.status` 表示已记录的提问状态；时间戳是实际观察到的 UTC 时间或 `null`，`resolution` 标明记录的来源/结果。所选路线负责收集和更新这些字段。日志证据仅在首次需要 Worker，或出现新的实际能力/访问证据或失败时更新，不逐消息更新。此状态不得改变 `mode`、`child_count`、授权、allocation 或 Slice 放行。不得将完整 Root 审计记录复制到策略文件或 Worker 可控状态中。真实 `pending` 状态在解决前保持 pending；缺少持久化或审计更新失败不能证明用户已答复、已选默认值或已完成。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
@@ -86,3 +86,6 @@ Claude Code 的 `/tasks` 显示当前／后台子代理任务状态，`/context`
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 字段归属。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 生命周期字段归属。
 - [Coding Session 审计可见性](session-audit-visibility_zh_cn.md) — 定位会话审计配置归属。
+- [Enhanced 状态存储](enhanced-state-store_zh_cn.md) — 定位 Native 与 Enhanced 持久记录的权威边界。
+- [Native 对账](native-reconciliation_zh_cn.md) — 定位显式 Native-to-Enhanced Root 对账。
+- [Native 权威转移](native-authority-transfer_zh_cn.md) — 定位显式 Enhanced-to-Native Root 权威转移。

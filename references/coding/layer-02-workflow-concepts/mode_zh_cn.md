@@ -5,8 +5,10 @@
 ## 动作
 
 1. 加载[状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)、[模式确认](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md)、[数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)和[重新进入](../layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md) owner。不得在实际执行步骤前预先加载子代理创建、派发、生命周期或复用的完整策略。
-2. 核对父级记录：Single-Agent 使用 `child_count: 0`、`allocations: []`；Multi-Agent 数量已锁定，具有恰好 `child_count` 个初始未绑定、未分配、待放行的预留名额。如果 `mode_source: default`，核实模式为 Multi-Agent、`child_count: 1` 且恰好有一个预留名额。如果 `mode_source: timeout-default`，仅为兼容旧记录而接受，并核实 Single-Agent、`child_count: 0` 和 `allocations: []`；新会话不再使用此来源。本门禁放行**不**等于具体 Interaction Slice 已放行，也不会初始化或授权创建子代理。
+2. 核对父级记录：Single-Agent 使用 `child_count: 0`、`allocations: []`；Multi-Agent 数量已锁定，具有恰好 `child_count` 个初始未绑定、未分配、待放行的预留名额。如果 `mode_source: default`，核实模式为 Multi-Agent、`child_count: 1` 且恰好有一个预留名额。如果 `mode_source: timeout-default`，仅为兼容旧记录而接受，并核实 Single-Agent、`child_count: 0` 和 `allocations: []`；新会话不再使用此来源。本门禁放行**不**等于具体 Interaction Slice 已放行，不初始化 store，也不授权创建子代理。只有路线后续已通过 Session 身份、职责和 Context Firewall 核验后，才可首次持久化 Enhanced Root 状态。
 3. 后续指令沿用已锁定 mode/count，只更新任务专属证据，不重新打开模式/数量门禁。记录或必需能力证据缺失时阻塞依赖路线。职责分配和子代理操作在路线指定的执行阶段核验。
+
+4. Mode 和 Session 通过且存在已授权 Root 上下文之前，不得请求可选语义建议。后续建议不得改变已锁定的模式/数量，也不得重新打开此门禁；明确启用建议时，遵循[Decisions 建议](../layer-01-fundamental-concepts/decisions-advisory_zh_cn.md)。
 
 ## 通过条件
 
@@ -14,7 +16,7 @@
 
 ## 边界
 
-本检查点负责组合并验证状态记录、模式/数量和按条件加载的子代理派发/生命周期 reference，不独立决定模式、拓扑、创建、分配、复用、例外、生命周期或数量。
+本检查点负责组合并验证状态记录、模式/数量和按条件加载的子代理派发/生命周期 reference，不独立决定模式、拓扑、创建、分配、复用、例外、生命周期或数量。Mode 通过从不初始化或迁移数据库；store 选择和首次写入时机由路线及[增强状态存储](../layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md) owner 负责。
 
 ## 相关概念
 

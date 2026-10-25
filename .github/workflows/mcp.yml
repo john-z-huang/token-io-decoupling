@@ -1,0 +1,104 @@
+name: MCP Package
+
+on:
+  pull_request:
+    paths:
+      - "mcp/**"
+      - "references/coding/layer-01-fundamental-concepts/**.md"
+      - "references/coding/layer-02-workflow-concepts/**.md"
+      - "ENHANCED_ARCHITECTURE*.md"
+      - ".github/workflows/mcp.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "mcp/**"
+      - "references/coding/layer-01-fundamental-concepts/**.md"
+      - "references/coding/layer-02-workflow-concepts/**.md"
+      - "ENHANCED_ARCHITECTURE*.md"
+      - ".github/workflows/mcp.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.14"]
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/token-io-mcp-env-${{ matrix.python-version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.5"
+
+      - name: Install managed Python
+        run: uv python install "${{ matrix.python-version }}" --managed-python
+
+      - name: Sync locked development environment
+        working-directory: mcp
+        run: uv sync --locked --managed-python --python "${{ matrix.python-version }}" --group dev
+
+      - name: Run complete MCP tests
+        working-directory: mcp
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" pytest -q
+
+      - name: Check Ruff lint
+        working-directory: mcp
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" ruff check
+
+      - name: Check Ruff formatting
+        working-directory: mcp
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" ruff format --check
+
+      - name: Check types
+        working-directory: mcp
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" ty check
+
+  installed-wheel-stdio:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/token-io-mcp-wheel-env
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.5"
+
+      - name: Install managed Python 3.14
+        run: uv python install 3.14 --managed-python
+
+      - name: Sync locked development environment
+        working-directory: mcp
+        run: uv sync --locked --managed-python --python 3.14 --group dev
+
+      - name: Build locked wheel and sdist
+        working-directory: mcp
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/token-io-mcp-dist"
+          uv export --locked --all-groups --no-emit-project --no-hashes --no-header --no-annotate > "$RUNNER_TEMP/token-io-build-constraints.txt"
+          uv build --managed-python --python 3.14 --build-constraints "$RUNNER_TEMP/token-io-build-constraints.txt" --out-dir "$RUNNER_TEMP/token-io-mcp-dist"
+
+      - name: Install wheel into isolated temporary uv tool
+        working-directory: ${{ runner.temp }}
+        shell: bash
+        run: |
+          uv export --project "$GITHUB_WORKSPACE/mcp" --locked --no-dev --no-emit-project --no-hashes --no-header --no-annotate > "$RUNNER_TEMP/token-io-runtime-constraints.txt"
+          UV_TOOL_DIR="$RUNNER_TEMP/token-io-tool-dir" UV_TOOL_BIN_DIR="$RUNNER_TEMP/token-io-tool-bin" uv tool install --managed-python --python 3.14 --constraints "$RUNNER_TEMP/token-io-runtime-constraints.txt" "$RUNNER_TEMP"/token-io-mcp-dist/*.whl
+
+      - name: Exercise installed wheel through negotiated stdio SDK
+        working-directory: ${{ runner.temp }}
+        run: uv run --project "$GITHUB_WORKSPACE/mcp" --locked --managed-python --python 3.14 python "$GITHUB_WORKSPACE/mcp/tests/installed_stdio_smoke.py" --cli "$RUNNER_TEMP/token-io-tool-bin/token-io-mcp"

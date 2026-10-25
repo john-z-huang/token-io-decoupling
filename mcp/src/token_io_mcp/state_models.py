@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Annotated, Literal, TypeAlias
 
@@ -476,9 +477,101 @@ class CheckpointConfirmationTransition(StrictModel):
     idempotency_key: NonEmptyString
 
 
+class SessionAuditPrompt(StrictModel):
+    status: Literal["unasked", "pending", "answered", "timed_out", "unavailable", "reused"]
+    prompted_at: datetime | None
+    deadline_at: datetime | None
+    response_at: datetime | None
+    resolution: Literal[
+        "startup_explicit",
+        "prior_record",
+        "question_reply",
+        "question_reply_after_timeout",
+        "timeout_default",
+        "awaiting_input",
+        "unavailable",
+    ]
+
+    @model_validator(mode="after")
+    def validate_observed_utc_times(self) -> SessionAuditPrompt:
+        times = (self.prompted_at, self.deadline_at, self.response_at)
+        if (self.prompted_at is None) != (self.deadline_at is None):
+            raise ValueError("prompted_at and deadline_at must be recorded together")
+        if self.response_at is not None and self.prompted_at is None:
+            raise ValueError("response_at requires an observed prompt")
+        for value in times:
+            if value is not None and (value.tzinfo is None or value.utcoffset() != timedelta(0)):
+                raise ValueError("prompt timestamps must be actual UTC-aware timestamps")
+        if (
+            self.prompted_at is not None
+            and self.deadline_at is not None
+            and self.deadline_at < self.prompted_at
+        ):
+            raise ValueError("deadline_at cannot precede prompted_at")
+        if (
+            self.prompted_at is not None
+            and self.response_at is not None
+            and self.response_at < self.prompted_at
+        ):
+            raise ValueError("response_at cannot precede prompted_at")
+        if self.status == "pending" and (self.prompted_at is None or self.response_at is not None):
+            raise ValueError("pending prompt requires a prompt and no response")
+        if self.status == "answered" and self.response_at is None:
+            raise ValueError("answered prompt requires an observed response time")
+        if self.resolution == "timeout_default" and self.status != "timed_out":
+            raise ValueError("timeout_default resolution requires timed_out status")
+        return self
+
+
+class SessionAuditSources(StrictModel):
+    audit_mode: Literal["explicit", "default"]
+    root_reasoning_cadence: Literal["explicit", "default"]
+    worker_reasoning_cadence: Literal["explicit", "default"]
+
+
+class SessionAudit(StrictModel):
+    audit_mode: Literal["economy", "balanced", "full"]
+    root_reasoning_cadence: Literal["full", "milestone_only", "off"]
+    worker_reasoning_cadence: Literal["full", "milestone_only", "off"]
+    source: SessionAuditSources
+    worker_log_visibility: Literal["available", "unverified", "unavailable", "Not applicable"]
+    worker_log_evidence: EvidenceRef | None
+    audit_config_prompt: SessionAuditPrompt
+    revision: Literal["session-audit/v2"]
+
+    @model_validator(mode="after")
+    def validate_worker_log_evidence(self) -> SessionAudit:
+        if self.worker_log_visibility in {"available", "unavailable", "Not applicable"}:
+            if self.worker_log_evidence is None:
+                raise ValueError("worker-log claims require an evidence reference")
+        return self
+
+
+class SessionAuditTransition(StrictModel):
+    kind: Literal["session_audit"]
+    session_audit: SessionAudit
+    expected_revision: Annotated[StrictInt, Field(ge=0)]
+    idempotency_key: NonEmptyString
+
+
 class NativeReconcileTransition(StrictModel):
     kind: Literal["confirm_native_reconcile"]
     snapshot: NativeWorkflowSnapshot
+    expected_revision: Annotated[StrictInt, Field(ge=0)]
+    idempotency_key: NonEmptyString
+
+
+class NativeReconcileResolutionTransition(StrictModel):
+    kind: Literal["resolve_native_reconcile"]
+    canonical_reconcile_id: NonEmptyString
+    snapshot_hash: Sha256
+    unresolved_set_hash: Sha256
+    choice: Literal["adopt_native_pair", "retain_sqlite_pair"]
+    reviewed_native_revision: Annotated[StrictInt, Field(ge=0)]
+    reviewed_native_epochs: EpochSnapshot
+    root_decision_ref: EvidenceRef
+    native_freshness_refs: Annotated[list[EvidenceRef], Field(min_length=1, max_length=256)]
+    root_quiescence_refs: Annotated[list[EvidenceRef], Field(min_length=1, max_length=32)]
     expected_revision: Annotated[StrictInt, Field(ge=0)]
     idempotency_key: NonEmptyString
 
@@ -487,7 +580,9 @@ WorkflowTransitionRequest: TypeAlias = Annotated[
     ControlTransitionRequest
     | EpochAdvanceTransition
     | CheckpointConfirmationTransition
-    | NativeReconcileTransition,
+    | NativeReconcileTransition
+    | NativeReconcileResolutionTransition
+    | SessionAuditTransition,
     Field(discriminator="kind"),
 ]
 
@@ -537,6 +632,157 @@ class WorkflowOpenRequest(StrictModel):
     idempotency_key: NonEmptyString
 
 
+class TrustedCapabilitySnapshot(StrictModel):
+    project_id: NonEmptyString
+    root_session_id: NonEmptyString
+    current_session_id: NonEmptyString
+    role: SessionRole
+    parent_session_id: NonEmptyString | None
+    capabilities: list[HostCapability]
+    guards: list[HostGuard]
+    snapshot_hash: Sha256
+    observed_revision: Annotated[StrictInt, Field(ge=0)]
+
+
+class ActiveSliceIndex(StrictModel):
+    slice_id: NonEmptyString
+    allocation_id: NonEmptyString | None
+    output_class: OutputClass | None
+    objective: SemanticRef
+    return_conditions: SemanticRef
+    unreleased_boundary: SemanticRef
+    authorized_paths: list[NonEmptyString]
+    change_categories: list[ChangeCategory]
+    write_content_memo: StrictBool | None
+    spec_hash: Sha256 | None
+    spec_hash_unknown_reason: NonEmptyString | None
+
+    @model_validator(mode="after")
+    def validate_spec_hash_status(self) -> ActiveSliceIndex:
+        if (self.spec_hash is None) == (self.spec_hash_unknown_reason is None):
+            raise ValueError("provide either an exact Slice spec hash or its unknown reason")
+        return self
+
+
+RecoveryIndexCollection = Literal[
+    "active_slices",
+    "latest_gates",
+    "unresolved_native_reconciliations",
+    "native_resolution_history",
+    "control_evidence_requests",
+]
+
+
+class RecoveryIndexCursor(StrictModel):
+    collection: RecoveryIndexCollection
+    revision: Annotated[StrictInt, Field(ge=0)]
+    offset: Annotated[StrictInt, Field(ge=0)]
+    page_size: Annotated[StrictInt, Field(ge=1, le=128)]
+
+
+class RecoveryIndexPageRequest(StrictModel):
+    collection: RecoveryIndexCollection
+    cursor: RecoveryIndexCursor | None = None
+    page_size: Annotated[StrictInt, Field(ge=1, le=128)] | None = None
+
+    @model_validator(mode="after")
+    def validate_cursor_request(self) -> RecoveryIndexPageRequest:
+        if self.cursor is not None:
+            if self.cursor.collection != self.collection:
+                raise ValueError("recovery cursor collection does not match the requested index")
+            if self.page_size is not None and self.page_size != self.cursor.page_size:
+                raise ValueError("page_size cannot change while following a recovery cursor")
+        return self
+
+
+class RecoveryIndexPageInfo(StrictModel):
+    collection: RecoveryIndexCollection
+    revision: Annotated[StrictInt, Field(ge=0)]
+    offset: Annotated[StrictInt, Field(ge=0)]
+    page_size: Annotated[StrictInt, Field(ge=1, le=128)]
+    total_count: Annotated[StrictInt, Field(ge=0)]
+    returned_count: Annotated[StrictInt, Field(ge=0)]
+    next_cursor: RecoveryIndexCursor | None
+
+
+class GateIndex(StrictModel):
+    node_id: NonEmptyString
+    outcome: Literal["ready", "incomplete", "blocked", "evidence_on_demand"]
+    branch: NonEmptyString | None
+    rule_hash: Sha256
+    input_hash: Sha256
+    epochs: EpochSnapshot
+    basis_revision: Annotated[StrictInt, Field(ge=0)]
+    result_revision: Annotated[StrictInt, Field(ge=1)]
+    rule_status: Literal["current", "stale", "unknown_node", "unavailable"]
+    rule_current: bool
+    epochs_current: bool
+    revision_current: bool
+
+
+class NativeReconcileIndex(StrictModel):
+    reconcile_id: NonEmptyString
+    status: Literal["matched", "conflict", "awaiting_confirmation"]
+    snapshot_hash: Sha256
+    native_refs: list[EvidenceRef] = Field(max_length=256)
+    native_reference_count: Annotated[StrictInt, Field(ge=0)]
+    native_references_omitted: Annotated[StrictInt, Field(ge=0)]
+    differences: list[NonEmptyString]
+    observed_revision: Annotated[StrictInt, Field(ge=0)]
+    result_revision: Annotated[StrictInt, Field(ge=1)]
+    native_revision: Annotated[StrictInt, Field(ge=0)]
+    native_run_id: NonEmptyString | None
+    native_mode_count: ModeCount
+    native_mode_source: Literal["explicit", "default", "timeout-default"]
+    native_lifecycle: Literal["pending", "running", "completed", "interrupted"]
+    native_allocations: list[NativeAllocation] = Field(max_length=256)
+    native_allocation_count: Annotated[StrictInt, Field(ge=0)]
+    native_allocations_omitted: Annotated[StrictInt, Field(ge=0)]
+    native_source: SemanticRef
+    native_semantic_references: list[SemanticRef] = Field(max_length=256)
+    native_semantic_reference_count: Annotated[StrictInt, Field(ge=0)]
+    native_semantic_references_omitted: Annotated[StrictInt, Field(ge=0)]
+    resolution_unavailable_reason: (
+        Literal[
+            "native_semantic_references_exceed_supported_bound",
+            "native_allocations_exceed_supported_bound",
+            "native_evidence_references_exceed_supported_bound",
+        ]
+        | None
+    )
+    native_epochs: EpochSnapshot
+    preimage_known: StrictBool
+    current: bool
+
+
+class NativeResolutionTargetIndex(StrictModel):
+    reconcile_id: NonEmptyString
+    snapshot_hash: Sha256
+
+
+class NativeResolutionIndex(StrictModel):
+    resolution_id: NonEmptyString
+    reconcile_id: NonEmptyString
+    choice: Literal["adopt_native_pair", "retain_sqlite_pair"]
+    reviewed_set_hash: Sha256
+    snapshot_hash: Sha256
+    resolved_comparisons: Annotated[list[NativeResolutionTargetIndex], Field(max_length=256)]
+    root_decision_ref: EvidenceRef
+    native_freshness_refs: list[EvidenceRef]
+    root_quiescence_refs: list[EvidenceRef]
+    result_revision: Annotated[StrictInt, Field(ge=1)]
+    recovery_revision: Annotated[StrictInt, Field(ge=1)]
+    current: StrictBool
+
+
+class ControlEvidenceRequestIndex(StrictModel):
+    request_id: NonEmptyString
+    status: Literal["pending", "returned", "resolved"]
+    created_revision: Annotated[StrictInt, Field(ge=0)]
+    returned_revision: Annotated[StrictInt, Field(ge=0)] | None
+    recovery_fresh: StrictBool
+
+
 class WorkflowState(StrictModel):
     project_id: NonEmptyString
     root_session_id: NonEmptyString
@@ -548,6 +794,33 @@ class WorkflowState(StrictModel):
     lifecycle: Literal["pending", "running", "completed", "interrupted"]
     revision: Annotated[int, Field(ge=0)]
     allocations: list[AllocationState]
+    epochs: EpochSnapshot
+    active_slices: list[ActiveSliceIndex] = Field(default_factory=list)
+    omitted_active_slice_count: Annotated[StrictInt, Field(ge=0)] = 0
+    latest_gates: list[GateIndex] = Field(default_factory=list)
+    omitted_gate_count: Annotated[StrictInt, Field(ge=0)] = 0
+    unresolved_native_reconciliations: list[NativeReconcileIndex] = Field(default_factory=list)
+    omitted_native_reconciliation_count: Annotated[StrictInt, Field(ge=0)] = 0
+    latest_native_reconciliation: NativeReconcileIndex | None = None
+    unresolved_native_set_hash: Sha256 | None = None
+    native_resolution_unavailable_reason: (
+        Literal[
+            "reviewed_comparison_set_exceeds_supported_bound",
+            "native_semantic_references_exceed_supported_bound",
+            "native_allocations_exceed_supported_bound",
+            "native_evidence_references_exceed_supported_bound",
+        ]
+        | None
+    ) = None
+    recovery_revision: Annotated[StrictInt, Field(ge=0)] = 0
+    native_resolution_history: list[NativeResolutionIndex] = Field(default_factory=list)
+    omitted_native_resolution_count: Annotated[StrictInt, Field(ge=0)] = 0
+    control_evidence_requests: list[ControlEvidenceRequestIndex] = Field(default_factory=list)
+    omitted_control_evidence_request_count: Annotated[StrictInt, Field(ge=0)] = 0
+    recovery_pages: list[RecoveryIndexPageInfo] = Field(default_factory=list)
+    session_audit: SessionAudit | None = None
+    capability_snapshot: TrustedCapabilitySnapshot | None = None
+    capability_snapshot_current: bool | None = None
 
 
 class AllocationState(StrictModel):

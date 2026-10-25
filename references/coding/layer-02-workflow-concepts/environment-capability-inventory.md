@@ -12,6 +12,10 @@ Record only capabilities directly exposed by the current surface: model identity
 
 Mark an unobserved capability as unknown. Do not substitute another runtime environment, model, parameter, Session, tool, permission, or inferred capability. Any required capability that is missing or unknown blocks the dependent slice.
 
+## Optional Enhanced host capability
+
+When a task may use Enhanced, apply [Enhanced Workflow Availability](../layer-01-fundamental-concepts/enhanced-workflow-availability.md) and [Enhanced Host Binding](../layer-01-fundamental-concepts/enhanced-host-binding.md). Record the trusted identity source, current role, and the actual guards required by the intended operation, with evidence and scope. An absent provider, unverified guard, or public rules-only surface is `unavailable`, not an inferred capability. If Enhanced is not needed, record `Not applicable` and why. A missing required Enhanced capability blocks only dependent work; keep independently authorized Native work available. This inventory does not initialize state or authorize a protected call.
+
 ## Route consumption
 
 Routes consume this inventory and state only for their topology-specific deltas. Apply branch-specific controls and model bindings from [Runtime and Model Provider Support](../layer-01-fundamental-concepts/runtime-provider-support.md).
@@ -25,3 +29,6 @@ A profile required by a route is a capability requirement, not a product-wide av
 - [Coding Context Exchange Workspace Boundary](../layer-01-fundamental-concepts/context-exchange-workspace-boundary.md) — locate filesystem and worktree capability ownership.
 - [Coding Delegation Mode Confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md) — locate mode-gate capability consumers.
 - [Coding Delegation Count Gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md) — locate count-gate capability consumers.
+
+- [Enhanced Workflow Availability](../layer-01-fundamental-concepts/enhanced-workflow-availability.md) — locate optional-path evidence and failure disposition.
+- [Enhanced Host Binding](../layer-01-fundamental-concepts/enhanced-host-binding.md) — locate trusted identity and guard evidence.

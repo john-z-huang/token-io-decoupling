@@ -95,6 +95,8 @@ def _package_migrations(kind: DatabaseKind) -> tuple[_Migration, ...]:
             "token_io_mcp.migrations.workflow.v0001_initial",
             "token_io_mcp.migrations.workflow.v0002_control_state",
             "token_io_mcp.migrations.workflow.v0003_evidence_control",
+            "token_io_mcp.migrations.workflow.v0004_session_metadata",
+            "token_io_mcp.migrations.workflow.v0005_native_resolution",
         )
     else:
         module_names = (
@@ -377,6 +379,14 @@ def _validate_identity_before_migration(
         return
 
     metadata = {"schema_migrations", "database_info", "workflow_epochs"}
+    if kind is DatabaseKind.WORKFLOW and "workflow_session_metadata" in tables:
+        empty_metadata = connection.execute(
+            "SELECT session_audit_json,capability_snapshot_json,"
+            "capability_snapshot_hash,capability_observed_revision "
+            "FROM workflow_session_metadata WHERE singleton=1"
+        ).fetchone()
+        if empty_metadata is not None and all(value is None for value in empty_metadata):
+            metadata.add("workflow_session_metadata")
     if kind is DatabaseKind.WORKFLOW and "native_reconciliations" in tables:
         native_identities = connection.execute(
             "SELECT DISTINCT project_id,root_session_id FROM native_reconciliations"
@@ -385,7 +395,15 @@ def _validate_identity_before_migration(
             raise DatabaseIdentityMismatchError(
                 "pending Native references belong to another project or Root"
             )
-        metadata.add("native_reconciliations")
+        metadata.update(
+            {
+                "native_reconciliations",
+                "native_reconcile_preimages",
+                "native_reconcile_resolutions",
+                "native_reconcile_resolution_targets",
+                "native_reconcile_confirmations",
+            }
+        )
         if "operation_receipts" in tables:
             native_receipts = connection.execute(
                 "SELECT COUNT(*) FROM operation_receipts WHERE operation!='workflow_reconcile'"
@@ -649,6 +667,22 @@ def _validate_schema_structure(
         ).fetchone()
         if applied_v3 is None or applied_v3[0] != expected_v3_name:
             schema_version = 2
+    if schema_version >= 4:
+        applied_v4 = connection.execute(
+            "SELECT name FROM schema_migrations WHERE version=4"
+        ).fetchone()
+        if expected_kind is not DatabaseKind.WORKFLOW or (
+            applied_v4 is None or applied_v4[0] != "session_metadata"
+        ):
+            schema_version = 3
+    if schema_version >= 5:
+        applied_v5 = connection.execute(
+            "SELECT name FROM schema_migrations WHERE version=5"
+        ).fetchone()
+        if expected_kind is not DatabaseKind.WORKFLOW or (
+            applied_v5 is None or applied_v5[0] != "native_resolution"
+        ):
+            schema_version = 4
     required_columns = {
         "database_info": {"singleton", "database_kind"},
         "schema_migrations": {"version", "name", "checksum", "applied_at", "duration_ms"},
@@ -823,6 +857,56 @@ def _validate_schema_structure(
                     },
                 }
             )
+        if schema_version >= 4:
+            required_columns["root_slices"].update({"output_class", "write_content_memo"})
+            required_columns["workflow_session_metadata"] = {
+                "singleton",
+                "session_audit_json",
+                "capability_snapshot_json",
+                "capability_snapshot_hash",
+                "capability_observed_revision",
+            }
+        if schema_version >= 5:
+            required_columns["workflow_control"].add("recovery_revision")
+            required_columns["native_reconcile_preimages"] = {
+                "reconcile_id",
+                "snapshot_hash",
+                "root_preimage_json",
+                "root_preimage_hash",
+                "captured_revision",
+                "captured_at",
+            }
+            required_columns["native_reconcile_resolutions"] = {
+                "resolution_id",
+                "reconcile_id",
+                "reviewed_set_hash",
+                "snapshot_hash",
+                "choice",
+                "selected_source_uri",
+                "selected_source_hash",
+                "selected_semantic_references_json",
+                "native_revision",
+                "native_epochs_json",
+                "root_decision_ref_json",
+                "native_freshness_refs_json",
+                "root_quiescence_refs_json",
+                "observed_revision",
+                "result_revision",
+                "recovery_revision",
+                "created_at",
+            }
+            required_columns["native_reconcile_resolution_targets"] = {
+                "reconcile_id",
+                "resolution_id",
+                "snapshot_hash",
+            }
+            required_columns["native_reconcile_confirmations"] = {
+                "awaiting_reconcile_id",
+                "matched_reconcile_id",
+                "snapshot_hash",
+                "confirmed_revision",
+                "created_at",
+            }
     else:
         required_columns.update(
             {

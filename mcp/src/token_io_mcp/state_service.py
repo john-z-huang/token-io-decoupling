@@ -12,6 +12,7 @@ from collections.abc import Callable, Generator, Mapping
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
+from typing import Literal, cast
 from urllib.parse import quote
 
 from pydantic import TypeAdapter
@@ -21,13 +22,23 @@ from token_io_mcp.migrations.runner import (
     DEFAULT_LOCK_TIMEOUT_SECONDS,
     DatabaseIdentityMismatchError,
     _migration_lock,
+    _package_migrations,
     open_database_for_authorized_write,
+    read_schema_status,
     validate_connection_identity,
     validate_existing_connection,
 )
-from token_io_mcp.models import CodingMode, DatabaseKind, RuleContext, SemanticRef
-from token_io_mcp.rules import RuleLoader
+from token_io_mcp.models import (
+    CodingMode,
+    DatabaseKind,
+    EvidenceRef,
+    RuleContext,
+    SchemaStatus,
+    SemanticRef,
+)
+from token_io_mcp.rules import RuleLoader, RuleLoadError, UnknownRuleNodeError
 from token_io_mcp.state_models import (
+    ActiveSliceIndex,
     AllocationRole,
     AllocationState,
     AllocationStatus,
@@ -37,6 +48,7 @@ from token_io_mcp.state_models import (
     CheckpointConfirmationTransition,
     CheckpointEvaluation,
     CheckpointNode,
+    ControlEvidenceRequestIndex,
     ControlTransitionRequest,
     EpochAdvanceTransition,
     EpochDimension,
@@ -45,19 +57,31 @@ from token_io_mcp.state_models import (
     EvidenceRecord,
     EvidenceSubmission,
     FactKey,
+    GateIndex,
     HostCapability,
     HostGuard,
     LegalBranch,
     ModeCount,
     MutationReceipt,
+    NativeReconcileIndex,
+    NativeReconcileResolutionTransition,
     NativeReconcileTransition,
+    NativeResolutionIndex,
+    NativeResolutionTargetIndex,
     NativeWorkflowSnapshot,
     OutputClass,
     ProgressRecord,
     ReconcileResult,
+    RecoveryIndexCollection,
+    RecoveryIndexCursor,
+    RecoveryIndexPageInfo,
+    RecoveryIndexPageRequest,
+    SessionAudit,
+    SessionAuditTransition,
     SessionRole,
     SliceCheckResult,
     SliceSpec,
+    TrustedCapabilitySnapshot,
     VerifiedChildBinding,
     WorkerState,
     WorkflowOpenRequest,
@@ -80,6 +104,10 @@ class WorkflowNotOpenError(StateServiceError):
 
 class RevisionConflictError(StateServiceError):
     """The caller's expected Revision does not match current state."""
+
+
+class StaleRecoveryCursorError(StateServiceError):
+    """A recovery-index cursor refers to an older Root Revision."""
 
 
 class IdempotencyConflictError(StateServiceError):
@@ -173,20 +201,29 @@ class StateService:
                 raise RevisionConflictError(
                     f"expected Revision {expected_revision}, current Revision is {current}"
                 )
+            _ensure_native_resolution(connection)
             request_id = submission.evidence_request_id
             if request_id is not None:
                 request = _one(
                     connection,
-                    "SELECT status FROM control_evidence_requests WHERE request_id=?",
+                    "SELECT status,returned_revision FROM control_evidence_requests "
+                    "WHERE request_id=?",
                     (request_id,),
                 )
-                if request is None or request[0] != "pending":
+                if request is None or request[0] not in {"pending", "returned"}:
                     raise InvalidStateTransitionError(
-                        "returned evidence must match a pending Control request"
+                        "returned evidence must match a pending Control request or an "
+                        "unresolved Control request eligible for recovery"
                     )
-                if EvidenceKind.RETURNED_EVIDENCE.value not in {
-                    item.kind.value for item in refs
-                }:
+                if request[0] == "returned" and (
+                    int(control[13]) <= 0
+                    or request[1] is None
+                    or int(request[1]) >= int(control[13])
+                ):
+                    raise InvalidStateTransitionError(
+                        "only a pre-recovery returned request may be re-returned"
+                    )
+                if EvidenceKind.RETURNED_EVIDENCE.value not in {item.kind.value for item in refs}:
                     raise InvalidStateTransitionError(
                         "requested evidence must include returned-evidence reference"
                     )
@@ -224,6 +261,7 @@ class StateService:
             connection.execute(
                 "UPDATE workflow_control SET revision=? WHERE singleton=1", (new_revision,)
             )
+            self._record_binding_snapshot(connection, binding, new_revision)
             evidence = EvidenceRecord(
                 evidence_id=evidence_id,
                 node_id=submission.node_id,
@@ -404,6 +442,26 @@ class StateService:
         input_hash: str | None = None,
         slice_ids: list[str] | None = None,
     ) -> CheckpointEvaluation:
+        evaluation, _replayed = self.workflow_evaluate_with_replay(
+            node_id,
+            expected_revision=expected_revision,
+            idempotency_key=idempotency_key,
+            branch=branch,
+            input_hash=input_hash,
+            slice_ids=slice_ids,
+        )
+        return evaluation
+
+    def workflow_evaluate_with_replay(
+        self,
+        node_id: CheckpointNode,
+        *,
+        expected_revision: int,
+        idempotency_key: str,
+        branch: str | None = None,
+        input_hash: str | None = None,
+        slice_ids: list[str] | None = None,
+    ) -> tuple[CheckpointEvaluation, bool]:
         node_id = CheckpointNode(node_id)
         binding = self._parent_binding({HostCapability.WORKFLOW_WRITE}, {HostGuard.PATH_BOUNDARY})
         path, root = self._root_database(binding, create=False)
@@ -433,13 +491,14 @@ class StateService:
                 current,
             )
             if replay is not None:
-                return CheckpointEvaluation.model_validate_json(_json(replay.result))
+                return CheckpointEvaluation.model_validate_json(_json(replay.result)), True
             if type(expected_revision) is not int or expected_revision < 0:
                 raise ValueError("expected_revision must be a non-negative integer")
             if expected_revision != current:
                 raise RevisionConflictError(
                     f"expected Revision {expected_revision}, current Revision is {current}"
                 )
+            _ensure_native_resolution(connection)
             context = self._rule_loader.load_context(node_id.value)
             if branch is not None and branch not in context.legal_branches:
                 raise InvalidStateTransitionError(
@@ -501,22 +560,41 @@ class StateService:
                 if signal is not None and signal_value != branch:
                     outcome, final_branch = "blocked", branch
             if node_id is CheckpointNode.CONTROL and branch == "evidence-on-demand":
-                outcome, final_branch = "evidence_on_demand", "evidence-on-demand"
+                # EOD is a request to collect more evidence, not a shortcut around
+                # the Control checkpoint's own facts and evidence requirements.
+                if outcome == "ready" and final_branch == branch:
+                    outcome, final_branch = "evidence_on_demand", "evidence-on-demand"
             evidence_request_id: str | None = None
-            if node_id is CheckpointNode.CONTROL and branch == "evidence-on-demand":
+            if (
+                node_id is CheckpointNode.CONTROL
+                and branch == "evidence-on-demand"
+                and outcome == "evidence_on_demand"
+            ):
                 evidence_request_id = str(uuid.uuid4())
             elif node_id is CheckpointNode.CONTROL and branch == "continue":
-                requested = _one(
-                    connection,
-                    "SELECT request_id,status FROM control_evidence_requests "
-                    "WHERE status IN ('pending','returned') ORDER BY created_revision DESC LIMIT 1",
-                )
-                if requested is not None:
-                    if requested[1] != "returned":
-                        outcome = "incomplete"
-                        missing_evidence.append("evidence returned for the pending Control request")
-                    else:
-                        evidence_request_id = str(requested[0])
+                requests = connection.execute(
+                    "SELECT request_id,status,returned_revision FROM control_evidence_requests "
+                    "WHERE status IN ('pending','returned') "
+                    "ORDER BY created_revision DESC,request_id"
+                ).fetchall()
+                pending_requests = [item for item in requests if item[1] == "pending"]
+                fresh_returned = [
+                    item
+                    for item in requests
+                    if item[1] == "returned"
+                    and item[2] is not None
+                    and int(item[2]) > int(control[13])
+                ]
+                if pending_requests:
+                    outcome = "incomplete"
+                    missing_evidence.append("returned evidence for every pending Control request")
+                elif requests and not fresh_returned:
+                    outcome = "incomplete"
+                    missing_evidence.append(
+                        "new returned evidence after Native recovery for the Control request"
+                    )
+                elif fresh_returned:
+                    evidence_request_id = str(fresh_returned[0][0])
             if input_hash is not None and stored_input and input_hash != stored_input:
                 outcome, final_branch = "incomplete", branch
                 missing_evidence.append("current evaluation input hash")
@@ -565,7 +643,11 @@ class StateService:
                     _now(),
                 ),
             )
-            if node_id is CheckpointNode.CONTROL and branch == "evidence-on-demand":
+            if (
+                node_id is CheckpointNode.CONTROL
+                and branch == "evidence-on-demand"
+                and outcome == "evidence_on_demand"
+            ):
                 connection.execute(
                     "INSERT INTO control_evidence_requests "
                     "(request_id,source_evaluation_id,created_revision,status,created_at) "
@@ -575,6 +657,7 @@ class StateService:
             connection.execute(
                 "UPDATE workflow_control SET revision=? WHERE singleton=1", (result_revision,)
             )
+            self._record_binding_snapshot(connection, binding, result_revision)
             evaluation = CheckpointEvaluation(
                 evaluation_id=evaluation_id,
                 node_id=node_id,
@@ -599,7 +682,7 @@ class StateService:
                 evaluation.model_dump(mode="json"),
                 result_revision,
             )
-            return evaluation
+            return evaluation, False
 
     def evaluate_control_checkpoint(
         self,
@@ -611,6 +694,24 @@ class StateService:
         slice_ids: list[str] | None = None,
     ) -> CheckpointEvaluation:
         return self.workflow_evaluate(
+            CheckpointNode.CONTROL,
+            expected_revision=expected_revision,
+            idempotency_key=idempotency_key,
+            branch=branch,
+            input_hash=input_hash,
+            slice_ids=slice_ids,
+        )
+
+    def evaluate_control_checkpoint_with_replay(
+        self,
+        *,
+        expected_revision: int,
+        idempotency_key: str,
+        branch: str | None = None,
+        input_hash: str | None = None,
+        slice_ids: list[str] | None = None,
+    ) -> tuple[CheckpointEvaluation, bool]:
+        return self.workflow_evaluate_with_replay(
             CheckpointNode.CONTROL,
             expected_revision=expected_revision,
             idempotency_key=idempotency_key,
@@ -653,6 +754,8 @@ class StateService:
 
     def workflow_transition(self, request: WorkflowTransitionRequest) -> MutationReceipt:
         request = TypeAdapter(WorkflowTransitionRequest).validate_python(request)
+        if isinstance(request, SessionAuditTransition):
+            return self._update_session_audit(request)
         if isinstance(request, EpochAdvanceTransition):
             return self.workflow_advance_epoch(
                 request.dimension,
@@ -681,6 +784,8 @@ class StateService:
                 current_revision=result.current_revision,
                 replayed=result.replayed,
             )
+        if isinstance(request, NativeReconcileResolutionTransition):
+            return self._resolve_native_reconcile(request)
         if isinstance(request, CheckpointConfirmationTransition):
             return self._confirm_checkpoint(request)
         assert isinstance(request, ControlTransitionRequest)
@@ -709,6 +814,7 @@ class StateService:
                 return replay
             if current != request.expected_revision:
                 raise RevisionConflictError("workflow changed after evaluation")
+            _ensure_native_resolution(connection)
             ev = _one(
                 connection,
                 "SELECT node_id,outcome,branch,implementation_epoch,documentation_epoch,"
@@ -737,12 +843,18 @@ class StateService:
             if request.outcome == "continue" and ev[8] is not None:
                 returned = _one(
                     connection,
-                    "SELECT status FROM control_evidence_requests WHERE request_id=?",
+                    "SELECT status,returned_revision FROM control_evidence_requests "
+                    "WHERE request_id=?",
                     (ev[8],),
                 )
-                if returned is None or returned[0] != "returned":
+                if (
+                    returned is None
+                    or returned[0] != "returned"
+                    or returned[1] is None
+                    or int(returned[1]) <= int(control[13])
+                ):
                     raise InvalidStateTransitionError(
-                        "Continue requires returned evidence for its Control request"
+                        "Continue requires fresh returned evidence after Native recovery"
                     )
             current_rules = self._rule_loader.load_context("control")
             stored_rule = _one(
@@ -812,7 +924,8 @@ class StateService:
             transition_id = str(uuid.uuid4())
             connection.execute(
                 "INSERT INTO control_transitions "
-                "(transition_id,evaluation_id,outcome,slice_ids_json,from_revision,to_revision,created_at) "
+                "(transition_id,evaluation_id,outcome,slice_ids_json,from_revision,to_revision,"
+                "created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     transition_id,
@@ -827,6 +940,7 @@ class StateService:
             connection.execute(
                 "UPDATE workflow_control SET revision=? WHERE singleton=1", (new_revision,)
             )
+            self._record_binding_snapshot(connection, binding, new_revision)
             if request.outcome == "continue" and ev[8] is not None:
                 connection.execute(
                     "UPDATE control_evidence_requests SET status='resolved' WHERE request_id=?",
@@ -839,6 +953,57 @@ class StateService:
                 "workflow_transition",
                 payload_hash,
                 {"transition_id": transition_id, "outcome": request.outcome},
+                new_revision,
+            )
+
+    def _update_session_audit(self, request: SessionAuditTransition) -> MutationReceipt:
+        binding = self._parent_binding({HostCapability.WORKFLOW_WRITE}, {HostGuard.PATH_BOUNDARY})
+        path, root = self._root_database(binding, create=False)
+        payload = request.model_dump(mode="json")
+        payload_hash = _hash_json({"operation": "workflow_transition", "payload": payload})
+        with self._write_transaction(
+            path,
+            DatabaseKind.WORKFLOW,
+            root,
+            logical_identity=(binding.project_id, binding.root_session_id, None),
+        ) as connection:
+            control = _required_control(connection)
+            current = int(control[11])
+            replay = self._find_receipt(
+                connection,
+                "operation_receipts",
+                request.idempotency_key,
+                "workflow_transition",
+                payload_hash,
+                current,
+            )
+            if replay is not None:
+                return replay
+            if current != request.expected_revision:
+                raise RevisionConflictError("workflow changed before session-audit update")
+            _ensure_native_resolution(connection)
+            if request.session_audit.worker_log_visibility == "Not applicable" and _one(
+                connection, "SELECT 1 FROM allocations WHERE status IN ('bound','initialized')"
+            ):
+                raise InvalidStateTransitionError(
+                    "Worker log Not applicable requires that no Worker was created"
+                )
+            new_revision = current + 1
+            connection.execute(
+                "UPDATE workflow_session_metadata SET session_audit_json=? WHERE singleton=1",
+                (_json(request.session_audit.model_dump(mode="json")),),
+            )
+            connection.execute(
+                "UPDATE workflow_control SET revision=? WHERE singleton=1", (new_revision,)
+            )
+            self._record_binding_snapshot(connection, binding, new_revision)
+            return self._store_receipt(
+                connection,
+                "operation_receipts",
+                request.idempotency_key,
+                "workflow_transition",
+                payload_hash,
+                {"session_audit": request.session_audit.model_dump(mode="json")},
                 new_revision,
             )
 
@@ -867,6 +1032,7 @@ class StateService:
                 return replay
             if current != request.expected_revision:
                 raise RevisionConflictError("workflow changed after checkpoint evaluation")
+            _ensure_native_resolution(connection)
             evaluation = _one(
                 connection,
                 "SELECT node_id,outcome,branch,rule_hash,implementation_epoch,documentation_epoch,"
@@ -878,7 +1044,9 @@ class StateService:
                 raise InvalidStateTransitionError(
                     "checkpoint confirmation requires a current ready evaluation"
                 )
-            if tuple(evaluation[4:7]) != tuple(_epoch_snapshot(connection).model_dump().values()):
+            if not _evaluation_epochs_are_current(
+                evaluation[0], tuple(evaluation[4:7]), _epoch_snapshot(connection)
+            ):
                 raise InvalidStateTransitionError("checkpoint evaluation is stale")
             context = self._rule_loader.load_context(evaluation[0])
             if evaluation[3] != context.context_hash:
@@ -933,6 +1101,7 @@ class StateService:
             connection.execute(
                 "UPDATE workflow_control SET revision=? WHERE singleton=1", (new_revision,)
             )
+            self._record_binding_snapshot(connection, binding, new_revision)
             return self._store_receipt(
                 connection,
                 "operation_receipts",
@@ -952,6 +1121,14 @@ class StateService:
         idempotency_key: str,
     ) -> ReconcileResult:
         snapshot = NativeWorkflowSnapshot.model_validate(snapshot)
+        if (
+            len(snapshot.semantic_references) > 256
+            or len(snapshot.allocations) > 256
+            or len(snapshot.evidence_refs) > 256
+        ):
+            raise InvalidStateTransitionError(
+                "Native snapshot exceeds the supported bounded recovery index"
+            )
         binding = self._parent_binding({HostCapability.WORKFLOW_WRITE}, {HostGuard.PATH_BOUNDARY})
         if (snapshot.project_id, snapshot.root_session_id) != (
             binding.project_id,
@@ -1006,7 +1183,8 @@ class StateService:
             if confirm:
                 approved_comparison = _one(
                     connection,
-                    "SELECT observed_revision,result_revision FROM native_reconciliations "
+                    "SELECT observed_revision,result_revision,reconcile_id "
+                    "FROM native_reconciliations "
                     "WHERE snapshot_hash=? AND project_id=? AND root_session_id=? "
                     "AND status='awaiting_confirmation' ORDER BY result_revision DESC LIMIT 1",
                     (snapshot_hash, snapshot.project_id, snapshot.root_session_id),
@@ -1021,6 +1199,17 @@ class StateService:
                 ):
                     raise RevisionConflictError(
                         "Root changed after Native comparison; compare again before confirmation"
+                    )
+                if (
+                    _one(
+                        connection,
+                        "SELECT 1 FROM native_reconcile_preimages WHERE reconcile_id=?",
+                        (approved_comparison[2],),
+                    )
+                    is None
+                ):
+                    raise InvalidStateTransitionError(
+                        "legacy Native comparison lacks a captured Root preimage; compare again"
                     )
             differences = []
             if snapshot.mode_source == "timeout-default":
@@ -1084,11 +1273,17 @@ class StateService:
                 status = "conflict"
             rid = str(uuid.uuid4())
             result_rev = current + 1
+            root_preimage = _json(_native_root_preimage(connection))
+            root_preimage_hash = _hash_json(json.loads(root_preimage))
             if status == "matched" and confirm and control is None:
                 now = _now()
                 run_id = snapshot.run_id or str(uuid.uuid4())
                 connection.execute(
-                    "INSERT INTO workflow_control VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    "INSERT INTO workflow_control "
+                    "(singleton,project_id,root_session_id,run_id,mode,child_count,mode_source,"
+                    "source_uri,source_hash,semantic_references_json,lifecycle,revision,"
+                    "created_at) "
+                    "VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?)",
                     (
                         binding.project_id,
                         binding.root_session_id,
@@ -1132,6 +1327,7 @@ class StateService:
                             now,
                         ),
                     )
+                self._record_binding_snapshot(connection, binding, result_rev)
             native_refs = [ref.model_dump(mode="json") for ref in snapshot.evidence_refs]
             connection.execute(
                 "INSERT INTO native_reconciliations VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -1149,10 +1345,33 @@ class StateService:
                     _json(snapshot.model_dump(mode="json")),
                 ),
             )
+            if confirm and status == "matched" and approved_comparison is not None:
+                connection.execute(
+                    "INSERT INTO native_reconcile_confirmations VALUES (?,?,?,?,?)",
+                    (
+                        approved_comparison[2],
+                        rid,
+                        snapshot_hash,
+                        result_rev,
+                        _now(),
+                    ),
+                )
+            connection.execute(
+                "INSERT INTO native_reconcile_preimages VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    rid,
+                    snapshot_hash,
+                    root_preimage,
+                    root_preimage_hash,
+                    current,
+                    _now(),
+                ),
+            )
             if control:
                 connection.execute(
                     "UPDATE workflow_control SET revision=? WHERE singleton=1", (result_rev,)
                 )
+                self._record_binding_snapshot(connection, binding, result_rev)
             result = ReconcileResult(
                 reconcile_id=rid,
                 status=status,
@@ -1172,6 +1391,322 @@ class StateService:
                 result_rev,
             )
             return result
+
+    def _resolve_native_reconcile(
+        self, request: NativeReconcileResolutionTransition
+    ) -> MutationReceipt:
+        """Resolve a reviewed complete conflict set without importing identity/history."""
+        binding = self._parent_binding({HostCapability.WORKFLOW_WRITE}, {HostGuard.PATH_BOUNDARY})
+        path, root = self._root_database(binding, create=False)
+        payload = request.model_dump(mode="json")
+        payload_hash = _hash_json({"operation": "workflow_transition", "payload": payload})
+        with self._write_transaction(
+            path,
+            DatabaseKind.WORKFLOW,
+            root,
+            logical_identity=(binding.project_id, binding.root_session_id, None),
+        ) as connection:
+            control = _required_control(connection)
+            current = int(control[11])
+            replay = self._find_receipt(
+                connection,
+                "operation_receipts",
+                request.idempotency_key,
+                "workflow_transition",
+                payload_hash,
+                current,
+            )
+            if replay is not None:
+                return replay
+            if current != request.expected_revision:
+                raise RevisionConflictError("workflow changed before Native resolution")
+
+            unresolved = _unresolved_native_rows(connection)
+            if not unresolved:
+                raise InvalidStateTransitionError("there is no unresolved Native comparison set")
+            canonical = _one(
+                connection,
+                "SELECT reconcile_id,snapshot_hash,status,snapshot_json,result_revision "
+                "FROM native_reconciliations "
+                "ORDER BY result_revision DESC,reconcile_id DESC LIMIT 1",
+            )
+            if canonical is None or canonical[0] != request.canonical_reconcile_id:
+                raise RevisionConflictError(
+                    "Native resolution must bind the latest reviewed comparison"
+                )
+            if canonical[1] != request.snapshot_hash:
+                raise RevisionConflictError("Native snapshot hash changed after review")
+            if (
+                _one(
+                    connection,
+                    "SELECT 1 FROM native_reconcile_preimages WHERE reconcile_id=? "
+                    "AND snapshot_hash=?",
+                    (canonical[0], canonical[1]),
+                )
+                is None
+            ):
+                raise InvalidStateTransitionError(
+                    "latest comparison has no v5 Root preimage; create a fresh comparison"
+                )
+            review_hash = _native_review_set_hash(connection, current, unresolved, canonical)
+            if request.unresolved_set_hash != review_hash:
+                raise RevisionConflictError("unresolved Native comparison set changed after review")
+
+            reviewed_rows: dict[str, sqlite3.Row | tuple[object, ...]] = {
+                str(row[0]): row for row in unresolved
+            }
+            canonical_row = (
+                canonical[0],
+                canonical[1],
+                canonical[2],
+                "[]",
+                0,
+                canonical[4],
+                json.loads(canonical[3]),
+            )
+            if canonical[0] not in reviewed_rows:
+                reviewed_rows[str(canonical[0])] = canonical_row
+            if len(reviewed_rows) > 256:
+                raise InvalidStateTransitionError(
+                    "Native resolution set exceeds the supported bounded review index"
+                )
+            snapshots: list[tuple[sqlite3.Row | tuple[object, ...], NativeWorkflowSnapshot]] = []
+            permitted_differences = {
+                "Revision",
+                "Epochs",
+                "Contract source",
+                "semantic references",
+            }
+            max_native_revision = 0
+            max_native_epochs = {"implementation_content": 0, "documentation": 0, "git_metadata": 0}
+            reviewed_native_refs: set[tuple[str, str]] = set()
+            expected_allocations = [
+                (item.allocation_id, item.role, item.worker_session_id, item.status.value)
+                for item in _workflow_state(connection).allocations
+            ]
+            for row in reviewed_rows.values():
+                row_id, snapshot_hash, status, differences_json, *_tail, snapshot_json = row
+                differences = set(json.loads(cast(str, differences_json)))
+                unsupported = differences - permitted_differences
+                if unsupported:
+                    raise InvalidStateTransitionError(
+                        "Native set contains unsupported identity or lifecycle differences"
+                    )
+                snapshot = NativeWorkflowSnapshot.model_validate_json(
+                    _json(snapshot_json) if isinstance(snapshot_json, dict) else str(snapshot_json)
+                )
+                if (
+                    len(snapshot.semantic_references) > 256
+                    or len(snapshot.allocations) > 256
+                    or len(snapshot.evidence_refs) > 256
+                ):
+                    raise InvalidStateTransitionError(
+                        "Native snapshot exceeds the supported adjudication bound"
+                    )
+                if _hash_json(snapshot.model_dump(mode="json")) != snapshot_hash:
+                    raise InvalidStateTransitionError("stored Native snapshot hash is invalid")
+                if (snapshot.project_id, snapshot.root_session_id) != (
+                    binding.project_id,
+                    binding.root_session_id,
+                ):
+                    raise InvalidStateTransitionError("Native set crosses project or Root identity")
+                if (
+                    snapshot.run_id != control[3]
+                    or snapshot.mode_count.mode.value != control[4]
+                    or snapshot.mode_count.child_count != control[5]
+                    or snapshot.mode_source != control[6]
+                    or snapshot.lifecycle != control[10]
+                ):
+                    raise InvalidStateTransitionError(
+                        "Native set changes immutable Run, mode, count, source mode, or lifecycle"
+                    )
+                native_allocations = [
+                    (
+                        item.allocation_id,
+                        item.role.value if item.role else None,
+                        item.worker_session_id,
+                        item.status.value,
+                    )
+                    for item in snapshot.allocations
+                ]
+                if native_allocations != expected_allocations:
+                    raise InvalidStateTransitionError(
+                        "Native set changes allocation identity or dispatch history"
+                    )
+                if any(
+                    item.worker_session_id is not None
+                    or item.status in {AllocationStatus.BOUND, AllocationStatus.INITIALIZED}
+                    for item in snapshot.allocations
+                ):
+                    raise InvalidStateTransitionError(
+                        "Native Worker identity or initialized dispatch cannot be imported"
+                    )
+                max_native_revision = max(max_native_revision, snapshot.revision)
+                reviewed_native_refs.update(
+                    (item.uri, item.content_hash) for item in snapshot.evidence_refs
+                )
+                for dimension in max_native_epochs:
+                    max_native_epochs[dimension] = max(
+                        max_native_epochs[dimension], int(getattr(snapshot.epochs, dimension))
+                    )
+                snapshots.append((row, snapshot))
+
+            if request.reviewed_native_revision != max_native_revision:
+                raise InvalidStateTransitionError(
+                    "Native attestation revision must equal the maximum reviewed timeline revision"
+                )
+            if request.reviewed_native_epochs.model_dump(mode="json") != max_native_epochs:
+                raise InvalidStateTransitionError(
+                    "Native attestation Epochs must equal the maximum reviewed timeline Epochs"
+                )
+            provided_native_refs = [
+                (item.uri, item.content_hash) for item in request.native_freshness_refs
+            ]
+            if (
+                len(provided_native_refs) != len(set(provided_native_refs))
+                or set(provided_native_refs) != reviewed_native_refs
+            ):
+                raise InvalidStateTransitionError(
+                    "Native freshness references must exactly cover the reviewed snapshots"
+                )
+            if not request.root_quiescence_refs:
+                raise InvalidStateTransitionError("Root quiescence evidence is required")
+
+            if control[10] in {"completed", "interrupted"}:
+                raise InvalidStateTransitionError(
+                    "terminal workflow cannot be resumed by resolution"
+                )
+            if _one(
+                connection,
+                "SELECT 1 FROM allocations WHERE worker_session_id IS NOT NULL "
+                "OR status IN ('bound','initialized') LIMIT 1",
+            ):
+                raise InvalidStateTransitionError(
+                    "bound or initialized Worker identity requires its own verified recovery"
+                )
+            if _one(connection, "SELECT 1 FROM workflow_slices WHERE status='released' LIMIT 1"):
+                raise InvalidStateTransitionError("active Worker Slice blocks Native resolution")
+            if _one(
+                connection,
+                "SELECT 1 FROM root_outbox WHERE status='pending' LIMIT 1",
+            ) or _one(
+                connection,
+                "SELECT 1 FROM workflow_dispatch_events WHERE status='pending' LIMIT 1",
+            ):
+                raise InvalidStateTransitionError(
+                    "pending Worker dispatch blocks Native resolution"
+                )
+            if any(
+                item.worker_session_id is not None
+                or item.status in {AllocationStatus.BOUND, AllocationStatus.INITIALIZED}
+                for _, snapshot in snapshots
+                for item in snapshot.allocations
+            ):
+                raise InvalidStateTransitionError("reviewed Native set contains Worker history")
+
+            canonical_snapshot = NativeWorkflowSnapshot.model_validate_json(canonical[3])
+            selected_source = (
+                canonical_snapshot.source
+                if request.choice == "adopt_native_pair"
+                else SemanticRef(uri=control[7], content_hash=control[8])
+            )
+            selected_refs = (
+                canonical_snapshot.semantic_references
+                if request.choice == "adopt_native_pair"
+                else [SemanticRef.model_validate(item) for item in json.loads(control[9])]
+            )
+            db_epochs = _epoch_snapshot(connection)
+            max_epochs = {
+                dimension: max(int(getattr(db_epochs, dimension)), max_native_epochs[dimension])
+                for dimension in max_native_epochs
+            }
+            sqlite_max = 2**63 - 1
+            result_revision = max(current, max_native_revision) + 1
+            next_epochs = {key: value + 1 for key, value in max_epochs.items()}
+            if result_revision > sqlite_max or any(
+                value > sqlite_max for value in next_epochs.values()
+            ):
+                raise InvalidStateTransitionError("Native recovery counters exceed SQLite int64")
+            recovery_revision = result_revision
+            resolution_id = str(uuid.uuid4())
+            now = _now()
+            native_epochs_json = _json(max_native_epochs)
+            connection.execute(
+                "INSERT INTO native_reconcile_resolutions "
+                "(resolution_id,reconcile_id,reviewed_set_hash,snapshot_hash,choice,"
+                "selected_source_uri,selected_source_hash,selected_semantic_references_json,"
+                "native_revision,native_epochs_json,root_decision_ref_json,"
+                "native_freshness_refs_json,root_quiescence_refs_json,"
+                "observed_revision,result_revision,recovery_revision,created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    resolution_id,
+                    request.canonical_reconcile_id,
+                    review_hash,
+                    request.snapshot_hash,
+                    request.choice,
+                    selected_source.uri,
+                    selected_source.content_hash,
+                    _json([item.model_dump(mode="json") for item in selected_refs]),
+                    max_native_revision,
+                    native_epochs_json,
+                    _json(request.root_decision_ref.model_dump(mode="json")),
+                    _json([item.model_dump(mode="json") for item in request.native_freshness_refs]),
+                    _json([item.model_dump(mode="json") for item in request.root_quiescence_refs]),
+                    current,
+                    result_revision,
+                    recovery_revision,
+                    now,
+                ),
+            )
+            for row in reviewed_rows.values():
+                connection.execute(
+                    "INSERT INTO native_reconcile_resolution_targets VALUES (?, ?, ?)",
+                    (row[0], resolution_id, row[1]),
+                )
+            connection.execute(
+                "UPDATE workflow_control SET source_uri=?,source_hash=?,"
+                "semantic_references_json=?,revision=?,recovery_revision=? WHERE singleton=1",
+                (
+                    selected_source.uri,
+                    selected_source.content_hash,
+                    _json([item.model_dump(mode="json") for item in selected_refs]),
+                    result_revision,
+                    recovery_revision,
+                ),
+            )
+            connection.execute(
+                "UPDATE workflow_epochs SET implementation_content=?,documentation=?,"
+                "git_metadata=? WHERE singleton=1",
+                (
+                    next_epochs["implementation_content"],
+                    next_epochs["documentation"],
+                    next_epochs["git_metadata"],
+                ),
+            )
+            connection.execute("UPDATE root_slices SET status='closed' WHERE status='released'")
+            self._record_binding_snapshot(connection, binding, result_revision)
+            result = {
+                "resolution_id": resolution_id,
+                "canonical_reconcile_id": request.canonical_reconcile_id,
+                "reviewed_set_hash": review_hash,
+                "resolved_comparison_count": len(reviewed_rows),
+                "choice": request.choice,
+                "result_revision": result_revision,
+                "recovery_revision": recovery_revision,
+                "epochs": next_epochs,
+                "source": selected_source.model_dump(mode="json"),
+                "semantic_references": [item.model_dump(mode="json") for item in selected_refs],
+            }
+            return self._store_receipt(
+                connection,
+                "operation_receipts",
+                request.idempotency_key,
+                "workflow_transition",
+                payload_hash,
+                result,
+                result_revision,
+            )
 
     def workflow_open(self, request: WorkflowOpenRequest) -> MutationReceipt:
         """Initialize the locked route once or read it back without resetting identity."""
@@ -1194,7 +1729,6 @@ class StateService:
             logical_identity=(binding.project_id, binding.root_session_id, None),
         ) as connection:
             existing = _one(connection, "SELECT * FROM workflow_control WHERE singleton=1")
-            _ensure_native_resolution(connection)
             if existing is not None:
                 receipt = self._find_receipt(
                     connection,
@@ -1206,6 +1740,7 @@ class StateService:
                 )
                 if receipt is not None:
                     return receipt
+                _ensure_native_resolution(connection)
                 _assert_workflow_identity(existing, binding, request)
                 current_revision = int(existing[11])
                 if request.expected_revision != current_revision:
@@ -1223,6 +1758,8 @@ class StateService:
                     state.model_dump(mode="json"),
                     current_revision,
                 )
+
+            _ensure_native_resolution(connection)
 
             if request.expected_revision != 0:
                 raise RevisionConflictError("new workflow must start at Revision 0")
@@ -1255,6 +1792,7 @@ class StateService:
                     "VALUES (?, ?, NULL, 'unassigned', ?)",
                     (str(uuid.uuid4()), slot, now),
                 )
+            self._record_binding_snapshot(connection, binding, 0)
             state = _workflow_state(connection)
             return self._store_receipt(
                 connection,
@@ -1266,11 +1804,81 @@ class StateService:
                 0,
             )
 
-    def workflow_get_state(self) -> WorkflowState:
+    def workflow_get_state(
+        self, *, index_page: RecoveryIndexPageRequest | None = None
+    ) -> WorkflowState:
+        binding = self._parent_binding({HostCapability.WORKFLOW_READ}, {HostGuard.PATH_BOUNDARY})
+        if index_page is not None:
+            index_page = RecoveryIndexPageRequest.model_validate(index_page)
+        path, root = self._root_database(binding, create=False)
+        with self._read_transaction(path, DatabaseKind.WORKFLOW, root) as connection:
+            return _workflow_state(connection, self._rule_loader, binding, index_page)
+
+    def workflow_get_state_for_evaluation(
+        self, evaluation: CheckpointEvaluation
+    ) -> WorkflowState | None:
+        """Return current state only when the evaluation belongs to this bound Root DB."""
         binding = self._parent_binding({HostCapability.WORKFLOW_READ}, {HostGuard.PATH_BOUNDARY})
         path, root = self._root_database(binding, create=False)
         with self._read_transaction(path, DatabaseKind.WORKFLOW, root) as connection:
-            return _workflow_state(connection)
+            _validate_root_identity(connection, binding)
+            row = _one(
+                connection,
+                "SELECT node_id,outcome,branch,input_hash,rule_hash,implementation_epoch,"
+                "documentation_epoch,git_metadata_epoch,basis_revision,result_revision,"
+                "missing_facts_json,missing_evidence_json,slice_ids_json,evidence_request_id "
+                "FROM checkpoint_evaluations WHERE evaluation_id=?",
+                (evaluation.evaluation_id,),
+            )
+            if row is None:
+                return None
+            expected = (
+                evaluation.node_id.value,
+                evaluation.outcome,
+                evaluation.branch.value if evaluation.branch is not None else None,
+                evaluation.input_hash,
+                evaluation.rule_hash,
+                evaluation.epochs.implementation_content,
+                evaluation.epochs.documentation,
+                evaluation.epochs.git_metadata,
+                evaluation.basis_revision,
+                evaluation.result_revision,
+                _json([item.value for item in evaluation.missing_facts]),
+                _json(evaluation.missing_evidence),
+                _json(evaluation.slice_ids),
+                evaluation.evidence_request_id,
+            )
+            if tuple(row) != expected:
+                return None
+            return _workflow_state(connection, self._rule_loader, binding)
+
+    def database_schema_status(self) -> SchemaStatus:
+        """Read only the current trusted session database schema without mutation."""
+        current = self._binding_provider.current_binding()
+        if current.role is SessionRole.PARENT:
+            binding = self._parent_binding(
+                {HostCapability.WORKFLOW_READ}, {HostGuard.PATH_BOUNDARY}
+            )
+            kind = DatabaseKind.WORKFLOW
+            path, root = self._root_database(binding, create=False)
+        elif current.role is SessionRole.WORKER:
+            binding = self._worker_binding({HostCapability.WORKER_READ})
+            kind = DatabaseKind.WORKER
+            path, root = self._worker_database(binding.current_session_id, binding, create=False)
+        else:
+            raise BindingError("a trusted Root or Worker binding is required")
+        if not root.exists():
+            migrations = _package_migrations(kind)
+            return SchemaStatus(
+                exists=False,
+                database_kind=None,
+                current_version=0,
+                target_version=migrations[-1].version,
+                pending_versions=[migration.version for migration in migrations],
+                compatible=False,
+                reason="database does not exist",
+            )
+        return read_schema_status(path, kind, trusted_root=root)
 
     def delegation_reserve(
         self, role: str, *, expected_revision: int, idempotency_key: str
@@ -1315,7 +1923,13 @@ class StateService:
         path, root = self._root_database(binding, create=False)
         with self._read_transaction(path, DatabaseKind.WORKFLOW, root) as connection:
             context = self._rule_loader.load_context(CheckpointNode.SLICE.value)
-            checked = _check_slice(connection, spec, context.context_hash)
+            control_context = self._rule_loader.load_context(CheckpointNode.CONTROL.value)
+            checked = _check_slice(
+                connection,
+                spec,
+                context.context_hash,
+                control_context.context_hash,
+            )
             return checked.model_copy(update={"input_hash": _slice_spec_hash(spec)})
 
     def slice_release(
@@ -1332,14 +1946,23 @@ class StateService:
         def mutate(connection: sqlite3.Connection, revision: int) -> dict[str, object]:
             context = self._rule_loader.load_context(CheckpointNode.SLICE.value)
             _ensure_native_resolution(connection)
-            checked = _check_slice(connection, spec, context.context_hash)
+            control_context = self._rule_loader.load_context(CheckpointNode.CONTROL.value)
+            checked = _check_slice(
+                connection,
+                spec,
+                context.context_hash,
+                control_context.context_hash,
+            )
             if not checked.eligible:
                 raise InvalidStateTransitionError(checked.reason or "slice is not eligible")
             slice_id = str(uuid.uuid4())
             control = _required_control(connection)
             if control[4] == "Single-Agent Coding":
                 connection.execute(
-                    "INSERT INTO root_slices VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'released', ?, ?)",
+                    "INSERT INTO root_slices (slice_id,objective_uri,objective_hash,return_uri,"
+                    "return_hash,boundary_uri,boundary_hash,authorized_paths_json,"
+                    "change_categories_json,status,created_revision,created_at,output_class,"
+                    "write_content_memo) VALUES (?,?,?,?,?,?,?,?,?,'released',?,?,?,?)",
                     (
                         slice_id,
                         spec.objective.uri,
@@ -1352,6 +1975,8 @@ class StateService:
                         _json([x.value for x in spec.change_categories]),
                         revision,
                         _now(),
+                        spec.output_class.value,
+                        int(spec.write_content_memo),
                     ),
                 )
                 connection.execute(
@@ -1724,11 +2349,13 @@ class StateService:
                 raise RevisionConflictError(
                     f"expected Revision {expected_revision}, current Revision is {current}"
                 )
+            _ensure_native_resolution(connection)
             next_revision = current + 1
             result = mutation(connection, next_revision)
             connection.execute(
                 "UPDATE workflow_control SET revision=? WHERE singleton=1", (next_revision,)
             )
+            self._record_binding_snapshot(connection, binding, next_revision)
             return self._store_receipt(
                 connection,
                 "operation_receipts",
@@ -1854,227 +2481,336 @@ class StateService:
         event_id: str,
     ) -> None:
         root_path, root = self._root_database(parent, create=False)
-        with self._read_transaction(root_path, DatabaseKind.WORKFLOW, root) as connection:
-            row = _one(
-                connection,
-                "SELECT allocation_id,payload_json,payload_hash,status,sequence "
-                "FROM workflow_dispatch_events WHERE event_id=?",
-                (event_id,),
-            )
-        if row is None:
-            raise WorkerInitializationError("committed Root dispatch event is missing")
-        allocation_id, payload_json, payload_hash, event_status, sequence = row
-        payload = json.loads(payload_json)
-        if payload["worker_session_id"] != child.child_session_id:
-            raise WorkerInitializationError("outbox Worker identity differs from trusted child")
-        worker_path, worker_root = self._worker_database(
-            child.child_session_id, parent, create=False
-        )
-        if event_status == "confirmed" and not worker_path.exists():
-            raise WorkerInitializationError(
-                "confirmed Worker database is missing; refusing reinitialization"
-            )
-        worker_path, worker_root = self._worker_database(
-            child.child_session_id, parent, create=not worker_path.exists()
-        )
-        with self._write_transaction(
-            worker_path,
-            DatabaseKind.WORKER,
-            worker_root,
-            logical_identity=(parent.project_id, parent.root_session_id, child.child_session_id),
-        ) as connection:
-            identity = _one(connection, "SELECT * FROM worker_identity WHERE singleton=1")
-            snapshot = _json(payload)
-            assignment_hash = _hash_json(payload)
-            if assignment_hash != payload_hash:
-                raise WorkerInitializationError("Root outbox payload hash does not match")
-            history = _one(
-                connection,
-                "SELECT status,sequence,snapshot_json,assignment_hash "
-                "FROM worker_dispatch_history WHERE event_id=?",
-                (event_id,),
-            )
-            active = _one(
-                connection, "SELECT sequence FROM worker_active_dispatch WHERE singleton=1"
-            )
-            if history is not None:
-                if identity is None or tuple(identity[index] for index in (1, 2, 3, 4)) != (
-                    payload["project_id"],
-                    payload["root_session_id"],
-                    payload["worker_session_id"],
-                    allocation_id,
-                ):
-                    raise WorkerInitializationError("Worker identity differs from dispatch history")
-                if history[0] == "confirmed":
-                    # A replayed old event is queryable but may never rewind the active pointer.
-                    if history[3] != assignment_hash:
-                        raise WorkerInitializationError("confirmed dispatch snapshot hash changed")
-                else:
-                    if identity[7] != event_id or identity[8] != assignment_hash:
-                        raise WorkerInitializationError(
-                            "pending dispatch is not the active Worker binding"
-                        )
-                    if active is None:
-                        if sequence != 1:
-                            raise WorkerInitializationError(
-                                "pending dispatch sequence is inconsistent"
-                            )
-                    elif sequence <= int(active[0]):
-                        raise WorkerInitializationError(
-                            "pending dispatch would rewind the active pointer"
-                        )
-                    if history[2] != snapshot or history[3] != assignment_hash:
-                        raise WorkerInitializationError(
-                            "pending dispatch snapshot differs from its event"
-                        )
-            elif identity is None:
-                if sequence != 1:
-                    raise WorkerInitializationError("first Worker event must have sequence 1")
-                current_snapshot = _one(
-                    connection, "SELECT snapshot_json FROM assignment_snapshot WHERE singleton=1"
+        root_identity = (parent.project_id, parent.root_session_id, None)
+        # Keep one Root file lock across each durable boundary. Each SQLite transaction still
+        # commits separately in Worker-pending -> Root-ack -> Worker-confirm order.
+        with _migration_lock(root_path, root, self._lock_timeout_seconds):
+            with self._locked_write_connection(
+                root_path,
+                DatabaseKind.WORKFLOW,
+                root,
+                logical_identity=root_identity,
+            ) as root_connection:
+                event = _one(
+                    root_connection,
+                    "SELECT e.allocation_id,e.payload_json,e.payload_hash,e.status,e.sequence,"
+                    "o.status FROM workflow_dispatch_events AS e "
+                    "LEFT JOIN root_outbox AS o ON o.event_id=e.event_id WHERE e.event_id=?",
+                    (event_id,),
                 )
-                if current_snapshot is not None and current_snapshot[0] != snapshot:
+                if event is None:
+                    raise WorkerInitializationError("committed Root dispatch event is missing")
+                allocation_id, payload_json, payload_hash, event_status, sequence, outbox_status = (
+                    event
+                )
+                payload = json.loads(payload_json)
+                if payload["worker_session_id"] != child.child_session_id:
                     raise WorkerInitializationError(
-                        "unbound Worker store already contains another assignment"
+                        "outbox Worker identity differs from trusted child"
                     )
-                connection.execute(
-                    "INSERT OR IGNORE INTO assignment_snapshot "
-                    "(singleton, snapshot_json, source_revision) "
-                    "VALUES (1, ?, ?)",
-                    (snapshot, payload["source_revision"]),
+                if _hash_json(payload) != payload_hash:
+                    raise WorkerInitializationError("Root outbox payload hash does not match")
+                if event_status == "confirmed" and outbox_status in {"confirmed", None}:
+                    if self._worker_dispatch_is_confirmed(
+                        parent,
+                        child.child_session_id,
+                        allocation_id,
+                        event_id,
+                        sequence,
+                        payload,
+                        payload_hash,
+                    ):
+                        return
+                _ensure_native_resolution(root_connection)
+
+            worker_path, worker_root = self._worker_database(
+                child.child_session_id, parent, create=False
+            )
+            if event_status == "confirmed" and not worker_path.exists():
+                raise WorkerInitializationError(
+                    "confirmed Worker database is missing; refusing reinitialization"
                 )
-                connection.execute(
-                    """INSERT INTO worker_identity
-                       (singleton, project_id, root_session_id, worker_session_id, allocation_id,
-                        role, output_class, event_id, assignment_hash, revision, created_at)
-                       VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)""",
-                    (
+            worker_path, worker_root = self._worker_database(
+                child.child_session_id, parent, create=not worker_path.exists()
+            )
+            with self._write_transaction(
+                worker_path,
+                DatabaseKind.WORKER,
+                worker_root,
+                logical_identity=(
+                    parent.project_id,
+                    parent.root_session_id,
+                    child.child_session_id,
+                ),
+            ) as worker_connection:
+                identity = _one(
+                    worker_connection, "SELECT * FROM worker_identity WHERE singleton=1"
+                )
+                snapshot = _json(payload)
+                assignment_hash = _hash_json(payload)
+                history = _one(
+                    worker_connection,
+                    "SELECT status,sequence,snapshot_json,assignment_hash "
+                    "FROM worker_dispatch_history WHERE event_id=?",
+                    (event_id,),
+                )
+                active = _one(
+                    worker_connection,
+                    "SELECT sequence FROM worker_active_dispatch WHERE singleton=1",
+                )
+                if history is not None:
+                    if identity is None or tuple(identity[index] for index in (1, 2, 3, 4)) != (
+                        payload["project_id"],
+                        payload["root_session_id"],
+                        payload["worker_session_id"],
+                        allocation_id,
+                    ):
+                        raise WorkerInitializationError(
+                            "Worker identity differs from dispatch history"
+                        )
+                    if history[0] == "confirmed":
+                        if history[3] != assignment_hash:
+                            raise WorkerInitializationError(
+                                "confirmed dispatch snapshot hash changed"
+                            )
+                    else:
+                        if identity[7] != event_id or identity[8] != assignment_hash:
+                            raise WorkerInitializationError(
+                                "pending dispatch is not the active Worker binding"
+                            )
+                        if active is None:
+                            if sequence != 1:
+                                raise WorkerInitializationError(
+                                    "pending dispatch sequence is inconsistent"
+                                )
+                        elif sequence <= int(active[0]):
+                            raise WorkerInitializationError(
+                                "pending dispatch would rewind the active pointer"
+                            )
+                        if history[2] != snapshot or history[3] != assignment_hash:
+                            raise WorkerInitializationError(
+                                "pending dispatch snapshot differs from its event"
+                            )
+                elif identity is None:
+                    if sequence != 1:
+                        raise WorkerInitializationError("first Worker event must have sequence 1")
+                    current_snapshot = _one(
+                        worker_connection,
+                        "SELECT snapshot_json FROM assignment_snapshot WHERE singleton=1",
+                    )
+                    if current_snapshot is not None and current_snapshot[0] != snapshot:
+                        raise WorkerInitializationError(
+                            "unbound Worker store already contains another assignment"
+                        )
+                    worker_connection.execute(
+                        "INSERT OR IGNORE INTO assignment_snapshot "
+                        "(singleton,snapshot_json,source_revision) VALUES (1,?,?)",
+                        (snapshot, payload["source_revision"]),
+                    )
+                    worker_connection.execute(
+                        """INSERT INTO worker_identity
+                           (singleton,project_id,root_session_id,worker_session_id,allocation_id,
+                            role,output_class,event_id,assignment_hash,revision,created_at)
+                           VALUES (1,?,?,?,?,?,?,?,?,0,?)""",
+                        (
+                            payload["project_id"],
+                            payload["root_session_id"],
+                            payload["worker_session_id"],
+                            allocation_id,
+                            payload["role"],
+                            payload["output_class"],
+                            event_id,
+                            assignment_hash,
+                            _now(),
+                        ),
+                    )
+                    worker_connection.execute(
+                        "INSERT INTO worker_inbox(event_id,payload_hash,status,received_at) "
+                        "VALUES (?,?,'pending',?)",
+                        (event_id, payload_hash, _now()),
+                    )
+                    worker_connection.execute(
+                        "INSERT INTO worker_dispatch_history "
+                        "(event_id,sequence,snapshot_json,assignment_hash,status,received_at) "
+                        "VALUES (?,?,?,?,'pending',?)",
+                        (event_id, sequence, snapshot, assignment_hash, _now()),
+                    )
+                else:
+                    expected = (
                         payload["project_id"],
                         payload["root_session_id"],
                         payload["worker_session_id"],
                         allocation_id,
                         payload["role"],
                         payload["output_class"],
-                        event_id,
-                        assignment_hash,
-                        _now(),
-                    ),
-                )
-                connection.execute(
-                    "INSERT INTO worker_inbox(event_id, payload_hash, status, received_at) "
-                    "VALUES (?, ?, 'pending', ?)",
-                    (event_id, payload_hash, _now()),
-                )
-                connection.execute(
-                    "INSERT INTO worker_dispatch_history "
-                    "(event_id,sequence,snapshot_json,assignment_hash,status,received_at) "
-                    "VALUES (?,?,?,?,'pending',?)",
-                    (event_id, sequence, snapshot, assignment_hash, _now()),
-                )
-            else:
-                expected = (
-                    payload["project_id"],
-                    payload["root_session_id"],
-                    payload["worker_session_id"],
-                    allocation_id,
-                    payload["role"],
-                    payload["output_class"],
-                )
-                actual = tuple(identity[index] for index in range(1, 7))
-                if actual != expected:
-                    raise WorkerInitializationError(
-                        "Worker database is bound to another project, Root, session, "
-                        "allocation, or role"
                     )
-                if active is None or sequence <= int(active[0]):
-                    raise WorkerInitializationError(
-                        "missing dispatch history cannot be reconstructed behind the active pointer"
+                    actual = tuple(identity[index] for index in range(1, 7))
+                    if actual != expected:
+                        raise WorkerInitializationError(
+                            "Worker database is bound to another project, Root, session, "
+                            "allocation, or role"
+                        )
+                    if active is None or sequence <= int(active[0]):
+                        raise WorkerInitializationError(
+                            "missing dispatch history cannot be reconstructed behind "
+                            "the active pointer"
+                        )
+                    worker_connection.execute(
+                        "UPDATE assignment_snapshot SET snapshot_json=?,source_revision=? "
+                        "WHERE singleton=1",
+                        (snapshot, payload["source_revision"]),
                     )
-                connection.execute(
-                    "UPDATE assignment_snapshot SET snapshot_json=?,source_revision=? "
-                    "WHERE singleton=1",
-                    (snapshot, payload["source_revision"]),
-                )
-                connection.execute(
-                    "UPDATE worker_identity SET output_class=?,event_id=?,assignment_hash=? "
-                    "WHERE singleton=1",
-                    (payload["output_class"], event_id, assignment_hash),
-                )
-                connection.execute(
-                    "INSERT INTO worker_inbox(event_id,payload_hash,status,received_at) "
-                    "VALUES (?,?,'pending',?)",
-                    (event_id, payload_hash, _now()),
-                )
-                connection.execute(
-                    "INSERT INTO worker_dispatch_history "
-                    "(event_id,sequence,snapshot_json,assignment_hash,status,received_at) "
-                    "VALUES (?,?,?,?,'pending',?)",
-                    (event_id, sequence, snapshot, assignment_hash, _now()),
-                )
+                    worker_connection.execute(
+                        "UPDATE worker_identity SET output_class=?,event_id=?,assignment_hash=? "
+                        "WHERE singleton=1",
+                        (payload["output_class"], event_id, assignment_hash),
+                    )
+                    worker_connection.execute(
+                        "INSERT INTO worker_inbox(event_id,payload_hash,status,received_at) "
+                        "VALUES (?,?,'pending',?)",
+                        (event_id, payload_hash, _now()),
+                    )
+                    worker_connection.execute(
+                        "INSERT INTO worker_dispatch_history "
+                        "(event_id,sequence,snapshot_json,assignment_hash,status,received_at) "
+                        "VALUES (?,?,?,?,'pending',?)",
+                        (event_id, sequence, snapshot, assignment_hash, _now()),
+                    )
 
-        with self._write_transaction(
-            root_path,
-            DatabaseKind.WORKFLOW,
-            root,
-            logical_identity=(parent.project_id, parent.root_session_id, None),
-        ) as connection:
-            event = _one(
+            with self._locked_write_connection(
+                root_path,
+                DatabaseKind.WORKFLOW,
+                root,
+                logical_identity=root_identity,
+            ) as root_connection:
+                _ensure_native_resolution(root_connection)
+                current_event = _one(
+                    root_connection,
+                    "SELECT status FROM workflow_dispatch_events WHERE event_id=?",
+                    (event_id,),
+                )
+                if current_event is None:
+                    raise WorkerInitializationError("Root outbox event disappeared during dispatch")
+                if current_event[0] == "pending":
+                    next_revision = int(_required_control(root_connection)[11]) + 1
+                    root_connection.execute(
+                        "UPDATE root_outbox SET status='confirmed',confirmed_at=? WHERE event_id=?",
+                        (_now(), event_id),
+                    )
+                    root_connection.execute(
+                        "UPDATE workflow_dispatch_events SET status='confirmed',confirmed_at=? "
+                        "WHERE event_id=?",
+                        (_now(), event_id),
+                    )
+                    root_connection.execute(
+                        "UPDATE allocations SET status='initialized' WHERE allocation_id=? "
+                        "AND worker_event_id=?",
+                        (allocation_id, event_id),
+                    )
+                    root_connection.execute(
+                        "UPDATE workflow_control SET revision=? WHERE singleton=1",
+                        (next_revision,),
+                    )
+                    self._record_binding_snapshot(root_connection, parent, next_revision)
+
+            with self._write_transaction(
+                worker_path,
+                DatabaseKind.WORKER,
+                worker_root,
+                logical_identity=(
+                    parent.project_id,
+                    parent.root_session_id,
+                    child.child_session_id,
+                ),
+            ) as worker_connection:
+                inbox = _one(
+                    worker_connection,
+                    "SELECT status,payload_hash FROM worker_inbox WHERE event_id=?",
+                    (event_id,),
+                )
+                if inbox is None or inbox[1] != payload_hash:
+                    raise WorkerInitializationError("Worker event receipt is missing or invalid")
+                if inbox[0] == "pending":
+                    worker_connection.execute(
+                        "UPDATE worker_inbox SET status='confirmed',confirmed_at=? "
+                        "WHERE event_id=?",
+                        (_now(), event_id),
+                    )
+                    worker_connection.execute(
+                        "UPDATE worker_dispatch_history SET status='confirmed',confirmed_at=? "
+                        "WHERE event_id=?",
+                        (_now(), event_id),
+                    )
+                    active = _one(
+                        worker_connection,
+                        "SELECT sequence FROM worker_active_dispatch WHERE singleton=1",
+                    )
+                    if active is None:
+                        worker_connection.execute(
+                            "INSERT INTO worker_active_dispatch VALUES (1,?,?)",
+                            (event_id, sequence),
+                        )
+                    elif sequence > int(active[0]):
+                        worker_connection.execute(
+                            "UPDATE worker_active_dispatch SET event_id=?,sequence=? "
+                            "WHERE singleton=1",
+                            (event_id, sequence),
+                        )
+
+    def _worker_dispatch_is_confirmed(
+        self,
+        parent: BindingIdentity,
+        worker_session_id: str,
+        allocation_id: str,
+        event_id: str,
+        sequence: int,
+        payload: dict[str, object],
+        payload_hash: str,
+    ) -> bool:
+        worker_path, worker_root = self._worker_database(worker_session_id, parent, create=False)
+        if not worker_path.is_file():
+            return False
+        with self._read_transaction(worker_path, DatabaseKind.WORKER, worker_root) as connection:
+            identity = _one(connection, "SELECT * FROM worker_identity WHERE singleton=1")
+            inbox = _one(
                 connection,
-                "SELECT status FROM workflow_dispatch_events WHERE event_id=?",
+                "SELECT status,payload_hash FROM worker_inbox WHERE event_id=?",
                 (event_id,),
             )
-            if event is None:
-                raise WorkerInitializationError("Root outbox event disappeared during dispatch")
-            if event[0] == "pending":
-                next_revision = _required_control(connection)[11] + 1
-                connection.execute(
-                    "UPDATE root_outbox SET status='confirmed', confirmed_at=? WHERE event_id=?",
-                    (_now(), event_id),
-                )
-                connection.execute(
-                    "UPDATE workflow_dispatch_events SET status='confirmed',confirmed_at=? "
-                    "WHERE event_id=?",
-                    (_now(), event_id),
-                )
-                connection.execute(
-                    "UPDATE allocations SET status='initialized' WHERE allocation_id=? "
-                    "AND worker_event_id=?",
-                    (allocation_id, event_id),
-                )
-                connection.execute(
-                    "UPDATE workflow_control SET revision=? WHERE singleton=1", (next_revision,)
-                )
-        with self._write_transaction(
-            worker_path,
-            DatabaseKind.WORKER,
-            worker_root,
-            logical_identity=(parent.project_id, parent.root_session_id, child.child_session_id),
-        ) as connection:
-            row = _one(connection, "SELECT status FROM worker_inbox WHERE event_id=?", (event_id,))
-            if row is None:
-                raise WorkerInitializationError("Worker event receipt is missing")
-            if row[0] == "pending":
-                connection.execute(
-                    "UPDATE worker_inbox SET status='confirmed', confirmed_at=? WHERE event_id=?",
-                    (_now(), event_id),
-                )
-                connection.execute(
-                    "UPDATE worker_dispatch_history SET status='confirmed',confirmed_at=? "
-                    "WHERE event_id=?",
-                    (_now(), event_id),
-                )
-                active = _one(
-                    connection, "SELECT sequence FROM worker_active_dispatch WHERE singleton=1"
-                )
-                if active is None:
-                    connection.execute(
-                        "INSERT INTO worker_active_dispatch VALUES (1,?,?)", (event_id, sequence)
-                    )
-                elif sequence > int(active[0]):
-                    connection.execute(
-                        "UPDATE worker_active_dispatch SET event_id=?,sequence=? WHERE singleton=1",
-                        (event_id, sequence),
-                    )
+            history = _one(
+                connection,
+                "SELECT status,sequence,snapshot_json,assignment_hash "
+                "FROM worker_dispatch_history WHERE event_id=?",
+                (event_id,),
+            )
+            assignment = _one(
+                connection, "SELECT snapshot_json FROM assignment_snapshot WHERE singleton=1"
+            )
+            active = _one(
+                connection, "SELECT sequence FROM worker_active_dispatch WHERE singleton=1"
+            )
+            expected_identity = (
+                parent.project_id,
+                parent.root_session_id,
+                worker_session_id,
+                allocation_id,
+            )
+            return (
+                identity is not None
+                and tuple(identity[index] for index in (1, 2, 3, 4)) == expected_identity
+                and inbox is not None
+                and inbox[0] == "confirmed"
+                and inbox[1] == payload_hash
+                and history is not None
+                and history[0] == "confirmed"
+                and int(history[1]) == sequence
+                and history[2] == _json(payload)
+                and history[3] == payload_hash
+                and assignment is not None
+                and _hash_json(json.loads(assignment[0])) == identity[8]
+                and active is not None
+                and int(active[0]) >= sequence
+            )
 
     def _parent_binding(
         self,
@@ -2094,6 +2830,37 @@ class StateService:
         _safe_component(binding.project_id, "project_id")
         _safe_component(binding.root_session_id, "root_session_id")
         return binding
+
+    def _record_binding_snapshot(
+        self,
+        connection: sqlite3.Connection,
+        binding: BindingIdentity,
+        observed_revision: int,
+    ) -> None:
+        payload = _binding_payload(binding)
+        snapshot_hash = _hash_json(payload)
+        snapshot = TrustedCapabilitySnapshot(
+            project_id=binding.project_id,
+            root_session_id=binding.root_session_id,
+            current_session_id=binding.current_session_id,
+            role=binding.role,
+            parent_session_id=binding.parent_session_id,
+            capabilities=sorted(binding.capabilities, key=lambda item: item.value),
+            guards=sorted(binding.guards, key=lambda item: item.value),
+            snapshot_hash=snapshot_hash,
+            observed_revision=observed_revision,
+        )
+        cursor = connection.execute(
+            "UPDATE workflow_session_metadata SET capability_snapshot_json=?,"
+            "capability_snapshot_hash=?,capability_observed_revision=? WHERE singleton=1",
+            (
+                _json(snapshot.model_dump(mode="json")),
+                snapshot_hash,
+                observed_revision,
+            ),
+        )
+        if cursor.rowcount != 1:
+            raise WorkflowNotOpenError("Root metadata row is missing")
 
     def _worker_binding(self, capabilities: set[HostCapability]) -> BindingIdentity:
         binding = self._binding_provider.current_binding()
@@ -2160,31 +2927,44 @@ class StateService:
             raise BindingError(str(exc)) from exc
         migrated.close()
         with _migration_lock(path, trusted_root, self._lock_timeout_seconds):
-            uri = f"file:{quote(str(path), safe='/')}?mode=rw"
-            connection = sqlite3.connect(
-                uri, uri=True, timeout=self._lock_timeout_seconds, isolation_level=None
-            )
-            connection.row_factory = sqlite3.Row
-            connection.execute("PRAGMA foreign_keys = ON")
+            with self._locked_write_connection(
+                path, kind, trusted_root, logical_identity=logical_identity
+            ) as connection:
+                yield connection
+
+    @contextmanager
+    def _locked_write_connection(
+        self,
+        path: Path,
+        kind: DatabaseKind,
+        trusted_root: Path,
+        *,
+        logical_identity: tuple[str, str, str | None],
+    ) -> Generator[sqlite3.Connection, None, None]:
+        """Open one write transaction while the caller holds this database's migration lock."""
+        uri = f"file:{quote(str(path), safe='/')}?mode=rw"
+        connection = sqlite3.connect(
+            uri, uri=True, timeout=self._lock_timeout_seconds, isolation_level=None
+        )
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA foreign_keys = ON")
+        try:
+            validate_existing_connection(connection, kind)
             try:
-                validate_existing_connection(connection, kind)
-                try:
-                    validate_connection_identity(connection, kind, logical_identity)
-                except DatabaseIdentityMismatchError as exc:
-                    raise BindingError(str(exc)) from exc
-                connection.execute("BEGIN IMMEDIATE")
-                try:
-                    if kind is DatabaseKind.WORKFLOW:
-                        _validate_root_identity(
-                            connection, self._binding_provider.current_binding()
-                        )
-                    yield connection
-                    connection.commit()
-                except Exception:
-                    connection.rollback()
-                    raise
-            finally:
-                connection.close()
+                validate_connection_identity(connection, kind, logical_identity)
+            except DatabaseIdentityMismatchError as exc:
+                raise BindingError(str(exc)) from exc
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                if kind is DatabaseKind.WORKFLOW:
+                    _validate_root_identity(connection, self._binding_provider.current_binding())
+                yield connection
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
+        finally:
+            connection.close()
 
     @contextmanager
     def _read_transaction(
@@ -2244,19 +3024,15 @@ class StateService:
 
 
 def _check_slice(
-    connection: sqlite3.Connection, spec: SliceSpec, current_rule_hash: str
+    connection: sqlite3.Connection,
+    spec: SliceSpec,
+    current_rule_hash: str,
+    current_control_rule_hash: str,
 ) -> SliceCheckResult:
     expected_input_hash = _slice_spec_hash(spec)
     output_class = spec.output_class
     control = _required_control(connection)
-    native_status = _one(
-        connection,
-        "SELECT status FROM native_reconciliations ORDER BY result_revision DESC LIMIT 1",
-    )
-    if native_status is not None and native_status[0] in {
-        "awaiting_confirmation",
-        "conflict",
-    }:
+    if _unresolved_native_rows(connection):
         return SliceCheckResult(
             eligible=False,
             reason="Native reconciliation must be explicitly resolved before Slice release",
@@ -2279,25 +3055,52 @@ def _check_slice(
             allocation_id=spec.allocation_id,
             output_class=output_class,
         )
-    last_control = _one(
-        connection, "SELECT outcome FROM control_transitions ORDER BY to_revision DESC LIMIT 1"
-    )
+    recovery_revision = int(control[13])
     has_prior_slices = (
         _one(connection, "SELECT 1 FROM workflow_slices LIMIT 1") is not None
         or _one(connection, "SELECT 1 FROM root_slices LIMIT 1") is not None
     )
-    if has_prior_slices and (last_control is None or last_control[0] != "continue"):
-        return SliceCheckResult(
-            eligible=False,
-            reason="a current Control Continue is required before another Slice",
-            allocation_id=spec.allocation_id,
-            output_class=output_class,
+    if has_prior_slices or recovery_revision > 0:
+        current_epochs = _epoch_snapshot(connection)
+        last_control = _one(
+            connection,
+            "SELECT ct.outcome,ct.to_revision,ce.outcome,ce.branch,ce.rule_hash,"
+            "ce.implementation_epoch,ce.documentation_epoch,ce.git_metadata_epoch "
+            "FROM control_transitions AS ct "
+            "JOIN checkpoint_evaluations AS ce ON ce.evaluation_id=ct.evaluation_id "
+            "ORDER BY ct.to_revision DESC LIMIT 1",
         )
-    latest_transition = _one(
+        control_is_current = recovery_revision == 0 or (
+            last_control is not None
+            and int(last_control[1]) > recovery_revision
+            and last_control[2] == "ready"
+            and last_control[3] == "continue"
+            and last_control[4] == current_control_rule_hash
+            and tuple(last_control[5:8])
+            == (
+                current_epochs.implementation_content,
+                current_epochs.documentation,
+                current_epochs.git_metadata,
+            )
+        )
+        if (
+            last_control is None
+            or last_control[0] != "continue"
+            or int(last_control[1]) <= recovery_revision
+            or not control_is_current
+        ):
+            return SliceCheckResult(
+                eligible=False,
+                reason="a current Control Continue is required before another Slice",
+                allocation_id=spec.allocation_id,
+                output_class=output_class,
+            )
+    latest_amend = _one(
         connection,
-        "SELECT outcome,to_revision FROM control_transitions ORDER BY to_revision DESC LIMIT 1",
+        "SELECT to_revision FROM control_transitions WHERE outcome='amend' "
+        "ORDER BY to_revision DESC LIMIT 1",
     )
-    if latest_transition is not None and latest_transition[0] == "amend":
+    if latest_amend is not None:
         epochs = _epoch_snapshot(connection)
         for required_node in ("contract", "decision"):
             evaluation = _one(
@@ -2310,7 +3113,7 @@ def _check_slice(
             if (
                 evaluation is None
                 or evaluation[0] != "ready"
-                or evaluation[1] <= latest_transition[1]
+                or evaluation[1] <= latest_amend[0]
                 or tuple(evaluation[2:])
                 != (epochs.implementation_content, epochs.documentation, epochs.git_metadata)
             ):
@@ -2397,8 +3200,7 @@ def _check_slice(
     if (
         prerequisite is None
         or prerequisite[0] != control[11]
-        or tuple(prerequisite[1:])
-        [:3]
+        or tuple(prerequisite[1:])[:3]
         != (
             current_epochs.implementation_content,
             current_epochs.documentation,
@@ -2428,14 +3230,89 @@ def _slice_spec_hash(spec: SliceSpec) -> str:
 
 
 def _ensure_native_resolution(connection: sqlite3.Connection) -> None:
-    row = _one(
-        connection,
-        "SELECT status FROM native_reconciliations ORDER BY result_revision DESC LIMIT 1",
-    )
-    if row is not None and row[0] in {"awaiting_confirmation", "conflict"}:
+    if _unresolved_native_rows(connection):
         raise InvalidStateTransitionError(
             "Native reconciliation must be explicitly resolved before new Root mutations"
         )
+
+
+def _unresolved_native_rows(connection: sqlite3.Connection) -> list[sqlite3.Row]:
+    return connection.execute(
+        "SELECT n.reconcile_id,n.snapshot_hash,n.status,n.differences_json,"
+        "n.observed_revision,n.result_revision,n.snapshot_json "
+        "FROM native_reconciliations AS n "
+        "WHERE n.status IN ('conflict','awaiting_confirmation') "
+        "AND NOT EXISTS (SELECT 1 FROM native_reconcile_resolution_targets AS t "
+        "WHERE t.reconcile_id=n.reconcile_id) "
+        "AND (n.status!='awaiting_confirmation' OR NOT EXISTS ("
+        "SELECT 1 FROM native_reconcile_confirmations AS c "
+        "WHERE c.awaiting_reconcile_id=n.reconcile_id)) "
+        "ORDER BY n.result_revision,n.reconcile_id LIMIT 257"
+    ).fetchall()
+
+
+def _native_review_set_hash(
+    connection: sqlite3.Connection,
+    current_revision: int,
+    unresolved: list[sqlite3.Row],
+    canonical: sqlite3.Row | tuple[object, ...] | None = None,
+) -> str:
+    if canonical is None:
+        canonical = _one(
+            connection,
+            "SELECT reconcile_id,snapshot_hash,status,snapshot_json,result_revision "
+            "FROM native_reconciliations ORDER BY result_revision DESC,reconcile_id DESC LIMIT 1",
+        )
+    return _hash_json(
+        {
+            "revision": current_revision,
+            "unresolved": [
+                {
+                    "reconcile_id": row[0],
+                    "snapshot_hash": row[1],
+                    "status": row[2],
+                    "differences": json.loads(row[3]),
+                    "observed_revision": int(row[4]),
+                    "result_revision": int(row[5]),
+                }
+                for row in unresolved
+            ],
+            "canonical": (
+                {
+                    "reconcile_id": canonical[0],
+                    "snapshot_hash": canonical[1],
+                    "status": canonical[2],
+                    "result_revision": cast(int, canonical[4]),
+                }
+                if canonical is not None
+                else None
+            ),
+        }
+    )
+
+
+def _native_root_preimage(connection: sqlite3.Connection) -> dict[str, object]:
+    """Capture the bounded Root control state changed by reconciliation, not a DB backup."""
+    tables = (
+        ("workflow_control", "SELECT * FROM workflow_control WHERE singleton=1"),
+        ("allocations", "SELECT * FROM allocations ORDER BY slot,allocation_id"),
+        ("workflow_epochs", "SELECT * FROM workflow_epochs WHERE singleton=1"),
+        ("root_slices", "SELECT * FROM root_slices ORDER BY created_revision,slice_id"),
+        ("workflow_slices", "SELECT * FROM workflow_slices ORDER BY created_revision,slice_id"),
+        (
+            "control_transitions",
+            "SELECT * FROM control_transitions ORDER BY to_revision,transition_id",
+        ),
+        (
+            "control_evidence_requests",
+            "SELECT * FROM control_evidence_requests ORDER BY created_revision,request_id",
+        ),
+        ("workflow_session_metadata", "SELECT * FROM workflow_session_metadata WHERE singleton=1"),
+    )
+    return {
+        table: [dict(row) for row in connection.execute(query).fetchall()]
+        for table, query in tables
+    }
 
 
 def _epoch_snapshot(connection: sqlite3.Connection) -> EpochSnapshot:
@@ -2480,8 +3357,13 @@ def _latest_evidence(
     if not rows:
         return [], [], -1, ""
     epochs = _epoch_snapshot(connection)
-    latest = rows[0]
-    for row in rows:
+    control = _required_control(connection)
+    recovery_revision = int(control[13])
+    eligible_rows = [row for row in rows if int(row[9]) > recovery_revision]
+    if not eligible_rows:
+        return [], [], int(rows[0][2]), str(rows[0][3])
+    latest = eligible_rows[0]
+    for row in eligible_rows:
         if row[4] == current_rule_hash and not _epochs_cover_changed_dimensions(
             json.loads(row[5]),
             (row[6], row[7], row[8]),
@@ -2561,8 +3443,11 @@ def _validate_checkpoint_state(
     return failures
 
 
-def _validate_acceptance_history(connection: sqlite3.Connection, rule_loader: RuleLoader) -> list[str]:
+def _validate_acceptance_history(
+    connection: sqlite3.Connection, rule_loader: RuleLoader
+) -> list[str]:
     epochs = _epoch_snapshot(connection)
+    recovery_revision = int(_required_control(connection)[13])
     expected_branches = {
         "contract": {"ready", "sufficient"},
         "mode": {"single-agent", "multi-agent"},
@@ -2577,7 +3462,7 @@ def _validate_acceptance_history(connection: sqlite3.Connection, rule_loader: Ru
         row = _one(
             connection,
             "SELECT outcome,branch,rule_hash,implementation_epoch,documentation_epoch,"
-            "git_metadata_epoch FROM checkpoint_evaluations WHERE node_id=? "
+            "git_metadata_epoch,result_revision FROM checkpoint_evaluations WHERE node_id=? "
             "ORDER BY result_revision DESC LIMIT 1",
             (node_id,),
         )
@@ -2588,19 +3473,15 @@ def _validate_acceptance_history(connection: sqlite3.Connection, rule_loader: Ru
             row[0] != "ready"
             or row[1] not in branches
             or row[2] != rule_loader.load_context(node_id).context_hash
-            or tuple(row[3:])
-            != (
-                epochs.implementation_content,
-                epochs.documentation,
-                epochs.git_metadata,
-            )
+            or int(row[6]) <= recovery_revision
+            or not _evaluation_epochs_are_current(node_id, tuple(row[3:6]), epochs)
         ):
             errors.append(f"{node_id} checkpoint is stale or unsuccessful")
     for node_id in optional_nodes:
         row = _one(
             connection,
             "SELECT outcome,branch,rule_hash,implementation_epoch,documentation_epoch,"
-            "git_metadata_epoch FROM checkpoint_evaluations WHERE node_id=? "
+            "git_metadata_epoch,result_revision FROM checkpoint_evaluations WHERE node_id=? "
             "ORDER BY result_revision DESC LIMIT 1",
             (node_id,),
         )
@@ -2610,15 +3491,30 @@ def _validate_acceptance_history(connection: sqlite3.Connection, rule_loader: Ru
             row[0] != "ready"
             or row[1] in {"failure", "inconclusive", "blocked", "incomplete"}
             or row[2] != rule_loader.load_context(node_id).context_hash
-            or tuple(row[3:])
-            != (
-                epochs.implementation_content,
-                epochs.documentation,
-                epochs.git_metadata,
-            )
+            or int(row[6]) <= recovery_revision
+            or not _evaluation_epochs_are_current(node_id, tuple(row[3:6]), epochs)
         ):
             errors.append(f"{node_id} checkpoint is stale or unsuccessful")
     return errors
+
+
+def _evaluation_epochs_are_current(
+    node_id: str, saved: tuple[int, int, int], current: EpochSnapshot
+) -> bool:
+    """Compare a result only with the state dimensions its owner covers."""
+    dimensions = {
+        "implementation": (0,),
+        "verification": (0,),
+        "repair": (0,),
+        "documentation": (1,),
+        "git": (2,),
+    }.get(node_id, (0, 1, 2))
+    values = (
+        current.implementation_content,
+        current.documentation,
+        current.git_metadata,
+    )
+    return all(saved[index] == values[index] for index in dimensions)
 
 
 def _validate_fact_state(
@@ -2651,7 +3547,7 @@ def _validate_fact_state(
         value = judgment.get("value")
         if not isinstance(value, dict):
             continue
-        if key in actual:
+        if isinstance(key, str) and key in actual:
             expected = actual[key]
             if value.get("value") != expected:
                 failures.append(f"{key} does not match persisted Root state")
@@ -2660,7 +3556,12 @@ def _validate_fact_state(
     return failures
 
 
-def _workflow_state(connection: sqlite3.Connection) -> WorkflowState:
+def _workflow_state(
+    connection: sqlite3.Connection,
+    rule_loader: RuleLoader | None = None,
+    binding: BindingIdentity | None = None,
+    index_page: RecoveryIndexPageRequest | None = None,
+) -> WorkflowState:
     control = _required_control(connection)
     allocations = [
         AllocationState(
@@ -2676,6 +3577,100 @@ def _workflow_state(connection: sqlite3.Connection) -> WorkflowState:
             "FROM allocations ORDER BY slot"
         )
     ]
+    revision = int(control[11])
+    epochs = _epoch_snapshot(connection)
+    metadata_exists = (
+        connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='workflow_session_metadata'"
+        ).fetchone()
+        is not None
+    )
+    session_audit = None
+    capability_snapshot = None
+    capability_snapshot_current = None
+    if metadata_exists:
+        metadata = _one(
+            connection,
+            "SELECT session_audit_json,capability_snapshot_json,capability_snapshot_hash,"
+            "capability_observed_revision FROM workflow_session_metadata WHERE singleton=1",
+        )
+        if metadata is not None:
+            if metadata[0] is not None:
+                session_audit = SessionAudit.model_validate_json(metadata[0])
+            if metadata[1] is not None:
+                capability_snapshot = TrustedCapabilitySnapshot.model_validate_json(metadata[1])
+                stored_hash = str(metadata[2])
+                payload = _binding_payload_from_snapshot(capability_snapshot)
+                capability_snapshot_current = (
+                    _hash_json(payload) == stored_hash == capability_snapshot.snapshot_hash
+                    and capability_snapshot.observed_revision == int(metadata[3]) == revision
+                    and (binding is None or _binding_payload(binding) == payload)
+                )
+    active_slices, active_total, active_page = _active_slice_indexes(
+        connection, revision, index_page
+    )
+    latest_gates, gate_total, gate_page = _latest_gate_indexes(
+        connection, rule_loader, epochs, revision, int(control[13]), index_page
+    )
+    native_indexes, native_total, native_page = _native_reconcile_indexes(
+        connection, revision, index_page
+    )
+    native_resolutions, resolution_total, resolution_page = _native_resolution_indexes(
+        connection, revision, index_page
+    )
+    control_requests, control_request_total, control_request_page = (
+        _control_evidence_request_indexes(connection, revision, int(control[13]), index_page)
+    )
+    unresolved_native = _unresolved_native_rows(connection)
+    canonical_native = _one(
+        connection,
+        "SELECT reconcile_id,snapshot_hash,status,snapshot_json,result_revision "
+        "FROM native_reconciliations ORDER BY result_revision DESC,reconcile_id DESC LIMIT 1",
+    )
+    latest_native_row = _one(
+        connection,
+        "SELECT n.reconcile_id,n.status,n.snapshot_hash,n.native_refs_json,n.differences_json,"
+        "n.observed_revision,n.result_revision,n.snapshot_json,"
+        "EXISTS(SELECT 1 FROM native_reconcile_preimages p "
+        "WHERE p.reconcile_id=n.reconcile_id) "
+        "FROM native_reconciliations n "
+        "ORDER BY n.result_revision DESC,n.reconcile_id DESC LIMIT 1",
+    )
+    canonical_unresolved = (
+        canonical_native is not None
+        and _one(
+            connection,
+            "SELECT 1 FROM native_reconciliations AS n "
+            "WHERE n.reconcile_id=? AND n.status IN ('conflict','awaiting_confirmation') "
+            "AND NOT EXISTS (SELECT 1 FROM native_reconcile_resolution_targets AS t "
+            "WHERE t.reconcile_id=n.reconcile_id) "
+            "AND (n.status!='awaiting_confirmation' OR NOT EXISTS ("
+            "SELECT 1 FROM native_reconcile_confirmations AS c "
+            "WHERE c.awaiting_reconcile_id=n.reconcile_id))",
+            (canonical_native[0],),
+        )
+        is not None
+    )
+    reviewed_comparison_count = native_total + int(
+        canonical_native is not None and not canonical_unresolved
+    )
+    resolution_unavailable_reason = (
+        "reviewed_comparison_set_exceeds_supported_bound"
+        if reviewed_comparison_count > 256 or len(unresolved_native) > 256
+        else next(
+            (
+                item.resolution_unavailable_reason
+                for item in native_indexes
+                if item.resolution_unavailable_reason is not None
+            ),
+            None,
+        )
+    )
+    unresolved_hash = (
+        _native_review_set_hash(connection, revision, unresolved_native, canonical_native)
+        if unresolved_native and resolution_unavailable_reason is None
+        else None
+    )
     return WorkflowState(
         project_id=control[1],
         root_session_id=control[2],
@@ -2687,6 +3682,458 @@ def _workflow_state(connection: sqlite3.Connection) -> WorkflowState:
         lifecycle=control[10],
         revision=control[11],
         allocations=allocations,
+        epochs=epochs,
+        active_slices=active_slices,
+        omitted_active_slice_count=max(0, active_total - len(active_slices)),
+        latest_gates=latest_gates,
+        omitted_gate_count=max(0, gate_total - len(latest_gates)),
+        unresolved_native_reconciliations=native_indexes,
+        omitted_native_reconciliation_count=max(0, native_total - len(native_indexes)),
+        latest_native_reconciliation=(
+            _native_reconcile_index(latest_native_row, revision)
+            if latest_native_row is not None
+            else None
+        ),
+        unresolved_native_set_hash=unresolved_hash,
+        native_resolution_unavailable_reason=resolution_unavailable_reason,
+        recovery_revision=int(control[13]),
+        native_resolution_history=native_resolutions,
+        omitted_native_resolution_count=max(0, resolution_total - len(native_resolutions)),
+        control_evidence_requests=control_requests,
+        omitted_control_evidence_request_count=max(
+            0, control_request_total - len(control_requests)
+        ),
+        recovery_pages=[
+            active_page,
+            gate_page,
+            native_page,
+            resolution_page,
+            control_request_page,
+        ],
+        session_audit=session_audit,
+        capability_snapshot=capability_snapshot,
+        capability_snapshot_current=capability_snapshot_current,
+    )
+
+
+def _binding_payload(binding: BindingIdentity) -> dict[str, object]:
+    return {
+        "project_id": binding.project_id,
+        "root_session_id": binding.root_session_id,
+        "current_session_id": binding.current_session_id,
+        "role": binding.role.value,
+        "parent_session_id": binding.parent_session_id,
+        "capabilities": sorted(item.value for item in binding.capabilities),
+        "guards": sorted(item.value for item in binding.guards),
+    }
+
+
+def _binding_payload_from_snapshot(
+    snapshot: TrustedCapabilitySnapshot,
+) -> dict[str, object]:
+    return {
+        "project_id": snapshot.project_id,
+        "root_session_id": snapshot.root_session_id,
+        "current_session_id": snapshot.current_session_id,
+        "role": snapshot.role.value,
+        "parent_session_id": snapshot.parent_session_id,
+        "capabilities": sorted(item.value for item in snapshot.capabilities),
+        "guards": sorted(item.value for item in snapshot.guards),
+    }
+
+
+def _active_slice_indexes(
+    connection: sqlite3.Connection,
+    current_revision: int,
+    page_request: RecoveryIndexPageRequest | None,
+    default_page_size: int = 32,
+) -> tuple[list[ActiveSliceIndex], int, RecoveryIndexPageInfo]:
+    source = (
+        "SELECT slice_id,allocation_id,output_class,write_content_memo,objective_uri,"
+        "objective_hash,return_conditions_uri,return_conditions_hash,unreleased_boundary_uri,"
+        "unreleased_boundary_hash,authorized_paths_json,change_categories_json "
+        ", 'worker' AS source_kind FROM workflow_slices WHERE status='released' UNION ALL "
+        "SELECT slice_id,'root',output_class,write_content_memo,objective_uri,objective_hash,"
+        "return_uri,return_hash,boundary_uri,boundary_hash,authorized_paths_json,"
+        "change_categories_json,'root' AS source_kind FROM root_slices WHERE status='released'"
+    )
+    total = int(connection.execute(f"SELECT COUNT(*) FROM ({source})").fetchone()[0])
+    offset, page_size = _recovery_page_bounds(
+        "active_slices", current_revision, total, page_request, default_page_size
+    )
+    rows = connection.execute(
+        f"SELECT * FROM ({source}) ORDER BY slice_id,source_kind LIMIT ? OFFSET ?",
+        (page_size, offset),
+    ).fetchall()
+    result: list[ActiveSliceIndex] = []
+    for row in rows:
+        objective = SemanticRef(uri=row[4], content_hash=row[5])
+        return_conditions = SemanticRef(uri=row[6], content_hash=row[7])
+        unreleased_boundary = SemanticRef(uri=row[8], content_hash=row[9])
+        authorized_paths = json.loads(row[10])
+        change_categories = [ChangeCategory(item) for item in json.loads(row[11])]
+        output_class = OutputClass(row[2]) if row[2] else None
+        memo_value = bool(row[3]) if row[3] is not None else None
+        spec_hash = None
+        unknown_reason = None
+        if output_class is not None and memo_value is not None:
+            spec_hash = _slice_spec_hash(
+                SliceSpec(
+                    allocation_id=row[1],
+                    output_class=output_class,
+                    objective=objective,
+                    return_conditions=return_conditions,
+                    unreleased_boundary=unreleased_boundary,
+                    authorized_paths=authorized_paths,
+                    change_categories=change_categories,
+                    write_content_memo=memo_value,
+                )
+            )
+        else:
+            missing = []
+            if output_class is None:
+                missing.append("output_class")
+            if memo_value is None:
+                missing.append("write_content_memo")
+            unknown_reason = f"legacy Root Slice lacks persisted {' and '.join(missing)}"
+        result.append(
+            ActiveSliceIndex(
+                slice_id=row[0],
+                allocation_id=row[1],
+                output_class=output_class,
+                objective=objective,
+                return_conditions=return_conditions,
+                unreleased_boundary=unreleased_boundary,
+                authorized_paths=authorized_paths,
+                change_categories=change_categories,
+                write_content_memo=memo_value,
+                spec_hash=spec_hash,
+                spec_hash_unknown_reason=unknown_reason,
+            )
+        )
+    return (
+        result,
+        total,
+        _recovery_page_info(
+            "active_slices", current_revision, offset, page_size, total, len(result)
+        ),
+    )
+
+
+def _latest_gate_indexes(
+    connection: sqlite3.Connection,
+    rule_loader: RuleLoader | None,
+    current_epochs: EpochSnapshot,
+    current_revision: int,
+    recovery_revision: int,
+    page_request: RecoveryIndexPageRequest | None,
+    default_page_size: int = 64,
+) -> tuple[list[GateIndex], int, RecoveryIndexPageInfo]:
+    total = int(
+        connection.execute("SELECT COUNT(DISTINCT node_id) FROM checkpoint_evaluations").fetchone()[
+            0
+        ]
+    )
+    offset, page_size = _recovery_page_bounds(
+        "latest_gates", current_revision, total, page_request, default_page_size
+    )
+    rows = connection.execute(
+        "WITH ranked AS (SELECT e.node_id,e.outcome,e.branch,e.rule_hash,e.input_hash,"
+        "e.implementation_epoch,e.documentation_epoch,e.git_metadata_epoch,"
+        "e.basis_revision,e.result_revision,ROW_NUMBER() OVER (PARTITION BY e.node_id "
+        "ORDER BY e.result_revision DESC,e.evaluation_id DESC) AS rank "
+        "FROM checkpoint_evaluations e) SELECT node_id,outcome,branch,rule_hash,input_hash,"
+        "implementation_epoch,documentation_epoch,git_metadata_epoch,basis_revision,"
+        "result_revision FROM ranked WHERE rank=1 ORDER BY node_id LIMIT ? OFFSET ?",
+        (page_size, offset),
+    ).fetchall()
+    indexes = []
+    for row in rows:
+        epochs = EpochSnapshot(
+            implementation_content=row[5], documentation=row[6], git_metadata=row[7]
+        )
+        if rule_loader is None:
+            rule_status = "unavailable"
+        else:
+            try:
+                context = rule_loader.load_context(row[0])
+                rule_status = "current" if context.context_hash == row[3] else "stale"
+            except UnknownRuleNodeError:
+                rule_status = "unknown_node"
+            except (KeyError, OSError, RuleLoadError, ValueError):
+                rule_status = "unavailable"
+        indexes.append(
+            GateIndex(
+                node_id=row[0],
+                outcome=row[1],
+                branch=row[2],
+                rule_hash=row[3],
+                input_hash=row[4],
+                epochs=epochs,
+                basis_revision=row[8],
+                result_revision=row[9],
+                rule_status=rule_status,
+                rule_current=rule_status == "current",
+                epochs_current=_evaluation_epochs_are_current(
+                    row[0], (row[5], row[6], row[7]), current_epochs
+                )
+                and int(row[9]) > recovery_revision,
+                revision_current=int(row[9]) == current_revision,
+            )
+        )
+    return (
+        indexes,
+        total,
+        _recovery_page_info(
+            "latest_gates", current_revision, offset, page_size, total, len(indexes)
+        ),
+    )
+
+
+def _native_reconcile_indexes(
+    connection: sqlite3.Connection,
+    current_revision: int,
+    page_request: RecoveryIndexPageRequest | None,
+    default_page_size: int = 8,
+) -> tuple[list[NativeReconcileIndex], int, RecoveryIndexPageInfo]:
+    total = int(
+        connection.execute(
+            "SELECT COUNT(*) FROM native_reconciliations AS n "
+            "WHERE n.status IN ('conflict','awaiting_confirmation') "
+            "AND NOT EXISTS (SELECT 1 FROM native_reconcile_resolution_targets AS t "
+            "WHERE t.reconcile_id=n.reconcile_id) "
+            "AND (n.status!='awaiting_confirmation' OR NOT EXISTS ("
+            "SELECT 1 FROM native_reconcile_confirmations AS c "
+            "WHERE c.awaiting_reconcile_id=n.reconcile_id))"
+        ).fetchone()[0]
+    )
+    offset, page_size = _recovery_page_bounds(
+        "unresolved_native_reconciliations",
+        current_revision,
+        total,
+        page_request,
+        default_page_size,
+    )
+    rows = connection.execute(
+        "SELECT n.reconcile_id,n.status,n.snapshot_hash,n.native_refs_json,n.differences_json,"
+        "n.observed_revision,n.result_revision,n.snapshot_json,"
+        "EXISTS(SELECT 1 FROM native_reconcile_preimages p "
+        "WHERE p.reconcile_id=n.reconcile_id) FROM native_reconciliations AS n "
+        "WHERE n.status IN ('conflict','awaiting_confirmation') "
+        "AND NOT EXISTS (SELECT 1 FROM native_reconcile_resolution_targets AS t "
+        "WHERE t.reconcile_id=n.reconcile_id) "
+        "AND (n.status!='awaiting_confirmation' OR NOT EXISTS ("
+        "SELECT 1 FROM native_reconcile_confirmations AS c "
+        "WHERE c.awaiting_reconcile_id=n.reconcile_id)) "
+        "ORDER BY n.result_revision DESC,n.reconcile_id LIMIT ? OFFSET ?",
+        (page_size, offset),
+    ).fetchall()
+    indexes = []
+    for row in rows:
+        indexes.append(_native_reconcile_index(row, current_revision))
+    return (
+        indexes,
+        total,
+        _recovery_page_info(
+            "unresolved_native_reconciliations",
+            current_revision,
+            offset,
+            page_size,
+            total,
+            len(indexes),
+        ),
+    )
+
+
+def _native_reconcile_index(
+    row: sqlite3.Row | tuple[object, ...], current_revision: int
+) -> NativeReconcileIndex:
+    snapshot = NativeWorkflowSnapshot.model_validate_json(str(row[7]))
+    return NativeReconcileIndex(
+        reconcile_id=cast(str, row[0]),
+        status=cast(Literal["matched", "conflict", "awaiting_confirmation"], row[1]),
+        snapshot_hash=cast(str, row[2]),
+        native_refs=[
+            EvidenceRef.model_validate(item) for item in json.loads(cast(str, row[3]))[:256]
+        ],
+        native_reference_count=len(json.loads(cast(str, row[3]))),
+        native_references_omitted=max(0, len(json.loads(cast(str, row[3]))) - 256),
+        differences=json.loads(cast(str, row[4])),
+        observed_revision=cast(int, row[5]),
+        result_revision=cast(int, row[6]),
+        native_revision=snapshot.revision,
+        native_run_id=snapshot.run_id,
+        native_mode_count=snapshot.mode_count,
+        native_mode_source=snapshot.mode_source,
+        native_lifecycle=snapshot.lifecycle,
+        native_allocations=snapshot.allocations[:256],
+        native_allocation_count=len(snapshot.allocations),
+        native_allocations_omitted=max(0, len(snapshot.allocations) - 256),
+        native_source=snapshot.source,
+        native_semantic_references=snapshot.semantic_references[:256],
+        native_semantic_reference_count=len(snapshot.semantic_references),
+        native_semantic_references_omitted=max(0, len(snapshot.semantic_references) - 256),
+        resolution_unavailable_reason=(
+            "native_semantic_references_exceed_supported_bound"
+            if len(snapshot.semantic_references) > 256
+            else "native_allocations_exceed_supported_bound"
+            if len(snapshot.allocations) > 256
+            else "native_evidence_references_exceed_supported_bound"
+            if len(snapshot.evidence_refs) > 256
+            else None
+        ),
+        native_epochs=snapshot.epochs,
+        preimage_known=bool(row[8]),
+        current=cast(int, row[6]) == current_revision,
+    )
+
+
+def _native_resolution_indexes(
+    connection: sqlite3.Connection,
+    current_revision: int,
+    page_request: RecoveryIndexPageRequest | None,
+    default_page_size: int = 8,
+) -> tuple[list[NativeResolutionIndex], int, RecoveryIndexPageInfo]:
+    total = int(
+        connection.execute("SELECT COUNT(*) FROM native_reconcile_resolutions").fetchone()[0]
+    )
+    offset, page_size = _recovery_page_bounds(
+        "native_resolution_history", current_revision, total, page_request, default_page_size
+    )
+    rows = connection.execute(
+        "SELECT resolution_id,reconcile_id,choice,reviewed_set_hash,snapshot_hash,"
+        "root_decision_ref_json,native_freshness_refs_json,root_quiescence_refs_json,"
+        "result_revision,recovery_revision "
+        "FROM native_reconcile_resolutions "
+        "ORDER BY result_revision DESC,resolution_id LIMIT ? OFFSET ?",
+        (page_size, offset),
+    ).fetchall()
+    indexes: list[NativeResolutionIndex] = []
+    for row in rows:
+        target_rows = connection.execute(
+            "SELECT reconcile_id,snapshot_hash FROM native_reconcile_resolution_targets "
+            "WHERE resolution_id=? ORDER BY reconcile_id LIMIT 257",
+            (row[0],),
+        ).fetchall()
+        if len(target_rows) > 256:
+            raise InvalidStateTransitionError(
+                "native resolution target index exceeds the supported bounded page"
+            )
+        indexes.append(
+            NativeResolutionIndex(
+                resolution_id=row[0],
+                reconcile_id=row[1],
+                choice=row[2],
+                reviewed_set_hash=row[3],
+                snapshot_hash=row[4],
+                resolved_comparisons=[
+                    NativeResolutionTargetIndex(reconcile_id=target[0], snapshot_hash=target[1])
+                    for target in target_rows
+                ],
+                root_decision_ref=EvidenceRef.model_validate_json(row[5]),
+                native_freshness_refs=[
+                    EvidenceRef.model_validate(item) for item in json.loads(row[6])
+                ],
+                root_quiescence_refs=[
+                    EvidenceRef.model_validate(item) for item in json.loads(row[7])
+                ],
+                result_revision=row[8],
+                recovery_revision=row[9],
+                current=int(row[9]) == current_revision,
+            )
+        )
+    return (
+        indexes,
+        total,
+        _recovery_page_info(
+            "native_resolution_history", current_revision, offset, page_size, total, len(indexes)
+        ),
+    )
+
+
+def _control_evidence_request_indexes(
+    connection: sqlite3.Connection,
+    current_revision: int,
+    recovery_revision: int,
+    page_request: RecoveryIndexPageRequest | None,
+    default_page_size: int = 8,
+) -> tuple[list[ControlEvidenceRequestIndex], int, RecoveryIndexPageInfo]:
+    total = int(connection.execute("SELECT COUNT(*) FROM control_evidence_requests").fetchone()[0])
+    offset, page_size = _recovery_page_bounds(
+        "control_evidence_requests", current_revision, total, page_request, default_page_size
+    )
+    rows = connection.execute(
+        "SELECT request_id,status,created_revision,returned_revision "
+        "FROM control_evidence_requests ORDER BY created_revision,request_id LIMIT ? OFFSET ?",
+        (page_size, offset),
+    ).fetchall()
+    indexes = [
+        ControlEvidenceRequestIndex(
+            request_id=row[0],
+            status=row[1],
+            created_revision=row[2],
+            returned_revision=row[3],
+            recovery_fresh=row[3] is not None and int(row[3]) > recovery_revision,
+        )
+        for row in rows
+    ]
+    return (
+        indexes,
+        total,
+        _recovery_page_info(
+            "control_evidence_requests", current_revision, offset, page_size, total, len(indexes)
+        ),
+    )
+
+
+def _recovery_page_bounds(
+    collection: str,
+    current_revision: int,
+    total_count: int,
+    request: RecoveryIndexPageRequest | None,
+    default_page_size: int,
+) -> tuple[int, int]:
+    if request is None or request.collection != collection:
+        return 0, default_page_size
+    if request.cursor is None:
+        return 0, request.page_size or default_page_size
+    if request.cursor.revision != current_revision:
+        raise StaleRecoveryCursorError(
+            f"recovery cursor Revision {request.cursor.revision} is stale; current Revision is "
+            f"{current_revision}"
+        )
+    if request.cursor.offset > total_count:
+        raise ValueError("recovery cursor offset exceeds the index total_count")
+    return request.cursor.offset, request.cursor.page_size
+
+
+def _recovery_page_info(
+    collection: RecoveryIndexCollection,
+    revision: int,
+    offset: int,
+    page_size: int,
+    total: int,
+    returned: int,
+) -> RecoveryIndexPageInfo:
+    next_offset = offset + returned
+    next_cursor = (
+        RecoveryIndexCursor(
+            collection=collection,
+            revision=revision,
+            offset=next_offset,
+            page_size=page_size,
+        )
+        if next_offset < total
+        else None
+    )
+    return RecoveryIndexPageInfo(
+        collection=collection,
+        revision=revision,
+        offset=offset,
+        page_size=page_size,
+        total_count=total,
+        returned_count=returned,
+        next_cursor=next_cursor,
     )
 
 

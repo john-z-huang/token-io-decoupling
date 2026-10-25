@@ -16,6 +16,8 @@
 | MCP 客户端传输 | https://py.sdk.modelcontextprotocol.io/client/transports/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验子进程 stdio 测试，不使用 GUI 交互或额外 Agent Session。 |
 | MCP 传输授权 | https://py.sdk.modelcontextprotocol.io/run/authorization/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验 HTTP 令牌校验不能认证 stdio 或进程内客户端；要求独立的可信启动边界。 |
 | OpenAI Decisions | https://developers.openai.com/api/docs/guides/decisions | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验可选语义判断的类型化选项请求及拒绝响应；此引用不授权真实请求。 |
+| OpenAI Python Decisions 参考 | https://developers.openai.com/api/reference/python/resources/decisions/methods/create | [Decisions 建议](references/coding/layer-01-fundamental-concepts/decisions-advisory_zh_cn.md) | 核验可选建议的 SDK 请求、固定选项响应及拒绝契约；本地配置、授权和最终判断仍为独立要求。 |
 | SQLite 备份 API | https://docs.python.org/3/library/sqlite3.html#sqlite3.Connection.backup | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 在已授权的 schema 升级前使用数据库备份 API。 |
+| uv GitHub Actions 集成 | https://docs.astral.sh/uv/guides/integration/github/ | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验 CI 中固定版本的 uv 配置、托管 Python 矩阵与锁定依赖安装；工作流实际运行与本地检查属于不同证据。 |
 | Codex MCP | https://learn.chatgpt.com/docs/extend/mcp?surface=cli | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验本地传输控制，不据此推断可信的逐 Agent 身份或文件系统隔离。 |
 | Claude Code MCP 运行时 | https://code.claude.com/docs/en/mcp | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 检查对应客户端的协议行为及依赖运行时的限制。 |

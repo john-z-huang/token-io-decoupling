@@ -12,6 +12,8 @@
 4. 当 commit、branch、index 或 history 状态发生变化时，推进 Git metadata epoch。仅 Git metadata 操作不会推进 implementation/content 或 documentation epoch。但 Git 状态仍须经过 Git 检查点确认 staged 或 committed content 与最新验证指纹一致；内容发生差异或包含未验证内容时，返回对应的 Verification epoch。
 5. 不得将受影响维度的早期 epoch 证据用于当前状态；必须完成新 epoch 所需的检查或 Verification。
 
+6. 明确启用的 verification-impact 建议可以提示受影响的覆盖维度。必须根据当前 fingerprint 和直接 owner 核验维度；它不是验证结论，不能免除变化维度所需的检查或重新验证。建议不可用或过期时，直接判定覆盖范围。遵循[Decisions 建议](../layer-01-fundamental-concepts/decisions-advisory_zh_cn.md)。
+
 ## 通过条件
 
 最新的 implementation/content、documentation 和 Git metadata 适用 epoch 已明确，各自所需的检查或 Verification 已排队或完成，且没有任何受影响维度依赖过期证据。

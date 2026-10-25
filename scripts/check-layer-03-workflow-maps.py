@@ -31,27 +31,42 @@ ROUTE_SPECS = {
         'steps': ('Contract', 'Environment', 'Mode', 'Session', 'Context', 'Decision',
                   'Implementation', 'Stage Feedback', 'Control', 'Verification',
                   'Repair', 'Documentation', 'Git', 'Acceptance'),
-        'branches': {'D_PLAN', 'ACT_PLAN', 'D_PLAN_SAVED', 'D_PLAN_MATCH', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ', 'D_ARCHIVE', 'ACT_ARCHIVE', 'D_ARCHIVED', 'D_RECON', 'ACT_RECON', 'D_CONTROL', 'D_VERIFY', 'D_DOC', 'D_GIT', 'D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY', 'ACT_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT', 'ACT_AUDIT_WAIT', 'ACT_AUDIT_TIMEOUT', 'BLOCK', 'DONE'},
+        'branches': {'D_ENHANCED', 'D_ENHANCED_HOST', 'ACT_NATIVE', 'D_ROOT_STORE', 'ACT_ROOT_OPEN', 'D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER', 'D_NATIVE_RECON', 'ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK', 'D_RECOVERY_GATE', 'ACT_AUDIT_CONFIRM', 'D_RULE_ACCESS', 'ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT', 'ACT_INITIAL_CLASSIFY', 'D_DECISION_ADVICE', 'ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT', 'D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT', 'D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT', 'D_PLAN', 'ACT_PLAN', 'D_PLAN_SAVED', 'D_PLAN_MATCH', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ', 'D_ARCHIVE', 'ACT_ARCHIVE', 'D_ARCHIVED', 'D_RECON', 'ACT_RECON', 'D_CONTROL', 'D_VERIFY', 'D_DOC', 'D_GIT', 'D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY', 'ACT_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT', 'ACT_AUDIT_WAIT', 'ACT_AUDIT_TIMEOUT', 'BLOCK', 'DONE'},
         'edges': {
-            ('S01', 'S02'), ('S02', 'S03'), ('S03', 'S04'), ('S04', 'D_AUDIT_CONFIG'),
-            ('D_AUDIT_CONFIG', 'S05'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'),
+            ('S01', 'ACT_INITIAL_CLASSIFY'), ('ACT_INITIAL_CLASSIFY', 'S02'), ('ACT_INITIAL_CLASSIFY', 'BLOCK'), ('S02', 'D_ENHANCED'), ('D_ENHANCED', 'S03'),
+            ('D_ENHANCED', 'D_ENHANCED_HOST'), ('D_ENHANCED_HOST', 'S03'),
+            ('D_ENHANCED_HOST', 'ACT_NATIVE'), ('ACT_NATIVE', 'S03'), ('D_ENHANCED_HOST', 'BLOCK'),
+            ('S03', 'S04'), ('S04', 'D_ROOT_STORE'),
+            ('D_ROOT_STORE', 'D_NATIVE_RECON'), ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'), ('D_ROOT_STORE', 'BLOCK'),
+            ('ACT_ROOT_OPEN', 'D_AUDIT_CONFIG'), ('ACT_ROOT_OPEN', 'BLOCK'),
+            ('D_AUTHORITY_TRANSFER', 'D_AUDIT_CONFIG'), ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'), ('D_AUTHORITY_TRANSFER', 'BLOCK'),
+            ('ACT_NATIVE_TRANSFER', 'D_AUDIT_CONFIG'), ('ACT_NATIVE_TRANSFER', 'BLOCK'),
+            ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'), ('D_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'),
+            ('ACT_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'), ('ACT_NATIVE_RECON', 'BLOCK'),
+            ('ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'),
+            ('D_AUDIT_CONFIG', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'),
             ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'), ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'),
             ('D_AUDIT_CONFIG', 'BLOCK'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'),
             ('ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'),
-            ('ACT_AUDIT_REPLY', 'S05'), ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'),
+            ('ACT_AUDIT_REPLY', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'),
             ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'),
             ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'),
-            ('ACT_AUDIT_DEFAULT', 'S05'), ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'),
+            ('ACT_AUDIT_DEFAULT', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'),
             ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'),
-            ('ACT_AUDIT_TIMEOUT', 'S05'), ('D_AUDIT_REPLY', 'BLOCK'),
-            ('S05', 'ACT_PLAN_SCAN'), ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_PLAN_SCAN', 'BLOCK'),
+            ('ACT_AUDIT_TIMEOUT', 'ACT_AUDIT_CONFIRM'), ('ACT_AUDIT_CONFIRM', 'S05'),
+            ('ACT_AUDIT_CONFIRM', 'BLOCK'), ('D_AUDIT_REPLY', 'BLOCK'),
+            ('S05', 'D_RULE_ACCESS'), ('D_RULE_ACCESS', 'ACT_RULE_CONTEXT'),
+            ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'),
+            ('ACT_RULE_DIRECT', 'ACT_PLAN_SCAN'), ('ACT_RULE_DIRECT', 'BLOCK'),
+            ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_PLAN_SCAN', 'BLOCK'),
             ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'D_RECON'),
             ('ACT_PLAN_READ', 'D_RECON'), ('ACT_PLAN_READ', 'BLOCK'),
             ('D_RECON', 'ACT_RECON'), ('ACT_RECON', 'S05'), ('D_RECON', 'S06'),
-            ('S06', 'D_PLAN'), ('D_PLAN', 'ACT_PLAN'), ('D_PLAN', 'S07'),
-            ('ACT_PLAN', 'D_PLAN_SAVED'), ('D_PLAN_SAVED', 'S07'), ('D_PLAN_SAVED', 'BLOCK'), ('S07', 'S08'), ('S08', 'S09'), ('S09', 'D_CONTROL'),
+            ('S06', 'D_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_DIRECT', 'D_PLAN'), ('ACT_DECISION_DIRECT', 'BLOCK'), ('D_PLAN', 'ACT_PLAN'), ('D_PLAN', 'D_RECOVERY_GATE'),
+            ('ACT_PLAN', 'D_PLAN_SAVED'), ('D_PLAN_SAVED', 'D_RECOVERY_GATE'), ('D_PLAN_SAVED', 'BLOCK'),
+            ('D_RECOVERY_GATE', 'S07'), ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'), ('S07', 'S08'), ('S08', 'S09'), ('S09', 'D_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_DIRECT', 'D_CONTROL'), ('ACT_CONTROL_DIRECT', 'BLOCK'),
             ('D_CONTROL', 'S05'), ('D_CONTROL', 'S06'), ('D_CONTROL', 'S10'), ('D_CONTROL', 'BLOCK'),
-            ('S10', 'D_VERIFY'), ('D_VERIFY', 'S11'), ('D_VERIFY', 'S12'), ('D_VERIFY', 'BLOCK'),
+            ('S10', 'D_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_DIRECT', 'D_VERIFY'), ('ACT_EPOCH_DIRECT', 'BLOCK'), ('D_VERIFY', 'S11'), ('D_VERIFY', 'S12'), ('D_VERIFY', 'BLOCK'),
             ('S11', 'S10'), ('S12', 'D_DOC'), ('D_DOC', 'S10'), ('D_DOC', 'S06'),
             ('D_DOC', 'S13'), ('S13', 'D_GIT'), ('D_GIT', 'S14'), ('D_GIT', 'BLOCK'),
             ('S14', 'D_ARCHIVE'), ('D_ARCHIVE', 'ACT_ARCHIVE'), ('D_ARCHIVE', 'DONE'),
@@ -66,34 +81,51 @@ ROUTE_SPECS = {
         'steps': ('Contract', 'Environment', 'Mode', 'Session', 'Allocation', 'Context',
                   'Decision', 'Slice', 'Child Creation', 'Dispatch', 'Implementation',
                   'Verification', 'Repair', 'Documentation', 'Git', 'Acceptance'),
-        'branches': {'D_BOOT', 'ACT_BOOT_PLAN', 'D_PLAN', 'ACT_PLAN', 'D_PLAN_SAVED',
+        'branches': {'D_ENHANCED', 'D_ENHANCED_HOST', 'ACT_NATIVE', 'D_ROOT_STORE', 'ACT_ROOT_OPEN', 'D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER', 'D_NATIVE_RECON', 'ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK', 'D_RECOVERY_GATE', 'ACT_AUDIT_CONFIRM', 'D_RULE_ACCESS', 'ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT', 'ACT_INITIAL_CLASSIFY', 'D_DECISION_ADVICE', 'ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT', 'D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT', 'D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT', 'D_WORKER_STORE', 'ACT_WORKER_OPEN', 'D_BOOT', 'ACT_BOOT_PLAN', 'D_PLAN', 'ACT_PLAN', 'D_PLAN_SAVED',
                      'D_RECON', 'ACT_RECON_PLAN', 'D_MEMO', 'ACT_MEMO', 'D_CONTROL',
                      'D_VERIFY', 'D_DOC', 'D_GIT', 'D_PLAN_MATCH', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ', 'D_ARCHIVE', 'ACT_ARCHIVE', 'D_ARCHIVED', 'D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY', 'ACT_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT', 'ACT_AUDIT_WAIT', 'ACT_AUDIT_TIMEOUT', 'BLOCK', 'DONE'},
         'edges': {
-            ('M01', 'M02'), ('M02', 'M03'), ('M03', 'M04'), ('M04', 'D_AUDIT_CONFIG'),
-            ('D_AUDIT_CONFIG', 'M05'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'),
+            ('M01', 'ACT_INITIAL_CLASSIFY'), ('ACT_INITIAL_CLASSIFY', 'M02'), ('ACT_INITIAL_CLASSIFY', 'BLOCK'), ('M02', 'D_ENHANCED'), ('D_ENHANCED', 'M03'),
+            ('D_ENHANCED', 'D_ENHANCED_HOST'), ('D_ENHANCED_HOST', 'M03'),
+            ('D_ENHANCED_HOST', 'ACT_NATIVE'), ('ACT_NATIVE', 'M03'), ('D_ENHANCED_HOST', 'BLOCK'),
+            ('M03', 'M04'), ('M04', 'D_ROOT_STORE'),
+            ('D_ROOT_STORE', 'D_NATIVE_RECON'), ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'), ('D_ROOT_STORE', 'BLOCK'),
+            ('ACT_ROOT_OPEN', 'D_AUDIT_CONFIG'), ('ACT_ROOT_OPEN', 'BLOCK'),
+            ('D_AUTHORITY_TRANSFER', 'D_AUDIT_CONFIG'), ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'), ('D_AUTHORITY_TRANSFER', 'BLOCK'),
+            ('ACT_NATIVE_TRANSFER', 'D_AUDIT_CONFIG'), ('ACT_NATIVE_TRANSFER', 'BLOCK'),
+            ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'), ('D_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'),
+            ('ACT_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'), ('ACT_NATIVE_RECON', 'BLOCK'),
+            ('ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'),
+            ('D_AUDIT_CONFIG', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'),
             ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'), ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'),
             ('D_AUDIT_CONFIG', 'BLOCK'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'),
             ('ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'),
-            ('ACT_AUDIT_REPLY', 'M05'), ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'),
+            ('ACT_AUDIT_REPLY', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'),
             ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'),
             ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'),
-            ('ACT_AUDIT_DEFAULT', 'M05'), ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'),
+            ('ACT_AUDIT_DEFAULT', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'),
             ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'),
-            ('ACT_AUDIT_TIMEOUT', 'M05'), ('D_AUDIT_REPLY', 'BLOCK'),
+            ('ACT_AUDIT_TIMEOUT', 'ACT_AUDIT_CONFIRM'), ('ACT_AUDIT_CONFIRM', 'M05'),
+            ('ACT_AUDIT_CONFIRM', 'BLOCK'), ('D_AUDIT_REPLY', 'BLOCK'),
             ('M05', 'D_BOOT'), ('D_BOOT', 'ACT_BOOT_PLAN'), ('ACT_BOOT_PLAN', 'M06'), ('D_BOOT', 'M06'),
-            ('M06', 'ACT_PLAN_SCAN'), ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_PLAN_SCAN', 'BLOCK'),
+            ('M06', 'D_RULE_ACCESS'), ('D_RULE_ACCESS', 'ACT_RULE_CONTEXT'),
+            ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'),
+            ('ACT_RULE_DIRECT', 'ACT_PLAN_SCAN'), ('ACT_RULE_DIRECT', 'BLOCK'),
+            ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_PLAN_SCAN', 'BLOCK'),
             ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'M07'),
-            ('ACT_PLAN_READ', 'M07'), ('ACT_PLAN_READ', 'BLOCK'), ('M07', 'D_PLAN'), ('D_PLAN', 'ACT_PLAN'), ('D_PLAN', 'D_RECON'),
+            ('ACT_PLAN_READ', 'M07'), ('ACT_PLAN_READ', 'BLOCK'), ('M07', 'D_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_DIRECT', 'D_PLAN'), ('ACT_DECISION_DIRECT', 'BLOCK'), ('D_PLAN', 'ACT_PLAN'), ('D_PLAN', 'D_RECON'),
             ('ACT_PLAN', 'D_PLAN_SAVED'), ('D_PLAN_SAVED', 'D_RECON'), ('D_PLAN_SAVED', 'BLOCK'),
             ('D_RECON', 'ACT_RECON_PLAN'),
-            ('ACT_RECON_PLAN', 'M08'), ('D_RECON', 'M08'),
-            ('M08', 'M09'), ('M09', 'D_MEMO'), ('M09', 'BLOCK'),
+            ('ACT_RECON_PLAN', 'D_RECOVERY_GATE'), ('D_RECON', 'D_RECOVERY_GATE'),
+            ('D_RECOVERY_GATE', 'M08'), ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'),
+            ('M08', 'M09'), ('M09', 'D_WORKER_STORE'), ('M09', 'D_MEMO'), ('M09', 'BLOCK'),
+            ('D_WORKER_STORE', 'ACT_WORKER_OPEN'), ('D_WORKER_STORE', 'D_MEMO'), ('D_WORKER_STORE', 'BLOCK'),
+            ('ACT_WORKER_OPEN', 'D_MEMO'), ('ACT_WORKER_OPEN', 'BLOCK'),
             ('M10', 'M11'), ('M10', 'BLOCK'),
             ('D_MEMO', 'ACT_MEMO'), ('ACT_MEMO', 'M10'), ('D_MEMO', 'M10'),
-            ('M11', 'D_CONTROL'), ('M11', 'BLOCK'),
+            ('M11', 'D_CONTROL_ADVICE'), ('M11', 'BLOCK'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_DIRECT', 'D_CONTROL'), ('ACT_CONTROL_DIRECT', 'BLOCK'),
             ('D_CONTROL', 'M06'), ('D_CONTROL', 'M07'),
-            ('D_CONTROL', 'M12'), ('D_CONTROL', 'BLOCK'), ('M12', 'D_VERIFY'), ('M12', 'BLOCK'),
+            ('D_CONTROL', 'M12'), ('D_CONTROL', 'BLOCK'), ('M12', 'D_EPOCH_ADVICE'), ('M12', 'BLOCK'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_DIRECT', 'D_VERIFY'), ('ACT_EPOCH_DIRECT', 'BLOCK'),
             ('D_VERIFY', 'M13'), ('D_VERIFY', 'M14'), ('D_VERIFY', 'BLOCK'),
             ('M13', 'M12'), ('M13', 'BLOCK'), ('M14', 'D_DOC'), ('M14', 'BLOCK'),
             ('D_DOC', 'M12'), ('D_DOC', 'M07'), ('D_DOC', 'M15'),
@@ -114,6 +146,211 @@ PLAN_NODE_LABELS = {
            'D_PLAN_SAVED': '计划 Memory 是否写入并读回核验？',
            'D_ARCHIVE': '是否存在本任务对应的活动计划 Memory？',
            'D_PLAN_MATCH': '是否存在相关活动计划？', 'D_ARCHIVED': '归档计划是否已核验？'},
+}
+
+CONTROL_COMPLETION_LABEL = {
+    'en': 'normal post-implementation only; no recovery Slice pending',
+    'zh': '仅限正常实现后；不存在待放行的恢复 Slice',
+}
+
+SESSION_BOUNDARY_CHECKLIST_REQUIREMENTS = {
+    'en': (
+        'native-reconciliation.md', 'native-authority-transfer.md',
+        'only when transferring an established Enhanced canonical record back to Native',
+        'enhanced-state-store.md', 'enhanced-schema-migrations.md',
+        'Root-only access', 'read-only identity/status checks',
+        'compatible history and schema', 'blocks dependent writes',
+    ),
+    'zh': (
+        'native-reconciliation_zh_cn.md', 'native-authority-transfer_zh_cn.md',
+        '仅当将既有 Enhanced 规范记录转回 Native 时',
+        'enhanced-state-store_zh_cn.md', 'enhanced-schema-migrations_zh_cn.md',
+        'Root-only 访问', '只读身份/状态检查', '历史与 Schema 兼容', '阻塞依赖写入',
+    ),
+}
+
+ENHANCED_NODE_LABEL_REQUIREMENTS = {
+    'en': {
+        'D_ENHANCED': ('Optional Enhanced operation needed?',),
+        'D_ENHANCED_HOST': ('Trusted identity', 'required operation guards'),
+        'ACT_NATIVE': ('Native candidate', 'verify prior Enhanced authority before use'),
+        'D_ROOT_STORE': ('Enhanced Root store', 'identity', 'guards', 'schema'),
+        'ACT_ROOT_OPEN': ('Open or resume Root store', 'audit as pending'),
+        'D_AUTHORITY_TRANSFER': ('previously canonical Enhanced record', 'transfer back to Native'),
+        'ACT_NATIVE_TRANSFER': ('Freeze Enhanced writers', 'complete canonical record', 'read back'),
+        'ACT_RECOVERY_RECHECK': ('Recheck Contract', 'current Context', 'Decision', 'current canonical audit record', 'without reopening Mode', 'repeating a completed prompt'),
+        'D_NATIVE_RECON': ('Native currently canonical', 'Root comparison unresolved'),
+        'ACT_NATIVE_RECON': ('full set', 'exact comparison', 'supported differences'),
+        'D_RECOVERY_GATE': ('post-floor Control Continue', 'current', 'Control rule', 'relevant Epochs'),
+        'ACT_AUDIT_CONFIRM': ('selected canonical Root audit record', 'read it back'),
+        'D_WORKER_STORE': ('real child', 'identity bound'),
+        'ACT_WORKER_OPEN': ('Worker store', 'schema validation'),
+    },
+    'zh': {
+        'D_ENHANCED': ('是否需要可选 Enhanced 操作？',),
+        'D_ENHANCED_HOST': ('可信身份', '操作必需守卫'),
+        'ACT_NATIVE': ('Native 候选路径', '使用前核验既有 Enhanced 权威'),
+        'D_ROOT_STORE': ('Enhanced Root store', '身份', '守卫', 'Schema'),
+        'ACT_ROOT_OPEN': ('打开或恢复 Root store', '保持 pending'),
+        'D_AUTHORITY_TRANSFER': ('既有规范 Enhanced 记录', '转回 Native'),
+        'ACT_NATIVE_TRANSFER': ('冻结 Enhanced 写入者', '在途操作', '完整规范记录'),
+        'ACT_RECOVERY_RECHECK': ('重核 Contract', '当前 Context', 'Decision', '当前规范审计记录', '不重开 Mode', '重复已完成提问'),
+        'D_NATIVE_RECON': ('Native 当前', 'Root 对账是否未决'),
+        'ACT_NATIVE_RECON': ('完整集合', '精确比较', '受支持差异'),
+        'D_RECOVERY_GATE': ('floor 后', 'Control Continue', '当前 Control 规则', '相关 Epoch'),
+        'ACT_AUDIT_CONFIRM': ('所选规范 Root 审计记录', '读回'),
+        'D_WORKER_STORE': ('真实子代理', 'allocation'),
+        'ACT_WORKER_OPEN': ('Worker 自身 store', 'Schema 核验'),
+    },
+}
+
+ENHANCED_EDGE_LABELS = {
+    'en': {
+        ('D_ENHANCED', 'MODE_CHECKPOINT'): 'no / Native default / N/A',
+        ('D_ENHANCED', 'D_ENHANCED_HOST'): 'yes / Enhanced needed',
+        ('D_ENHANCED_HOST', 'MODE_CHECKPOINT'): 'verified',
+        ('D_ENHANCED_HOST', 'ACT_NATIVE'): 'Native candidate; verify prior Enhanced authority before use',
+        ('D_ENHANCED_HOST', 'BLOCK'): 'required capability missing or unknown',
+        ('D_ROOT_STORE', 'D_NATIVE_RECON'): 'Enhanced selected; current identity and schema verified',
+        ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'): 'Native / Enhanced not selected / check existing authority',
+        ('ACT_ROOT_OPEN', 'D_AUDIT_CONFIG'): 'open or resume Root store',
+        ('D_AUTHORITY_TRANSFER', 'D_AUDIT_CONFIG'): 'no prior Enhanced authority / N/A',
+        ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'): 'prior Enhanced authority; transfer authorized',
+        ('D_AUTHORITY_TRANSFER', 'BLOCK'): 'history, freeze, or readback unknown / failed',
+        ('ACT_NATIVE_TRANSFER', 'D_AUDIT_CONFIG'): 'complete record frozen, copied, and read back',
+        ('ACT_NATIVE_TRANSFER', 'BLOCK'): 'incomplete or indeterminate',
+        ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'): 'no Native history / N/A',
+        ('D_NATIVE_RECON', 'D_AUDIT_CONFIG'): 'prior resolution current; no unresolved comparisons',
+        ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'): 'unresolved Native history or comparison',
+        ('ACT_NATIVE_RECON', 'D_AUDIT_CONFIG'): 'exact comparison confirmed',
+        ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'): 'material resolution committed; recheck Contract',
+        ('ACT_NATIVE_RECON', 'BLOCK'): 'unsupported difference or incomplete review',
+        ('ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'): 'Contract rechecked; confirm current canonical audit record',
+        ('D_ROOT_STORE', 'BLOCK'): 'required identity, guard, or schema unavailable',
+        ('ACT_ROOT_OPEN', 'BLOCK'): 'open or validation failed',
+        ('D_RECOVERY_GATE', 'ROUTE_SLICE'): 'no recovery floor / N/A or post-floor Continue is current for Control rule and relevant Epochs',
+        ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'): 'fresh or current Continue required',
+        ('ACT_AUDIT_CONFIRM', 'ROUTE_NEXT'): 'canonical Root audit record confirmed and read back',
+        ('ACT_AUDIT_CONFIRM', 'BLOCK'): 'canonical record missing or not confirmed',
+        ('D_WORKER_STORE', 'ACT_WORKER_OPEN'): 'Enhanced selected; identity bound; guards valid',
+        ('D_WORKER_STORE', 'D_MEMO'): 'Native / Enhanced not selected / N/A',
+        ('D_WORKER_STORE', 'BLOCK'): 'required identity, guard, or schema unavailable',
+        ('ACT_WORKER_OPEN', 'BLOCK'): 'open or validation failed',
+    },
+    'zh': {
+        ('D_ENHANCED', 'MODE_CHECKPOINT'): '否／Native 默认／不适用',
+        ('D_ENHANCED', 'D_ENHANCED_HOST'): '是／需要 Enhanced',
+        ('D_ENHANCED_HOST', 'MODE_CHECKPOINT'): '已验证',
+        ('D_ENHANCED_HOST', 'ACT_NATIVE'): 'Native 候选路径；使用前核验既有 Enhanced 权威',
+        ('D_ENHANCED_HOST', 'BLOCK'): '必需能力缺失或未知',
+        ('D_ROOT_STORE', 'D_NATIVE_RECON'): 'Enhanced 已选择；当前身份和 Schema 已核验',
+        ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'): 'Native／未选择 Enhanced／核验既有规范权威',
+        ('ACT_ROOT_OPEN', 'D_AUDIT_CONFIG'): '对账后打开或恢复',
+        ('D_AUTHORITY_TRANSFER', 'D_AUDIT_CONFIG'): '从未有 Enhanced 权威／不适用',
+        ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'): '已有 Enhanced 权威；转移获准且已核验',
+        ('D_AUTHORITY_TRANSFER', 'BLOCK'): '历史、冻结或读回未知／失败',
+        ('ACT_NATIVE_TRANSFER', 'D_AUDIT_CONFIG'): '完整记录已冻结、写入并读回',
+        ('ACT_NATIVE_TRANSFER', 'BLOCK'): '不完整或结果不确定',
+        ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'): '无 Native 历史／不适用',
+        ('D_NATIVE_RECON', 'D_AUDIT_CONFIG'): '先前裁决仍当前；无未决比较',
+        ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'): '存在未决 Native 历史或比较',
+        ('ACT_NATIVE_RECON', 'D_AUDIT_CONFIG'): '精确比较已确认',
+        ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'): '实质差异已裁决并提交；重核 Contract',
+        ('ACT_NATIVE_RECON', 'BLOCK'): '差异不受支持或审阅不完整',
+        ('ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'): 'Contract 已重核；确认当前规范审计记录',
+        ('D_ROOT_STORE', 'BLOCK'): '必需身份、守卫或 Schema 不可用',
+        ('ACT_ROOT_OPEN', 'BLOCK'): '打开或核验失败',
+        ('D_RECOVERY_GATE', 'ROUTE_SLICE'): '无恢复 floor／不适用，或 floor 后 Continue 对当前 Control 规则和相关 Epoch 仍有效',
+        ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'): '需要新的当前 Continue',
+        ('ACT_AUDIT_CONFIRM', 'ROUTE_NEXT'): '规范 Root 审计记录已确认并读回',
+        ('ACT_AUDIT_CONFIRM', 'BLOCK'): '规范记录缺失或未确认',
+        ('D_WORKER_STORE', 'ACT_WORKER_OPEN'): '已选择 Enhanced；身份已绑定；守卫有效',
+        ('D_WORKER_STORE', 'D_MEMO'): 'Native／未选择 Enhanced／不适用',
+        ('D_WORKER_STORE', 'BLOCK'): '必需身份、守卫或 Schema 不可用',
+        ('ACT_WORKER_OPEN', 'BLOCK'): '打开或核验失败',
+    },
+}
+
+RULE_CONTEXT_NODE_REQUIREMENTS = {
+    'en': {
+        'D_RULE_ACCESS': ('bounded current rule lookup',),
+        'ACT_RULE_CONTEXT': ('current node', 'mapped owner heading'),
+        'ACT_RULE_DIRECT': ('direct owner text', 'required references'),
+    },
+    'zh': {
+        'D_RULE_ACCESS': ('有界', '当前规则读取'),
+        'ACT_RULE_CONTEXT': ('当前节点', '映射的 owner 标题'),
+        'ACT_RULE_DIRECT': ('直接 owner 正文', '必需引用'),
+    },
+}
+
+RULE_CONTEXT_EDGE_LABELS = {
+    'en': {
+        ('D_RULE_ACCESS', 'ACT_RULE_CONTEXT'): 'yes / bounded lookup selected',
+        ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'): 'no / direct source / N/A',
+        ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'): 'loaded or unavailable / direct fallback',
+        ('ACT_RULE_DIRECT', 'RULE_NEXT'): 'current owner and required references confirmed',
+        ('ACT_RULE_DIRECT', 'BLOCK'): 'required owner unavailable',
+    },
+    'zh': {
+        ('D_RULE_ACCESS', 'ACT_RULE_CONTEXT'): '是／选择有界读取',
+        ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'): '否／直接来源／不适用',
+        ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'): '已读取或不可用／直接回退',
+        ('ACT_RULE_DIRECT', 'RULE_NEXT'): '已核验当前 owner 与必需引用',
+        ('ACT_RULE_DIRECT', 'BLOCK'): '必需 owner 不可用',
+    },
+}
+
+ADVISORY_EDGE_LABELS = {
+    'en': {
+        ('ACT_INITIAL_CLASSIFY', 'ROUTE_ENTRY'): 'direct sources confirmed / advice N/A before Root',
+        ('ACT_INITIAL_CLASSIFY', 'BLOCK'): 'required source unavailable',
+        ('D_DECISION_ADVICE', 'ACT_DECISION_ADVICE'): 'explicitly enabled and relevant',
+        ('D_DECISION_ADVICE', 'ACT_DECISION_DIRECT'): 'Native / disabled / unavailable / N/A',
+        ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'): 'current advice or failure / direct review',
+        ('ACT_DECISION_DIRECT', 'D_PLAN'): 'owner and facts confirmed',
+        ('ACT_DECISION_DIRECT', 'BLOCK'): 'required owner or evidence unavailable',
+        ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'): 'explicitly enabled',
+        ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'): 'Native / disabled / unavailable / N/A',
+        ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'): 'current advice or failure / direct review',
+        ('ACT_CONTROL_DIRECT', 'D_CONTROL'): 'explicit trusted outcome selected',
+        ('ACT_CONTROL_DIRECT', 'BLOCK'): 'required owner or essential evidence unobtainable',
+        ('D_CONTROL', 'ROUTE_CONTEXT'): 'Evidence-on-Demand (retrievable evidence pause)',
+        ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'): 'explicitly enabled',
+        ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'): 'Native / disabled / unavailable / N/A',
+        ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'): 'coverage hint or failure / direct verification',
+        ('ACT_EPOCH_DIRECT', 'D_VERIFY'): 'current evidence confirmed',
+        ('ACT_EPOCH_DIRECT', 'BLOCK'): 'required evidence unavailable',
+        ('M12', 'D_EPOCH_ADVICE'): 'verifier exchange visible / no child verifier required: N/A',
+    },
+    'zh': {
+        ('ACT_INITIAL_CLASSIFY', 'ROUTE_ENTRY'): '已核验直接来源／Root 前建议不适用',
+        ('ACT_INITIAL_CLASSIFY', 'BLOCK'): '必需来源不可用',
+        ('D_DECISION_ADVICE', 'ACT_DECISION_ADVICE'): '明确启用且与当前问题相关',
+        ('D_DECISION_ADVICE', 'ACT_DECISION_DIRECT'): 'Native／关闭／不可用／不适用',
+        ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'): '建议当前或失败／直接核验',
+        ('ACT_DECISION_DIRECT', 'D_PLAN'): '已核验 owner 和事实',
+        ('ACT_DECISION_DIRECT', 'BLOCK'): '必需 owner 或证据不可用',
+        ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'): '明确启用',
+        ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'): 'Native／关闭／不可用／不适用',
+        ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'): '建议当前或失败／直接核验',
+        ('ACT_CONTROL_DIRECT', 'D_CONTROL'): '已选择可信显式结果',
+        ('ACT_CONTROL_DIRECT', 'BLOCK'): '必需 owner 或关键证据不可取得',
+        ('D_CONTROL', 'ROUTE_CONTEXT'): 'Evidence-on-Demand（可补证据暂停）',
+        ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'): '明确启用',
+        ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'): 'Native／关闭／不可用／不适用',
+        ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'): '覆盖提示或失败／直接验证',
+        ('ACT_EPOCH_DIRECT', 'D_VERIFY'): '已核验当前证据',
+        ('ACT_EPOCH_DIRECT', 'BLOCK'): '必需证据不可用',
+        ('M12', 'D_EPOCH_ADVICE'): 'verifier 通信可见／无需子代理 verifier：N/A',
+    },
+}
+
+CONTEXT_PLAN_REQUIREMENTS = {
+    'en': ('list active plan', 'plans/', 'read each match', 'freshness',
+           'current instructions', 'not applicable', 'block'),
+    'zh': ('列出', '活动计划', '逐一读取', '新鲜度', '当前指令',
+           'not applicable', '阻塞'),
 }
 
 AUDIT_NODE_LABEL_REQUIREMENTS = {
@@ -283,13 +520,21 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
     for name, label in PLAN_NODE_LABELS[lang].items():
         if name in nodes and label not in nodes[name]:
             errors.append(f'{path}: node {name} must identify {label}')
+    for name, fragments in ENHANCED_NODE_LABEL_REQUIREMENTS[lang].items():
+        for fragment in fragments:
+            if name in nodes and fragment.casefold() not in nodes[name].casefold():
+                errors.append(f'{path}: node {name} must identify {fragment}')
+    for name, fragments in RULE_CONTEXT_NODE_REQUIREMENTS[lang].items():
+        for fragment in fragments:
+            if name in nodes and fragment.casefold() not in nodes[name].casefold():
+                errors.append(f'{path}: node {name} must identify {fragment}')
     audit_nodes = AUDIT_NODE_LABEL_REQUIREMENTS[lang]
     for name, fragments in audit_nodes.items():
         for fragment in fragments:
             if name in nodes and fragment.casefold() not in nodes[name].casefold():
                 errors.append(f'{path}: node {name} must identify {fragment}')
     audit_edges = dict(AUDIT_EDGE_LABELS[lang])
-    audit_edges[('D_AUDIT_CONFIG', f'{prefix}05')] = audit_edges.pop(('D_AUDIT_CONFIG', 'AUDIT_NEXT'))
+    audit_edges[('D_AUDIT_CONFIG', 'ACT_AUDIT_CONFIRM')] = audit_edges.pop(('D_AUDIT_CONFIG', 'AUDIT_NEXT'))
     map_text = maps[0].group(2)
     for (source, target), label in audit_edges.items():
         match = re.search(
@@ -298,19 +543,96 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
         )
         if not match or label.casefold() not in match.group(1).casefold():
             errors.append(f'{path}: audit edge {source} -> {target} must label {label}')
+    enhanced_edges = {
+        (source, f'{prefix}03' if target == 'MODE_CHECKPOINT' else
+         f'{prefix}05' if target == 'ROUTE_NEXT' else
+         f'{prefix}05' if target == 'ROUTE_CONTEXT' and route == 'single-agent' else
+         f'{prefix}05' if target == 'ROUTE_CONTEXT' else
+         f'{prefix}07' if target == 'ROUTE_SLICE' and route == 'single-agent' else
+         f'{prefix}08' if target == 'ROUTE_SLICE' else
+         f'{prefix}05' if target == 'ROOT_CONTEXT' and route == 'single-agent' else
+         f'{prefix}05' if target == 'ROOT_CONTEXT' else target): label
+        for (source, target), label in ENHANCED_EDGE_LABELS[lang].items()
+    }
+    for (source, target), label in enhanced_edges.items():
+        if source not in nodes or target not in nodes:
+            continue
+        match = re.search(
+            r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+' + re.escape(target) + r'\s*$',
+            map_text,
+        )
+        if not match or label.casefold() not in match.group(1).casefold():
+            errors.append(f'{path}: enhanced edge {source} -> {target} must label {label}')
+    rule_context_edges = {
+        (source, 'ACT_PLAN_SCAN' if target == 'RULE_NEXT' else target): label
+        for (source, target), label in RULE_CONTEXT_EDGE_LABELS[lang].items()
+    }
+    for (source, target), label in rule_context_edges.items():
+        if source not in nodes or target not in nodes:
+            continue
+        match = re.search(
+            r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+' + re.escape(target) + r'\s*$',
+            map_text,
+        )
+        if not match or label.casefold() not in match.group(1).casefold():
+            errors.append(f'{path}: rule-context edge {source} -> {target} must label {label}')
+    advisory_edges = {
+        (source, f'{prefix}02' if target == 'ROUTE_ENTRY' else
+         f'{prefix}{5 if route == "single-agent" else 6:02d}' if target == 'ROUTE_CONTEXT' else target): label
+        for (source, target), label in ADVISORY_EDGE_LABELS[lang].items()
+    }
+    for (source, target), label in advisory_edges.items():
+        if source not in nodes or target not in nodes:
+            continue
+        match = re.search(
+            r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+' + re.escape(target) + r'\s*$',
+            map_text,
+        )
+        if not match or label.casefold() not in match.group(1).casefold():
+            errors.append(f'{path}: advisory edge {source} -> {target} must label {label}')
+    completion_target = f'{prefix}10' if route == 'single-agent' else f'{prefix}12'
+    completion_match = re.search(
+        r'(?m)^\s*D_CONTROL\s+--\s+(.+?)\s+-->\s+' + re.escape(completion_target) + r'\s*$',
+        map_text,
+    )
+    if (not completion_match
+            or CONTROL_COMPLETION_LABEL[lang].casefold() not in completion_match.group(1).casefold()):
+        errors.append(f'{path}: D_CONTROL -> {completion_target} must restrict completion to normal post-implementation with no pending recovery Slice')
     recorded_steps = [int(match.group(1)) for match in STEP_RE.finditer(checklist_section[0])]
     wanted_steps = list(range(1, len(steps) + 1))
     if recorded_steps != wanted_steps:
         errors.append(f'{path}: checklist numbering must be {wanted_steps}, got {recorded_steps}')
+    context_step = steps.index('Context') + 1
+    context_match = next((match for match in STEP_RE.finditer(checklist_section[0])
+                          if int(match.group(1)) == context_step), None)
+    if context_match:
+        context_end = STEP_RE.search(checklist_section[0], context_match.end())
+        context_text = checklist_section[0][context_match.start():
+                                           context_end.start() if context_end else None].casefold()
+        for required in CONTEXT_PLAN_REQUIREMENTS[lang]:
+            if required.casefold() not in context_text:
+                errors.append(f'{path}: Context step must include active-plan check requirement {required}')
+    session_step = steps.index('Session') + 1
+    session_match = next((match for match in STEP_RE.finditer(checklist_section[0])
+                          if int(match.group(1)) == session_step), None)
+    if session_match:
+        session_end = STEP_RE.search(checklist_section[0], session_match.end())
+        session_text = checklist_section[0][session_match.start():
+                                            session_end.start() if session_end else None].casefold()
+        for required in SESSION_BOUNDARY_CHECKLIST_REQUIREMENTS[lang]:
+            if required.casefold() not in session_text:
+                errors.append(f'{path}: Session step must include correct Native direction and pre-open state/schema checks: {required}')
     for edge in sorted(spec['edges'] - edges):
         errors.append(f'{path}: required map edge {edge[0]} -> {edge[1]} is missing')
     for edge in sorted(edges - spec['edges']):
         errors.append(f'{path}: unexpected map edge {edge[0]} -> {edge[1]}; update the approved route contract explicitly')
     skip_edges = (
-        (('D_PLAN_MATCH', 'D_RECON'), ('D_RECON', 'S06'), ('D_PLAN', 'S07'), ('D_DOC', 'S13'), ('D_GIT', 'S14'),
+        (('D_PLAN_MATCH', 'D_RECON'), ('D_RECON', 'S06'), ('D_PLAN', 'D_RECOVERY_GATE'), ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('D_DOC', 'S13'), ('D_GIT', 'S14'),
          ('D_ARCHIVE', 'DONE'))
         if route == 'single-agent' else
-        (('D_BOOT', 'M06'), ('D_PLAN', 'D_RECON'), ('D_RECON', 'M08'), ('D_MEMO', 'M10'),
+        (('D_BOOT', 'M06'), ('D_PLAN', 'D_RECON'), ('D_RECON', 'D_RECOVERY_GATE'), ('D_MEMO', 'M10'),
+         ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'),
+         ('D_WORKER_STORE', 'D_MEMO'),
          ('D_DOC', 'M15'), ('D_GIT', 'M16'), ('D_PLAN_MATCH', 'M07'), ('D_ARCHIVE', 'DONE'))
     )
     skip_words = (r'\b(?:no|N/A|disabled|not applicable)\b'

@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 
-import re
 import posixpath
+import re
 import sys
 from pathlib import Path, PurePosixPath
+
+from markdown_discovery import discover_markdown
 
 ROOT = Path(__file__).resolve().parents[1]
 LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
@@ -29,7 +31,10 @@ def layer(path: PurePosixPath) -> str:
         return "checkpoint"
     if parts[:2] == ("workflows", "exist-workflow"):
         return "exist-workflow"
-    if path in {PurePosixPath("workflows/coding.md"), PurePosixPath("workflows/coding_zh_cn.md")}:
+    if path in {
+        PurePosixPath("workflows/coding.md"),
+        PurePosixPath("workflows/coding_zh_cn.md"),
+    }:
         return "coding-selector"
     return "entry"
 
@@ -62,7 +67,12 @@ def allowed(source: str, target: str, is_navigation: bool) -> bool:
     if source in {"exist-workflow", "layer-03"}:
         return is_navigation or target in {"shared-protocols", "layer-01", "layer-02"}
     if source == "coding-selector":
-        return is_navigation or target in {"exist-workflow", "layer-01", "layer-02", "layer-03"}
+        return is_navigation or target in {
+            "exist-workflow",
+            "layer-01",
+            "layer-02",
+            "layer-03",
+        }
     return True
 
 
@@ -80,39 +90,48 @@ def from_line(line: str):
     return LINK_RE.findall(line)
 
 
-def main() -> int:
+def main(root: Path | None = None) -> int:
+    root = Path(root or ROOT).absolute()
     errors: list[str] = []
     markdown_files = sorted(
-        PurePosixPath(path.relative_to(ROOT).as_posix())
-        for path in ROOT.rglob("*.md")
-        if ".git" not in path.parts
+        PurePosixPath(path.relative_to(root).as_posix()) for path in discover_markdown(root)
     )
 
     for source in markdown_files:
-        source_path = ROOT / source
+        source_path = root / source
         source_layer = layer(source)
         source_language = language(source)
         for line_number, links in iter_links(source_path):
             for label, raw_target in links:
                 target_text = raw_target.split("#", 1)[0].split("?", 1)[0]
-                if not target_text or "://" in target_text or target_text.startswith(("mailto:", "{{")):
+                if (
+                    not target_text
+                    or "://" in target_text
+                    or target_text.startswith(("mailto:", "{{"))
+                ):
                     continue
                 if not target_text.endswith(".md"):
                     continue
                 normalized = posixpath.normpath(str(PurePosixPath(source.parent, target_text)))
                 target = PurePosixPath(normalized)
                 if target.parts and target.parts[0] == "..":
-                    errors.append(f"target escapes repository: {source}:{line_number} -> {target_text}")
+                    errors.append(
+                        f"target escapes repository: {source}:{line_number} -> {target_text}"
+                    )
                     continue
-                target_path = ROOT / target
+                target_path = root / target
                 if not target_path.exists():
                     errors.append(f"missing local target: {source}:{line_number} -> {target_text}")
                     continue
 
                 target_language = language(target)
                 mirror = target == counterpart(source)
-                if source_language != target_language and not (is_language_switch(label) and mirror):
-                    errors.append(f"cross-language dependency: {source}:{line_number} -> {target_text}")
+                if source_language != target_language and not (
+                    is_language_switch(label) and mirror
+                ):
+                    errors.append(
+                        f"cross-language dependency: {source}:{line_number} -> {target_text}"
+                    )
                     continue
                 navigation = mirror or (target == source and is_language_switch(label))
                 target_layer = layer(target)

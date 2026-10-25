@@ -8,6 +8,9 @@
 2. Check whether the next action crosses an interface, schema, compatibility, security, risk, irreversible, scope, or external-effect boundary.
 3. If more evidence is required, request Evidence-on-Demand and **pause** release; return to this checkpoint after evidence arrives. This is an intermediate action, not a fourth final authorization outcome.
 4. Choose the final `Continue`, `Amend`, or `Stop` outcome. Only an explicit `Continue` releases the next slice within the approved envelope; `Amend` returns through Contract and Decision. In Single-Agent this is a logical pause; in Multi-Agent the parent controls release.
+   - When the [Native Reconciliation](../layer-01-fundamental-concepts/native-reconciliation.md) owner establishes a recovery Revision floor, a prior `Continue` cannot release a later slice. Re-evaluate Control after the floor against current applicable state and evidence; only a current post-floor `Continue` can meet that recovery prerequisite.
+
+5. If an optional Control advisory is explicitly enabled, consider it only as an input. Verify the current Root state and direct Control owner, then make and persist the explicit outcome through the trusted transition; advice itself has no effect. If it is unavailable or stale, decide from the direct owner and current evidence. Apply [Decisions Advisory](../layer-01-fundamental-concepts/decisions-advisory.md).
 
 ## Pass condition
 

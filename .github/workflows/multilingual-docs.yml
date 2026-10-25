@@ -6,30 +6,41 @@ on:
       - "**/*.md"
       - "agents/openai.yaml"
       - "scripts/check-doc-layer-links.py"
+      - "scripts/markdown_discovery.py"
       - "scripts/check-multilingual-docs.py"
       - "scripts/check-layer-01-sections.py"
       - "scripts/check-layer-02-03-provider-neutrality.py"
       - "scripts/check-layer-03-workflow-maps.py"
       - "tests/test_check_layer_03_workflow_maps.py"
+      - "tests/test_markdown_discovery.py"
       - "scripts/check-context-exchange.py"
       - "tests/test_check_context_exchange.py"
       - ".gitignore"
       - ".github/workflows/multilingual-docs.yml"
+      - "mcp/rule-registry.json"
+      - "mcp/hatch_build.py"
+      - "mcp/pyproject.toml"
   push:
     branches:
       - main
     paths:
       - "**/*.md"
       - "agents/openai.yaml"
+      - "scripts/check-doc-layer-links.py"
+      - "scripts/markdown_discovery.py"
       - "scripts/check-multilingual-docs.py"
       - "scripts/check-layer-01-sections.py"
       - "scripts/check-layer-02-03-provider-neutrality.py"
       - "scripts/check-layer-03-workflow-maps.py"
       - "tests/test_check_layer_03_workflow_maps.py"
+      - "tests/test_markdown_discovery.py"
       - "scripts/check-context-exchange.py"
       - "tests/test_check_context_exchange.py"
       - ".gitignore"
       - ".github/workflows/multilingual-docs.yml"
+      - "mcp/rule-registry.json"
+      - "mcp/hatch_build.py"
+      - "mcp/pyproject.toml"
 
 jobs:
   validate:
@@ -43,6 +54,9 @@ jobs:
 
       - name: Validate Markdown layer links
         run: python3 scripts/check-doc-layer-links.py
+
+      - name: Run bounded Markdown discovery regressions
+        run: python3 -m unittest discover -s tests -p 'test_markdown_discovery.py'
 
       - name: Validate Layer-01 document sections
         run: python3 scripts/check-layer-01-sections.py

@@ -12,9 +12,13 @@
 6. 如果运行环境不属于任何分支，将运行环境标记为不受支持，并停止依赖该环境的工作。
 7. 如果证据仍不足以唯一判断运行环境，停止依赖该环境的工作，并将该参考文档中的兜底原问题返回给用户。
 
+## 可选 Enhanced 资格
+
+完成运行环境分类后，判断当前任务是否确实需要可选 Enhanced 操作。不需要时记录 `Not applicable` 及原因，并继续 Native。需要时消费[增强工作流可用性](../layer-01-fundamental-concepts/enhanced-workflow-availability_zh_cn.md)和[增强宿主绑定](../layer-01-fundamental-concepts/enhanced-host-binding_zh_cn.md)：仅检查直接暴露的可信身份和操作守卫证据，记录证据及其范围，并将未知或缺失证据保持为不可用。公共规则访问不能证明受保护状态或写入权限。此处不得初始化或打开工作流状态；该操作须等待 Mode 和 Session 门禁完成。若任务依赖 Enhanced 而绑定缺失或不足，则阻塞该依赖工作并报告缺失能力；独立 Native 工作仍可继续。
+
 ## 通过条件
 
-真实运行环境已根据明确元数据唯一分类，或用户已提供兜底说明。
+真实运行环境已根据明确元数据唯一分类，或用户已提供兜底说明。若需要 Enhanced，已记录其选择和必需的可信绑定证据；否则已记录 Native 的 `Not applicable` 处置。
 
 ## 边界
 
@@ -25,3 +29,5 @@
 - [Coding Session Model](../layer-01-fundamental-concepts/session-model_zh_cn.md) — 定位 Session 拓扑归属。
 - [Coding Context Exchange 工作区边界](../layer-01-fundamental-concepts/context-exchange-workspace-boundary_zh_cn.md) — 定位文件系统和 worktree 能力归属。
 - [Coding Delegation Mode Confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md) — 定位模式门禁能力消费者。
+- [增强工作流可用性](../layer-01-fundamental-concepts/enhanced-workflow-availability_zh_cn.md) — 定位可选路线选择和不可用处置。
+- [增强宿主绑定](../layer-01-fundamental-concepts/enhanced-host-binding_zh_cn.md) — 定位可信身份及操作守卫证据。

@@ -12,6 +12,8 @@ This checkpoint owns epoch invalidation by covered state dimension. A later chan
 4. Advance the Git metadata epoch when commit, branch, index, or history state changes. Do not advance the implementation/content or documentation epoch for Git metadata operations alone. Git state still requires the Git checkpoint to confirm that staged or committed content matches the latest verified fingerprints; content divergence or unverified content returns to the corresponding Verification epoch.
 5. Do not use evidence from an earlier epoch for an affected dimension; require the applicable checks or Verification for the new epoch.
 
+6. An explicitly enabled verification-impact advisory may suggest affected coverage dimensions. Confirm them against current fingerprints and the direct owner; it is not a verification verdict and cannot waive checks or re-verification for changed dimensions. If unavailable or stale, determine coverage directly. Apply [Decisions Advisory](../layer-01-fundamental-concepts/decisions-advisory.md).
+
 ## Pass condition
 
 The latest applicable implementation/content, documentation, and Git metadata epochs are explicit, their required checks or Verification are queued or complete, and no affected dimension relies on stale evidence.

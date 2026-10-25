@@ -83,6 +83,7 @@ def test_detached_sdist_build_uses_embedded_rules_and_complete_wheel(tmp_path: P
     with zipfile.ZipFile(wheel_path) as wheel:
         members = set(wheel.namelist())
         assert "token_io_mcp/migrations/workflow/v0001_initial.py" in members
+        assert "token_io_mcp/migrations/workflow/v0005_native_resolution.py" in members
         assert "token_io_mcp/migrations/worker/v0001_initial.py" in members
         assert (
             len([name for name in members if name.startswith("token_io_mcp/_resources/rules/")])

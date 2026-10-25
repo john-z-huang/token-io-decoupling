@@ -13,6 +13,9 @@ dependencies = [
   "pydantic>=2.12,<3",
 ]
 
+[project.scripts]
+token-io-mcp = "token_io_mcp.cli:main"
+
 [dependency-groups]
 dev = [
   "hatchling>=1.27,<2",

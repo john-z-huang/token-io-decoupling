@@ -7,6 +7,8 @@ import re
 import sys
 from pathlib import Path, PurePosixPath
 
+from markdown_discovery import discover_markdown
+
 ROOT = Path(__file__).resolve().parents[1]
 ZH_SUFFIX = "_zh_cn.md"
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
@@ -18,6 +20,9 @@ PAIR_ROOTS = [
     Path("AGENTS.md"),
     Path("MULTI_LINGUAL.md"),
     Path("workflows/coding.md"),
+    Path("ENHANCED_ARCHITECTURE.md"),
+    Path("EXTERNAL_REFERENCES.md"),
+    Path("mcp/DEVELOPMENT.md"),
 ]
 
 CORE_DOCS = [
@@ -61,54 +66,54 @@ def normalize_target(source: PurePosixPath, raw: str) -> PurePosixPath | None:
     return PurePosixPath(source.parent, target)
 
 
-def main() -> int:
+def main(root: Path | None = None) -> int:
+    root = Path(root or ROOT).absolute()
     errors: list[str] = []
+    markdown_files = discover_markdown(root)
 
-    for markdown in sorted(ROOT.rglob("*.md")):
-        if ".git" in markdown.parts:
-            continue
+    for markdown in markdown_files:
         text = markdown.read_text(encoding="utf-8")
         if "sed: --: No such file or directory" in text:
-            errors.append(f"stray shell-error text: {markdown.relative_to(ROOT)}")
+            errors.append(f"stray shell-error text: {markdown.relative_to(root)}")
 
-    skill_text = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    skill_text = (root / "SKILL.md").read_text(encoding="utf-8")
     if not skill_text.startswith("---\n"):
         errors.append("SKILL.md must start with YAML front matter")
 
     english_docs = [PurePosixPath(p.as_posix()) for p in PAIR_ROOTS]
     english_docs += [
-        PurePosixPath(p.relative_to(ROOT).as_posix())
-        for p in sorted((ROOT / "references").rglob("*.md"))
+        PurePosixPath(p.relative_to(root).as_posix())
+        for p in markdown_files
+        if p.is_relative_to(root / "references")
         if not p.name.endswith(ZH_SUFFIX)
     ]
 
-    bilingual_english = [p for p in english_docs if (ROOT / p).exists()]
+    bilingual_english = [p for p in english_docs if (root / p).exists()]
     bilingual_set = set(bilingual_english)
 
     for english in bilingual_english:
         chinese = zh_peer(english)
-        if not (ROOT / chinese).exists():
+        if not (root / chinese).exists():
             errors.append(f"missing Chinese mirror: {chinese} for {english}")
 
     paired_root_zh = {zh_peer(PurePosixPath(p.as_posix())).name for p in PAIR_ROOTS}
-    for chinese_path in [p for p in ROOT.rglob(f"*{ZH_SUFFIX}") if ".git" not in p.parts]:
-        chinese = PurePosixPath(chinese_path.relative_to(ROOT).as_posix())
+    for chinese_path in [p for p in markdown_files if p.name.endswith(ZH_SUFFIX)]:
+        chinese = PurePosixPath(chinese_path.relative_to(root).as_posix())
         english = en_peer(chinese)
         is_reference = bool(chinese.parts) and chinese.parts[0] == "references"
-        if is_reference or chinese.name in paired_root_zh:
-            if not (ROOT / english).exists():
-                errors.append(f"missing English canonical file: {english} for {chinese}")
+        if (is_reference or chinese.name in paired_root_zh) and not (root / english).exists():
+            errors.append(f"missing English canonical file: {english} for {chinese}")
 
     known_pairs = bilingual_set | {zh_peer(p) for p in bilingual_set}
 
     for english, chinese in LOCALE_DIRECTORY_PAIRS:
-        if not (ROOT / english).exists():
+        if not (root / english).exists():
             errors.append(f"missing locale-directory English file: {english}")
-        if not (ROOT / chinese).exists():
+        if not (root / chinese).exists():
             errors.append(f"missing locale-directory Chinese file: {chinese}")
 
     for rel in sorted(known_pairs, key=str):
-        file_path = ROOT / rel
+        file_path = root / rel
         if not file_path.exists():
             continue
         text = file_path.read_text(encoding="utf-8")
@@ -125,7 +130,7 @@ def main() -> int:
 
     for english in CORE_DOCS:
         for rel in (english, zh_peer(english)):
-            file_path = ROOT / rel
+            file_path = root / rel
             if not file_path.exists():
                 errors.append(f"missing product-neutral core document: {rel}")
                 continue
@@ -137,25 +142,27 @@ def main() -> int:
                 if pattern.search(text):
                     errors.append(f"product-specific term in core ({label}): {rel}")
 
-    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    agents = (root / "AGENTS.md").read_text(encoding="utf-8")
     if "MULTI_LINGUAL.md" not in agents or "MULTI_LINGUAL_zh_cn.md" in agents:
         errors.append("AGENTS.md must reference only MULTI_LINGUAL.md")
 
-    agents_zh = (ROOT / "AGENTS_zh_cn.md").read_text(encoding="utf-8")
+    agents_zh = (root / "AGENTS_zh_cn.md").read_text(encoding="utf-8")
     if "MULTI_LINGUAL_zh_cn.md" not in agents_zh:
         errors.append("AGENTS_zh_cn.md must reference MULTI_LINGUAL_zh_cn.md")
 
-    skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    skill = (root / "SKILL.md").read_text(encoding="utf-8")
     if "references/" in skill and re.search(r"references/[^)\s`]*_zh_cn\.md", skill):
         errors.append("SKILL.md must not reference _zh_cn references")
 
-    skill_zh = (ROOT / "SKILL_zh_cn.md").read_text(encoding="utf-8")
+    skill_zh = (root / "SKILL_zh_cn.md").read_text(encoding="utf-8")
     for match in re.findall(r"references/[^)\s`]+\.md", skill_zh):
         if not match.endswith(ZH_SUFFIX):
             errors.append(f"SKILL_zh_cn.md references an English file: {match}")
 
-    openai_yaml = (ROOT / "agents/openai.yaml").read_text(encoding="utf-8")
-    short_description = re.search(r'^\s*short_description:\s*["\'](.+)["\']\s*$', openai_yaml, re.MULTILINE)
+    openai_yaml = (root / "agents/openai.yaml").read_text(encoding="utf-8")
+    short_description = re.search(
+        r'^\s*short_description:\s*["\'](.+)["\']\s*$', openai_yaml, re.MULTILINE
+    )
     if not short_description:
         errors.append("agents/openai.yaml is missing short_description")
     elif " | " not in short_description.group(1):
