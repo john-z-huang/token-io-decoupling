@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any, cast
 
+import pytest
 from mcp import Client, StdioServerParameters
 from mcp.server import MCPServer
 from mcp.types import TextContent
@@ -115,6 +116,30 @@ class FakeBindingProvider:
             capabilities=frozenset(HostCapability),
             guards=frozenset(HostGuard),
         )
+
+
+class RequestMetaClient:
+    """Test SDK proxy that sends caller context in protocol `_meta`, not arguments."""
+
+    def __init__(self, client: Any, thread_id: str) -> None:
+        self._client = client
+        self._thread_id = thread_id
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._client, name)
+
+    async def call_tool(
+        self,
+        name: str,
+        arguments: dict[str, Any] | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        kwargs["meta"] = {
+            "threadId": self._thread_id,
+            "sessionId": f"synthetic-session-{self._thread_id}",
+        }
+        return await self._client.call_tool(name, arguments, *args, **kwargs)
 
 
 def _tool_names(server: MCPServer[Any]) -> set[str]:
@@ -268,7 +293,8 @@ def test_bound_wire_parses_enum_json_and_revocation_is_checked_per_call(tmp_path
     asyncio.run(run())
 
 
-def test_bound_stdio_subprocess_root_and_worker_protocols(tmp_path: Path) -> None:
+@pytest.mark.parametrize("bridge_mode", ["bridge", "bridge-codex"])
+def test_bound_stdio_subprocess_root_and_worker_protocols(tmp_path: Path, bridge_mode: str) -> None:
     state_root = tmp_path / "state"
     provider = FakeBindingProvider()
     service = StateService(
@@ -358,13 +384,19 @@ def test_bound_stdio_subprocess_root_and_worker_protocols(tmp_path: Path) -> Non
     def server_parameters(role: str) -> StdioServerParameters:
         return StdioServerParameters(
             command=sys.executable,
-            args=[str(harness), role, str(root_state if role == "root" else state_root)],
+            args=[
+                str(harness),
+                bridge_mode,
+                role,
+                str(root_state if role == "root" else state_root),
+            ],
             cwd=project_root,
             env={"PYTHONDONTWRITEBYTECODE": "1"},
         )
 
     async def run() -> None:
-        async with Client(server_parameters("root"), mode="auto") as root_client:
+        async with Client(server_parameters("root"), mode="auto") as raw_root_client:
+            root_client = RequestMetaClient(raw_root_client, "root-session")
             assert root_client.protocol_version == "2026-07-28"
             listed = await root_client.list_tools()
             assert {tool.name for tool in listed.tools} == PUBLIC_TOOLS | ROOT_TOOLS
@@ -419,10 +451,79 @@ def test_bound_stdio_subprocess_root_and_worker_protocols(tmp_path: Path) -> Non
             )
             assert not audit.is_error
             assert '"receipt_revision": 1' in _result_text(audit)
+            root_state_result = await root_client.call_tool("workflow_get_state", {"payload": {}})
+            assert not root_state_result.is_error
+            root_state = json.loads(_result_text(root_state_result))
+            assert root_state["session_audit"]["audit_mode"] == "balanced"
+            assert root_state["session_audit"]["root_reasoning_cadence"] == "milestone_only"
+            assert root_state["session_audit"]["worker_reasoning_cadence"] == "full"
+            root_revision = root_state["revision"]
+            root_facts = [
+                ("task objective", "stdio-root-objective"),
+                ("authorized scope", "stdio-root-scope"),
+                ("constraints", "stdio-root-constraints"),
+                ("acceptance conditions", "stdio-root-acceptance"),
+            ]
+            root_evidence_arguments = {
+                "payload": {
+                    "submission": {
+                        "node_id": "contract",
+                        "facts": [
+                            {
+                                "fact_key": key,
+                                "judgment": {
+                                    "status": "determined",
+                                    "value": {
+                                        "kind": "semantic_ref",
+                                        "value": {
+                                            "uri": f"memory://{uri}",
+                                            "content_hash": "3" * 64,
+                                        },
+                                    },
+                                },
+                            }
+                            for key, uri in root_facts
+                        ],
+                        "evidence_refs": [],
+                        "coverage_dimensions": [],
+                        "input_hash": "4" * 64,
+                    },
+                    "expected_revision": root_revision,
+                    "idempotency_key": "root-stdio-contract-evidence",
+                }
+            }
+            evidence = await root_client.call_tool(
+                "workflow_record_evidence", root_evidence_arguments
+            )
+            assert not evidence.is_error
+            evidence_receipt = json.loads(_result_text(evidence))
+            evidence_record = evidence_receipt["result"]
+            assert evidence_record["node_id"] == "contract"
+            assert len(evidence_record["facts"]) == 4
+            assert evidence_receipt["current_revision"] == root_revision + 1
+            root_after_write = await root_client.call_tool("workflow_get_state", {"payload": {}})
+            assert not root_after_write.is_error
+            assert json.loads(_result_text(root_after_write))["revision"] == root_revision + 1
+            replay = await root_client.call_tool(
+                "workflow_record_evidence", root_evidence_arguments
+            )
+            assert not replay.is_error
+            replay_receipt = json.loads(_result_text(replay))
+            assert replay_receipt["replayed"] is True
+            stale_arguments = {
+                "payload": {
+                    **root_evidence_arguments["payload"],
+                    "idempotency_key": "root-stdio-stale-cas",
+                }
+            }
+            stale_write = await root_client.call_tool("workflow_record_evidence", stale_arguments)
+            assert stale_write.is_error
+            assert "expected Revision" in _result_text(stale_write)
             wrong_role = await root_client.call_tool("worker_get_assignment", {})
             assert wrong_role.is_error
 
-        async with Client(server_parameters("worker"), mode="auto") as worker_client:
+        async with Client(server_parameters("worker"), mode="auto") as raw_worker_client:
+            worker_client = RequestMetaClient(raw_worker_client, "stdio-test-worker")
             assert worker_client.protocol_version == "2026-07-28"
             listed = await worker_client.list_tools()
             assert {tool.name for tool in listed.tools} == PUBLIC_TOOLS | WORKER_TOOLS
@@ -449,6 +550,97 @@ def test_bound_stdio_subprocess_root_and_worker_protocols(tmp_path: Path) -> Non
                 },
             )
             assert not progress.is_error
+            progress_receipt = json.loads(_result_text(progress))
+            assert progress_receipt["receipt_revision"] == 1
+            worker_evidence = await worker_client.call_tool(
+                "worker_record_evidence",
+                {
+                    "payload": {
+                        "submission": {
+                            "node_id": "implementation",
+                            "facts": [
+                                {
+                                    "fact_key": key,
+                                    "judgment": {
+                                        "status": "determined",
+                                        "value": {
+                                            "kind": "semantic_ref",
+                                            "value": {
+                                                "uri": f"memory://{uri}",
+                                                "content_hash": "5" * 64,
+                                            },
+                                        },
+                                    },
+                                }
+                                for key, uri in [
+                                    ("released objective", "worker-objective"),
+                                    ("authorized mutation scope", "worker-scope"),
+                                    ("current unreleased boundary", "worker-boundary"),
+                                ]
+                            ],
+                            "evidence_refs": [
+                                {
+                                    "kind": "slice release",
+                                    "reference": {
+                                        "uri": "test://stdio-slice-release",
+                                        "content_hash": "6" * 64,
+                                    },
+                                },
+                                {
+                                    "kind": "implementation result or blocker",
+                                    "reference": {
+                                        "uri": "test://stdio-implementation-result",
+                                        "content_hash": "7" * 64,
+                                    },
+                                },
+                            ],
+                            "coverage_dimensions": ["implementation_content"],
+                            "input_hash": "8" * 64,
+                        },
+                        "expected_revision": 1,
+                        "idempotency_key": "worker-stdio-implementation-evidence",
+                    }
+                },
+            )
+            assert not worker_evidence.is_error
+            worker_evidence_receipt = json.loads(_result_text(worker_evidence))
+            worker_evidence_id = worker_evidence_receipt["result"]["evidence_id"]
+            persisted_worker_evidence = await worker_client.call_tool(
+                "worker_get_evidence", {"payload": {"evidence_id": worker_evidence_id}}
+            )
+            assert not persisted_worker_evidence.is_error
+            worker_record = json.loads(_result_text(persisted_worker_evidence))
+            assert worker_record["evidence_id"] == worker_evidence_id
+            assert worker_record["node_id"] == "implementation"
+            worker_state = await worker_client.call_tool("worker_get_state", {})
+            assert not worker_state.is_error
+            worker_state_value = json.loads(_result_text(worker_state))
+            assert worker_state_value["revision"] == 2
+            assert worker_state_value["progress"][0]["status"] == "started"
+            if bridge_mode == "bridge-codex":
+                rejected_progress = await raw_worker_client.call_tool(
+                    "worker_record_progress",
+                    {
+                        "payload": {
+                            "record": {
+                                "status": "started",
+                                "milestone": {
+                                    "uri": "memory://stdio-worker-wrong-thread",
+                                    "content_hash": "9" * 64,
+                                },
+                                "references": [],
+                            },
+                            "expected_revision": 2,
+                            "idempotency_key": "worker-stdio-wrong-thread",
+                        }
+                    },
+                    meta={"threadId": "another-thread", "sessionId": "opaque-session"},
+                )
+                assert rejected_progress.is_error
+                assert "Codex caller context" in _result_text(rejected_progress)
+                unchanged_worker_state = await worker_client.call_tool("worker_get_state", {})
+                assert not unchanged_worker_state.is_error
+                assert json.loads(_result_text(unchanged_worker_state))["revision"] == 2
             wrong_role = await worker_client.call_tool("workflow_get_state", {"payload": {}})
             assert wrong_role.is_error
 

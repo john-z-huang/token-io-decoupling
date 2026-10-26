@@ -885,13 +885,24 @@ def test_two_independent_servers_share_atomic_evaluation_replay_metadata(
     monkeypatch.setenv("OPENAI_API_KEY", "test-secret-key")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://example.invalid/v1")
     fake = FakeClient(_choice_response("task_intent", "coding"))
-    options = {
-        "state_root": tmp_path / "shared-state",
-        "decisions_config": DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True),
-        "decisions_client_factory": lambda *_: fake,
-    }
-    first_server = create_server(Provider(), **options)
-    second_server = create_server(Provider(), **options)
+    shared_state_root = tmp_path / "shared-state"
+    decisions_config = DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True)
+
+    def decisions_client_factory(*_args: object) -> FakeClient:
+        return fake
+
+    first_server = create_server(
+        Provider(),
+        state_root=shared_state_root,
+        decisions_config=decisions_config,
+        decisions_client_factory=decisions_client_factory,
+    )
+    second_server = create_server(
+        Provider(),
+        state_root=shared_state_root,
+        decisions_config=decisions_config,
+        decisions_client_factory=decisions_client_factory,
+    )
     request = {
         "payload": {
             "node_id": "task_intent",

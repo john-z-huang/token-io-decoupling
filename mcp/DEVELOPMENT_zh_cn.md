@@ -22,17 +22,33 @@ uv run --managed-python --locked -- ty check
 
 ## Stdio 服务与可信 embedding
 
-`token-io-mcp` 入口为 MCP 客户端启动 stdio 服务，不接受命令行参数。在本目录中，开发启动命令为：
+`token-io-mcp` 入口为 MCP 客户端启动 stdio 服务。没有宿主通道时，在本目录中使用以下开发启动命令：
 
 ```sh
 uv run --managed-python --locked -- token-io-mcp
 ```
 
-生产 CLI 没有可信宿主绑定，只暴露 `workflow_capabilities`、`rules_get_context` 和 `database_schema_status`。其 schema 诊断不检查或创建状态路径，直接返回 unavailable。它保持 Native 模式；环境变量、客户端名称、请求的角色或文件系统路径都不能提供身份或权限证明。
+没有宿主通道时，生产 CLI 只暴露 `workflow_capabilities`、`rules_get_context` 和 `database_schema_status`。其 schema 诊断不检查或创建状态路径，直接返回 unavailable。它保持 Native 模式；环境变量、客户端名称、请求的角色或文件系统路径都不能提供身份或权限证明。
 
 embedding 可以向 `token_io_mcp.server.create_server` 提供经过验证的 `BindingProvider`。完整能力的 Root 绑定暴露 15 个工具，Worker 绑定暴露 10 个，未绑定服务暴露 3 个。受保护调用每次都会重新检查绑定与必需守卫。当前包没有经过验证的 Codex 或 ChatGPT Desktop 宿主适配器；测试 provider 与子进程 harness 不构成这种证明。不得将合成 provider 复制到生产环境，也不能从这些测试推断操作系统隔离已经成立。
 
 协议目标为 `2026-07-28`。测试使用 SDK 自动协商及真实子进程 stdio 调用，覆盖类型化枚举/UTC 值和角色拒绝。这证明包的协议连接，实际宿主客户端兼容性仍需单独检查。
+
+### 已认证的宿主通道
+
+`token_io_mcp.host_binding` 中的 `HostChannelBindingProvider` 和 `serve_host_binding_channel` 将 CLI 连接到可信宿主已有的 `BindingProvider`。宿主在 MCP 请求参数之外，将一个真实 Session 绑定到一个已连接的 Unix stream socket，再把该连接的描述符传给非特权 CLI 进程，并服务另一端。supervisor 必须将服务端端点保留在可信边界内，且不得将同一通道重新分配给其他 Session。宿主启动命令为 `token-io-mcp --host-fd N`，其中 `N` 是不小于 3 的继承描述符；该参数只定位传输通道，不提供身份或权限。
+
+CLI 使用操作系统凭据认证对端：Linux 使用 `SO_PEERCRED`，macOS 使用原生 `getpeereid` 调用。此实现将可信对端固定为 UID 0，并拒绝自身以 UID 0 运行的 CLI。Agent 当前用户创建的 socket 无法建立信任。不支持的凭据能力、无效描述符或启动绑定失败，都会终止所请求的绑定启动。内核机制见 [Linux Unix socket 手册](https://man7.org/linux/man-pages/man7/unix.7.html)和 [Apple 对端凭据手册](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getpeereid.3.html)。
+
+绑定启动的 CLI 从操作系统账户数据库获取当前有效用户的主目录，并将其下的 `.local/state/token-io-decoupling` 作为状态根目录。调用方控制的 `HOME` 不能重定向该路径；账户映射不可用或无效时拒绝启动。可信 Python embedding 仍保留 factory 的显式 `state_root` 参数。
+
+桥接在启动时锁定项目、Root、当前 Session、parent 和角色。每次受保护调用都会重新向宿主读取当前能力与守卫证据；撤销或身份变化会使调用被拒绝。子身份验证使用宿主当前的 parent 身份。线协议只接受两种绑定操作，限制帧大小并设置有限超时；格式错误或不匹配的响应直接拒绝，不重试。失败通道不能通过后续响应重新获得信任。
+
+宿主必须先落实实际 sandbox、路径与 Worker store 边界，再报告相应守卫。内核认证只确认可信 supervisor，不会创建这些守卫，也不证明某运行时的 Session 映射正确。此包提供桥接及宿主侧服务 API，不提供特权服务安装器，也不构成已经验证的 Codex/Claude Code 运行时集成。普通 MCP 客户端配置不能凭空建立继承的特权通道。既有测试 provider 和模拟对端凭据的测试仍属于合成证据；未修改认证逻辑的同用户通道拒绝测试覆盖真实本地凭据边界。
+
+声明实际运行时集成前，必须通过该运行时的 MCP 连接验证 Root 初始化、证据插入、状态转换及回读；验证真实释放且绑定的 Worker 能读取任务并只写入自己的进度/证据；并在实际宿主守卫下检查撤销和跨 Worker 拒绝。现有客户端需要重启或重新连接，才能加载改变的启动参数与工具清单；编辑 checkout 不会改变已经运行的 MCP 进程。
+
+[Codex 调用者匹配](CODEX_CALLER_CONTEXT_zh_cn.md)说明对已有可信宿主绑定可选启用的 `--codex-context` 请求匹配门禁。它消费 SDK 请求元数据，不增加身份认证来源。
 
 ## 真实 API 请求的必需配置
 

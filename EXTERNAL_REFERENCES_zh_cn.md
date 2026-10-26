@@ -19,5 +19,9 @@
 | OpenAI Python Decisions 参考 | https://developers.openai.com/api/reference/python/resources/decisions/methods/create | [Decisions 建议](references/coding/layer-01-fundamental-concepts/decisions-advisory_zh_cn.md) | 核验可选建议的 SDK 请求、固定选项响应及拒绝契约；本地配置、授权和最终判断仍为独立要求。 |
 | SQLite 备份 API | https://docs.python.org/3/library/sqlite3.html#sqlite3.Connection.backup | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 在已授权的 schema 升级前使用数据库备份 API。 |
 | uv GitHub Actions 集成 | https://docs.astral.sh/uv/guides/integration/github/ | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验 CI 中固定版本的 uv 配置、托管 Python 矩阵与锁定依赖安装；工作流实际运行与本地检查属于不同证据。 |
+| Linux Unix domain socket 凭据 | https://man7.org/linux/man-pages/man7/unix.7.html | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验继承的特权宿主通道所使用的内核对端凭据；不据此证明运行时 Session 映射或操作守卫。 |
+| Apple 对端凭据 | https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getpeereid.3.html | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 独立核验原生 macOS 对端凭据认证，不假设 Python socket API 暴露相同能力。 |
 | Codex MCP | https://learn.chatgpt.com/docs/extend/mcp?surface=cli | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验本地传输控制，不据此推断可信的逐 Agent 身份或文件系统隔离。 |
 | Claude Code MCP 运行时 | https://code.claude.com/docs/en/mcp | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 检查对应客户端的协议行为及依赖运行时的限制。 |
+| Claude Code MCP 接口 | https://code.claude.com/docs/en/mcp | [Codex 调用者匹配](mcp/CODEX_CALLER_CONTEXT_zh_cn.md) | 应用 Codex 请求元数据前核对对应运行时；本次查阅的页面未说明等价的 threadId/sessionId 契约。 |
+| Claude Code Hook 输入 | https://code.claude.com/docs/en/hooks#common-input-fields | [Codex 调用者匹配](mcp/CODEX_CALLER_CONTEXT_zh_cn.md) | 区分 Hook session_id 与 MCP 请求元数据，并避免将两者视作独立宿主认证。 |

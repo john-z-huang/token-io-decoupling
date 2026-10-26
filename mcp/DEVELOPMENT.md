@@ -22,17 +22,33 @@ Repository documentation checks are separate. Run the checks required by [reposi
 
 ## Stdio server and trusted embeddings
 
-The `token-io-mcp` entry point starts a stdio server for an MCP client and accepts no command-line arguments. From this directory, its development launch command is:
+The `token-io-mcp` entry point starts a stdio server for an MCP client. Without a host channel, its development launch command from this directory is:
 
 ```sh
 uv run --managed-python --locked -- token-io-mcp
 ```
 
-The production CLI has no trusted host binding and exposes only `workflow_capabilities`, `rules_get_context`, and `database_schema_status`. Its schema diagnostic returns unavailable without inspecting or creating state paths. It remains in Native mode; an environment variable, client name, requested role, or filesystem path cannot supply identity or permission.
+Without a host channel, the production CLI exposes only `workflow_capabilities`, `rules_get_context`, and `database_schema_status`. Its schema diagnostic returns unavailable without inspecting or creating state paths. It remains in Native mode; an environment variable, client name, requested role, or filesystem path cannot supply identity or permission.
 
 An embedding can supply a verified `BindingProvider` to `token_io_mcp.server.create_server`. A fully capable Root binding exposes 15 tools, a Worker binding 10, and an unbound server 3. Protected calls recheck the binding and required guards every time. The current package has no verified Codex or ChatGPT Desktop host adapter; the test providers and subprocess harnesses do not establish one. Do not copy a synthetic provider into production or infer operating-system isolation from these tests.
 
 The protocol target is `2026-07-28`. Tests use SDK automatic negotiation and real subprocess stdio calls, including typed enum/UTC values and role rejection. This verifies the package protocol connection; actual host-client compatibility remains a separate check.
+
+### Authenticated host channel
+
+`HostChannelBindingProvider` and `serve_host_binding_channel` in `token_io_mcp.host_binding` connect the CLI to a trusted host's existing `BindingProvider`. The host attaches one real Session to one connected Unix stream socket outside MCP request arguments. It passes the connected descriptor to an unprivileged CLI process and serves the other end. The supervisor must retain its serving endpoint within the trusted boundary and must not reassign a channel to another Session. The host's launch command is `token-io-mcp --host-fd N`, where `N` is an inherited descriptor numbered at least 3; this argument locates a transport and supplies no identity or permission.
+
+The CLI authenticates the peer through operating-system credentials: `SO_PEERCRED` on Linux and the native `getpeereid` call on macOS. This implementation pins the trusted peer to UID 0 and rejects a CLI process running as UID 0. A socket created by the Agent's own user cannot establish trust. Unsupported credential facilities, invalid descriptors, and failed startup binding terminate the requested bound launch. See the [Linux Unix-socket manual](https://man7.org/linux/man-pages/man7/unix.7.html) and [Apple peer-credential manual](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getpeereid.3.html) for the kernel mechanisms.
+
+For a bound CLI launch, the state root is `.local/state/token-io-decoupling` beneath the current effective user's home from the operating-system account database. Caller-controlled `HOME` values cannot redirect it; an unavailable or invalid account mapping rejects startup. Trusted Python embeddings retain their explicit `state_root` factory argument.
+
+The bridge pins project, Root, current Session, parent, and role at startup. Every protected call rereads current capability and guard evidence from the host; revocation or an identity change rejects the call. Child verification uses the host's current parent identity. The wire format accepts only the two binding operations, uses bounded frames and a finite timeout, and rejects malformed or mismatched responses without retry. A failed channel cannot regain trust through later responses.
+
+The host must enforce the actual sandbox, path, and Worker-store boundaries before reporting the corresponding guards. Kernel authentication identifies the trusted supervisor; it does not create those guards or prove that a runtime's Session mapping is correct. This package supplies the bridge and host-side serving API, not a privileged service installer or a verified Codex/Claude Code runtime integration. A normal MCP client configuration cannot manufacture the inherited privileged channel. Existing test providers and tests that mock peer credentials remain synthetic evidence; the unmodified same-user channel rejection test exercises the real local credential boundary.
+
+Before claiming an actual runtime integration, verify Root initialization, evidence insertion, transition and readback through that runtime's MCP connection; verify a real released and bound Worker can read its assignment and write only its own progress/evidence; and test revocation and cross-Worker rejection with the actual host guards. Restart or reconnect an existing client to load changed startup arguments and tool inventory; editing this checkout does not change an already running MCP process.
+
+[Codex caller matching](CODEX_CALLER_CONTEXT.md) describes the optional `--codex-context` request-matching gate for an already verified host binding. It consumes SDK request metadata and does not add an authentication source.
 
 ## Required configuration for real API requests
 

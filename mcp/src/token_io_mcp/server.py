@@ -9,10 +9,12 @@ from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from mcp.server import MCPServer
+from mcp.server.mcpserver import Context as MCPContext
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel, TypeAdapter, ValidationError, WithJsonSchema, create_model
 
 from token_io_mcp.binding import BindingError, BindingProvider, DenyingBindingProvider
+from token_io_mcp.codex_context import CodexCallerBoundProvider
 from token_io_mcp.decisions import (
     DecisionAdvice,
     DecisionAdvisoryInput,
@@ -194,6 +196,8 @@ def _evaluate_with_advice(
 def create_server(
     binding_provider: BindingProvider | None = None,
     *,
+    require_bound: bool = False,
+    require_codex_context: bool = False,
     state_root: Path | str | None = None,
     decisions_config: DecisionsRuntimeConfig | None = None,
     decisions_client_factory: Callable[[str, str], object] | None = None,
@@ -211,16 +215,36 @@ def create_server(
         if registry_resource.is_file()
         else RuleLoader(repository_root=Path(__file__).resolve().parents[3])
     )
-    service = StateService(binding_provider=provider, state_root=state_root, rule_loader=rules)
+    server = MCPServer(name="token-io-mcp", version="0.1.0")
+    bound_role = _bound_role(provider) if binding_provider is not None else None
+    if require_bound and bound_role is None:
+        raise BindingError("authenticated host channel did not provide a usable bound identity")
+    embedded = bound_role is not None
+    if require_codex_context and not embedded:
+        raise BindingError("Codex caller matching requires a usable bound identity")
+
+    state_provider = CodexCallerBoundProvider(provider) if require_codex_context else provider
+    service = StateService(
+        binding_provider=state_provider, state_root=state_root, rule_loader=rules
+    )
     decisions = DecisionsAdvisor(
         service,
         rules,
         decisions_config or DecisionsRuntimeConfig(),
         client_factory=decisions_client_factory,
     )
-    server = MCPServer(name="token-io-mcp", version="0.1.0")
-    bound_role = _bound_role(provider) if binding_provider is not None else None
-    embedded = bound_role is not None
+
+    def with_codex_context(context: MCPContext | None, callback: Callable[[], Any]) -> Any:
+        if not require_codex_context:
+            return callback()
+        try:
+            meta = context.request_context.meta if context is not None else None
+            if not isinstance(state_provider, CodexCallerBoundProvider):
+                raise BindingError("Codex caller provider is unavailable")
+            with state_provider.request_scope(meta):
+                return callback()
+        except (BindingError, ValueError) as exc:
+            raise ToolError("verified Codex caller context is unavailable or mismatched") from exc
 
     def register(
         name: str,
@@ -233,30 +257,65 @@ def create_server(
         if role is not None and role != bound_role:
             return
 
-        def handler(payload: dict[str, Any]) -> Any:
-            if enhanced and not embedded:
-                raise ToolError("enhanced operations are unavailable in the unbound CLI")
-            return _call_safely(
-                lambda: callback(
-                    TypeAdapter(payload_type).validate_json(json.dumps(payload, ensure_ascii=False))
+        needs_context = enhanced and require_codex_context
+
+        if needs_context:
+
+            def handler(payload: dict[str, Any], context: MCPContext) -> Any:
+                if enhanced and not embedded:
+                    raise ToolError("enhanced operations are unavailable in the unbound CLI")
+                return with_codex_context(
+                    context,
+                    lambda: _call_safely(
+                        lambda: callback(
+                            TypeAdapter(payload_type).validate_json(
+                                json.dumps(payload, ensure_ascii=False)
+                            )
+                        )
+                    ),
                 )
-            )
+        else:
+
+            def handler(payload: dict[str, Any]) -> Any:
+                if enhanced and not embedded:
+                    raise ToolError("enhanced operations are unavailable in the unbound CLI")
+                return _call_safely(
+                    lambda: callback(
+                        TypeAdapter(payload_type).validate_json(
+                            json.dumps(payload, ensure_ascii=False)
+                        )
+                    )
+                )
 
         handler.__name__ = name
         handler.__doc__ = f"Perform the typed {name} operation."
-        handler.__annotations__ = {
+        annotations: dict[str, Any] = {
             "payload": Annotated[dict[str, Any], WithJsonSchema(_inline_schema(payload_type))],
             "return": dict[str, Any],
         }
+        if needs_context:
+            annotations["context"] = MCPContext
+        handler.__annotations__ = annotations
         server.tool(name=name, structured_output=False)(handler)
 
-    def register_no_args(name: str, callback: Callable[[], Any]) -> None:
-        def handler() -> Any:
-            return _call_safely(callback)
+    def register_no_args(
+        name: str, callback: Callable[[], Any], *, codex_guard: bool = False
+    ) -> None:
+        if codex_guard:
+
+            def handler(context: MCPContext) -> Any:
+                return with_codex_context(context, lambda: _call_safely(callback))
+        else:
+
+            def handler() -> Any:
+                return _call_safely(callback)
 
         handler.__name__ = name
         handler.__doc__ = f"Return public {name} information."
-        handler.__annotations__ = {"return": dict[str, Any]}
+        annotations: dict[str, Any] = {"return": dict[str, Any]}
+        if codex_guard:
+            annotations["context"] = MCPContext
+        handler.__annotations__ = annotations
         server.tool(name=name, structured_output=False)(handler)
 
     register_no_args(
@@ -273,8 +332,16 @@ def create_server(
                     "identity_attestation": "unavailable",
                     "guard_binding": "unavailable",
                 },
+                "Claude Code CLI": {
+                    "identity_attestation": "unavailable",
+                    "guard_binding": "unavailable",
+                },
             },
             "enhanced_binding": "unverified" if not embedded else _binding_diagnostic(provider),
+            "binding_transport": (
+                getattr(provider, "transport", "embedded_provider") if embedded else "unavailable"
+            ),
+            "caller_match": "required" if require_codex_context else "disabled",
             "mode_fallback": "Native",
             "api_decisions": "enabled"
             if decisions_config and decisions_config.enabled
@@ -291,6 +358,7 @@ def create_server(
     register_no_args(
         "database_schema_status",
         lambda: _schema_status(service, bound_role in {"parent", "worker"}),
+        codex_guard=require_codex_context and embedded,
     )
 
     if not embedded:
@@ -300,14 +368,25 @@ def create_server(
         if role != bound_role:
             return
 
-        def handler() -> Any:
-            if not embedded:
-                raise ToolError("enhanced operations are unavailable in the unbound CLI")
-            return _call_safely(callback)
+        if require_codex_context:
+
+            def handler(context: MCPContext) -> Any:
+                if not embedded:
+                    raise ToolError("enhanced operations are unavailable in the unbound CLI")
+                return with_codex_context(context, lambda: _call_safely(callback))
+        else:
+
+            def handler() -> Any:
+                if not embedded:
+                    raise ToolError("enhanced operations are unavailable in the unbound CLI")
+                return _call_safely(callback)
 
         handler.__name__ = name
         handler.__doc__ = f"Perform the bound {name} operation."
-        handler.__annotations__ = {"return": dict[str, Any]}
+        annotations: dict[str, Any] = {"return": dict[str, Any]}
+        if require_codex_context:
+            annotations["context"] = MCPContext
+        handler.__annotations__ = annotations
         server.tool(name=name, structured_output=False)(handler)
 
     # Each callback is only a typed adapter; identity, roles and guards are resolved
