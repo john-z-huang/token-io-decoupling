@@ -5,10 +5,17 @@ from __future__ import annotations
 import argparse
 import sys
 from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
 from typing import Any, cast
 
 from token_io_decoupling_core.profiles import PROFILE_SERVER_NAMES
 
+from token_io_decoupling.codex_env import (
+    DEFAULT_ENV_VARS,
+    CodexEnvError,
+    config_path,
+    merge_env_vars,
+)
 from token_io_decoupling.setup_codex import SetupError, setup_codex
 
 
@@ -21,7 +28,8 @@ def dispatch_command(
         description="Start a profile-scoped MCP server or configure Codex CLI.",
         epilog=(
             "Commands: start-mcp-server [--profile PROFILE] (also the default); "
-            "setup codex [--profile PROFILE] [--dry-run] [--replace]."
+            "setup codex [--profile PROFILE] [--dry-run] [--replace]; "
+            "setup codex-env --server NAME [--server NAME ...]."
         ),
     )
     try:
@@ -42,6 +50,13 @@ def dispatch_command(
     codex.add_argument("--all", action="store_true", help="explicitly configure all profiles")
     codex.add_argument("--dry-run", action="store_true")
     codex.add_argument("--replace", action="store_true")
+    codex_env = targets.add_parser(
+        "codex-env", help="merge environment variable names into existing Codex servers"
+    )
+    codex_env.add_argument("--config", type=Path)
+    codex_env.add_argument("--server", action="append", required=True, metavar="NAME")
+    codex_env.add_argument("--env-var", action="append", metavar="NAME")
+    codex_env.add_argument("--dry-run", action="store_true")
     try:
         args = parser.parse_args(argv)
     except SystemExit as exc:
@@ -50,6 +65,22 @@ def dispatch_command(
         if args.host_fd is not None or args.codex_context:
             print(f"{prog}: host binding options cannot be used with setup", file=sys.stderr)
             return 2
+        if args.target == "codex-env":
+            try:
+                names = tuple(args.env_var) if args.env_var else DEFAULT_ENV_VARS
+                changed = merge_env_vars(
+                    config_path(args.config), tuple(args.server), names, dry_run=args.dry_run
+                )
+            except CodexEnvError as exc:
+                print(f"{prog}: {exc}", file=sys.stderr)
+                return 2
+            if args.dry_run:
+                print(f"Would merge env_vars {list(names)!r} into: {', '.join(args.server)}")
+            elif changed:
+                print("updated environment forwarding: " + ", ".join(changed))
+            else:
+                print("environment forwarding already configured: " + ", ".join(args.server))
+            return 0
         if args.profile and args.all:
             print(f"{prog}: --profile cannot be combined with --all", file=sys.stderr)
             return 2

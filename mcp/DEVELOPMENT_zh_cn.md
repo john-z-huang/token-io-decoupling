@@ -41,31 +41,81 @@ Canonical Python 实现使用架构契约列出的独立包名。重命名后的
 
 ## uv tool 安装与 Codex setup
 
-从 workspace 根项目的源码路径安装，uv 会解析其声明的本地 workspace 依赖。`uv tool dir --bin` 返回的目录须位于 `PATH`，或使用已安装命令的绝对路径调用。真实 setup 还要求 Codex CLI 位于 `PATH`：
+使用[安装脚本](../scripts/install-codex-mcp.sh)，从任意工作目录一次完成包安装或更新及 Codex 配置：
 
 ```sh
-uv tool install --managed-python --python 3.14 /absolute/path/to/skill/mcp
-token-io-decoupling setup codex --dry-run
-token-io-decoupling setup codex
+bash /absolute/path/to/skill/scripts/install-codex-mcp.sh
 ```
 
-Setup 使用一个核验后的可执行文件绝对路径和不同 profile 参数，注册上表的四个服务名。只配置一个时使用 `setup codex --profile root`。`--all` 是默认全 profile 选择的显式别名，不能与 `--profile` 同用。审阅 dry-run 后，要迁移已有注册，可执行：
+前置条件为 Bash 3.2 或更新版本（包括 macOS 的 `/bin/bash`）、`uv` 和 Codex CLI；`uv` 与 `codex` 必须位于 `PATH`。脚本相对自身定位 `mcp/`，针对该源码执行 `uv tool install --force --reinstall --managed-python --python 3.14`，通过 `uv tool dir --bin` 获取 bin 目录，再以绝对路径调用安装后入口的 `setup codex`。uv 会解析已声明的本地 workspace 依赖；即使只修改了依赖的源码或打包规则，`--reinstall` 也会更新它们。工具 bin 目录无需位于 `PATH`，不必手动切换目录、激活虚拟环境或另行执行 setup。重复运行会从当前 checkout 更新此工具，不会卸载旧 `token-io-mcp` 工具。
+
+每项操作只需调用脚本一次，在上述命令后追加相应选项即可：
+
+| 选项 | 操作 |
+| --- | --- |
+| `--dry-run` | 输出安装和 setup 计划，不运行安装/setup 命令或读写配置；真实运行前，未来的工具 bin 路径以符号占位表示。 |
+| `--profile root` | 只注册指定的 `workflow`、`root`、`worker` 或 `share` profile；安装包仍包含全部 profile。 |
+| `--all` | 显式选择默认的四个 profile，不能与 `--profile` 同用。 |
+| `--replace` | 允许 setup 替换冲突或已禁用的注册；省略时仍拒绝冲突。 |
+| `--python VERSION` | 指定 uv 托管的 Python 版本，替代默认的 `3.14`。 |
+| `--help` | 显示用法，不安装或修改配置。 |
+
+脚本在安装前验证参数及必需命令。某阶段失败后停止后续阶段并返回非零状态。安装和注册是不同副作用：若安装后 setup 失败，更新后的工具仍保留安装状态；重新运行前先检查 setup 的部分状态报告。注册设置保留和转发检查仍由现有 setup helper 负责。成功后重新加载受影响的服务；脚本不会重启客户端或提供凭据值。
+
+Setup 使用一个核验后的可执行文件绝对路径和不同 profile 参数注册上表的四个服务名，并自动将两个必需环境变量名合并到各自的 `env_vars`。自行单独管理工具安装的用户仍可直接调用 `token-io-decoupling setup codex`。例如，一次安装后命令调用即可只注册 root profile 并修复其转发：
 
 ```sh
-token-io-decoupling setup codex --replace
+token-io-decoupling setup codex --profile root
 ```
 
 Setup 与启动的分离参考 [Serena 的客户端 setup 实现](https://github.com/oraios/serena/blob/main/src/serena/config/client_setup.py)。本入口从当前安装环境的 scripts 目录及精确的分发包入口元数据解析可执行文件，不根据启动目录推断项目或身份。
 
-Dry-run 输出所选 profile 的 JSON 参数向量，不运行子进程或 Codex 预检。真实 setup 先探测 CLI，读取服务清单及嵌套 `transport` 数据，再开始写入。已启用且解析后的命令与 `start-mcp-server --profile <profile>` 参数匹配的注册会被跳过，保留附加设置。冲突或已禁用条目要求 `--replace`。替换使用官方同名 upsert，不先删除旧条目。预检失败不写入；部分应用失败会报告已应用与待处理名称，不打印捕获的配置或子进程输出。手动等价命令示例：
+安装后命令的 `setup codex --dry-run` 输出所选 profile 的 JSON 参数向量及变量名转发计划，不运行子进程，也不读写配置。真实 setup 在注册写入前验证本地配置并探测 CLI，读取服务清单及嵌套 `transport` 数据。已启用且解析后的命令与 `start-mcp-server --profile <profile>` 参数匹配的注册会跳过重新注册，但仍补齐缺失的转发变量名。冲突或已禁用条目要求 `--replace`。替换使用官方同名 upsert，不先删除旧条目。后续转发失败会与已经应用的注册分开报告；重试前先检查报告中的部分状态。不打印捕获的配置或子进程输出。
 
-```sh
-codex mcp add token-io-decoupling-root-agent-tools -- /absolute/installed/token-io-decoupling start-mcp-server --profile root
-```
+由于 Codex upsert 会替换注册项，setup 会将原设置暂存在内存中，每次 upsert 成功后连同转发声明一起恢复，再处理下一个 profile。替换 stdio 注册时保留附加设置和已有转发变量名，只改变入口、profile 参数及预期的启用状态。HTTP 转为 stdio 时保留通用工具策略和超时设置，但移除旧传输与认证字段。后续 profile 失败时，报告会区分已完成的注册/转发和待处理项。需要保留这些设置的替换应使用 setup。
 
 新入口及注册核验通过后，从本仓库旧四命令工具迁移的环境可用 `uv tool uninstall token-io-mcp` 移除旧分发包。保留其他工具、服务和设置，并重新连接 MCP 客户端以加载新启动命令。Setup 不建立可信宿主绑定。
 
 协议目标仍为 `2026-07-28`。SDK 子进程测试核验协商与调用；实际可信宿主集成仍需独立证据。
+
+### Codex stdio 环境变量转发
+
+安装脚本已通过 setup 自动处理转发。若仅修复已有注册的转发，从任意工作目录调用一次[独立修复脚本](../scripts/configure-codex-mcp-env.py)：
+
+```sh
+uv run --managed-python -- /absolute/path/to/skill/scripts/configure-codex-mcp-env.py --server dev-workflow-standards-tools
+```
+
+追加 `--dry-run` 可改为只预览而不写入。已有安装也可用 `token-io-decoupling setup codex-env --server NAME` 完成相同操作；两者是替代入口，无须连续执行。重复 `--server NAME` 可在一次文件操作中更新多个已有 stdio 注册项。默认合并 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`；重复 `--env-var NAME` 可改用自定义变量名列表。`--config /absolute/path/config.toml` 显式选择文件，否则目标为 `$CODEX_HOME/config.toml`，未设置 `CODEX_HOME` 时使用 `~/.codex/config.toml`。脚本通过 PEP 723 元数据让 uv 准备 TOML Kit，并从当前 checkout 导入 helper，因此不依赖已安装的 MCP 包或 Codex CLI。安装后的命令使用相同 helper。
+
+Helper 只合并所选 `env_vars`，保留其他变量名、注释、设置和文件权限。没有缺失变量名时，重复成功运行不改变文件字节或修改时间。写入通过同目录临时文件完成，并在替换前检测输入是否发生变化；应避免其他进程同时写配置，因为这不是跨客户端事务。文件或服务条目不存在、非 stdio 服务、TOML 或字段类型无效、目标为符号链接、所需变量存在冲突的远端来源、写入失败时，均返回安全错误。它不会创建服务条目、打印配置值或发起 API 请求。此修复命令的 `--dry-run` 会读取并验证所选文件，但不写入；上文的注册 dry-run 则明确不检查配置。
+
+TOML Kit 文档说明了一项格式保留例外：扩展数组表的乱序子表在重新序列化时会被重新排列，锁定版本也存在这一行为。计划写入修复前，helper 会检查原文档未经修改时能否逐字节往返还原；不支持的排版会被拒绝且不写入，避免静默移动无关内容。注册 setup 也在 upsert 前的预检中执行相同检查。若独立修复命令发现转发已经完整，即使存在这种排版也仍保持无改动。
+
+下面是不完整的结果示例。手动编辑时须保留已有 `command`、`args`、审批设置及其他转发变量名：
+
+```toml
+[mcp_servers.token-io-decoupling-workflow]
+env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+
+[mcp_servers.token-io-decoupling-root-agent-tools]
+env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+
+[mcp_servers.token-io-decoupling-worker-agent-tools]
+env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+
+[mcp_servers.token-io-decoupling-share-tools]
+env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+```
+
+Codex 自身的环境中必须持有这两个非空白变量。`env_vars` 允许将对应变量转发给各自单独启动的 MCP 进程；它不会读取 Shell 配置或 `.env` 文件，也不会复制其他终端的环境。不要将真实值写入仓库文件、setup 参数、日志或示例。字段含义见 [Codex MCP 配置参考](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
+
+新注册和已匹配注册都会在 setup 时合并转发声明，`--replace` 后也会执行相同合并。安装脚本已自动包含 setup；单独执行 `uv tool install` 仍不会注册服务或提供凭据。修改配置后重新加载受影响的 MCP 服务；若客户端没有重载机制，退出后重新打开客户端以创建新服务进程。运行中的进程不会自动获得修改后的配置。
+
+终端调用成功而 MCP 请求报告缺配置时，检查客户端进程环境、各注册项的转发变量名，以及服务是否已重新创建。只记录变量存在性及是否非空白。当前 Decisions advisor 在任一必需值缺失或为空白时，在创建 SDK client 之前返回 `fallback`，原因为 `missing_credentials`；不要套用其他服务的 `missing_api_key` 错误名称。转发不会启用 API 请求、授予出站数据权限或建立可信宿主绑定；下文的独立要求仍须满足。
+
+此 TOML 设置仅适用于 Codex。作为对应能力比较，Claude Code 支持在 `.mcp.json` 的 `env` 映射中使用 `${VAR}` 引用，见其 [MCP 环境展开参考](https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcpjson)。应检查该客户端自身的环境与配置，不要直接复制 Codex TOML。此比较不配置 Claude Code，也不证明宿主绑定能力等价。
+
 
 ## 已认证的宿主通道
 

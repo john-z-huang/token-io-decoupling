@@ -14,6 +14,14 @@ from typing import Any
 
 from token_io_decoupling_core.profiles import PROFILE_SERVER_NAMES
 
+from token_io_decoupling.codex_env import (
+    DEFAULT_ENV_VARS,
+    CodexEnvError,
+    capture_replacement_settings,
+    config_path,
+    merge_env_vars,
+)
+
 _TIMEOUT_SECONDS = 15
 _ENTRY_POINT_NAME = "token-io-decoupling"
 _ENTRY_POINT_VALUE = "token_io_decoupling.cli:main"
@@ -171,6 +179,8 @@ def setup_codex(
         print("Dry run: no Codex command or configuration preflight was run.")
         for item in profiles:
             print(json.dumps(add_commands[item]))
+        names = [PROFILE_SERVER_NAMES[item] for item in profiles]
+        print(f"Would merge env_vars {list(DEFAULT_ENV_VARS)!r} into: {', '.join(names)}")
         return 0
 
     codex = shutil.which("codex")
@@ -204,24 +214,71 @@ def setup_codex(
             )
         pending.append(item)
 
-    applied: list[str] = []
+    selected_names = tuple(PROFILE_SERVER_NAMES[item] for item in profiles)
     try:
-        for item in pending:
-            _run([prefix, *add_commands[item][1:]])
-            applied.append(PROFILE_SERVER_NAMES[item])
-    except SetupError as exc:
-        done = ", ".join(applied) if applied else "none"
-        remaining = ", ".join(
-            PROFILE_SERVER_NAMES[item]
-            for item in pending
-            if PROFILE_SERVER_NAMES[item] not in applied
+        preserved_settings = capture_replacement_settings(
+            config_path(),
+            selected_names,
+            tuple(PROFILE_SERVER_NAMES[item] for item in pending),
+            DEFAULT_ENV_VARS,
         )
+    except CodexEnvError as exc:
+        raise SetupError(f"Codex environment forwarding preflight failed: {exc}") from exc
+
+    applied: list[str] = []
+    forwarded: list[str] = []
+    stable = tuple(
+        item
+        for item in selected_names
+        if item not in {PROFILE_SERVER_NAMES[pending_item] for pending_item in pending}
+    )
+    try:
+        if stable:
+            forwarded.extend(merge_env_vars(config_path(), stable))
+    except CodexEnvError as exc:
         raise SetupError(
-            f"configuration stopped after applying [{done}]; pending [{remaining}]: {exc}"
+            f"registrations unchanged; environment forwarding pending for "
+            f"[{', '.join(stable)}]: {exc}"
         ) from exc
+    for index, item in enumerate(pending):
+        name = PROFILE_SERVER_NAMES[item]
+        try:
+            _run([prefix, *add_commands[item][1:]])
+        except SetupError as exc:
+            remaining = [PROFILE_SERVER_NAMES[p] for p in pending[index:]]
+            raise SetupError(
+                f"registration stopped after applying [{', '.join(applied) or 'none'}]; "
+                f"pending [{', '.join(remaining)}]; environment forwarding completed for "
+                f"[{', '.join(forwarded) or 'none'}] and was not run for pending registrations: "
+                f"{exc}"
+            ) from exc
+        applied.append(name)
+        try:
+            forwarded.extend(
+                merge_env_vars(
+                    config_path(),
+                    (name,),
+                    preserved_settings={name: preserved_settings[name]}
+                    if name in preserved_settings
+                    else None,
+                )
+            )
+        except CodexEnvError as exc:
+            remaining = [PROFILE_SERVER_NAMES[p] for p in pending[index + 1 :]]
+            forwarding_pending = [name, *remaining]
+            raise SetupError(
+                f"registration commands applied [{', '.join(applied)}]; pending registrations "
+                f"[{', '.join(remaining) or 'none'}]; environment forwarding completed for "
+                f"[{', '.join(forwarded) or 'none'}]; forwarding pending for "
+                f"[{', '.join(forwarding_pending)}]: {exc}"
+            ) from exc
     for item in profiles:
         if item not in pending:
             print(f"already configured: {PROFILE_SERVER_NAMES[item]}")
     if applied:
         print("configured: " + ", ".join(applied))
+    if forwarded:
+        print("updated environment forwarding: " + ", ".join(forwarded))
+    else:
+        print("environment forwarding already configured: " + ", ".join(selected_names))
     return 0

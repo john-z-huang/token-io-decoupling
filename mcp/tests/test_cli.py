@@ -106,6 +106,33 @@ def test_setup_rejects_profile_and_all_together(monkeypatch, capsys) -> None:
     assert "cannot be combined" in capsys.readouterr().err
 
 
+def test_codex_env_command_merges_selected_existing_server(monkeypatch, tmp_path, capsys) -> None:
+    config = tmp_path / "config.toml"
+    config.write_text('[mcp_servers.only]\ncommand = "runner"\n', encoding="utf-8")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "token-io-decoupling",
+            "setup",
+            "codex-env",
+            "--config",
+            str(config),
+            "--server",
+            "only",
+        ],
+    )
+    assert cli.main() == 0
+    assert "updated environment forwarding: only" in capsys.readouterr().out
+    assert "OPENAI_API_KEY" in config.read_text(encoding="utf-8")
+
+
+def test_codex_env_command_requires_server_selection(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(sys, "argv", ["token-io-decoupling", "setup", "codex-env"])
+    assert cli.main() == 2
+    assert "--server" in capsys.readouterr().err
+
+
 def test_legacy_module_cli_keeps_public_only_default(monkeypatch) -> None:
     calls = []
     monkeypatch.setattr(sys, "argv", ["token-io-mcp"])
