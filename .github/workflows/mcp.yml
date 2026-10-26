@@ -89,16 +89,18 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/token-io-mcp-dist"
-          uv export --locked --all-groups --no-emit-project --no-hashes --no-header --no-annotate > "$RUNNER_TEMP/token-io-build-constraints.txt"
-          uv build --managed-python --python 3.14 --build-constraints "$RUNNER_TEMP/token-io-build-constraints.txt" --out-dir "$RUNNER_TEMP/token-io-mcp-dist"
+          uv export --locked --all-groups --no-emit-project --no-emit-workspace --no-hashes --no-header --no-annotate > "$RUNNER_TEMP/token-io-build-constraints.txt"
+          uv build --all-packages --managed-python --python 3.14 --build-constraints "$RUNNER_TEMP/token-io-build-constraints.txt" --out-dir "$RUNNER_TEMP/token-io-mcp-dist"
 
       - name: Install wheel into isolated temporary uv tool
         working-directory: ${{ runner.temp }}
         shell: bash
         run: |
-          uv export --project "$GITHUB_WORKSPACE/mcp" --locked --no-dev --no-emit-project --no-hashes --no-header --no-annotate > "$RUNNER_TEMP/token-io-runtime-constraints.txt"
-          UV_TOOL_DIR="$RUNNER_TEMP/token-io-tool-dir" UV_TOOL_BIN_DIR="$RUNNER_TEMP/token-io-tool-bin" uv tool install --managed-python --python 3.14 --constraints "$RUNNER_TEMP/token-io-runtime-constraints.txt" "$RUNNER_TEMP"/token-io-mcp-dist/*.whl
+          uv export --project "$GITHUB_WORKSPACE/mcp" --locked --no-dev --no-emit-project --no-emit-workspace --no-hashes --no-header --no-annotate > "$RUNNER_TEMP/token-io-runtime-constraints.txt"
+          UV_TOOL_DIR="$RUNNER_TEMP/token-io-tool-dir" UV_TOOL_BIN_DIR="$RUNNER_TEMP/token-io-tool-bin" uv tool install --managed-python --python 3.14 --find-links "$RUNNER_TEMP/token-io-mcp-dist" --constraints "$RUNNER_TEMP/token-io-runtime-constraints.txt" "$RUNNER_TEMP/token-io-mcp-dist/token_io_decoupling-0.1.0-py3-none-any.whl"
 
       - name: Exercise installed wheel through negotiated stdio SDK
         working-directory: ${{ runner.temp }}
-        run: uv run --project "$GITHUB_WORKSPACE/mcp" --locked --managed-python --python 3.14 python "$GITHUB_WORKSPACE/mcp/tests/installed_stdio_smoke.py" --cli "$RUNNER_TEMP/token-io-tool-bin/token-io-mcp"
+        run: |
+          uv run --project "$GITHUB_WORKSPACE/mcp" --locked --managed-python --python 3.14 python "$GITHUB_WORKSPACE/mcp/tests/installed_stdio_smoke.py" \
+            --cli "$RUNNER_TEMP/token-io-tool-bin/token-io-decoupling"

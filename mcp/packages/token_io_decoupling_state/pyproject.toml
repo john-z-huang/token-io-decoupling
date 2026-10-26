@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "token-io-decoupling-state"
+version = "0.1.0"
+description = "Token I/O state library"
+requires-python = ">=3.11"
+dependencies = ['token-io-decoupling-core==0.1.0', 'pydantic>=2.12,<3']
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/token_io_decoupling_state", "src/token_io_decoupling_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/pyproject.toml", "/src/**"]

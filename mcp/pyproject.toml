@@ -3,41 +3,31 @@ requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 
 [project]
-name = "token-io-mcp"
+name = "token-io-decoupling"
 version = "0.1.0"
-description = "Optional structured workflow state and rule-context foundation"
+description = "Unified launcher for the Token I/O MCP role profiles"
 requires-python = ">=3.11"
 dependencies = [
-  "mcp>=2.3,<3",
-  "openai>=3.37,<4",
-  "pydantic>=2.12,<3",
+  "token-io-decoupling-core==0.1.0",
+  "token-io-decoupling-state==0.1.0",
+  "token-io-decoupling-transport==0.1.0",
+  "token-io-decoupling-workflow==0.1.0",
+  "token-io-decoupling-root-agent-tools==0.1.0",
+  "token-io-decoupling-worker-agent-tools==0.1.0",
+  "token-io-decoupling-share-tools==0.1.0",
 ]
 
 [project.scripts]
-token-io-mcp = "token_io_mcp.cli:main"
+token-io-decoupling = "token_io_decoupling.cli:main"
 
 [dependency-groups]
-dev = [
-  "hatchling>=1.27,<2",
-  "pytest>=8,<9",
-  "ruff>=0.14,<1",
-  "ty>=0.0.1a0",
-]
+dev = ["hatchling>=1.27,<2", "pytest>=8,<9", "ruff>=0.14,<1", "ty>=0.0.1a0"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/token_io_mcp"]
+packages = ["src/token_io_decoupling", "src/token_io_decoupling_mcp"]
 
 [tool.hatch.build.targets.sdist]
-include = [
-  "/pyproject.toml",
-  "/hatch_build.py",
-  "/rule-registry.json",
-  "/src/**",
-  "/tests/**",
-]
-
-[tool.hatch.build.hooks.custom]
-path = "hatch_build.py"
+include = ["/pyproject.toml", "/src/**", "/tests/**"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -54,4 +44,31 @@ select = ["E", "F", "I", "UP", "B"]
 python-version = "3.11"
 
 [tool.ty.src]
-include = ["src", "tests", "hatch_build.py"]
+include = ["src", "packages", "tests"]
+
+# These released migration sources retain a historical import whose runtime
+# alias is provided only while the state loader imports them. Keep them
+# byte-for-byte unchanged because their source checksums are recorded in DB history.
+[[tool.ty.overrides]]
+include = ["packages/token_io_decoupling_state/src/token_io_decoupling_state/migrations/worker/v0001_initial.py"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"
+
+[[tool.ty.overrides]]
+include = ["packages/token_io_decoupling_state/src/token_io_decoupling_state/migrations/workflow/v0001_initial.py"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+token-io-decoupling-core = { workspace = true }
+token-io-decoupling-state = { workspace = true }
+token-io-decoupling-transport = { workspace = true }
+token-io-decoupling-workflow = { workspace = true }
+token-io-decoupling-root-agent-tools = { workspace = true }
+token-io-decoupling-worker-agent-tools = { workspace = true }
+token-io-decoupling-share-tools = { workspace = true }

@@ -15,7 +15,7 @@ These are source facts, not evidence that the currently connected client runs th
 
 ## Enablement and authority
 
-A trusted supervisor can launch `token-io-mcp --host-fd N --codex-context`, using the authenticated inherited channel described in the [development guide](DEVELOPMENT.md#authenticated-host-channel). `--codex-context` requires a usable host channel. The equivalent Python factory option is `require_codex_context=True` on `create_server`, with a verified provider.
+A trusted supervisor can launch `token-io-decoupling start-mcp-server --profile root --host-fd N --codex-context` (or another selected profile executable), using the authenticated inherited channel described in the [development guide](DEVELOPMENT.md#authenticated-host-channel). `--codex-context` requires a usable host channel. The equivalent Python factory option is `require_codex_context=True` on `create_server`, with a verified provider.
 
 The MCP SDK's request context supplies the two fields. The matcher requires bounded, nonempty strings and rejects malformed or missing context. `threadId` must exactly equal the verified provider's `current_session_id`. `sessionId` is opaque context; a change does not reset canonical identity, Mode/count, Run, or database state. The provider remains the source of project, Root, current Session, role, capabilities, and guards. Tool payloads, environment variables, and client names cannot replace request context or establish that authority.
 

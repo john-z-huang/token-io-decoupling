@@ -7,6 +7,18 @@ resolution-markers = [
     "python_full_version < '3.12' or (python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten')",
 ]
 
+[manifest]
+members = [
+    "token-io-decoupling",
+    "token-io-decoupling-core",
+    "token-io-decoupling-root-agent-tools",
+    "token-io-decoupling-share-tools",
+    "token-io-decoupling-state",
+    "token-io-decoupling-transport",
+    "token-io-decoupling-worker-agent-tools",
+    "token-io-decoupling-workflow",
+]
+
 [[package]]
 name = "annotated-types"
 version = "0.8.0"
@@ -976,13 +988,17 @@ wheels = [
 ]
 
 [[package]]
-name = "token-io-mcp"
+name = "token-io-decoupling"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "mcp" },
-    { name = "openai" },
-    { name = "pydantic" },
+    { name = "token-io-decoupling-core" },
+    { name = "token-io-decoupling-root-agent-tools" },
+    { name = "token-io-decoupling-share-tools" },
+    { name = "token-io-decoupling-state" },
+    { name = "token-io-decoupling-transport" },
+    { name = "token-io-decoupling-worker-agent-tools" },
+    { name = "token-io-decoupling-workflow" },
 ]
 
 [package.dev-dependencies]
@@ -995,9 +1011,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "mcp", specifier = ">=2.3,<3" },
-    { name = "openai", specifier = ">=3.37,<4" },
-    { name = "pydantic", specifier = ">=2.12,<3" },
+    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
+    { name = "token-io-decoupling-root-agent-tools", editable = "packages/token_io_decoupling_root" },
+    { name = "token-io-decoupling-share-tools", editable = "packages/token_io_decoupling_shared" },
+    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
+    { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
+    { name = "token-io-decoupling-worker-agent-tools", editable = "packages/token_io_decoupling_worker" },
+    { name = "token-io-decoupling-workflow", editable = "packages/token_io_decoupling_workflow" },
 ]
 
 [package.metadata.requires-dev]
@@ -1006,6 +1026,123 @@ dev = [
     { name = "pytest", specifier = ">=8,<9" },
     { name = "ruff", specifier = ">=0.14,<1" },
     { name = "ty", specifier = ">=0.0.1a0" },
+]
+
+[[package]]
+name = "token-io-decoupling-core"
+version = "0.1.0"
+source = { editable = "packages/token_io_decoupling_core" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.12,<3" }]
+
+[[package]]
+name = "token-io-decoupling-root-agent-tools"
+version = "0.1.0"
+source = { editable = "packages/token_io_decoupling_root" }
+dependencies = [
+    { name = "token-io-decoupling-core" },
+    { name = "token-io-decoupling-state" },
+    { name = "token-io-decoupling-transport" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
+    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
+    { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
+]
+
+[[package]]
+name = "token-io-decoupling-share-tools"
+version = "0.1.0"
+source = { editable = "packages/token_io_decoupling_shared" }
+dependencies = [
+    { name = "token-io-decoupling-core" },
+    { name = "token-io-decoupling-state" },
+    { name = "token-io-decoupling-transport" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
+    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
+    { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
+]
+
+[[package]]
+name = "token-io-decoupling-state"
+version = "0.1.0"
+source = { editable = "packages/token_io_decoupling_state" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "token-io-decoupling-core" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pydantic", specifier = ">=2.12,<3" },
+    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
+]
+
+[[package]]
+name = "token-io-decoupling-transport"
+version = "0.1.0"
+source = { editable = "packages/token_io_decoupling_transport" }
+dependencies = [
+    { name = "mcp" },
+    { name = "pydantic" },
+    { name = "token-io-decoupling-core" },
+    { name = "token-io-decoupling-state" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mcp", specifier = ">=2.3,<3" },
+    { name = "pydantic", specifier = ">=2.12,<3" },
+    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
+    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
+]
+
+[[package]]
+name = "token-io-decoupling-worker-agent-tools"
+version = "0.1.0"
+source = { editable = "packages/token_io_decoupling_worker" }
+dependencies = [
+    { name = "token-io-decoupling-core" },
+    { name = "token-io-decoupling-state" },
+    { name = "token-io-decoupling-transport" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
+    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
+    { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
+]
+
+[[package]]
+name = "token-io-decoupling-workflow"
+version = "0.1.0"
+source = { editable = "packages/token_io_decoupling_workflow" }
+dependencies = [
+    { name = "openai" },
+    { name = "pydantic" },
+    { name = "token-io-decoupling-core" },
+    { name = "token-io-decoupling-state" },
+    { name = "token-io-decoupling-transport" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "openai", specifier = ">=3.37,<4" },
+    { name = "pydantic", specifier = ">=2.12,<3" },
+    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
+    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
+    { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
 ]
 
 [[package]]

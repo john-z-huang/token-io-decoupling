@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import pytest
 from pydantic import ValidationError
-
-from token_io_mcp.models import (
+from token_io_decoupling_core.models import (
     CodingMode,
     DocumentationEpoch,
     EvidenceRef,

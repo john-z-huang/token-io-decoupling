@@ -7,15 +7,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-from token_io_mcp.binding import BindingError
-from token_io_mcp.decisions import (
-    DecisionsAdvisor,
-    DecisionsRuntimeConfig,
-    TaskIntentInput,
-)
-from token_io_mcp.models import CodingMode, ModeCount, SemanticRef
-from token_io_mcp.rules import RuleLoader
-from token_io_mcp.state_models import (
+from token_io_decoupling_core.binding import BindingError
+from token_io_decoupling_core.models import CodingMode, ModeCount, SemanticRef
+from token_io_decoupling_core.rules import RuleLoader
+from token_io_decoupling_core.state_models import (
     BindingIdentity,
     CheckpointNode,
     HostCapability,
@@ -24,7 +19,12 @@ from token_io_mcp.state_models import (
     VerifiedChildBinding,
     WorkflowOpenRequest,
 )
-from token_io_mcp.state_service import StateService
+from token_io_decoupling_state.service import StateService
+from token_io_decoupling_workflow.decisions import (
+    DecisionsAdvisor,
+    DecisionsRuntimeConfig,
+    TaskIntentInput,
+)
 
 
 class SyntheticProvider:

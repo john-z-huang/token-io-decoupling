@@ -15,7 +15,7 @@
 
 ## 启用与权限来源
 
-可信 supervisor 可通过 `token-io-mcp --host-fd N --codex-context` 启动服务，使用[开发指南](DEVELOPMENT_zh_cn.md#已认证的宿主通道)描述的已认证继承通道。`--codex-context` 必须与可用的宿主通道一起使用。等价的 Python factory 选项是在 `create_server` 中向经过验证的 provider 配置 `require_codex_context=True`。
+可信 supervisor 可通过 `token-io-decoupling start-mcp-server --profile root --host-fd N --codex-context`（或其他所选 profile 的可执行程序） 启动服务，使用[开发指南](DEVELOPMENT_zh_cn.md#已认证的宿主通道)描述的已认证继承通道。`--codex-context` 必须与可用的宿主通道一起使用。等价的 Python factory 选项是在 `create_server` 中向经过验证的 provider 配置 `require_codex_context=True`。
 
 这两个字段只从 MCP SDK 请求上下文读取。匹配器要求字符串非空且长度有界，缺少上下文或格式错误时拒绝。`threadId` 必须与可信 provider 的 `current_session_id` 完全相等。`sessionId` 仅作为不透明上下文；它的变化不会重置 canonical 身份、Mode/count、Run 或数据库状态。项目、Root、当前 Session、角色、能力和守卫仍由 provider 提供。工具 payload、环境变量和客户端名称均不能替代请求上下文或建立上述权限。
 

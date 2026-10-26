@@ -1,42 +1,75 @@
-# MCP 开发指南
+# MCP workspace 开发指南
 
 [English](DEVELOPMENT.md) | [简体中文](DEVELOPMENT_zh_cn.md)
 
-本指南负责可选 Python 子系统的本地开发与包检查。工作流政策仍由 [Skill 入口](../SKILL_zh_cn.md)及其链接的 owner 维护；[架构契约](../ENHANCED_ARCHITECTURE_zh_cn.md)说明组件边界。
+本指南负责 Python workspace 的开发、构建产物检查、uv tool 安装与 Codex setup。[架构契约](../ENHANCED_ARCHITECTURE_zh_cn.md#实现包)负责包职责与依赖方向；[Skill 入口](../SKILL_zh_cn.md)及其链接的 owner 仍是工作流权威。
 
 ## 环境与检查
 
-在 `mcp/` 中运行以下命令。项目声明 Python 3.11 或更新版本，并提交依赖锁文件。使用 uv 托管的解释器和锁定的开发依赖：
+Workspace 包含八个可独立构建的分发包，各有自己的 `pyproject.toml`，共同使用一份 `uv.lock`。只有根分发包 `token-io-decoupling` 导出 console script。从 `mcp/` 使用托管 Python 和锁定依赖运行：
 
 ```sh
-uv sync --managed-python --locked --group dev
+uv sync --managed-python --locked --all-packages --group dev
 uv run --managed-python --locked -- pytest
 uv run --managed-python --locked -- ruff check .
 uv run --managed-python --locked -- ruff format --check .
 uv run --managed-python --locked -- ty check
 ```
 
-如需把虚拟环境放在 checkout 外，运行这些命令前将 `UV_PROJECT_ENVIRONMENT` 设置为临时目录的绝对路径。测试使用临时数据库与模拟绑定，不证明操作系统隔离或实际宿主客户端兼容性。测试套件不需要 API 密钥或真实 API 请求。
+`ty` 覆盖根源码、测试、各库包及 core 构建 Hook。如需将环境放在 checkout 外，设置 `UV_PROJECT_ENVIRONMENT` 为临时目录的绝对路径。测试使用临时数据库、模拟绑定及 API transport，不需要真实 API 请求。从仓库根目录运行[仓库指令](../AGENTS_zh_cn.md)要求的文档检查。
 
-仓库文档检查独立执行。请从仓库根目录运行[仓库指令](../AGENTS_zh_cn.md)要求的检查，包括既有工作流路线图与上下文交换回归测试。
+## 统一入口与 profile 工具
 
-## Stdio 服务与可信 embedding
-
-`token-io-mcp` 入口为 MCP 客户端启动 stdio 服务。没有宿主通道时，在本目录中使用以下开发启动命令：
+安装后的命令为 `token-io-decoupling`，启动时选择 profile：
 
 ```sh
-uv run --managed-python --locked -- token-io-mcp
+token-io-decoupling start-mcp-server --profile workflow
 ```
 
-没有宿主通道时，生产 CLI 只暴露 `workflow_capabilities`、`rules_get_context` 和 `database_schema_status`。其 schema 诊断不检查或创建状态路径，直接返回 unavailable。它保持 Native 模式；环境变量、客户端名称、请求的角色或文件系统路径都不能提供身份或权限证明。
+`--profile` 接受 `workflow`、`root`、`worker` 或 `share`。省略子命令时使用 workflow profile 启动 stdio；`--version` 输出入口版本。各 profile 的清单固定且互不重复：
 
-embedding 可以向 `token_io_mcp.server.create_server` 提供经过验证的 `BindingProvider`。完整能力的 Root 绑定暴露 15 个工具，Worker 绑定暴露 10 个，未绑定服务暴露 3 个。受保护调用每次都会重新检查绑定与必需守卫。当前包没有经过验证的 Codex 或 ChatGPT Desktop 宿主适配器；测试 provider 与子进程 harness 不构成这种证明。不得将合成 provider 复制到生产环境，也不能从这些测试推断操作系统隔离已经成立。
+| Profile / Codex 服务注册名 | 工具 |
+| --- | --- |
+| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`、`rules_get_context`、`workflow_evaluate`、`evaluate_control_checkpoint` |
+| `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`、`delegation_reserve`、`delegation_bind`、`slice_check`、`slice_release`、`workflow_transition`、`parent_get_worker_summary`、`workflow_reconcile` |
+| `worker` / `token-io-decoupling-worker-agent-tools` | `worker_get_assignment`、`worker_record_progress`、`worker_get_evidence`、`worker_report_blocker`、`worker_get_recovery_context` |
+| `share` / `token-io-decoupling-share-tools` | `database_schema_status`、`state_get`、`record_evidence` |
 
-协议目标为 `2026-07-28`。测试使用 SDK 自动协商及真实子进程 stdio 调用，覆盖类型化枚举/UTC 值和角色拒绝。这证明包的协议连接，实际宿主客户端兼容性仍需单独检查。
+Profile 控制工具发现，不授予权限。没有可信宿主通道时，公共能力/规则读取可成功，schema 状态不检查状态路径而返回 unavailable，受保护调用则拒绝缺失绑定。Workflow/Control 判断要求经过验证的 Root。共享读取与证据写入每次都解析经过验证的角色；Worker 读取拒绝非空的 Root `index_page` 游标。
 
-### 已认证的宿主通道
+Canonical Python 实现使用架构契约列出的独立包名。重命名后的 `token_io_decoupling_mcp` 适配命名空间承载原 façade 模块和默认 factory 的仅公共接口行为；`python -m token_io_decoupling_mcp.cli` 仍可使用。旧 `token_io_mcp` 导入命名空间不再作为通用 API 暴露。两个不可变 v1 迁移源仍保留历史字节中的 `token_io_mcp.models`；state migration loader 仅在导入期间临时提供 `DatabaseKind` 别名，随后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 adapter migration 路径。兼容文件分别由 core、state 或 launcher 负责，wheel 路径不重复。本 workspace 不导出旧四个 console script，也不导出之前的 `token-io-mcp` console script。
 
-`token_io_mcp.host_binding` 中的 `HostChannelBindingProvider` 和 `serve_host_binding_channel` 将 CLI 连接到可信宿主已有的 `BindingProvider`。宿主在 MCP 请求参数之外，将一个真实 Session 绑定到一个已连接的 Unix stream socket，再把该连接的描述符传给非特权 CLI 进程，并服务另一端。supervisor 必须将服务端端点保留在可信边界内，且不得将同一通道重新分配给其他 Session。宿主启动命令为 `token-io-mcp --host-fd N`，其中 `N` 是不小于 3 的继承描述符；该参数只定位传输通道，不提供身份或权限。
+## uv tool 安装与 Codex setup
+
+从 workspace 根项目的源码路径安装，uv 会解析其声明的本地 workspace 依赖。`uv tool dir --bin` 返回的目录须位于 `PATH`，或使用已安装命令的绝对路径调用。真实 setup 还要求 Codex CLI 位于 `PATH`：
+
+```sh
+uv tool install --managed-python --python 3.14 /absolute/path/to/skill/mcp
+token-io-decoupling setup codex --dry-run
+token-io-decoupling setup codex
+```
+
+Setup 使用一个核验后的可执行文件绝对路径和不同 profile 参数，注册上表的四个服务名。只配置一个时使用 `setup codex --profile root`。`--all` 是默认全 profile 选择的显式别名，不能与 `--profile` 同用。审阅 dry-run 后，要迁移已有注册，可执行：
+
+```sh
+token-io-decoupling setup codex --replace
+```
+
+Setup 与启动的分离参考 [Serena 的客户端 setup 实现](https://github.com/oraios/serena/blob/main/src/serena/config/client_setup.py)。本入口从当前安装环境的 scripts 目录及精确的分发包入口元数据解析可执行文件，不根据启动目录推断项目或身份。
+
+Dry-run 输出所选 profile 的 JSON 参数向量，不运行子进程或 Codex 预检。真实 setup 先探测 CLI，读取服务清单及嵌套 `transport` 数据，再开始写入。已启用且解析后的命令与 `start-mcp-server --profile <profile>` 参数匹配的注册会被跳过，保留附加设置。冲突或已禁用条目要求 `--replace`。替换使用官方同名 upsert，不先删除旧条目。预检失败不写入；部分应用失败会报告已应用与待处理名称，不打印捕获的配置或子进程输出。手动等价命令示例：
+
+```sh
+codex mcp add token-io-decoupling-root-agent-tools -- /absolute/installed/token-io-decoupling start-mcp-server --profile root
+```
+
+新入口及注册核验通过后，从本仓库旧四命令工具迁移的环境可用 `uv tool uninstall token-io-mcp` 移除旧分发包。保留其他工具、服务和设置，并重新连接 MCP 客户端以加载新启动命令。Setup 不建立可信宿主绑定。
+
+协议目标仍为 `2026-07-28`。SDK 子进程测试核验协商与调用；实际可信宿主集成仍需独立证据。
+
+## 已认证的宿主通道
+
+`token_io_decoupling_core.host_binding` 中的 `HostChannelBindingProvider` 和 `serve_host_binding_channel` 将 CLI 连接到可信宿主已有的 `BindingProvider`。宿主在 MCP 请求参数之外，将一个真实 Session 绑定到一个已连接的 Unix stream socket，再把该连接的描述符传给非特权 CLI 进程，并服务另一端。supervisor 必须将服务端端点保留在可信边界内，且不得将同一通道重新分配给其他 Session。宿主启动所选可执行程序，例如 `token-io-decoupling start-mcp-server --profile root --host-fd N`，其中 `N` 是不小于 3 的继承描述符；该参数只定位传输通道，不提供身份或权限。
 
 CLI 使用操作系统凭据认证对端：Linux 使用 `SO_PEERCRED`，macOS 使用原生 `getpeereid` 调用。此实现将可信对端固定为 UID 0，并拒绝自身以 UID 0 运行的 CLI。Agent 当前用户创建的 socket 无法建立信任。不支持的凭据能力、无效描述符或启动绑定失败，都会终止所请求的绑定启动。内核机制见 [Linux Unix socket 手册](https://man7.org/linux/man-pages/man7/unix.7.html)和 [Apple 对端凭据手册](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getpeereid.3.html)。
 
@@ -68,29 +101,23 @@ TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/d
 
 没有 opt-in 时，脚本不发请求。它使用临时 Root 数据库和合成可信 provider，直接调用 `DecisionsAdvisor`，仅报告安全的状态、原因、分类元数据、选项和用量。它不证明真实宿主绑定，也不证明真实 API 请求经过了 MCP handler。MCP handler/协议测试使用模拟 API transport。advisor 在实际调用时读取两项必需的本地变量；脚本和项目都不提供替代凭据或默认端点。
 
-## 构建与规则资源
+## 构建、规则资源与安装检查
 
-在 `mcp/` 中构建 wheel 和源码分发包，输出到临时目录：
+从 `mcp/` 构建八个 wheel 与源码分发包：
 
 ```sh
-uv build --managed-python . --out-dir /tmp/token-io-mcp-dist
+uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-dist
 ```
 
-构建 Hook 从注册表及其引用的 Markdown owner 生成只读规则资源。这些生成摘录是包资源，不是第二份手工维护的政策正文。源码分发包携带自身的规则来源，使后续 wheel 构建不会借用无关的相邻 checkout。构建产物测试使用脱离原仓库的源码分发包，并检查双语规则及迁移资源。
+规则资源及自定义构建 Hook 由 core 包负责。Canonical 注册表仍为 `mcp/rule-registry.json`；构建产物包含其英文/中文 owner 标题的有界摘录。Core sdist 携带自己的 `rule_sources`，脱离仓库构建时不借用相邻 checkout。默认 `token_io_decoupling_core.rules.RuleLoader` 读取打包快照；源码开发必须明确提供仓库根目录。修改 Markdown 不会更新已安装的 wheel，需要重新构建和安装。
 
-在 checkout 中测试规则编辑时，构造 `RuleLoader` 并明确传入仓库根目录。默认加载器读取已安装的包资源。更新这些资源需要重新构建并安装分发包；编辑其他 checkout 不会更新已安装的 wheel。
+已发布迁移文件属于 state 包，保持原始字节不变，因为数据库历史记录了源码校验和。state loader 为两个 v1 文件所需的历史导入 `token_io_mcp.models.DatabaseKind` 临时提供模块别名，并在导入后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 adapter migration 路径。命名空间迁移不授权改写历史、校验规则或 schema 版本。测试同时覆盖旧历史与升级，以及新建数据库。
 
-迁移模块属于有版本的包资源。保留已发布文件，Schema 变化新增迁移。除新建数据库外，还要运行升级和恢复测试；仅验证初始化不能证明历史兼容性。
+[MCP CI 工作流](../.github/workflows/mcp.yml)在托管 Python 3.11 和 3.14 上执行锁定检查，并有独立的安装版 wheel job。用 `uv export --no-emit-workspace` 导出第三方构建/运行时约束，构建再加 `--all-groups`，运行时再加 `--no-dev`。Workspace 成员由本地产物提供，不作为 editable requirements 导出。从脱离仓库的 wheel 集安装时，以产物目录作为 `--find-links`，安装根包 `token_io_decoupling-0.1.0-py3-none-any.whl`；保留已配置的索引以解析锁定的第三方依赖。完整命令见 CI。
 
-## CI 与隔离安装
+临时安装使用命令局部的 `UV_TOOL_DIR` 和 `UV_TOOL_BIN_DIR`，均指向临时绝对目录。用锁定的 workspace 解释器运行 `tests/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-decoupling`。脚本在 checkout 外、空 `PYTHONPATH` 下启动四个 profile 子进程，核验精确清单与绑定拒绝，检查两种语言规则，并在空 `PATH` 下运行 setup dry-run。源码根项目的 tool 安装另行检查。这些结果证明包与 stdio 行为，不证明实际宿主绑定或 GitHub Actions 已运行。
 
-[MCP 包工作流](../.github/workflows/mcp.yml)在托管 Python 3.11 和 3.14 上，使用锁定依赖执行完整 Mock 测试、Ruff lint/format 检查和 ty。独立的 Python 3.14 job 构建 wheel 和源码分发包，将 wheel 安装到临时 uv tool 目录，并从 checkout 外通过 SDK 调用已安装的可执行文件。这些 job 不启用 Decisions，也不需要 API 凭据。
-
-本地隔离安装时，先用 `uv export --locked --all-groups --no-emit-project --no-hashes --no-header --no-annotate` 导出锁文件，将输出传给 `uv build --build-constraints`。再以 `--no-dev` 替代 `--all-groups` 单独导出运行时约束，安装 wheel 时传给 `uv tool install --constraints`。构建和安装均使用 `--managed-python --python 3.14`。将命令局部的 `UV_TOOL_DIR` 和 `UV_TOOL_BIN_DIR` 设置为临时目录的绝对路径，并通过绝对路径调用生成的 `token-io-mcp`。工作流包含完整命令，不需要修改 Shell 配置。
-
-使用锁定的项目解释器运行 `tests/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-mcp` 检查该安装。脚本在 checkout 外、空 `PYTHONPATH` 下启动服务，检查自动协议协商、三个 Native 公共工具、包内两种语言的规则及不可用的 schema 诊断。这属于包/stdio 证据，不证明 Codex 或 ChatGPT Desktop 绑定。本地执行也不能证明 GitHub Actions 已经运行。
-
-[文档工作流](../.github/workflows/multilingual-docs.yml)保留仓库验证器及工作流路线图/上下文回归，并新增扫描器回归。共享发现逻辑在遍历前剪枝生成资源、虚拟环境、缓存、vendor 目录和符号链接；手工维护的 MCP 文档仍接受语言镜像及链接检查。
+[文档工作流](../.github/workflows/multilingual-docs.yml)保留多语言、链接、路线验证器及扫描器回归；遍历时剪枝生成资源与环境，同时检查手写的 workspace 文档。
 
 ## Native 恢复开发检查
 

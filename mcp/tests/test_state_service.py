@@ -12,16 +12,16 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 import pytest
-
-from token_io_mcp.binding import BindingError, DenyingBindingProvider
-from token_io_mcp.migrations.runner import (
-    _migration_lock,
-    _open_with_migrations,
-    _package_migrations,
+from token_io_decoupling_core.binding import BindingError, DenyingBindingProvider
+from token_io_decoupling_core.models import (
+    CodingMode,
+    DatabaseKind,
+    EvidenceRef,
+    ModeCount,
+    SemanticRef,
 )
-from token_io_mcp.models import CodingMode, DatabaseKind, EvidenceRef, ModeCount, SemanticRef
-from token_io_mcp.rules import RuleLoader
-from token_io_mcp.state_models import (
+from token_io_decoupling_core.rules import RuleLoader
+from token_io_decoupling_core.state_models import (
     BindingIdentity,
     BooleanFactValue,
     ChangeCategory,
@@ -51,13 +51,18 @@ from token_io_mcp.state_models import (
     VerifiedChildBinding,
     WorkflowOpenRequest,
 )
-from token_io_mcp.state_models import (
+from token_io_decoupling_core.state_models import (
     HostCapability as Cap,
 )
-from token_io_mcp.state_models import (
+from token_io_decoupling_core.state_models import (
     HostGuard as Guard,
 )
-from token_io_mcp.state_service import (
+from token_io_decoupling_state.migrations.runner import (
+    _migration_lock,
+    _open_with_migrations,
+    _package_migrations,
+)
+from token_io_decoupling_state.service import (
     IdempotencyConflictError,
     InvalidStateTransitionError,
     RevisionConflictError,
@@ -183,7 +188,7 @@ def native_resolution_request(
     unresolved_set_hash: str | None = None,
     choice: Literal["adopt_native_pair", "retain_sqlite_pair"] = "adopt_native_pair",
 ):
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         EpochSnapshot,
         NativeReconcileResolutionTransition,
     )
@@ -1758,8 +1763,7 @@ def test_acceptance_rechecks_git_documentation_and_content_epochs(tmp_path: Path
 
 def test_required_mode_and_objective_facts_cannot_be_marked_not_applicable() -> None:
     from pydantic import ValidationError
-
-    from token_io_mcp.state_models import FactNotApplicable
+    from token_io_decoupling_core.state_models import FactNotApplicable
 
     for key in (FactKey.VALID_MODE_DECISION, FactKey.TASK_OBJECTIVE):
         with pytest.raises(ValidationError):
@@ -1907,7 +1911,7 @@ def test_control_continue_closes_only_the_bound_parallel_slice(tmp_path: Path) -
 
 
 def test_native_reconcile_requires_confirmation_and_preserves_conflicts(tmp_path: Path) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         EpochSnapshot,
         NativeReconcileTransition,
         NativeWorkflowSnapshot,
@@ -1984,7 +1988,7 @@ def test_native_reconcile_requires_confirmation_and_preserves_conflicts(tmp_path
 
 
 def test_native_two_phase_reconcile_on_existing_root_is_revision_safe(tmp_path: Path) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         EpochSnapshot,
         NativeAllocation,
         NativeWorkflowSnapshot,
@@ -2069,7 +2073,7 @@ def test_native_two_phase_reconcile_on_existing_root_is_revision_safe(tmp_path: 
 def test_native_full_set_resolution_adjudicates_stale_awaiting_and_exposes_basis_refs(
     tmp_path: Path,
 ) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         EpochSnapshot,
         NativeAllocation,
         NativeReconcileResolutionTransition,
@@ -2227,8 +2231,11 @@ def test_native_full_set_resolution_adjudicates_stale_awaiting_and_exposes_basis
 
 def test_native_resolution_rejects_stale_set_and_unbound_freshness_refs(tmp_path: Path) -> None:
     from pydantic import ValidationError
-
-    from token_io_mcp.state_models import EpochSnapshot, NativeAllocation, NativeWorkflowSnapshot
+    from token_io_decoupling_core.state_models import (
+        EpochSnapshot,
+        NativeAllocation,
+        NativeWorkflowSnapshot,
+    )
 
     service, _ = setup(tmp_path)
     state = service.workflow_get_state()
@@ -2305,7 +2312,7 @@ def test_native_resolution_rejects_stale_set_and_unbound_freshness_refs(tmp_path
 
 
 def test_native_conflict_guard_precedes_worker_dispatch_side_effects(tmp_path: Path) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         AllocationRole,
         EpochSnapshot,
         NativeAllocation,
@@ -2381,7 +2388,7 @@ def test_native_conflict_guard_precedes_worker_dispatch_side_effects(tmp_path: P
 def test_native_conflict_blocks_partial_bind_replay_before_worker_initialization(
     tmp_path: Path,
 ) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         AllocationRole,
         EpochSnapshot,
         NativeAllocation,
@@ -2482,7 +2489,7 @@ def test_native_conflict_blocks_partial_bind_replay_before_worker_initialization
 
 
 def test_confirmed_bind_replay_is_read_only_during_native_conflict(tmp_path: Path) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         AllocationRole,
         EpochSnapshot,
         NativeAllocation,
@@ -2562,7 +2569,11 @@ def test_confirmed_bind_replay_is_read_only_during_native_conflict(tmp_path: Pat
 def test_native_resolution_rejects_unsupported_or_overflow_without_mutation(
     tmp_path: Path, case: str
 ) -> None:
-    from token_io_mcp.state_models import EpochSnapshot, NativeAllocation, NativeWorkflowSnapshot
+    from token_io_decoupling_core.state_models import (
+        EpochSnapshot,
+        NativeAllocation,
+        NativeWorkflowSnapshot,
+    )
 
     service, _ = setup(tmp_path)
     state = service.workflow_get_state()
@@ -2631,7 +2642,7 @@ def test_native_resolution_rejects_unsupported_or_overflow_without_mutation(
 def test_oversized_legacy_native_snapshot_has_bounded_readback_and_new_write_is_rejected(
     tmp_path: Path,
 ) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         AllocationStatus,
         EpochSnapshot,
         NativeAllocation,
@@ -2736,7 +2747,7 @@ def test_oversized_legacy_native_snapshot_has_bounded_readback_and_new_write_is_
 
 
 def test_single_root_slice_is_quiesced_by_explicit_native_resolution(tmp_path: Path) -> None:
-    from token_io_mcp.state_models import EpochSnapshot, NativeWorkflowSnapshot
+    from token_io_decoupling_core.state_models import EpochSnapshot, NativeWorkflowSnapshot
 
     provider = FakeBindings()
     service = StateService(
@@ -2806,7 +2817,11 @@ def test_single_root_slice_is_quiesced_by_explicit_native_resolution(tmp_path: P
 def test_native_recovery_invalidates_old_slice_evidence_and_requires_fresh_eod_return(
     tmp_path: Path,
 ) -> None:
-    from token_io_mcp.state_models import EpochSnapshot, NativeAllocation, NativeWorkflowSnapshot
+    from token_io_decoupling_core.state_models import (
+        EpochSnapshot,
+        NativeAllocation,
+        NativeWorkflowSnapshot,
+    )
 
     service, _ = setup(tmp_path)
     spec = prime_slice(service)
@@ -2919,7 +2934,11 @@ def test_native_recovery_invalidates_old_slice_evidence_and_requires_fresh_eod_r
 
 
 def test_native_recovery_before_first_slice_requires_fresh_control(tmp_path: Path) -> None:
-    from token_io_mcp.state_models import EpochSnapshot, NativeAllocation, NativeWorkflowSnapshot
+    from token_io_decoupling_core.state_models import (
+        EpochSnapshot,
+        NativeAllocation,
+        NativeWorkflowSnapshot,
+    )
 
     service, _ = setup(tmp_path)
     state = service.workflow_get_state()
@@ -2992,7 +3011,7 @@ def test_native_recovery_before_first_slice_requires_fresh_control(tmp_path: Pat
 
 
 def test_native_resolution_can_retain_sqlite_contract_pair(tmp_path: Path) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         AllocationRole,
         AllocationStatus,
         EpochSnapshot,
@@ -3056,7 +3075,11 @@ def test_native_resolution_can_retain_sqlite_contract_pair(tmp_path: Path) -> No
 def test_legacy_native_comparison_requires_fresh_v5_preimage_before_resolution(
     tmp_path: Path,
 ) -> None:
-    from token_io_mcp.state_models import EpochSnapshot, NativeAllocation, NativeWorkflowSnapshot
+    from token_io_decoupling_core.state_models import (
+        EpochSnapshot,
+        NativeAllocation,
+        NativeWorkflowSnapshot,
+    )
 
     service, _ = setup(tmp_path)
     initial = service.workflow_get_state()
@@ -3108,7 +3131,7 @@ def test_legacy_native_comparison_requires_fresh_v5_preimage_before_resolution(
     finally:
         connection.close()
 
-    from token_io_mcp.storage import open_database_for_authorized_write
+    from token_io_decoupling_state.storage import open_database_for_authorized_write
 
     migrated = open_database_for_authorized_write(
         database,
@@ -3211,7 +3234,7 @@ def test_legacy_native_comparison_requires_fresh_v5_preimage_before_resolution(
 
 
 def test_later_matching_native_snapshot_does_not_hide_older_conflict(tmp_path: Path) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         EpochSnapshot,
         NativeAllocation,
         NativeReconcileTransition,
@@ -3322,7 +3345,7 @@ def test_later_matching_native_snapshot_does_not_hide_older_conflict(tmp_path: P
 
 
 def test_native_confirmation_rejects_concurrent_root_change(tmp_path: Path) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         EpochSnapshot,
         NativeAllocation,
         NativeWorkflowSnapshot,
@@ -3372,7 +3395,11 @@ def test_native_confirmation_rejects_concurrent_root_change(tmp_path: Path) -> N
 
 
 def test_native_conflicts_include_source_mode_source_and_semantic_refs(tmp_path: Path) -> None:
-    from token_io_mcp.state_models import EpochSnapshot, NativeAllocation, NativeWorkflowSnapshot
+    from token_io_decoupling_core.state_models import (
+        EpochSnapshot,
+        NativeAllocation,
+        NativeWorkflowSnapshot,
+    )
 
     service, _ = setup(tmp_path)
     state = service.workflow_get_state()
@@ -3453,7 +3480,7 @@ def test_single_agent_slice_is_root_owned(tmp_path: Path) -> None:
 def test_reused_worker_dispatch_history_does_not_rewind_on_old_receipt_replay(
     tmp_path: Path,
 ) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         AllocationRole,
         AllocationStatus,
         EpochSnapshot,
@@ -4148,7 +4175,7 @@ def test_v3_root_slice_hash_remains_explicitly_unknown_after_v4_upgrade(tmp_path
 def test_recovery_index_cursors_page_slices_and_reject_stale_native_cursor(
     tmp_path: Path,
 ) -> None:
-    from token_io_mcp.state_models import (
+    from token_io_decoupling_core.state_models import (
         EpochSnapshot,
         NativeAllocation,
         NativeWorkflowSnapshot,

@@ -10,13 +10,14 @@ import pytest
 from mcp import Client, StdioServerParameters
 from mcp.server import MCPServer
 from mcp.types import TextContent
-
-from token_io_mcp.binding import BindingError
-from token_io_mcp.models import CodingMode, EvidenceRef, ModeCount, SemanticRef
-from token_io_mcp.project_identity import ProjectIdentityError, project_id_from_git_common_dir
-from token_io_mcp.rules import RuleLoader
-from token_io_mcp.server import create_server
-from token_io_mcp.state_models import (
+from token_io_decoupling_core.binding import BindingError
+from token_io_decoupling_core.models import CodingMode, EvidenceRef, ModeCount, SemanticRef
+from token_io_decoupling_core.project_identity import (
+    ProjectIdentityError,
+    project_id_from_git_common_dir,
+)
+from token_io_decoupling_core.rules import RuleLoader
+from token_io_decoupling_core.state_models import (
     BindingIdentity,
     ChangeCategory,
     CheckpointFact,
@@ -35,7 +36,9 @@ from token_io_mcp.state_models import (
     VerifiedChildBinding,
     WorkflowOpenRequest,
 )
-from token_io_mcp.state_service import StateService
+from token_io_decoupling_state.service import StateService
+
+from token_io_decoupling.server import create_server
 
 PUBLIC_TOOLS = {
     "workflow_capabilities",
@@ -152,6 +155,8 @@ def _result_text(result: Any) -> str:
 
 def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
     unbound = create_server()
+    listed_tools = unbound._tool_manager.list_tools()
+    assert len(listed_tools) == len({tool.name for tool in listed_tools})
     assert _tool_names(unbound) == PUBLIC_TOOLS
     parameters: dict[str, Any] = {
         tool.name: tool.parameters for tool in unbound._tool_manager.list_tools()
@@ -189,6 +194,260 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
     assert _tool_names(create_server(insufficient)) == PUBLIC_TOOLS
 
 
+def test_profiles_have_fixed_disjoint_inventories_and_fail_closed() -> None:
+    expected = {
+        "workflow": {
+            "workflow_capabilities",
+            "rules_get_context",
+            "workflow_evaluate",
+            "evaluate_control_checkpoint",
+        },
+        "root": {
+            "workflow_open",
+            "delegation_reserve",
+            "delegation_bind",
+            "slice_check",
+            "slice_release",
+            "workflow_transition",
+            "parent_get_worker_summary",
+            "workflow_reconcile",
+        },
+        "worker": {
+            "worker_get_assignment",
+            "worker_record_progress",
+            "worker_get_evidence",
+            "worker_report_blocker",
+            "worker_get_recovery_context",
+        },
+        "share": {"database_schema_status", "state_get", "record_evidence"},
+    }
+    servers = {name: create_server(profile=name) for name in expected}
+    inventories = {name: _tool_names(server) for name, server in servers.items()}
+    assert inventories == expected
+    assert all(
+        inventories[left].isdisjoint(inventories[right])
+        for left in expected
+        for right in expected
+        if left != right
+    )
+
+    async def denied() -> None:
+        async with Client(servers["workflow"], mode="auto") as client:
+            capabilities = await client.call_tool("workflow_capabilities", {})
+            assert not capabilities.is_error
+            rules = await client.call_tool(
+                "rules_get_context", {"payload": {"node_id": "contract", "language": "en"}}
+            )
+            assert not rules.is_error
+        for profile, tool, payload in (
+            ("root", "workflow_transition", {"payload": {"request": {}}}),
+            ("worker", "worker_get_assignment", {}),
+            ("share", "state_get", {"payload": {}}),
+        ):
+            async with Client(servers[profile], mode="auto") as client:
+                result = await client.call_tool(tool, payload)
+                assert result.is_error
+        async with Client(servers["share"], mode="auto") as client:
+            diagnostics = await client.call_tool("database_schema_status", {})
+            assert not diagnostics.is_error
+            assert '"available": false' in _result_text(diagnostics)
+            assert "no state path was inspected" in _result_text(diagnostics)
+
+    asyncio.run(denied())
+
+
+def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
+    expected = {
+        "workflow": {
+            "workflow_capabilities",
+            "rules_get_context",
+            "workflow_evaluate",
+            "evaluate_control_checkpoint",
+        },
+        "root": {
+            "workflow_open",
+            "delegation_reserve",
+            "delegation_bind",
+            "slice_check",
+            "slice_release",
+            "workflow_transition",
+            "parent_get_worker_summary",
+            "workflow_reconcile",
+        },
+        "worker": {
+            "worker_get_assignment",
+            "worker_record_progress",
+            "worker_get_evidence",
+            "worker_report_blocker",
+            "worker_get_recovery_context",
+        },
+        "share": {"database_schema_status", "state_get", "record_evidence"},
+    }
+
+    async def check_profile(profile: str, mode: str) -> None:
+        server = create_server(profile=profile)
+        async with Client(server, mode=mode) as client:
+            assert client.protocol_version == ("2026-07-28" if mode == "auto" else "2025-11-25")
+            assert client.server_info is not None
+            assert client.server_info.description
+            assert client.instructions
+            assert profile in client.instructions
+            listed = await client.list_tools()
+            by_name = {tool.name: tool for tool in listed.tools}
+            assert set(by_name) == expected[profile]
+            assert all(tool.description for tool in by_name.values())
+            # Check the public wire schema itself, not the SDK's internal tool model.
+            if "workflow_capabilities" in by_name:
+                assert by_name["workflow_capabilities"].input_schema["properties"] == {}
+            if "state_get" in by_name:
+                assert "payload" in by_name["state_get"].input_schema["properties"]
+
+    async def run() -> None:
+        for profile in expected:
+            await check_profile(profile, "auto")
+            await check_profile(profile, "legacy")
+
+    asyncio.run(run())
+
+
+def test_default_and_embedded_discovery_metadata_matches_bound_role() -> None:
+    scenarios = {
+        "public": (None, PUBLIC_TOOLS),
+        "parent": (FakeBindingProvider(SessionRole.PARENT), PUBLIC_TOOLS | ROOT_TOOLS),
+        "worker": (FakeBindingProvider(SessionRole.WORKER), PUBLIC_TOOLS | WORKER_TOOLS),
+    }
+
+    async def run() -> None:
+        for role, (provider, expected_tools) in scenarios.items():
+            async with Client(create_server(provider), mode="auto") as client:
+                assert client.server_info is not None
+                expected_role_label = "public-only" if role == "public" else role
+                assert expected_role_label in (client.instructions or "").casefold()
+                tool_list = await client.list_tools()
+                assert {tool.name for tool in tool_list.tools} == expected_tools
+                assert all(tool.description for tool in tool_list.tools)
+                if role == "parent":
+                    assert "No Worker operations" in (client.instructions or "")
+                elif role == "worker":
+                    assert "No parent operations" in (client.instructions or "")
+
+    asyncio.run(run())
+
+
+def test_profile_role_and_revocation_are_rechecked_per_call(tmp_path: Path) -> None:
+    provider = FakeBindingProvider(SessionRole.PARENT)
+    state_root = tmp_path / "profile-state"
+    server = create_server(provider, profile="root", state_root=state_root)
+    expected = {
+        "workflow_open",
+        "delegation_reserve",
+        "delegation_bind",
+        "slice_check",
+        "slice_release",
+        "workflow_transition",
+        "parent_get_worker_summary",
+        "workflow_reconcile",
+    }
+    assert _tool_names(server) == expected
+    wrong_worker_profile = create_server(FakeBindingProvider(SessionRole.PARENT), profile="worker")
+
+    open_payload = {
+        "payload": {
+            "mode_count": {"mode": CodingMode.MULTI_AGENT.value, "child_count": 1},
+            "mode_source": "explicit",
+            "source": {"uri": "memory://profile-contract", "content_hash": "a" * 64},
+            "semantic_references": [],
+            "expected_revision": 0,
+            "idempotency_key": "profile-root-open",
+        }
+    }
+
+    async def run() -> None:
+        async with Client(wrong_worker_profile, mode="auto") as worker_client:
+            denied_worker = await worker_client.call_tool("worker_get_assignment", {})
+            assert denied_worker.is_error
+            assert "binding" in _result_text(denied_worker).casefold()
+        async with Client(server, mode="auto") as client:
+            opened = await client.call_tool("workflow_open", open_payload)
+            assert not opened.is_error
+            share = create_server(provider, profile="share", state_root=state_root)
+            async with Client(share, mode="auto") as share_client:
+                current = await share_client.call_tool("state_get", {"payload": {}})
+                assert not current.is_error
+                assert '"revision": 0' in _result_text(current)
+                recorded = await share_client.call_tool(
+                    "record_evidence",
+                    {
+                        "payload": {
+                            "submission": {
+                                "node_id": "contract",
+                                "facts": [
+                                    {
+                                        "fact_key": key,
+                                        "judgment": {
+                                            "status": "determined",
+                                            "value": {
+                                                "kind": "semantic_ref",
+                                                "value": {
+                                                    "uri": f"memory://{uri}",
+                                                    "content_hash": "b" * 64,
+                                                },
+                                            },
+                                        },
+                                    }
+                                    for key, uri in [
+                                        ("task objective", "profile-objective"),
+                                        ("authorized scope", "profile-scope"),
+                                        ("constraints", "profile-constraints"),
+                                        ("acceptance conditions", "profile-acceptance"),
+                                    ]
+                                ],
+                                "evidence_refs": [],
+                                "coverage_dimensions": [],
+                                "input_hash": "c" * 64,
+                            },
+                            "expected_revision": 0,
+                            "idempotency_key": "profile-root-evidence",
+                        }
+                    },
+                )
+                assert not recorded.is_error
+                assert "evidence_id" in _result_text(recorded)
+            provider.become_worker("worker-a")
+            changed_role = await client.call_tool("workflow_open", open_payload)
+            assert changed_role.is_error
+            assert "binding" in _result_text(changed_role)
+            provider.binding = provider.binding.model_copy(
+                update={
+                    "role": SessionRole.PARENT,
+                    "current_session_id": "root-session",
+                    "parent_session_id": None,
+                }
+            )
+            before_revoked_call = {
+                path.relative_to(state_root): (path.stat().st_size, path.stat().st_mtime_ns)
+                for path in state_root.rglob("*")
+                if path.is_file()
+            }
+            provider.revoked = True
+            result = await client.call_tool("workflow_open", open_payload)
+            assert result.is_error
+            assert "binding" in _result_text(result)
+            after_revoked_call = {
+                path.relative_to(state_root): (path.stat().st_size, path.stat().st_mtime_ns)
+                for path in state_root.rglob("*")
+                if path.is_file()
+            }
+            assert after_revoked_call == before_revoked_call
+            provider.revoked = False
+            async with Client(share, mode="auto") as share_client:
+                unchanged = await share_client.call_tool("state_get", {"payload": {}})
+                assert not unchanged.is_error
+                assert '"revision": 1' in _result_text(unchanged)
+
+    asyncio.run(run())
+
+
 async def _call(server: MCPServer[Any], name: str, arguments: dict[str, object]) -> dict[str, Any]:
     async with Client(server, mode="auto") as client:
         result = await client.call_tool(name, arguments)
@@ -201,7 +460,7 @@ def test_real_stdio_sdk_discovery_and_public_wire_calls_are_fail_closed(tmp_path
     async def run() -> None:
         parameters = StdioServerParameters(
             command=sys.executable,
-            args=["-m", "token_io_mcp.cli"],
+            args=["-m", "token_io_decoupling.cli"],
             cwd=Path(__file__).parents[1],
             env={"PYTHONDONTWRITEBYTECODE": "1"},
         )
@@ -816,7 +1075,57 @@ def test_worker_protocol_reads_and_writes_its_confirmed_assignment(tmp_path: Pat
             assert not state.is_error
             assert '"revision": 1' in _result_text(state)
             assert '"status": "started"' in _result_text(state)
-            schema = await client.call_tool("database_schema_status", {})
+        share = create_server(provider, profile="share", state_root=state_root)
+        async with Client(share, mode="auto") as share_client:
+            shared_state = await share_client.call_tool("state_get", {"payload": {}})
+            assert not shared_state.is_error
+            assert '"revision": 1' in _result_text(shared_state)
+            invalid_page = await share_client.call_tool(
+                "state_get",
+                {"payload": {"index_page": {"collection": "evidence", "page_size": 1}}},
+            )
+            assert invalid_page.is_error
+            worker_evidence = await share_client.call_tool(
+                "record_evidence",
+                {
+                    "payload": {
+                        "submission": {
+                            "node_id": "implementation",
+                            "facts": [
+                                {
+                                    "fact_key": key,
+                                    "judgment": {
+                                        "status": "determined",
+                                        "value": {
+                                            "kind": "semantic_ref",
+                                            "value": {
+                                                "uri": f"memory://{key}",
+                                                "content_hash": "a" * 64,
+                                            },
+                                        },
+                                    },
+                                }
+                                for key in (
+                                    "released objective",
+                                    "authorized mutation scope",
+                                    "current unreleased boundary",
+                                )
+                            ],
+                            "evidence_refs": [],
+                            "coverage_dimensions": ["implementation_content"],
+                            "input_hash": "c" * 64,
+                        },
+                        "expected_revision": 1,
+                        "idempotency_key": "share-worker-evidence",
+                    }
+                },
+            )
+            assert not worker_evidence.is_error
+            assert "evidence_id" in _result_text(worker_evidence)
+            shared_after_write = await share_client.call_tool("state_get", {"payload": {}})
+            assert not shared_after_write.is_error
+            assert '"revision": 2' in _result_text(shared_after_write)
+            schema = await share_client.call_tool("database_schema_status", {})
             assert not schema.is_error
             assert '"database_kind": "worker"' in _result_text(schema)
             assert '"exists": true' in _result_text(schema)

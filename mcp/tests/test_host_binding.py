@@ -9,9 +9,8 @@ from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
-
-from token_io_mcp.binding import BindingError
-from token_io_mcp.host_binding import (
+from token_io_decoupling_core.binding import BindingError
+from token_io_decoupling_core.host_binding import (
     MAX_FRAME,
     WIRE_PROTOCOL,
     HostChannelBindingProvider,
@@ -19,7 +18,7 @@ from token_io_mcp.host_binding import (
     _validate_json,
     serve_host_binding_channel,
 )
-from token_io_mcp.state_models import (
+from token_io_decoupling_core.state_models import (
     BindingIdentity,
     HostCapability,
     HostGuard,
@@ -65,7 +64,7 @@ class _SyntheticHostProvider:
 
 def _channel(monkeypatch: pytest.MonkeyPatch, provider: _SyntheticHostProvider):
     client, host = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
-    monkeypatch.setattr("token_io_mcp.host_binding._peer_uid", lambda _sock: 0)
+    monkeypatch.setattr("token_io_decoupling_core.host_binding._peer_uid", lambda _sock: 0)
     thread = threading.Thread(target=serve_host_binding_channel, args=(host, provider), daemon=True)
     thread.start()
     return HostChannelBindingProvider(client), thread
@@ -98,7 +97,7 @@ def test_unverifiable_child_does_not_poison_valid_parent_channel(
 
 
 def test_healthy_channel_survives_idle_gap(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("token_io_mcp.host_binding.CHANNEL_TIMEOUT", 0.05)
+    monkeypatch.setattr("token_io_decoupling_core.host_binding.CHANNEL_TIMEOUT", 0.05)
     provider, thread = _channel(monkeypatch, _SyntheticHostProvider())
     try:
         time.sleep(0.12)
@@ -133,8 +132,8 @@ def test_channel_rejects_real_same_uid_peer() -> None:
 
 def test_root_client_is_rejected_before_handshake(monkeypatch: pytest.MonkeyPatch) -> None:
     client, _host = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
-    monkeypatch.setattr("token_io_mcp.host_binding.os.geteuid", lambda: 0)
-    monkeypatch.setattr("token_io_mcp.host_binding._peer_uid", lambda _sock: 0)
+    monkeypatch.setattr("token_io_decoupling_core.host_binding.os.geteuid", lambda: 0)
+    monkeypatch.setattr("token_io_decoupling_core.host_binding._peer_uid", lambda _sock: 0)
     with pytest.raises(BindingError, match="must not run as UID 0"):
         HostChannelBindingProvider(client)
 
@@ -150,10 +149,10 @@ def test_unconnected_socket_descriptor_is_rejected_and_closed() -> None:
 
 
 def test_unsupported_peer_authentication_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
-    from token_io_mcp.host_binding import _peer_uid
+    from token_io_decoupling_core.host_binding import _peer_uid
 
     client, host = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
-    monkeypatch.setattr("token_io_mcp.host_binding.sys.platform", "unknown-platform")
+    monkeypatch.setattr("token_io_decoupling_core.host_binding.sys.platform", "unknown-platform")
     try:
         with pytest.raises(BindingError, match="unsupported"):
             _peer_uid(client)
@@ -230,7 +229,7 @@ def test_oversize_frame_is_rejected() -> None:
     try:
         sender = threading.Thread(target=right.sendall, args=(b"x" * (MAX_FRAME + 1) + b"\n",))
         sender.start()
-        from token_io_mcp.host_binding import _recv_frame
+        from token_io_decoupling_core.host_binding import _recv_frame
 
         with pytest.raises(BindingError, match="exceeds limit"):
             _recv_frame(left)
@@ -244,11 +243,11 @@ def test_out_of_order_response_permanently_poisons_channel(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client, host = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
-    monkeypatch.setattr("token_io_mcp.host_binding._peer_uid", lambda _sock: 0)
+    monkeypatch.setattr("token_io_decoupling_core.host_binding._peer_uid", lambda _sock: 0)
     identity = _SyntheticHostProvider().identity
 
     def respond() -> None:
-        from token_io_mcp.host_binding import _recv_frame, _send_frame
+        from token_io_decoupling_core.host_binding import _recv_frame, _send_frame
 
         first_frame = _recv_frame(host)
         assert first_frame is not None
@@ -302,10 +301,10 @@ def test_out_of_order_response_permanently_poisons_channel(
 def test_malformed_response_permanently_poisons_channel(
     monkeypatch: pytest.MonkeyPatch, malformation: str
 ) -> None:
-    from token_io_mcp.host_binding import _recv_frame, _send_frame
+    from token_io_decoupling_core.host_binding import _recv_frame, _send_frame
 
     client, host = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
-    monkeypatch.setattr("token_io_mcp.host_binding._peer_uid", lambda _sock: 0)
+    monkeypatch.setattr("token_io_decoupling_core.host_binding._peer_uid", lambda _sock: 0)
     identity = _SyntheticHostProvider().identity
 
     def respond() -> None:
@@ -363,11 +362,11 @@ def test_malformed_response_permanently_poisons_channel(
 def test_slow_trickle_cannot_extend_whole_rpc_deadline(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from token_io_mcp.host_binding import _recv_frame, _send_frame
+    from token_io_decoupling_core.host_binding import _recv_frame, _send_frame
 
-    monkeypatch.setattr("token_io_mcp.host_binding.CHANNEL_TIMEOUT", 0.2)
+    monkeypatch.setattr("token_io_decoupling_core.host_binding.CHANNEL_TIMEOUT", 0.2)
     client, host = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
-    monkeypatch.setattr("token_io_mcp.host_binding._peer_uid", lambda _sock: 0)
+    monkeypatch.setattr("token_io_decoupling_core.host_binding._peer_uid", lambda _sock: 0)
     identity = _SyntheticHostProvider().identity
 
     def respond() -> None:
@@ -418,12 +417,12 @@ def test_slow_trickle_cannot_extend_whole_rpc_deadline(
 
 @pytest.mark.parametrize("failure", ["eof", "oversize", "timeout"])
 def test_transport_failure_poisons_channel(monkeypatch: pytest.MonkeyPatch, failure: str) -> None:
-    from token_io_mcp.host_binding import _recv_frame, _send_frame
+    from token_io_decoupling_core.host_binding import _recv_frame, _send_frame
 
     if failure == "timeout":
-        monkeypatch.setattr("token_io_mcp.host_binding.CHANNEL_TIMEOUT", 0.05)
+        monkeypatch.setattr("token_io_decoupling_core.host_binding.CHANNEL_TIMEOUT", 0.05)
     client, host = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
-    monkeypatch.setattr("token_io_mcp.host_binding._peer_uid", lambda _sock: 0)
+    monkeypatch.setattr("token_io_decoupling_core.host_binding._peer_uid", lambda _sock: 0)
     identity = _SyntheticHostProvider().identity
 
     def respond() -> None:

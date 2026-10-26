@@ -4,8 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-
-from token_io_mcp.rules import (
+from token_io_decoupling_core.rules import (
     IncompatibleRuleContractError,
     RuleLoader,
     UnknownRuleNodeError,

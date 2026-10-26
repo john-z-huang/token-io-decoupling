@@ -6,13 +6,48 @@ This document owns the component and interface contract for the optional Enhance
 
 ## Components and authoritative data
 
-The implementation uses an independent Python subproject under `mcp/`, managed with uv and using Pydantic, `sqlite3`, the official MCP SDK v2, and the OpenAI SDK. A subprocess SDK test has verified stdio discovery and protected calls through a test-only trusted embedding harness, negotiating protocol revision `2026-07-28`. This verifies the implementation and wire contract, not a production desktop host's identity attestation or OS permission enforcement. Production CLI defaults to deny protected operations and exposes only the public read-only surface when unbound.
+The implementation uses an eight-package uv workspace under `mcp/`, with Pydantic, `sqlite3`, the official MCP SDK v2, and the OpenAI SDK. A subprocess SDK test has verified stdio discovery and protected calls through a test-only trusted embedding harness, negotiating protocol revision `2026-07-28`. This verifies the implementation and wire contract, not a production desktop host's identity attestation or OS permission enforcement. The unified production launcher exposes four MCP profiles with fixed, disjoint tool inventories even when unbound; protected calls still deny missing or insufficient bindings. The [MCP development guide](mcp/DEVELOPMENT.md) owns executable names, tool membership, shared role-aware adapters, and installation/registration instructions. Discovery does not establish identity or operation guards.
 
 Markdown owner documents remain the sole policy-text authority. The JSON registry at [`mcp/rule-registry.json`](mcp/rule-registry.json) maps stable node IDs to owner headings, facts, evidence, branches, evaluation mode, failure action, and successor checkpoints. It must not duplicate owner prose. At load time, the implementation reads the current owner text and computes its hash; it does not maintain a second hand-authored policy body or stored node hash. Ordinary prose changes become visible through dynamic rereads. A change to node structure, branch enums, or hard constraints requires a compatible implementation and test update under the changed `contract_version`.
 
 SQLite stores structured control state, evidence references, semantic-content references and hashes, and indexes. Full Contract, Decision Brief, Plan, Memo, Capsule, Handoff, and other semantic bodies remain in Markdown or Serena Memory under their existing owners. SQLite indexes do not replace formal messages, visibility requirements, or shared-worktree conflict controls.
 
 Persistence authority and access boundaries are owned by [Enhanced State Store](references/coding/layer-01-fundamental-concepts/enhanced-state-store.md); schema compatibility, migrations, backup, and restore are owned by [Enhanced Schema Migrations](references/coding/layer-01-fundamental-concepts/enhanced-schema-migrations.md). In Native operation, the parent-context record remains canonical and is read back under its existing owner. In Enhanced operation, Root SQLite is canonical only after authorized initialization and identity/schema validation; parent context then remains a readable snapshot or reference. Mode pass never initializes or migrates a store. The first Root write follows Mode and verified Session identity, role, and Context Firewall checks. Root audit remains Root-only; on Enhanced, confirm its persistence in the authorized store and read it back, while Native reads back its canonical parent-context record. A pending or failed audit update is not completion. A Worker store is initialized only after its real identity is bound to the released allocation and Enhanced is selected.
+
+## Implementation packages
+
+The uv workspace root and seven members are separate Python distributions, each with its own build metadata. The root owns the only console script; the role libraries export registrations rather than executables.
+
+| Distribution | Project | Canonical import / responsibility |
+| --- | --- | --- |
+| `token-io-decoupling` | [workspace root](mcp/pyproject.toml) | `token_io_decoupling`: CLI, Codex setup, server composition |
+| `token-io-decoupling-core` | [core](mcp/packages/token_io_decoupling_core/pyproject.toml) | `token_io_decoupling_core`: contracts, bindings, profiles, rules and packaged resources |
+| `token-io-decoupling-state` | [state](mcp/packages/token_io_decoupling_state/pyproject.toml) | `token_io_decoupling_state`: state facade, domain operations, transactions and migrations |
+| `token-io-decoupling-transport` | [transport](mcp/packages/token_io_decoupling_transport/pyproject.toml) | `token_io_decoupling_transport`: MCP registration, request scopes and common wire schemas |
+| `token-io-decoupling-workflow` | [workflow](mcp/packages/token_io_decoupling_workflow/pyproject.toml) | `token_io_decoupling_workflow`: rule/evaluation tools and optional Decisions advice |
+| `token-io-decoupling-root-agent-tools` | [root tools](mcp/packages/token_io_decoupling_root/pyproject.toml) | `token_io_decoupling_root`: Root tool registrations |
+| `token-io-decoupling-worker-agent-tools` | [worker tools](mcp/packages/token_io_decoupling_worker/pyproject.toml) | `token_io_decoupling_worker`: Worker tool registrations |
+| `token-io-decoupling-share-tools` | [shared tools](mcp/packages/token_io_decoupling_shared/pyproject.toml) | `token_io_decoupling_shared`: shared state/evidence registrations |
+
+The main dependency direction is:
+
+```mermaid
+flowchart TD
+    CLI[Unified CLI package] --> Roles[Four role packages]
+    CLI --> Transport[Transport package]
+    CLI --> State[State package]
+    CLI --> Core[Core package]
+    Roles --> Transport
+    Roles --> State
+    Roles --> Core
+    Transport --> State
+    Transport --> Core
+    State --> Core
+```
+
+Core has no upward implementation imports. State is independent of transport and launcher; transport does not import role packages. Workflow-specific advisory payloads belong to workflow, avoiding a transport/workflow cycle. The state facade delegates to bounded owners for evidence/evaluation, control, Native recovery, delegation, Worker operations, dispatch, persistence, validation and projections. Compatibility signatures and the overridable Worker dispatch seam remain explicit.
+
+The renamed `token_io_decoupling_mcp` adapter namespace uses a core-owned `pkgutil.extend_path` initializer; core, state and launcher own disjoint adapter files. Functional implementations use their canonical package names. All released migration sources remain byte-for-byte unchanged. The two v1 migration files still import `DatabaseKind` from the historical `token_io_mcp.models` path; the state loader supplies that one module name temporarily while importing migrations, then removes it. Use the renamed adapter migration paths for direct imports; importing frozen state migration modules directly bypasses the scoped compatibility loader and is unsupported. This migration-only alias is not a general legacy import namespace. Build tests check independent artifacts, no duplicate wheel file ownership, and legacy database history.
 
 ## Identity and state boundaries
 

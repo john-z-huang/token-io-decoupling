@@ -10,17 +10,19 @@ from typing import cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from token_io_mcp import cli, host_binding
-from token_io_mcp.binding import BindingError, BindingProvider
-from token_io_mcp.host_binding import serve_host_binding_channel
-from token_io_mcp.server import create_server
-from token_io_mcp.state_models import (
+from token_io_decoupling_core import host_binding
+from token_io_decoupling_core.binding import BindingError, BindingProvider
+from token_io_decoupling_core.host_binding import serve_host_binding_channel
+from token_io_decoupling_core.state_models import (
     BindingIdentity,
     HostCapability,
     HostGuard,
     SessionRole,
     VerifiedChildBinding,
 )
+
+from token_io_decoupling import cli
+from token_io_decoupling.server import create_server
 
 
 class TestOnlyBindingProvider:
@@ -90,6 +92,8 @@ def main() -> None:
             require_bound=False,
             require_codex_context=False,
             state_root=None,
+            profile=None,
+            server_name=None,
         ):
             del state_root
             return original_create_server(
@@ -97,6 +101,8 @@ def main() -> None:
                 require_bound=require_bound,
                 require_codex_context=require_codex_context,
                 state_root=temporary_state_root,
+                profile=profile,
+                server_name=server_name,
             )
 
         cli.__dict__["create_server"] = test_only_server
@@ -104,7 +110,7 @@ def main() -> None:
         sys.argv = ["token-io-mcp", "--host-fd", str(client_fd)]
         if require_codex_context:
             sys.argv.append("--codex-context")
-        exit_code = cli.main()
+        exit_code = cli.legacy_main()
         host_thread.join(timeout=1)
         raise SystemExit(exit_code)
     if len(sys.argv) != 3 or sys.argv[1] not in {"root", "worker"}:

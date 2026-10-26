@@ -8,8 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
-
-from token_io_mcp.migrations.runner import (
+from token_io_decoupling_core.models import DatabaseKind
+from token_io_decoupling_state.migrations.runner import (
     _Migration,
     _migration_lock,
     _open_with_migrations,
@@ -17,8 +17,7 @@ from token_io_mcp.migrations.runner import (
     read_schema_status,
     restore_backup,
 )
-from token_io_mcp.models import DatabaseKind
-from token_io_mcp.storage import (
+from token_io_decoupling_state.storage import (
     DatabaseKindMismatchError,
     FutureSchemaError,
     MigrationChecksumError,

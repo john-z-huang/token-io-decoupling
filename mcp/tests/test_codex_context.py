@@ -8,17 +8,20 @@ from typing import Any, cast
 import pytest
 from mcp import Client
 from mcp.types import RequestParamsMeta, TextContent
-
-from token_io_mcp.binding import BindingError
-from token_io_mcp.codex_context import CodexCallerBoundProvider, parse_codex_request_context
-from token_io_mcp.server import create_server
-from token_io_mcp.state_models import (
+from token_io_decoupling_core.binding import BindingError
+from token_io_decoupling_core.codex_context import (
+    CodexCallerBoundProvider,
+    parse_codex_request_context,
+)
+from token_io_decoupling_core.state_models import (
     BindingIdentity,
     HostCapability,
     HostGuard,
     SessionRole,
     VerifiedChildBinding,
 )
+
+from token_io_decoupling.server import create_server
 
 
 class SyntheticContextProvider:
@@ -186,6 +189,49 @@ def test_real_sdk_meta_guards_protected_tools_and_is_request_scoped(
             final_state = await read_with(_meta("codex-context-test-thread", "opaque-session-g"))
             assert not final_state.is_error
             assert json.loads(_text(final_state))["revision"] == 0
+
+    asyncio.run(run())
+
+
+def test_profile_sdk_meta_guards_root_and_shared_operations(tmp_path: Path) -> None:
+    provider = SyntheticContextProvider()
+    root = create_server(
+        provider,
+        profile="root",
+        require_codex_context=True,
+        state_root=tmp_path / "profile-state",
+    )
+    share = create_server(
+        provider,
+        profile="share",
+        require_codex_context=True,
+        state_root=tmp_path / "profile-state",
+    )
+
+    async def run() -> None:
+        async with Client(root, mode="auto") as client:
+            denied = await client.call_tool(
+                "workflow_open", _open_arguments(), meta=_meta("wrong-thread")
+            )
+            assert denied.is_error and "Codex caller context" in _text(denied)
+            assert not (tmp_path / "profile-state").exists()
+            opened = await client.call_tool(
+                "workflow_open",
+                _open_arguments(),
+                meta=_meta("codex-context-test-thread", "profile-open-session"),
+            )
+            assert not opened.is_error
+        async with Client(share, mode="auto") as client:
+            denied = await client.call_tool(
+                "state_get", {"payload": {}}, meta=_meta("wrong-thread")
+            )
+            assert denied.is_error and "Codex caller context" in _text(denied)
+            state = await client.call_tool(
+                "state_get",
+                {"payload": {}},
+                meta=_meta("codex-context-test-thread", "profile-read-session"),
+            )
+            assert not state.is_error
 
     asyncio.run(run())
 
