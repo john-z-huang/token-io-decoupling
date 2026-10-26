@@ -5,8 +5,10 @@
 ## Actions
 
 1. Load the [state record](../layer-01-fundamental-concepts/delegation-state-record.md), [mode confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md), [count gate](../layer-01-fundamental-concepts/delegation-mode-count-gate.md), and [re-entry](../layer-01-fundamental-concepts/delegation-mode-reentry.md) owners. Do not eagerly load child creation, dispatch, lifecycle, or reuse policies before their actual route step.
-2. Confirm the parent-controlled record contains a selected mode and locked count, with `child_count: 0` and `allocations: []` for Single-Agent or exactly `child_count` reserved, initially unbound/unassigned/pending slots for Multi-Agent. If `mode_source: default`, verify Multi-Agent with `child_count: 1` and exactly one reserved slot. If `mode_source: timeout-default`, accept it only as a legacy readback and verify Single-Agent with `child_count: 0` and `allocations: []`; new conversations never use this source. Releasing this gate does **not** release a concrete Interaction Slice or initialize or authorize child creation.
+2. Confirm the parent-controlled record contains a selected mode and locked count, with `child_count: 0` and `allocations: []` for Single-Agent or exactly `child_count` reserved, initially unbound/unassigned/pending slots for Multi-Agent. If `mode_source: default`, verify Multi-Agent with `child_count: 1` and exactly one reserved slot. If `mode_source: timeout-default`, accept it only as a legacy readback and verify Single-Agent with `child_count: 0` and `allocations: []`; new conversations never use this source. Releasing this gate does **not** release a concrete Interaction Slice, initialize a store, or authorize child creation. Any first Enhanced Root persistence occurs only later, after Session identity, role, and Context Firewall checks pass, as composed by the route.
 3. For a later directive, reuse the locked mode/count; refresh task-specific evidence without reopening the mode/count gate. If required record/capability evidence is missing, block the dependent route. Role allocation and child operations are performed and checked at their designated route steps.
+
+4. Do not request optional semantic advice before Mode and Session have passed and an authorized Root context exists. Later advice cannot alter the locked mode/count or reopen this gate; apply [Decisions Advisory](../layer-01-fundamental-concepts/decisions-advisory.md) when advice is explicitly enabled.
 
 ## Pass condition
 
@@ -14,7 +16,7 @@ The parent record has exactly one valid released mode, a fixed count, valid rese
 
 ## Boundary
 
-This checkpoint composes and validates the state-record, mode/count, and conditional child-dispatch references. It does not independently decide mode, topology, creation, allocation, reuse, exceptions, lifecycle, or count.
+This checkpoint composes and validates the state-record, mode/count, and conditional child-dispatch references. It does not independently decide mode, topology, creation, allocation, reuse, exceptions, lifecycle, or count. A passing Mode gate never initializes or migrates a database; store selection and first-write timing belong to the route and the [Enhanced State Store](../layer-01-fundamental-concepts/enhanced-state-store.md) owner.
 
 ## Related concepts
 

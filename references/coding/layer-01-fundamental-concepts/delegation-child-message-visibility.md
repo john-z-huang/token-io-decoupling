@@ -6,13 +6,13 @@ This module owns only the conversation visibility and body evidence for text mes
 
 ## General rules
 
-### Show before sending; show before relying
+### Configured display; complete body before reliance
 
-When the parent or a child Agent is the sender, it must display the complete safe outbound body as ordinary text in its current sending conversation before calling a messaging tool, and confirm that the displayed text exactly matches the payload. This applies both to parent-to-child and child-to-parent messages.
+Apply the configured [session audit visibility](session-audit-visibility.md) preset. The Worker must keep the complete safe inbound and outbound bodies visible in its own conversation. For Root messages, show the configured preview, summary, or full body; when full display is required, show the complete safe body before sending and confirm it exactly matches the payload. A Worker final result already visible in full is its outbound copy and must not be duplicated.
 
-After a message arrives, the parent must display its complete safe returned body as ordinary text in the primary parent conversation before relying on, summarizing, or taking dependent action on it. Tool-call cards, activity events, delivery receipts, task status, or notices such as “message sent” are not the message body.
+After a message arrives, Root must obtain and read the complete actual returned body before relying on it. Root displays the full safe body or configured summary in the primary conversation according to the preset. Tool-call cards, activity events, delivery receipts, task status, or notices such as “message sent” are not the message body and cannot replace it.
 
-If a body is too long, display it in consecutively numbered parts without summarizing or truncating it; clearly mark any redactions. If the runtime does not expose the body and neither the sender nor the parent can reproduce it from the conversation record, do not use the message for a dependent slice.
+When full display is required by role or preset, a long body may be displayed in consecutively numbered parts without summarizing or truncating it; clearly mark any redactions. If the actual body is not exposed and cannot be reproduced from the conversation record, do not use the message for dependent work.
 
 ### Preserve direction and evidence
 
@@ -22,16 +22,17 @@ Identify each message's direction and, when the runtime exposes identity, its in
 
 ### Use the message tool exposed to the current Session
 
-When `collaboration.send_message` is exposed and authorized for either the parent or child Agent's current Session, the sender must display the complete safe outbound body as ordinary text in that same Session before calling the tool and confirm it matches the payload. After receiving a message, the parent must display the complete safe body in the primary parent conversation before relying on it. Tool-call cards, activity events, receipts, and status do not replace the body; block the dependent slice if the complete body cannot be reproduced from the conversation record.
+When `collaboration.send_message` is exposed and authorized, apply the configured preset. A Worker keeps complete safe inbound and outbound bodies visible; a full Root outbound display must match the payload. Root always reads the complete actual return before reliance, while its visible copy follows the preset. If the actual body cannot be reproduced from the conversation record, block dependent work. A visible copy is not proof of original transport bytes.
 
 ## Claude Code CLI / Claude Desktop optimizations
 
 ### Use the exposed SendMessage tool
 
-Anthropic's [Agent Teams documentation](https://code.claude.com/docs/en/agent-teams) describes `SendMessage` as the tool for sending messages between agents. When the current Session exposes and authorizes it to the parent or child Agent, the sender—whether parent or child—must first display the complete safe outbound body as ordinary text in its own conversation, then call the tool and confirm the displayed text matches the payload. After receiving a message, the parent must display the complete safe body in the primary parent conversation before relying on it. If the current path does not expose `SendMessage`, this tool-specific pre-call check does not apply; the general returned-body visibility rule still applies.
+Anthropic's [Agent Teams documentation](https://code.claude.com/docs/en/agent-teams) describes `SendMessage` as the tool for sending messages between agents. When the current Session exposes and authorizes it, follow the general configured preset. A Worker retains complete safe inbound and outbound visibility; Root reads the full actual return before reliance, with display governed by the preset. A visible copy does not prove original transport bytes. If `SendMessage` is unavailable, do not assume it exists; the general evidence requirement still applies.
 
 ## Related concepts
 
 - [Coding Child Creation](delegation-child-creation.md) — locate the creation boundary for a new child prompt.
 - [Coding Child Dispatch](delegation-child-dispatch.md) — locate released-slice and follow-up dispatch requirements.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child status and return handling.
+- [Coding Session Audit Visibility](session-audit-visibility.md) — locate session visibility presets and their precedence.

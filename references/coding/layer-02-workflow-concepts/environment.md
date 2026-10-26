@@ -12,9 +12,13 @@
 6. If the runtime environment does not fit any branch, mark the environment unsupported and stop work that depends on it.
 7. If the evidence still leaves the runtime environment ambiguous, stop the dependent work and return that reference's exact fallback question to the user.
 
+## Optional Enhanced eligibility
+
+After classifying the runtime, determine whether this task actually needs optional Enhanced operations. If not, record `Not applicable` with that reason and continue Native. If it does, consume [Enhanced Workflow Availability](../layer-01-fundamental-concepts/enhanced-workflow-availability.md) and [Enhanced Host Binding](../layer-01-fundamental-concepts/enhanced-host-binding.md): inspect only directly exposed trusted identity and operation-guard evidence, record the evidence and its scope, and keep unknown or absent evidence unavailable. Public rule access is not proof of protected state or write access. Do not initialize or open workflow state here; that follows the completed Mode and Session gates. If Enhanced is required and its binding is missing or insufficient, block that dependent work and report the missing capability; keep independent Native work available.
+
 ## Pass condition
 
-The actual runtime environment is uniquely classified from explicit metadata, or the user has supplied the fallback clarification.
+The actual runtime environment is uniquely classified from explicit metadata, or the user has supplied the fallback clarification. If Enhanced is needed, its selection and required trusted binding evidence are recorded; otherwise the Native `Not applicable` disposition is recorded.
 
 ## Boundary
 
@@ -25,3 +29,5 @@ This checkpoint does not choose an execution mode, bind a model to a role, autho
 - [Coding Session Model](../layer-01-fundamental-concepts/session-model.md) — locate Session topology ownership.
 - [Coding Context Exchange Workspace Boundary](../layer-01-fundamental-concepts/context-exchange-workspace-boundary.md) — locate filesystem and worktree capability ownership.
 - [Coding Delegation Mode Confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation.md) — locate mode-gate capability consumers.
+- [Enhanced Workflow Availability](../layer-01-fundamental-concepts/enhanced-workflow-availability.md) — locate optional path selection and unavailable disposition.
+- [Enhanced Host Binding](../layer-01-fundamental-concepts/enhanced-host-binding.md) — locate trusted identity and operation-guard evidence.

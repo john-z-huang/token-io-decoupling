@@ -2,13 +2,13 @@
 
 [English](delegation-state-record.md) | [简体中文](delegation-state-record_zh_cn.md)
 
-This module owns the task-control record used by Coding delegation. It defines the record's canonical location, ownership, shape, field constraints, and staged presence semantics. It does not decide the mode, define Worker read/write boundaries, create children, allocate roles, or define lifecycle transitions.
+This module owns the task-control record used by Coding delegation. It defines the record's canonical location, ownership, shape, field constraints, and staged presence semantics. It does not decide the mode, define Worker read/write boundaries, create children, allocate roles, or define lifecycle transitions. Session audit configuration is owned by [session audit visibility](session-audit-visibility.md).
 
 ## General rules
 
 ### Ownership
 
-The root parent owns one conversation-level mode/count decision and updates task-specific slices and lifecycle in the same record. The record is task state; it is not stored by editing a policy file. Maintain an explicit structured record in the parent context that can be read back before each route release. A transient child-status result is not the canonical record.
+The root parent owns one conversation-level mode/count decision and updates task-specific slices and lifecycle in the same record. The record is task state; it is not stored by editing a policy file. In Native operation, maintain the canonical structured record in parent context and read it back before each route release; a transient child-status result is not canonical. In Enhanced operation, after an authorized Root store is initialized and its identity and schema are validated, the Root SQLite record is canonical for persistent Enhanced state. Parent context then keeps a readable snapshot or reference, not a competing writable authority. Native-to-Enhanced reconciliation follows [Native Reconciliation](native-reconciliation.md); return to Native follows [Native Authority Transfer](native-authority-transfer.md). Neither transition changes this record's field owners or permits overwriting a valid canonical record.
 
 ### Record shape
 
@@ -25,10 +25,29 @@ allocations: [{allocation_id: <stable child allocation identifier>,
                agent: unbound | <created-agent-identity>, role: unassigned | <role>,
                slice_status: pending | released, interaction_slice, scope, mutations,
                return_conditions, lifecycle, write_content_memo}]
+session_audit: {audit_mode, root_reasoning_cadence, worker_reasoning_cadence,
+                source: {audit_mode: explicit | default, root_reasoning_cadence: explicit | default,
+                        worker_reasoning_cadence: explicit | default},
+                worker_log_visibility: available | unverified | unavailable | Not applicable,
+                worker_log_evidence, audit_config_prompt: {status: unasked | pending | answered |
+                timed_out | unavailable | reused, prompted_at, deadline_at, response_at,
+                resolution: startup_explicit | prior_record | question_reply |
+                question_reply_after_timeout | timeout_default | awaiting_input | unavailable},
+                revision: session-audit/v2}
 lifecycle: pending | running | completed | interrupted
 unavailable_capabilities: [<capability names>]
 block_reason: <required only when gate_status is blocked>
 ```
+
+The `audit_config_prompt` record fields have these meanings; this schema does not define their transitions:
+
+| Field | Legal values / representation | Meaning |
+| --- | --- | --- |
+| `status` | `unasked`, `pending`, `answered`, `timed_out`, `unavailable`, `reused` | Recorded state of the configuration question. |
+| `prompted_at`, `deadline_at`, `response_at` | Observed ISO-8601 UTC timestamp or `null` | Actual prompt time, its recorded deadline, and most recently observed user-reply time. |
+| `resolution` | `startup_explicit`, `prior_record`, `question_reply`, `question_reply_after_timeout`, `timeout_default`, `awaiting_input`, `unavailable` | Recorded source or outcome for effective configuration. |
+
+The selected workflow route owns the decision and any state transition; preserve the record as task state.
 
 | `gate_status` | Mode and count | Allocations and lifecycle | Additional requirement |
 | --- | --- | --- | --- |
@@ -43,6 +62,8 @@ An allocation's role becomes assigned at Role Allocation. A concrete `slice_stat
 `mode_source` records the explicit choice or default and remains fixed for this conversation. New conversations never write `timeout-default`; accept that value only to read back legacy conversations created under the former rule. A legacy `timeout-default` record must remain Single-Agent with `child_count: 0` and `allocations: []`; never reinterpret or migrate it during readback. Allocation lifecycle may differ from top-level task lifecycle. Blocking preserves all confirmed values; later directives use the Re-entry owner without changing locked mode/count.
 
 When `mode_source: default`, the released record must be Multi-Agent with `child_count: 1` and exactly one reserved allocation; this reservation does not initialize a child. Actual child creation remains governed by the output-type and slice gates.
+
+`session_audit` follows the field definitions in [session audit visibility](session-audit-visibility.md). The root parent alone writes it. `audit_config_prompt.status` describes the recorded prompt state; its timestamps are actual UTC observations or `null`, and `resolution` identifies the recorded source/result. The selected route collects and updates these fields. Update log evidence only at first Worker need or on new actual capability/access evidence or failure, never per message. This state never changes `mode`, `child_count`, authorization, allocations, or slice release. Do not copy the complete Root audit record into policy files or Worker-controlled state. An actual `pending` state remains pending until resolved; missing persistence or a failed audit update is not evidence of a reply, default, or completion.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
@@ -64,3 +85,7 @@ Claude Code's `/tasks` lists observable current/background subagent work, wherea
 - [Coding Delegation Re-entry](delegation-mode-reentry.md) — locate mode/count re-entry ownership.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice field ownership.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child lifecycle field ownership.
+- [Coding Session Audit Visibility](session-audit-visibility.md) — locate session audit configuration ownership.
+- [Enhanced State Store](enhanced-state-store.md) — locate Native versus Enhanced persistent-record authority.
+- [Native Reconciliation](native-reconciliation.md) — locate explicit Native-to-Enhanced Root reconciliation.
+- [Native Authority Transfer](native-authority-transfer.md) — locate explicit Enhanced-to-Native Root authority transfer.

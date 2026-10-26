@@ -12,6 +12,10 @@
 
 未观察到的能力标记为未知。不得替换成其他运行环境、模型、参数、Session、工具、权限或推断出的能力。所需能力缺失或未知时，阻塞依赖该能力的切片。
 
+## 可选 Enhanced 宿主能力
+
+任务可能使用 Enhanced 时，应用[增强工作流可用性](../layer-01-fundamental-concepts/enhanced-workflow-availability_zh_cn.md)和[增强宿主绑定](../layer-01-fundamental-concepts/enhanced-host-binding_zh_cn.md)。记录可信身份来源、当前角色及目标操作实际要求的守卫，并附上证据和范围。缺少 Provider、守卫未验证或只有公共规则访问时，应记为 `unavailable`，不得推断能力。不需要 Enhanced 时，记录 `Not applicable` 及原因。必需的 Enhanced 能力缺失时，只阻塞依赖工作；独立且已授权的 Native 工作仍可继续。本清单不初始化状态，也不授权受保护调用。
+
 ## 路线消费
 
 路线消费这份能力清单和状态，只记录各自拓扑差异。按[运行环境与模型厂商支持](../layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)应用分支特定的控制和模型绑定。
@@ -25,3 +29,6 @@
 - [Coding Context Exchange 工作区边界](../layer-01-fundamental-concepts/context-exchange-workspace-boundary_zh_cn.md) — 定位文件系统和 worktree 能力归属。
 - [Coding Delegation Mode Confirmation](../layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md) — 定位模式门禁能力消费者。
 - [Coding Delegation Count Gate](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md) — 定位数量门禁能力消费者。
+
+- [增强工作流可用性](../layer-01-fundamental-concepts/enhanced-workflow-availability_zh_cn.md) — 定位可选路线证据和失败处置。
+- [增强宿主绑定](../layer-01-fundamental-concepts/enhanced-host-binding_zh_cn.md) — 定位可信身份和守卫证据。

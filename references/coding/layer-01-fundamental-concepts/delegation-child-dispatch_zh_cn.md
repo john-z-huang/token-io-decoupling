@@ -10,7 +10,7 @@
 
 模型和 reasoning-effort 设置在创建子代理时确定。派发、任务工作和 follow-up 不检查这些设置，也不得要求子代理检查或报告自身设置。以下任务授权、范围和上下文检查仍须分别执行。
 
-分配或实质派发前，检查输入侧推理职责已完成指令、环境和定义任务所需代码事实的前置确认，具有 source pointer，且具体 Interaction Slice 已放行。父级展示获准目标、修改和返回条件的简洁 Dispatch Preview；前置条件缺失时仍由父级持有 Slice。Worker 只向直接父级返回，不得创建、fork、handoff、向其他 Agent 或 Session 发消息、替换或协调其他 Agent 或 Session，也不得联系任意线程。与已确认前提冲突的发现返回父级重新决策，不得改变模式或数量。
+分配或实质派发前，检查输入侧推理职责已完成指令、环境和定义任务所需代码事实的前置确认，具有 source pointer，且具体 Interaction Slice 已放行。仅当审计预设选择 preview 时，父级才展示获准目标、修改和返回条件的简洁 Dispatch Preview；若预设要求全文展示，则展示完整安全消息正文。前置条件缺失时仍由父级持有 Slice。Root 和 Worker 消息正文按[会话审计可见性](session-audit-visibility_zh_cn.md)预设处理。Worker 在可用时完整展示安全任务提示，并保持安全出站正文完整可见；其完整最终结果就是出站副本，不得重复打印。缺失 Worker 侧正文时，须定向报告审计限制，不得默认为已验证或据此扩大范围。Worker 只向直接父级返回，不得创建、fork、handoff、向其他 Agent 或 Session 发消息、替换或协调其他 Agent 或 Session，也不得联系任意线程。与已确认前提冲突的发现返回父级重新决策，不得改变模式或数量。
 
 ### Named path 和 slice 放行
 
@@ -40,6 +40,7 @@ Claude Code 自定义 subagent 具有自己的上下文，不会自动继承父�
 - [Coding Child Role Allocation](delegation-child-role-allocation_zh_cn.md) — 定位名额和职责分配。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态和恢复归属。
 - [Coding Child Message Visibility](delegation-child-message-visibility_zh_cn.md) — 定位父级会话中的消息可见性要求。
+- [Coding Session 审计可见性](session-audit-visibility_zh_cn.md) — 定位 Root 和 Worker 可见性预设。
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement_zh_cn.md) — 定位获准的复用和替换。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位上下文记录的 Memory 命名与授权。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 边界控制。

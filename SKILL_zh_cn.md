@@ -20,13 +20,16 @@ Coding 的委派和 Session 拓扑规则拆分为原子 reference：状态记录
 1. 读取 [Coding 工作流](workflows/coding_zh_cn.md)并完成 Contract 检查点；确认任务约束和验收条件。
 2. 完成运行环境检查点；建立或加载运行环境能力清单，确认本任务所需能力。
 3. 使用该清单完成模式检查点。本次会话首次 Coding 指令遵循用户明确给出的有效模式/数量选择或自定义指令映射，不再询问。否则呈现 Mode reference 中的四项菜单。只有必须放行 Mode gate 且没有有效用户选择时，才选择选项 1，记录 `mode_source: default` 和 `child_count: 1`；明确表示无偏好时也选择该缺省值。不得从待回复的提问或预选项推断用户已作选择。选项 3 数量无效，或选项 4 输入有歧义/无效时，只提出一个聚焦补问并保持 Mode 未放行。这只预留容量：展示菜单、选择模式或锁定数量均不得初始化子代理。后续指令沿用已锁定模式/数量。
-4. 根据该记录只选择一条路线：`mode: Single-Agent Coding` 时使用[单代理路线](references/coding/layer-03-workflows/coding-single-agent_zh_cn.md)；`mode: Multi-Agent Coding` 且已锁定正整数 `child_count` 时使用[多代理路线](references/coding/layer-03-workflows/coding-multi-agent_zh_cn.md)。
-5. 按所选路线的编号检查点顺序逐项执行。只加载当前步骤需要的 reference；每项完成或明确处置后才能进入下一项。
-6. 任务改变方向或最终验收前，返回 [Coding 工作流](workflows/coding_zh_cn.md)；报告 `COMPLETE` 前确认路线的完成证据。
+4. 加载[会话审计可见性](references/coding/layer-01-fundamental-concepts/session-audit-visibility_zh_cn.md)，了解配置值和可见性语义。所选路线的 S04/M04 检查点负责配置提问、计时、恢复和迁移；选择路线前不要解析此工作流门禁。
+5. 根据该记录只选择一条路线：`mode: Single-Agent Coding` 时使用[单代理路线](references/coding/layer-03-workflows/coding-single-agent_zh_cn.md)；`mode: Multi-Agent Coding` 且已锁定正整数 `child_count` 时使用[多代理路线](references/coding/layer-03-workflows/coding-multi-agent_zh_cn.md)。
+6. 按所选路线的编号检查点顺序逐项执行。只加载当前步骤需要的 reference；每项完成或明确处置后才能进入下一项。
+7. 任务改变方向或最终验收前，返回 [Coding 工作流](workflows/coding_zh_cn.md)；报告 `COMPLETE` 前确认路线的完成证据。
 
 ## 适用范围
 
 仓库或项目探索、实现、重构、调试、测试、文档、开发工具输出以及非简单 Git 工作均使用 Coding。Coding 工作流负责共用队列、模块组合、运行环境选择、模式路由、checkpoint、验证边界、文档/Git 边界和验收。
+
+可选增强子系统契约见[增强工作流架构契约](ENHANCED_ARCHITECTURE_zh_cn.md)；现有 Native 工作流仍然适用。
 
 ## 硬约束
 

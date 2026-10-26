@@ -23,7 +23,7 @@ Slice 是控制单元，不是逐命令脚本。只要 Contract 和边界未变�
 
 ### Control Checkpoint
 
-到达实质性边界时，消费[执行阶段反馈](execution-stage-feedback_zh_cn.md)定义的 Progress Signal，附加当前 `Unreleased boundary`，再选择一个最终控制结果：`Continue`、`Amend` 或 `Stop`。`Continue` 只放行下一个有界 Slice；`Amend` 必须先修改 Contract 或边界再恢复执行。`Evidence-on-Demand` 是暂停放行并请求证据的中间动作，取得证据后重新经过本检查点；它不是第四种最终授权结果。单代理路线中这是内部推理暂停，不模拟发给自己的消息。
+到达实质性边界时，消费[执行阶段反馈](execution-stage-feedback_zh_cn.md)定义的 Progress Signal，附加当前 `Unreleased boundary`，再选择一个最终控制结果：`Continue`、`Amend` 或 `Stop`。Control 聚焦实质偏离、新证据或真实边界；不要把已放行 slice 变成逐命令审批，也不要重复无变化状态。`Continue` 只放行下一个有界 Slice；`Amend` 必须先修改 Contract 或边界再恢复执行。`Evidence-on-Demand` 是暂停放行并请求证据的中间动作，取得证据后重新经过本检查点；它不是第四种最终授权结果。单代理路线中这是内部推理暂停，不模拟发给自己的消息。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
@@ -74,3 +74,4 @@ Claude Code 的 `PostToolUse` 在操作后提供观察结果，不能倒过来�
 - [Coding Execution Stage Feedback](execution-stage-feedback_zh_cn.md) — 定位有界阶段反馈规则。
 - [Coding Context Exchange](context-exchange_zh_cn.md) — 定位上下文传输归属。
 - [Coding 子 Agent 生命周期](delegation-child-lifecycle_zh_cn.md) — 定位已放行 slice 的委派生命周期归属。
+- [Coding Session 审计可见性](session-audit-visibility_zh_cn.md) — 定位审计配置和摘要频率。

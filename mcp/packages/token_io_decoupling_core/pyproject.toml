@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "token-io-decoupling-core"
+version = "0.1.0"
+description = "Token I/O core library"
+requires-python = ">=3.11"
+dependencies = ['pydantic>=2.12,<3']
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/token_io_decoupling_core", "src/token_io_decoupling_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/pyproject.toml", "/hatch_build.py", "/src/**"]
+
+[tool.hatch.build.hooks.custom]
+path = "hatch_build.py"

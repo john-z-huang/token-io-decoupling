@@ -1,0 +1,98 @@
+# Enhanced Workflow Architecture Contract
+
+[English](ENHANCED_ARCHITECTURE.md) | [简体中文](ENHANCED_ARCHITECTURE_zh_cn.md)
+
+This document owns the component and interface contract for the optional Enhanced workflow architecture. It maps stable rule nodes to existing owners without copying their policies. Core Python, SQLite, registry-loading, MCP stdio, and Decisions-advisory components are implemented and tested in this repository. This implementation evidence does not establish a trusted production host binding or real Codex/ChatGPT Desktop Enhanced availability; that capability remains unavailable/unverified until a real host provides attested identity and actual operation guards.
+
+## Components and authoritative data
+
+The implementation uses an eight-package uv workspace under `mcp/`, with Pydantic, `sqlite3`, the official MCP SDK v2, and the OpenAI SDK. A subprocess SDK test has verified stdio discovery and protected calls through a test-only trusted embedding harness, negotiating protocol revision `2026-07-28`. This verifies the implementation and wire contract, not a production desktop host's identity attestation or OS permission enforcement. The unified production launcher exposes four MCP profiles with fixed, disjoint tool inventories even when unbound; protected calls still deny missing or insufficient bindings. The [MCP development guide](mcp/DEVELOPMENT.md) owns executable names, tool membership, shared role-aware adapters, and installation/registration instructions. Discovery does not establish identity or operation guards.
+
+Markdown owner documents remain the sole policy-text authority. The JSON registry at [`mcp/rule-registry.json`](mcp/rule-registry.json) maps stable node IDs to owner headings, facts, evidence, branches, evaluation mode, failure action, and successor checkpoints. It must not duplicate owner prose. At load time, the implementation reads the current owner text and computes its hash; it does not maintain a second hand-authored policy body or stored node hash. Ordinary prose changes become visible through dynamic rereads. A change to node structure, branch enums, or hard constraints requires a compatible implementation and test update under the changed `contract_version`.
+
+SQLite stores structured control state, evidence references, semantic-content references and hashes, and indexes. Full Contract, Decision Brief, Plan, Memo, Capsule, Handoff, and other semantic bodies remain in Markdown or Serena Memory under their existing owners. SQLite indexes do not replace formal messages, visibility requirements, or shared-worktree conflict controls.
+
+Persistence authority and access boundaries are owned by [Enhanced State Store](references/coding/layer-01-fundamental-concepts/enhanced-state-store.md); schema compatibility, migrations, backup, and restore are owned by [Enhanced Schema Migrations](references/coding/layer-01-fundamental-concepts/enhanced-schema-migrations.md). In Native operation, the parent-context record remains canonical and is read back under its existing owner. In Enhanced operation, Root SQLite is canonical only after authorized initialization and identity/schema validation; parent context then remains a readable snapshot or reference. Mode pass never initializes or migrates a store. The first Root write follows Mode and verified Session identity, role, and Context Firewall checks. Root audit remains Root-only; on Enhanced, confirm its persistence in the authorized store and read it back, while Native reads back its canonical parent-context record. A pending or failed audit update is not completion. A Worker store is initialized only after its real identity is bound to the released allocation and Enhanced is selected.
+
+## Implementation packages
+
+The uv workspace root and seven members are separate Python distributions, each with its own build metadata. The root owns the only console script; the role libraries export registrations rather than executables.
+
+| Distribution | Project | Canonical import / responsibility |
+| --- | --- | --- |
+| `token-io-decoupling` | [workspace root](mcp/pyproject.toml) | `token_io_decoupling`: CLI, Codex setup, server composition |
+| `token-io-decoupling-core` | [core](mcp/packages/token_io_decoupling_core/pyproject.toml) | `token_io_decoupling_core`: contracts, bindings, profiles, rules and packaged resources |
+| `token-io-decoupling-state` | [state](mcp/packages/token_io_decoupling_state/pyproject.toml) | `token_io_decoupling_state`: state facade, domain operations, transactions and migrations |
+| `token-io-decoupling-transport` | [transport](mcp/packages/token_io_decoupling_transport/pyproject.toml) | `token_io_decoupling_transport`: MCP registration, request scopes and common wire schemas |
+| `token-io-decoupling-workflow` | [workflow](mcp/packages/token_io_decoupling_workflow/pyproject.toml) | `token_io_decoupling_workflow`: rule/evaluation tools and optional Decisions advice |
+| `token-io-decoupling-root-agent-tools` | [root tools](mcp/packages/token_io_decoupling_root/pyproject.toml) | `token_io_decoupling_root`: Root tool registrations |
+| `token-io-decoupling-worker-agent-tools` | [worker tools](mcp/packages/token_io_decoupling_worker/pyproject.toml) | `token_io_decoupling_worker`: Worker tool registrations |
+| `token-io-decoupling-share-tools` | [shared tools](mcp/packages/token_io_decoupling_shared/pyproject.toml) | `token_io_decoupling_shared`: shared state/evidence registrations |
+
+The main dependency direction is:
+
+```mermaid
+flowchart TD
+    CLI[Unified CLI package] --> Roles[Four role packages]
+    CLI --> Transport[Transport package]
+    CLI --> State[State package]
+    CLI --> Core[Core package]
+    Roles --> Transport
+    Roles --> State
+    Roles --> Core
+    Transport --> State
+    Transport --> Core
+    State --> Core
+```
+
+Core has no upward implementation imports. State is independent of transport and launcher; transport does not import role packages. Workflow-specific advisory payloads belong to workflow, avoiding a transport/workflow cycle. The state facade delegates to bounded owners for evidence/evaluation, control, Native recovery, delegation, Worker operations, dispatch, persistence, validation and projections. Compatibility signatures and the overridable Worker dispatch seam remain explicit.
+
+The renamed `token_io_decoupling_mcp` adapter namespace uses a core-owned `pkgutil.extend_path` initializer; core, state and launcher own disjoint adapter files. Functional implementations use their canonical package names. All released migration sources remain byte-for-byte unchanged. The two v1 migration files still import `DatabaseKind` from the historical `token_io_mcp.models` path; the state loader supplies that one module name temporarily while importing migrations, then removes it. Use the renamed adapter migration paths for direct imports; importing frozen state migration modules directly bypasses the scoped compatibility loader and is unsupported. This migration-only alias is not a general legacy import namespace. Build tests check independent artifacts, no duplicate wheel file ownership, and legacy database history.
+
+## Identity and state boundaries
+
+The Root database is the logical owner of root control state. A Worker database contains only its read-only assignment snapshot and that Worker’s own progress, milestones, local checks, evidence, blockers, and recovery context. Root reads only authorized summaries and evidence, verifies them, and performs root-level transitions; a Worker report does not itself confirm root completion.
+
+The intended layout is `~/.local/state/token-io-decoupling/<project-id>/<root-session-id>/workflow.sqlite3` with worker stores under `subagents/<subagent-session-id>/worker.sqlite3`. Project and session bindings must come from trusted runtime context. A caller-provided identity, path, or `authorized=true` flag is insufficient. A Worker store is initialized only after the real child identity is verified and bound to its reserved allocation. Paths are derived from trusted bindings and must reject traversal and out-of-bound symlinks.
+
+Mode/count, Allocation, state Revision, rule/schema compatibility version, and the implementation/content, documentation, and Git metadata Verification Epochs are separate dimensions. They must never be substituted for one another. Their governing policies remain in their existing owners; see Related concepts.
+
+## Interfaces and transaction contract
+
+The MCP interface provides public read-only capability, rule-context, and schema-status operations; Root operations for opening and reading workflow state, reserving/binding allocations, checking/releasing slices, evaluating checkpoints, recording evidence, transitioning state, reading Worker summaries, and reconciling; and Worker operations for reading its assignment/state, recording progress/evidence, reporting blockers, and retrieving recovery context. Inputs use explicit types and enums. Writes include an expected Revision and idempotency key and return the resulting status, reason, rule version, evidence references, current Revision, and follow-up requirements. Arbitrary SQL, shell, or free-form prompt execution is outside this interface.
+
+Root and Worker stores have independent migration sequences, beginning at `v0001`. Each database records its kind and migration version, name, checksum, applied time, and duration. An authorized write open validates identity, permission, path, database kind, migration history, checksum, and program compatibility; takes an exclusive per-database migration lock; backs up before pending migrations; and applies each migration with its history record in one transaction. It validates schema and integrity before enabling business writes. Read-only diagnostics do not trigger migration. Published migrations are immutable; no automatic downgrade is provided. A failure rolls back the current migration and preserves earlier successful migrations and the backup. Missing history, checksum mismatch, future schema, corruption, or incompatibility blocks enhanced writes; it must not silently recreate the database.
+
+Schema status is role-bound, read-only, and limited to the caller’s own Root or Worker store. It does not create files/directories, migrate, refresh capability snapshots, advance Revision, or change receipts. Root reads return bounded recovery indexes; omitted items are retrievable by a collection- and Revision-bound cursor, and stale cursors fail without writes. Session-audit values and prompt timing remain owned by the existing audit reference; the store contract covers persistence authority and the pending/readback boundary.
+
+Single-database transitions use transactions, constraints, monotonic Revision checks, and idempotency. Cross-database exchange uses event IDs and parent confirmation; it does not assume atomic commit across Root and Worker stores.
+
+## Native and Enhanced availability
+
+Native is the default operation: the Agent reads the authoritative documents and maintains the existing structured records and semantic bodies according to their owners. The [Enhanced Workflow Availability](references/coding/layer-01-fundamental-concepts/enhanced-workflow-availability.md) owner defines selection and unavailable disposition; the [Enhanced Host Binding](references/coding/layer-01-fundamental-concepts/enhanced-host-binding.md) owner defines trusted identity and per-call guard evidence. Public rule access does not prove Enhanced state or permission access. The current SDK and test harness evidence does not establish a real desktop host binding, so actual Codex/ChatGPT Desktop Enhanced availability remains unverified. Keep Native as the fallback and block only operations dependent on missing Enhanced capabilities. Mode/count and Native reconciliation retain their existing owners.
+
+The Decisions API is disabled by default; ordinary tests use mocks. Real requests require explicit enablement and outbound-data authorization, which this architecture contract does not itself grant. Root and every delegated Agent must enforce the same prerequisite in project functionality and real test/smoke code: read both local process environment values `OPENAI_API_KEY` and `OPENAI_BASE_URL` at invocation time, require both to be nonempty, and pass them explicitly to the SDK. If either is absent, do not create a client or send a real request. Hardcoded or caller-supplied replacements and the SDK's default endpoint are forbidden; never print or persist the values. Synthetic values are only for mocks without network requests. See the [development guide](mcp/DEVELOPMENT.md#required-configuration-for-real-api-requests) for the execution constraint.
+
+The Decisions advisor is implemented as optional advice over five fixed semantic nodes. A real 325-token synthetic smoke exercised the advisor directly with temporary Root state and rule loading; it did not pass through the MCP handler or a real host. API advice remains separate from Core results, never authorizes an action or releases a slice. The [Decisions Advisory](references/coding/layer-01-fundamental-concepts/decisions-advisory.md) owner defines the five-node lifecycle, input binding, stale-result handling, and explicit direct-owner fallback. If an explicitly enabled API is unavailable, times out, rejects input, or returns invalid/stale output, switch semantic judgment to the document path. If MCP and SQLite remain available, continue maintaining their state.
+
+An Enhanced outage does not itself transfer authority to Native. Before continuing state-dependent work, Root must establish the last committed state, resolve any indeterminate in-flight operation from its receipt or verified readback when available, freeze competing writers with actual evidence, and retain a complete verified canonical Native record. A timeout is not proof of rollback or a stopped server. Unknown essential state blocks dependent work; independent authorized work may continue. Native selected from the start needs no transfer. A damaged or incompatible database is never directly written through Native fallback.
+
+After service recovery, Root compares the effective Native record with the existing bound database before normal Enhanced writes. Matching records require explicit confirmation; material supported differences require an explicit full-set Root decision that preserves both records and references. Resolution advances Revision and every Epoch beyond both reviewed timelines, preserves old history, and requires fresh checks and Control before another Slice; previous verification and Acceptance do not carry across the recovery floor. Unsupported identity, lifecycle, Worker, or pending-dispatch differences remain blocked. No recovery creates a new Run, resets locked Mode/count or audit, or substitutes reference hashes for actual host authorization.
+
+The [Native Authority Transfer](references/coding/layer-01-fundamental-concepts/native-authority-transfer.md) owner defines the transfer protocol and its unavailable-capability boundary. The [Native Reconciliation](references/coding/layer-01-fundamental-concepts/native-reconciliation.md) owner defines comparison, supported adjudication, and the checks before Enhanced writes resume. These owners do not establish an implemented host-stop or full export capability.
+
+## Rule-node mapping
+
+[`mcp/rule-registry.json`](mcp/rule-registry.json) is a machine-readable mapping, not a policy source. Each node has a stable ID, owner path and existing section heading, required facts and evidence, legal branches, evaluation mode (`direct`, `deterministic`, `semantic`, or `hybrid`), failure action, and successor checkpoint IDs. `contract_version` identifies the shape of this mapping. IDs are stable and must not be reassigned to different concepts. Node hashes are computed from loaded owner text and are not maintained in the registry.
+
+Registry consumers should load only the node and direct owner heading needed for the current checkpoint. They reread the same-source, same-language mapping and heading for each request; an excerpt does not recursively load linked owners. If a decision depends on a linked owner absent from the excerpt, that owner must be obtained and checked separately. They should not scan the entire repository. Direct references remain authoritative for interpretation; deterministic checks enforce only explicit structured constraints; semantic classification may assist but cannot authorize; hybrid evaluation combines a semantic result with deterministic hard-constraint checks. See [Enhanced Rule Context](references/coding/layer-01-fundamental-concepts/enhanced-rule-context.md) for bounded retrieval, source, language, and freshness requirements.
+
+## Related concepts
+
+- [Coding Delegation State Record](references/coding/layer-01-fundamental-concepts/delegation-state-record.md) — root control-record ownership.
+- [Enhanced State Store](references/coding/layer-01-fundamental-concepts/enhanced-state-store.md) — persistence authority, Root/Worker scope, and bounded state indexes.
+- [Enhanced Schema Migrations](references/coding/layer-01-fundamental-concepts/enhanced-schema-migrations.md) — schema diagnostics, migration, backup, and restore boundaries.
+- [Enhanced Rule Context](references/coding/layer-01-fundamental-concepts/enhanced-rule-context.md) — bounded retrieval of current registered owner headings.
+- [Coding Execution Control](references/coding/layer-01-fundamental-concepts/execution-control.md) — slice and control-boundary ownership.
+- [Verification Epoch Checkpoint](references/coding/layer-02-workflow-concepts/verification-epoch.md) — epoch invalidation ownership.
+- [Coding workflow selector](workflows/coding.md) — route navigation.

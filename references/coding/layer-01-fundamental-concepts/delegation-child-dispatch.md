@@ -10,7 +10,7 @@ This module owns material Dispatch Preview and the Worker boundary. It consumes 
 
 Model and reasoning-effort settings are established during child creation. Do not check them during dispatch, task work, or follow-up, or ask the child to inspect or report them. Apply the remaining task authorization, scope, and context checks below independently.
 
-Before assigning or materially dispatching to a child, verify that Input-side Reasoning has completed its prerequisite instruction, environment, and task-defining code-fact confirmations with source pointers, and that a concrete Interaction Slice was released. The parent shows a concise Dispatch Preview of the authorized objective, mutations, and return conditions; a missing prerequisite keeps the slice with the parent. A Worker returns only to its direct parent and cannot create, fork, hand off to, message, replace, or coordinate another Agent or Session, or contact arbitrary threads. Contradictory findings return to the parent for a new decision, not a new mode or count.
+Before assigning or materially dispatching to a child, verify that Input-side Reasoning has completed its prerequisite instruction, environment, and task-defining code-fact confirmations with source pointers, and that a concrete Interaction Slice was released. The parent shows a concise Dispatch Preview of the authorized objective, mutations, and return conditions only when the configured audit preset selects preview; when it selects full display, show the complete safe message body. A missing prerequisite keeps the slice with the parent. Apply the configured [session audit visibility](session-audit-visibility.md) preset to Root and Worker message bodies. Worker keeps complete safe task-prompt visibility when available and complete safe outbound visibility; its complete final result is the outbound copy and must not be duplicated. A missing Worker-side body is reported as a specific audit limitation, not silently treated as verified or used to expand scope. A Worker returns only to its direct parent and cannot create, fork, hand off to, message, replace, or coordinate another Agent or Session, or contact arbitrary threads. Contradictory findings return to the parent for a new decision, not a new mode or count.
 
 ### Named paths and slice release
 
@@ -40,6 +40,7 @@ A Claude Code custom subagent starts with its own context and does not automatic
 - [Coding Child Role Allocation](delegation-child-role-allocation.md) — locate slot and role allocation.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state and recovery ownership.
 - [Coding Child Message Visibility](delegation-child-message-visibility.md) — locate parent-conversation message visibility requirements.
+- [Coding Session Audit Visibility](session-audit-visibility.md) — locate Root and Worker visibility presets.
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.md) — locate authorized reuse and replacement.
 - [Coding Context Exchange](context-exchange.md) — locate context-record Memory naming and authorization.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice boundary controls.

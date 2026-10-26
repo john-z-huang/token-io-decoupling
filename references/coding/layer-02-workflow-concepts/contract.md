@@ -9,6 +9,8 @@
 3. Record material decisions already made, unresolved questions, and acceptance conditions.
 4. Separate facts observed from assumptions. Keep unresolved material questions out of the implementation release.
 
+5. Before Mode and Session pass, establish task intent and eligible output classification from their direct authoritative sources. Record optional advice as `Not applicable` because no authorized Root context exists; do not initialize state early. After authorized context exists, advice remains separate from the Contract and cannot authorize its scope. Apply [Decisions Advisory](../layer-01-fundamental-concepts/decisions-advisory.md).
+
 ## Pass condition
 
 The goal, constraints, decisions, and acceptance conditions are explicit. If required information is missing, stop the dependent slice and ask for or report the exact missing input.

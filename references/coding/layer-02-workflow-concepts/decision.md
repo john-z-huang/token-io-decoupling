@@ -9,6 +9,8 @@
 3. Confirm that the chosen direction stays within the Contract and named paths or mutations.
 4. Release only one concrete Development slice. If a new fact changes the decision, amend the Contract and make a new decision before continuing.
 
+5. After an authorized Root context exists, an explicitly enabled advisory may inform only the current relevant semantic question. Re-read the applicable direct owner and decide from current facts; advice does not choose the Core branch or release the Slice. If advice is unavailable or stale, continue from the direct owner when required evidence is available. Apply [Decisions Advisory](../layer-01-fundamental-concepts/decisions-advisory.md).
+
 ## Pass condition
 
 The next slice has one approved direction, an explicit scope, and a stated boundary beyond which work must pause.

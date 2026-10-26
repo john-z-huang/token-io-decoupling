@@ -8,7 +8,7 @@ This module owns persistence and lifecycle states for created Multi-Agent childr
 
 ### Lifecycle states
 
-Keep each created child's identity and lifecycle persistent in the parent record. Do not close, shut down, archive, delete, or remove a child merely as cleanup. When runtime status is temporary, retain the child ID and status in the parent record after the status is no longer available. While pending or running, wait or send only authorized input. A child may become completed only after returning its final result and evidence.
+Keep each created child's identity and lifecycle persistent in the parent record. Do not close, shut down, archive, delete, or remove a child merely as cleanup. When runtime status is temporary, retain the child ID and status in the parent record after the status is no longer available. While pending or running, use bounded event-driven waits where available. Record a status or lifecycle delta only when it changes; avoid repeat polling and status rewrites when there is no new state. A child may become completed only after returning its final result and evidence. Apply the configured summary cadence; required milestone feedback remains due.
 
 ### Error and interruption
 
@@ -41,3 +41,4 @@ An exhausted `maxTurns`, failed `Agent` call or incomplete/background result is 
 - [Coding Child Dispatch](delegation-child-dispatch.md) — locate Dispatch Preview and Worker boundary.
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.md) — locate authorized repair and replacement relations.
 - [Coding Context Exchange](context-exchange.md) — locate context transport ownership.
+- [Coding Session Audit Visibility](session-audit-visibility.md) — locate audit and summary configuration.

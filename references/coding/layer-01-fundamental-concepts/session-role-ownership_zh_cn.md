@@ -12,7 +12,7 @@
 
 ### Primary 输出角色
 
-负责执行父级已放行的精确任务指令，包括在已确认范围内有界探索、证据压缩、代码/配置物化、已放行 slice 内的修复和临时实现检查。Multi-Agent 路线下，只有正常放行门禁完成后，且任务涉及实际代码/配置实现或本 Skill 指令/参考文档编写编辑时，才创建该子代理。它采用渐进式读取，发现与父级已确认前提冲突的事实时须报告；不得接管前置的指令分析、环境确认或代码细节事实确认，也不能改变未解决的目标、约束、架构或验收标准。它不负责最终验收或非简单 Git 工作。
+负责执行父级已放行的精确任务指令，包括在已确认范围内有界探索、证据压缩、代码/配置物化、已放行 slice 内的修复和临时实现检查。在现有 Contract 内主动设计并运行适用的负面、边界和并发检查，并报告缺口与证据。超出已放行范围的检查/修复，或需要新架构决策的事项，都应先返回父级再行动。Multi-Agent 路线下，只有正常放行门禁完成后，且任务涉及实际代码/配置实现或本 Skill 指令/参考文档编写编辑时，才创建该子代理。它采用渐进式读取，发现与父级已确认前提冲突的事实时须报告；不得接管前置的指令分析、环境确认或代码细节事实确认，也不能改变未解决的目标、约束、架构或验收标准。它不负责最终验收或非简单 Git 工作。遵循配置的 Worker 摘要频率和完整消息可见性，完整最终返回不重复打印。
 
 ### Context Bootstrap/Refresh 职责
 
@@ -28,7 +28,7 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-目前没有针对该厂商的特别优化指令；遵循上述通用规范。
+按默认会话审计策略，Worker 在自身会话中完整展示安全的入站和出站消息，并遵循配置的 Worker 摘要频率。已完整可见的最终结果不重复打印。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
@@ -41,3 +41,4 @@
 - [Coding Child Role Allocation](delegation-child-role-allocation_zh_cn.md) — 定位职责分配归属。
 - [Coding Delegation State Record](delegation-state-record_zh_cn.md) — 定位任务控制状态归属。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位阶段和 slice 边界归属。
+- [Coding Session 审计可见性](session-audit-visibility_zh_cn.md) — 定位 Worker 消息与摘要策略。

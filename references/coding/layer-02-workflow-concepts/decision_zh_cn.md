@@ -9,6 +9,8 @@
 3. 确认选定方向仍在 Contract 以及已命名路径或修改范围内。
 4. 只发布一个具体的 Development 切片。如果新事实改变了决策，继续前先修改 Contract 并重新决策。
 
+5. 存在有效且获授权的 Root 上下文后，明确启用的建议才可辅助当前相关语义问题。重新读取适用的直接 owner，并依据当前事实作出决策；建议不选择 Core 分支，也不释放 Slice。建议不可用或过期时，只要必需证据仍可取得，就依据直接 owner 继续判断。遵循[Decisions 建议](../layer-01-fundamental-concepts/decisions-advisory_zh_cn.md)。
+
 ## 通过条件
 
 下一切片拥有一个获批准的方向、明确范围，以及工作必须暂停的边界。

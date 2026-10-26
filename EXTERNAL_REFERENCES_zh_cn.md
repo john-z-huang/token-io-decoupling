@@ -10,3 +10,22 @@
 | Codex CLI | https://developers.openai.com/codex/cli/ | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md) | 交互式终端使用的背景资料。 |
 | Codex Prompting Guide | https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md) | 将多个建议呈现为编号选项的背景资料。 |
 | Claude Code 工具参考 | https://code.claude.com/docs/en/tools#askuserquestion | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md) | `AskUserQuestion` 界面及其回复行为的背景资料。 |
+| MCP Python SDK v2 | https://py.sdk.modelcontextprotocol.io/whats-new/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验 v2 服务端/客户端 API，并区分协议修订与包版本。 |
+| MCP SDK 测试 | https://py.sdk.modelcontextprotocol.io/get-started/testing/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 设计内存行为测试；它们不能证明任一宿主客户端的兼容性或线上传输交换。 |
+| MCP 协议版本 | https://py.sdk.modelcontextprotocol.io/protocol-versions/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 独立核验现代协议发现与版本证据，不依赖 SDK 主版本标签。 |
+| MCP 客户端传输 | https://py.sdk.modelcontextprotocol.io/client/transports/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验子进程 stdio 测试，不使用 GUI 交互或额外 Agent Session。 |
+| MCP 传输授权 | https://py.sdk.modelcontextprotocol.io/run/authorization/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验 HTTP 令牌校验不能认证 stdio 或进程内客户端；要求独立的可信启动边界。 |
+| OpenAI Decisions | https://developers.openai.com/api/docs/guides/decisions | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验可选语义判断的类型化选项请求及拒绝响应；此引用不授权真实请求。 |
+| OpenAI Python Decisions 参考 | https://developers.openai.com/api/reference/python/resources/decisions/methods/create | [Decisions 建议](references/coding/layer-01-fundamental-concepts/decisions-advisory_zh_cn.md) | 核验可选建议的 SDK 请求、固定选项响应及拒绝契约；本地配置、授权和最终判断仍为独立要求。 |
+| SQLite 备份 API | https://docs.python.org/3/library/sqlite3.html#sqlite3.Connection.backup | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 在已授权的 schema 升级前使用数据库备份 API。 |
+| uv GitHub Actions 集成 | https://docs.astral.sh/uv/guides/integration/github/ | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验 CI 中固定版本的 uv 配置、托管 Python 矩阵与锁定依赖安装；工作流实际运行与本地检查属于不同证据。 |
+| Linux Unix domain socket 凭据 | https://man7.org/linux/man-pages/man7/unix.7.html | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验继承的特权宿主通道所使用的内核对端凭据；不据此证明运行时 Session 映射或操作守卫。 |
+| Apple 对端凭据 | https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getpeereid.3.html | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 独立核验原生 macOS 对端凭据认证，不假设 Python socket API 暴露相同能力。 |
+| Codex MCP | https://learn.chatgpt.com/docs/extend/mcp?surface=cli | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验本地传输控制，不据此推断可信的逐 Agent 身份或文件系统隔离。 |
+| Claude Code MCP 运行时 | https://code.claude.com/docs/en/mcp | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 检查对应客户端的协议行为及依赖运行时的限制。 |
+| Codex stdio 注册 | https://learn.chatgpt.com/docs/extend/mcp | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验一个绝对入口通过不同 profile 参数分别注册四个 MCP 服务；配置与工具发现不证明 Session 身份或操作守卫。 |
+| Claude Code MCP 接口 | https://code.claude.com/docs/en/mcp | [Codex 调用者匹配](mcp/CODEX_CALLER_CONTEXT_zh_cn.md) | 应用 Codex 请求元数据前核对对应运行时；本次查阅的页面未说明等价的 threadId/sessionId 契约。 |
+| Claude Code Hook 输入 | https://code.claude.com/docs/en/hooks#common-input-fields | [Codex 调用者匹配](mcp/CODEX_CALLER_CONTEXT_zh_cn.md) | 区分 Hook session_id 与 MCP 请求元数据，并避免将两者视作独立宿主认证。 |
+| Serena Codex setup 实现 | https://github.com/oraios/serena/blob/main/src/serena/config/client_setup.py | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 研究显式启动/setup 分离与官方客户端注册，将模式用于单一安装入口，不根据 context 或 cwd 推断身份。 |
+| uv workspace | https://docs.astral.sh/uv/concepts/projects/workspaces/ | [实现包](ENHANCED_ARCHITECTURE_zh_cn.md#实现包) | 核验独立成员元数据、继承的 workspace sources 与共享 lockfile；源码根项目的 tool 安装另行验证。 |
+| uv tool 环境 | https://docs.astral.sh/uv/concepts/tools/ | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验已安装可执行程序的环境、本地工具安装，以及统一入口的依赖/可执行程序边界。 |

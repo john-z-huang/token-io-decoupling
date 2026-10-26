@@ -22,6 +22,8 @@ Codex 的自定义 Agent profile 可以用只读 `sandbox_mode` 和指定 `mcp_s
 
 ### 有界本地工具与 Skill／MCP 按需披露
 
+不要重复读取未变更的 owner，也不要重新取回当前上下文中已经存在的历史。优先保留稳定上下文并追加小幅 delta。工具输出同时在 `content` 和 `structuredContent` 中重复同一载荷时，只保留下一步决策所需的一种表示；不同证据和来源指针仍须保留。
+
 使用运行环境实际暴露的本地代码检索／文件读取工具定位符号和少量源代码区间，返回稳定路径与证据指针，而非完整构建日志或仓库递归列表。Codex 自定义 Agent 可以通过经审查的 `sandbox_mode: read-only` 和窄范围 `mcp_servers` 限定职责访问；省略的字段可能继承父级设置，父级实时权限覆盖还可能影响创建后的 Child。本地 Codex Skill 先暴露元数据，选中后才加载 `SKILL.md`，references 则按需读取；只选择当前 Slice 所需的概念 owner。CLI／IDE／Desktop Codex 宿主可共享 MCP 配置，通过 `/mcp` 核实连接；不能把插件或独立 Chat Session 的工具访问当成额外 Codex Child 或权限授权。[OpenAI：Skills 渐进式披露](https://learn.chatgpt.com/docs/build-skills)、[OpenAI：MCP 宿主配置](https://learn.chatgpt.com/docs/extend/mcp)、[OpenAI：自定义 Agent](https://learn.chatgpt.com/docs/agent-configuration/subagents)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
