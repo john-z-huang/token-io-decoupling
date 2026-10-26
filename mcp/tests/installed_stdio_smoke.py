@@ -182,8 +182,13 @@ def _exercise_codex_dry_run(cli_path: Path, repo_root: Path) -> None:
         lines = result.stdout.splitlines()
         if not lines or lines[0] != "Dry run: no Codex command or configuration preflight was run.":
             raise AssertionError("installed setup dry-run performed or claimed a preflight")
+        plan = "Would merge env_vars ['OPENAI_API_KEY', 'OPENAI_BASE_URL'] into: " + ", ".join(
+            name for _profile, name in SERVER_NAMES.items()
+        )
+        if not lines or lines[-1] != plan:
+            raise AssertionError("installed setup dry-run omitted the forwarding plan")
         try:
-            commands = [json.loads(line) for line in lines[1:]]
+            commands = [json.loads(line) for line in lines[1:-1]]
         except json.JSONDecodeError as exc:
             raise AssertionError("installed setup dry-run printed invalid command JSON") from exc
         expected = [

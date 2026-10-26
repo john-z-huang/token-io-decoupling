@@ -15,6 +15,7 @@ dependencies = [
   "token-io-decoupling-root-agent-tools==0.1.0",
   "token-io-decoupling-worker-agent-tools==0.1.0",
   "token-io-decoupling-share-tools==0.1.0",
+  "tomlkit>=0.15,<1",
 ]
 
 [project.scripts]

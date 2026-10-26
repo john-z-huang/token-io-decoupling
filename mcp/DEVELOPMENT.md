@@ -41,31 +41,81 @@ Canonical Python implementations use the independent package names shown in the 
 
 ## uv tool installation and Codex setup
 
-Install the workspace root from its source path; uv resolves its declared local workspace dependencies. The directory reported by `uv tool dir --bin` must be on `PATH`, or invoke the installed command by its absolute path. Real setup also requires the Codex CLI on `PATH`:
+Use the [installation script](../scripts/install-codex-mcp.sh) to install or update the package and configure Codex in one invocation, from any working directory:
 
 ```sh
-uv tool install --managed-python --python 3.14 /absolute/path/to/skill/mcp
-token-io-decoupling setup codex --dry-run
-token-io-decoupling setup codex
+bash /absolute/path/to/skill/scripts/install-codex-mcp.sh
 ```
 
-Setup registers all four server names above using one verified absolute executable path and profile-specific arguments. To configure one, use `setup codex --profile root`. `--all` is an optional explicit alias for the default all-profile selection and cannot be combined with `--profile`. To migrate existing registrations after reviewing the dry-run output:
+Prerequisites are Bash 3.2 or later (including macOS `/bin/bash`), `uv`, and the Codex CLI; `uv` and `codex` must be on `PATH`. The script locates `mcp/` relative to itself, runs `uv tool install --force --reinstall --managed-python --python 3.14` against that source, obtains the bin directory with `uv tool dir --bin`, then calls the absolute installed executable's `setup codex`. uv resolves the declared local workspace dependencies; `--reinstall` refreshes them even when only their source or packaged rules changed. The tool bin directory need not be on `PATH`, and no manual directory change, virtual-environment activation, or separate setup command is required. Repeating the command refreshes this tool from the current checkout; it does not uninstall the legacy `token-io-mcp` tool.
+
+Each operation is a single script call. Append the relevant options to the command above:
+
+| Option | Operation |
+| --- | --- |
+| `--dry-run` | Print the install and setup plan without running installation/setup commands or reading/writing configuration. The future tool bin path is symbolic until a real run. |
+| `--profile root` | Register only the selected `workflow`, `root`, `worker`, or `share` profile; the installed package still contains all profiles. |
+| `--all` | Explicitly select the default four profiles; cannot be combined with `--profile`. |
+| `--replace` | Permit setup to replace conflicting or disabled registrations. Omit it to retain conflict rejection. |
+| `--python VERSION` | Choose the uv-managed Python version instead of the default `3.14`. |
+| `--help` | Show usage without installing or configuring anything. |
+
+The script validates arguments and required commands before installation. A failed stage stops subsequent stages and returns a nonzero status. Installation and registration are separate effects: if setup fails after installation, the refreshed tool remains installed; inspect setup's partial-state report before rerunning. Existing registration-preservation and forwarding checks remain in the setup helper. Reload the affected servers after success; the script does not restart the client or supply credential values.
+
+Setup registers all four server names above using one verified absolute executable path and profile-specific arguments, and automatically merges the two required environment-variable names into their `env_vars`. Users who already manage tool installation separately can still invoke `token-io-decoupling setup codex` directly. For example, register and repair forwarding for only the root profile with one installed-command call:
 
 ```sh
-token-io-decoupling setup codex --replace
+token-io-decoupling setup codex --profile root
 ```
 
 The setup separation follows [Serena's client setup implementation](https://github.com/oraios/serena/blob/main/src/serena/config/client_setup.py). Our launcher resolves its executable from the running installation's scripts directory and exact distribution entry-point metadata. It does not infer a project or identity from the startup directory.
 
-Dry-run prints the selected JSON argument vectors and runs no subprocess or Codex preflight. Real setup probes the CLI and reads its listing and nested `transport` data before writes. Enabled registrations with the same resolved command and `start-mcp-server --profile <profile>` arguments are skipped, preserving additional settings. Conflicting or disabled entries require `--replace`. Replacement uses the official same-name upsert, without deleting first. Preflight failures cause no writes; partial apply failures report applied and pending names. Captured configuration and subprocess output are not printed. For a manual equivalent:
+The installed command's `setup codex --dry-run` prints the selected JSON argument vectors and a variable-name forwarding plan, without subprocesses or configuration reads/writes. Real setup validates the local configuration and probes the CLI before registration writes. It reads the listing and nested `transport` data. Enabled registrations with the same resolved command and `start-mcp-server --profile <profile>` arguments skip re-registration but still receive missing forwarding names. Conflicting or disabled entries require `--replace`. Replacement uses the official same-name upsert, without deleting first. A later forwarding failure is reported separately from registrations already applied; inspect the named partial state before retrying. Captured configuration and subprocess output are not printed.
 
-```sh
-codex mcp add token-io-decoupling-root-agent-tools -- /absolute/installed/token-io-decoupling start-mcp-server --profile root
-```
+Because the Codex upsert replaces a registration, setup keeps the previous settings in memory and restores them with forwarding after each successful upsert, before processing the next profile. Stdio replacement preserves additional settings and forwarded names while changing the launcher, profile arguments and intended enabled state. HTTP-to-stdio replacement preserves common tool policies and timeouts, but removes the old transport and authentication fields. If a later profile fails, the report distinguishes completed registrations/forwarding from pending work. Use setup for replacements that must preserve these settings.
 
 After the new launcher and registrations are verified, a migration from this repository's old four-command tool can remove that old distribution with `uv tool uninstall token-io-mcp`. Preserve unrelated tools, servers and settings, and reconnect the MCP client to load the new launch command. Setup does not establish a trusted host binding.
 
 The protocol target remains `2026-07-28`. SDK subprocess tests verify negotiation and calls; actual trusted host integration remains separate evidence.
+
+### Codex stdio environment forwarding
+
+The installer already handles forwarding through setup. For a forwarding-only repair of existing registrations, run the [standalone repair script](../scripts/configure-codex-mcp-env.py) once from any working directory:
+
+```sh
+uv run --managed-python -- /absolute/path/to/skill/scripts/configure-codex-mcp-env.py --server dev-workflow-standards-tools
+```
+
+Add `--dry-run` to preview instead of writing. Alternatively, an existing installation offers the same operation as `token-io-decoupling setup codex-env --server NAME`; these are alternatives, not sequential steps. Repeat `--server NAME` to update multiple existing stdio registrations in one file operation. The default names to merge are `OPENAI_API_KEY` and `OPENAI_BASE_URL`; repeat `--env-var NAME` to supply a custom name list instead. `--config /absolute/path/config.toml` selects a file explicitly; otherwise the target is `$CODEX_HOME/config.toml`, or `~/.codex/config.toml` when `CODEX_HOME` is unset. The script uses PEP 723 metadata to obtain TOML Kit through uv and imports the helper from this checkout, so it does not require an installed MCP package or Codex CLI. The installed command uses the same helper.
+
+The helper merges only selected `env_vars`, preserving other names, comments, settings, and file mode. Repeated successful runs with no missing names leave file bytes and modification time unchanged. It writes through a temporary file in the same directory and detects changes to its input before replacement; avoid concurrent configuration writers, since this is not a cross-client transaction. Missing files or server entries, non-stdio servers, invalid TOML/field types, symlink targets, conflicting remote sources for requested variables, and write failures return safe errors. It creates no server entries, prints no configuration values, and makes no API request. `--dry-run` for this repair reads and validates the selected file but writes nothing; the registration dry-run above deliberately does not inspect configuration.
+
+TOML Kit documents a formatting exception for out-of-order subtables that extend an array of tables. The locked version also normalizes that layout. Before a planned repair write, the helper checks that the unmodified document round-trips byte-for-byte; unsupported layouts are rejected without writing, rather than silently moving unrelated content. Registration setup applies the same check during preflight, before upserts. An already-complete standalone repair remains a no-op even on such a layout.
+
+The following partial example illustrates the resulting settings. Preserve existing `command`, `args`, approvals and additional forwarded names when editing manually:
+
+```toml
+[mcp_servers.token-io-decoupling-workflow]
+env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+
+[mcp_servers.token-io-decoupling-root-agent-tools]
+env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+
+[mcp_servers.token-io-decoupling-worker-agent-tools]
+env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+
+[mcp_servers.token-io-decoupling-share-tools]
+env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+```
+
+Codex must itself have both nonblank variables in its environment. `env_vars` allows and forwards their names to each separately launched MCP process; it neither loads Shell configuration or `.env` files nor copies another terminal's environment. Store no actual values in repository files, setup arguments, logs, or examples. See the [Codex MCP configuration reference](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+
+Both new and matching registrations receive the forwarding merge during setup; `--replace` is followed by the same merge. The installation script includes setup automatically; a bare `uv tool install` still does not register servers or supply credentials. Reload the affected MCP servers after configuration changes; if the client has no reload mechanism, quit and reopen it so new service processes are created. Running processes do not automatically receive changed configuration.
+
+When a terminal invocation works but an MCP request reports missing configuration, check the client process environment, each registration's forwarding names, and whether the service was recreated. Record only variable presence/nonblank status. The current Decisions advisor returns `fallback` with reason `missing_credentials` before creating the SDK client when either required value is absent or blank; do not assume another service's `missing_api_key` error name applies here. Forwarding does not enable API requests, grant outbound-data authorization, or establish a trusted host binding; the separate requirements below still apply.
+
+This TOML setting is specific to Codex. For comparison, Claude Code supports `${VAR}` references in the `env` map of `.mcp.json`; see its [MCP environment expansion reference](https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcpjson). Check that client's own environment and configuration instead of copying Codex TOML into it. This comparison does not configure Claude Code or establish host-binding parity.
+
 
 ## Authenticated host channel
 

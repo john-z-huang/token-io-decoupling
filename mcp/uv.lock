@@ -999,6 +999,7 @@ dependencies = [
     { name = "token-io-decoupling-transport" },
     { name = "token-io-decoupling-worker-agent-tools" },
     { name = "token-io-decoupling-workflow" },
+    { name = "tomlkit" },
 ]
 
 [package.dev-dependencies]
@@ -1018,6 +1019,7 @@ requires-dist = [
     { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
     { name = "token-io-decoupling-worker-agent-tools", editable = "packages/token_io_decoupling_worker" },
     { name = "token-io-decoupling-workflow", editable = "packages/token_io_decoupling_workflow" },
+    { name = "tomlkit", specifier = ">=0.15,<1" },
 ]
 
 [package.metadata.requires-dev]
