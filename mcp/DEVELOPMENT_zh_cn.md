@@ -32,7 +32,7 @@ token-io-decoupling start-mcp-server --profile workflow
 
 | Profile / Codex 服务注册名 | 工具 |
 | --- | --- |
-| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`、`rules_get_context`、`workflow_evaluate`、`evaluate_control_checkpoint` |
+| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`、`rules_get_context`、`workflow_select_child_effort`、`workflow_evaluate`、`evaluate_control_checkpoint` |
 | `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`、`delegation_reserve`、`delegation_bind`、`slice_check`、`slice_release`、`workflow_transition`、`parent_get_worker_summary`、`workflow_reconcile` |
 | `worker` / `token-io-decoupling-worker-agent-tools` | `worker_get_assignment`、`worker_record_progress`、`worker_get_evidence`、`worker_report_blocker`、`worker_get_recovery_context` |
 | `share` / `token-io-decoupling-share-tools` | `database_schema_status`、`state_get`、`record_evidence` |
@@ -140,9 +140,11 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 不得使用硬编码密钥或端点、调用方提供的替代值或 SDK 的默认端点。必须在实际调用时读取这两项本地值，并显式传给 SDK；不得打印或持久化其值。合成配置仅可用于不发送网络请求的 Mock。
 
-API 仍默认关闭。真实请求还必须具备显式启用及出站数据授权；本文档本身不授予这些权限。普通测试套件使用 Mock，真实 smoke 测试需要单独显式 opt-in，并遵守相同的双环境变量要求。
+可选检查点建议仍默认关闭。其真实请求还必须具备显式启用及出站数据授权；本文档本身不授予这些权限。普通测试套件使用 Mock，真实 smoke 测试需要单独显式 opt-in，并遵守相同的双环境变量要求。
 
 经过授权的 embedding 通过 factory 的 `decisions_config` 参数传入 `DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True)` 启用建议。两个评估工具的可选 `semantic_input` 仅限任务意图、输出类别、Contract 变化、验证影响和 Control。返回中 Core 结果与建议分开；未提供语义输入时保留原有 Core 返回。建议不会选择或确认 Gate 分支；过期、无效、拒绝、不可用或重放的建议均回到文档判断。
+
+`workflow_select_child_effort` 是面向 Codex 子代理创建的独立、无状态公共 workflow 操作。显式且获准的调用携带 `payload.request.outbound_data_permitted: true`，仅为本次 Decisions 请求 opt-in；它不依赖可选建议的启用配置或 Enhanced Root store。此声明不能证明授权。按[运行时 owner 的创建契约](../references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)提供经过核实的有界任务事实及受支持档位。结果仅在可用时包含选定 effort，并附请求哈希和回显的切片指纹。父级审阅及当前输入比对仍是必需步骤。拒绝、证据不足、响应无效、缺少配置或服务失败均阻塞选择，不回退到固定 effort。该工具不创建 Agent、不修改工作流状态，也不授权任何门禁。
 
 获得真实合成请求的显式授权后，确保两项本地环境变量已经配置，再从 `mcp/` 单独运行以下命令，不将其并入普通测试：
 
