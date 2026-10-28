@@ -22,14 +22,10 @@
 | Linux Unix domain socket 凭据 | https://man7.org/linux/man-pages/man7/unix.7.html | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验继承的特权宿主通道所使用的内核对端凭据；不据此证明运行时 Session 映射或操作守卫。 |
 | Apple 对端凭据 | https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getpeereid.3.html | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 独立核验原生 macOS 对端凭据认证，不假设 Python socket API 暴露相同能力。 |
 | Codex MCP | https://learn.chatgpt.com/docs/extend/mcp?surface=cli | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验本地传输控制，不据此推断可信的逐 Agent 身份或文件系统隔离。 |
-| Claude Code MCP 运行时 | https://code.claude.com/docs/en/mcp | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 检查对应客户端的协议行为及依赖运行时的限制。 |
 | Codex stdio 注册 | https://learn.chatgpt.com/docs/extend/mcp | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验一个绝对入口通过不同 profile 参数分别注册四个 MCP 服务；配置与工具发现不证明 Session 身份或操作守卫。 |
 | Codex stdio 环境转发 | https://learn.chatgpt.com/docs/extend/mcp?surface=cli | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md#codex-stdio-环境变量转发) | 核验自动 setup 和定向修复所需的逐服务 `env_vars` 转发，并与 API 启用及宿主绑定区分。 |
 | TOML Kit 解析与文档编辑 | https://tomlkit.readthedocs.io/en/latest/quickstart/ | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md#codex-stdio-环境变量转发) | 核验 `parse`/`dumps` 及保留风格的文档编辑；针对锁定包版本的本地测试另行检查定向合并、错误处理和文件写入行为。 |
 | TOML Kit 格式限制 | https://github.com/python-poetry/tomlkit/blob/master/README.md | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md#codex-stdio-环境变量转发) | 本地缓存的上游 README 指出了乱序数组子表的规范化行为；针对锁定版本复现，并在写入前拒绝意外的排版变化。 |
-| Claude Code MCP 环境展开 | https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcpjson | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md#codex-stdio-环境变量转发) | 检查 `.mcp.json` 的 `env` 中对应的 `${VAR}` 引用；不暗示兼容 Codex TOML，也不配置其他客户端。 |
-| Claude Code MCP 接口 | https://code.claude.com/docs/en/mcp | [Codex 调用者匹配](mcp/CODEX_CALLER_CONTEXT_zh_cn.md) | 应用 Codex 请求元数据前核对对应运行时；本次查阅的页面未说明等价的 threadId/sessionId 契约。 |
-| Claude Code Hook 输入 | https://code.claude.com/docs/en/hooks#common-input-fields | [Codex 调用者匹配](mcp/CODEX_CALLER_CONTEXT_zh_cn.md) | 区分 Hook session_id 与 MCP 请求元数据，并避免将两者视作独立宿主认证。 |
 | Serena Codex setup 实现 | https://github.com/oraios/serena/blob/main/src/serena/config/client_setup.py | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 研究显式启动/setup 分离与官方客户端注册，将模式用于单一安装入口，不根据 context 或 cwd 推断身份。 |
 | uv workspace | https://docs.astral.sh/uv/concepts/projects/workspaces/ | [实现包](ENHANCED_ARCHITECTURE_zh_cn.md#实现包) | 核验独立成员元数据、继承的 workspace sources 与共享 lockfile；源码根项目的 tool 安装另行验证。 |
 | uv tool 环境 | https://docs.astral.sh/uv/concepts/tools/ | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验已安装可执行程序的环境、本地工具安装，以及统一入口的依赖/可执行程序边界。 |
