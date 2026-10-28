@@ -17,6 +17,7 @@ EXPECTED_TOOLS = {
         "workflow_capabilities",
         "rules_get_context",
         "workflow_select_child_effort",
+        "workflow_generate_decision_context",
         "workflow_evaluate",
         "evaluate_control_checkpoint",
     },
@@ -94,6 +95,27 @@ async def _exercise(cli_path: Path, profile: str, repo_root: Path) -> None:
                 capability_data = json.loads(_text(capabilities))
                 if capabilities.is_error or capability_data.get("mode_fallback") != "Native":
                     raise AssertionError("installed unbound CLI did not report Native fallback")
+                denied_context = await client.call_tool(
+                    "workflow_generate_decision_context",
+                    {
+                        "payload": {
+                            "request": {
+                                "raw_content": "caller-composed material",
+                                "decision_goal": "Create a short question.",
+                                "output_kind": "decision_question",
+                                "outbound_data_permitted": False,
+                            }
+                        }
+                    },
+                )
+                if denied_context.is_error:
+                    raise AssertionError("public decision-context denial returned a tool error")
+                denied_data = json.loads(_text(denied_context))
+                if (
+                    denied_data.get("status") != "blocked"
+                    or denied_data.get("reason") != "outbound_data_not_permitted"
+                ):
+                    raise AssertionError("unbound installed workflow called without permission")
                 for language, expected_text in (
                     ("en", "Before Mode and Session pass"),
                     ("zh_cn", "Mode 和 Session 通过前"),
