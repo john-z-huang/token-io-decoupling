@@ -77,6 +77,29 @@ class RuleResourcesBuildHook(BuildHookInterface):
                     )
             node["resource_paths"] = packaged_paths
 
+        for owner in (
+            "child-role-selection",
+            "task-assignment",
+            "output-token-routing",
+            "session-role-ownership",
+            "decision-context-generation",
+        ):
+            for language, suffix, heading in (
+                ("en", "", "General rules"),
+                ("zh_cn", "_zh_cn", "通用规范"),
+            ):
+                relative = f"references/coding/layer-01-fundamental-concepts/{owner}{suffix}.md"
+                source = _safe_source(source_root, relative)
+                excerpt = _extract_heading(source.read_text(encoding="utf-8"), heading, relative)
+                staged = staging_root / "rules" / f"{owner}.{language}.md"
+                staged.parent.mkdir(parents=True, exist_ok=True)
+                staged.write_text(excerpt + "\n", encoding="utf-8")
+                source_files.add(source)
+                if self.target_name == "wheel":
+                    force_include[str(staged)] = (
+                        f"token_io_decoupling_core/_resources/rules/{owner}.{language}.md"
+                    )
+
         if self.target_name == "wheel":
             staged_registry = staging_root / "registry.json"
             staged_registry.write_text(

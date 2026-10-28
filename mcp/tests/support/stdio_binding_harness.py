@@ -8,7 +8,7 @@ import threading
 from pathlib import Path
 from typing import cast
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from token_io_decoupling_core import host_binding
 from token_io_decoupling_core.binding import BindingError, BindingProvider

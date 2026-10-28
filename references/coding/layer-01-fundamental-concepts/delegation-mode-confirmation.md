@@ -8,7 +8,7 @@ This module owns the conversation's initial mode selection, default, pre-selecti
 
 ### Session mode selection
 
-On the first Coding directive of a conversation, the root parent must:
+On the first Coding directive in a host-identified Session lifetime, the root parent must:
 
 1. Honor an explicit valid mode/count choice in the directive without asking again.
 2. If no valid choice is present, present this numbered menu. Only when the Mode gate must be released and there is still no valid user choice, use the stated default; an unanswered prompt by itself does not require releasing the gate. Explicit no-preference also selects the default:
@@ -17,7 +17,7 @@ On the first Coding directive of a conversation, the root parent must:
    3. Multi-Agent Coding, custom positive child count (enter the integer as free text).
    4. Custom instruction (enter it as free text; map it to a maintained mode and valid count).
 3. For option 3, require an explicit positive integer. If it is missing or invalid, ask one focused follow-up and keep the Mode gate unreleased; never substitute one. For option 4, use the text only to derive a maintained Single-Agent or Multi-Agent route and valid count, while recording other task constraints. If it is missing, invalid, ambiguous, conflicting, or requests an unmaintained route, ask one focused clarification and keep the gate unreleased. Custom text cannot override higher-priority permissions, safety, repository, authorization, or capability boundaries, and cannot create a route or capability.
-4. Record a valid user selection as `mode_source: explicit`. Record the no-reply or explicit no-preference default as `mode_source: default`, `mode: Multi-Agent Coding`, and `child_count: 1`. Apply the count owner before route release. Keep the mode and count fixed for the current conversation.
+4. Record a valid user selection as `mode_source: explicit`. Record the no-reply or explicit no-preference default as `mode_source: default`, `mode: Multi-Agent Coding`, and `child_count: 1`. Apply the count owner before route release. Keep the mode fixed for the full host Session lifetime, not one user/assistant exchange. Later directives, compaction, and same-Session resume reuse it. The initial count remains fixed except for the Count Gate's exact one-slot increase after actual explicit user approval for a different unoccupied role; this does not reopen mode selection. A Fork with a new Session identity must complete fresh mode/count selection under the Re-entry owner rather than inherit the source Session's choice.
 5. Treat the released Multi-Agent count as reserved capacity only. Displaying the menu, selecting a mode, or locking the count never creates or initializes a child. Creation remains subject to the role, output-type, and released-slice gates.
 
 The default selects a workflow mode and reserved count only; it does not bypass a task-level prohibition or create a capability. If a higher-priority restriction forbids children, it controls. If the required record capability is absent, block the dependent route rather than pretending it exists.

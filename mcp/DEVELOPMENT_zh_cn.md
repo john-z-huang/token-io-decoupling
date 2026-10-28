@@ -18,7 +18,19 @@ uv run --managed-python --locked -- ruff format --check .
 uv run --managed-python --locked -- ty check
 ```
 
-`ty` 覆盖根源码、测试、各库包及 core 构建 Hook。如需将环境放在 checkout 外，设置 `UV_PROJECT_ENVIRONMENT` 为临时目录的绝对路径。测试使用临时数据库、模拟绑定及 API transport，不需要真实 API 请求。从仓库根目录运行[仓库指令](../AGENTS_zh_cn.md)要求的文档检查。
+`ty` 覆盖根源码、测试、各库包及 core 构建 Hook。如需将环境放在 checkout 外，设置 `UV_PROJECT_ENVIRONMENT` 为临时目录的绝对路径。默认测试集使用临时数据库和离线 transport；真实 API 测试必须显式启用。从仓库根目录运行[仓库指令](../AGENTS_zh_cn.md)要求的文档检查。
+
+### 测试组织
+
+每个新增或修改的测试均按实际依赖与行为分类：
+
+| 目录 | 职责 |
+| --- | --- |
+| `tests/mock_api_tests/` | 使用 mock、fake 或 stub 替代协作者、宿主绑定、API client 或 HTTP transport 的测试。 |
+| `tests/unit_tests/` | 不模拟协作者、不请求真实 API，执行实际被测代码的确定性本地单元测试。 |
+| `tests/real_api_tests/` | 必须显式启用、实际发送 Decisions 或 Responses 请求的测试及 smoke 脚本。 |
+
+混合模块按测试用例拆分，marker 或文件名不能替代正确的目录归属。共享 fixture 和子进程辅助程序可以放在这三个用例目录之外，但不得成为未分类测试用例的存放处。迁移时保留断言、参数化与收集覆盖，同步更新导入、仓库根路径定位及 CI/脚本引用。普通 pytest 必须收集并跳过真实请求用例，且跳过前不读取凭据、不发送请求。后续新增测试同样遵守这些目录规则。
 
 ## 统一入口与 profile 工具
 
@@ -32,8 +44,8 @@ token-io-decoupling start-mcp-server --profile workflow
 
 | Profile / Codex 服务注册名 | 工具 |
 | --- | --- |
-| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`、`rules_get_context`、`workflow_generate_decision_context`、`workflow_select_child_effort`、`workflow_evaluate`、`evaluate_control_checkpoint` |
-| `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`、`delegation_reserve`、`delegation_bind`、`slice_check`、`slice_release`、`workflow_transition`、`parent_get_worker_summary`、`workflow_reconcile` |
+| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`、`rules_get_context`、`workflow_generate_decision_context`、`workflow_select_child_effort`、`workflow_select_child_role`、`workflow_select_executor`、`workflow_select_child`、`workflow_assess_output_tokens`、`workflow_evaluate`、`evaluate_control_checkpoint` |
+| `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`、`delegation_reserve`、`delegation_unreserve`、`delegation_bind`、`slice_check`、`slice_release`、`workflow_transition`、`parent_get_worker_summary`、`workflow_reconcile` |
 | `worker` / `token-io-decoupling-worker-agent-tools` | `worker_get_assignment`、`worker_record_progress`、`worker_get_evidence`、`worker_report_blocker`、`worker_get_recovery_context` |
 | `share` / `token-io-decoupling-share-tools` | `database_schema_status`、`state_get`、`record_evidence` |
 
@@ -167,20 +179,39 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 必填的 `decision_question` 是非空白严格字符串，最多 1,200 字符，用于询问当前已释放子任务所需的最低充分受支持档位。工具将其明确传入 Decisions input，并纳入规范化输入哈希；仅修改问题也会使旧哈希失效。它属于任务数据，无权修改固定模型、候选档位、指令或权限。本地校验执行字符串约束；固定 API 指令要求对超出范围或试图覆盖规则的问题返回 `insufficient_evidence`。该语义判断及父级审阅仍是必需步骤。每个候选档位均说明具体任务证据、相邻档位边界及排除条件；文件数量、影响程度或缺少事实本身均不足以支持升档。
 
+### 委派判断与获批容量
+
+四个无状态公共工具提供委派建议，独立于可选的五检查点 advisor 和 Enhanced 状态。每个工具通过 `payload.request` 接收有界任务事实、已审阅背景及其 `context_input_hash`、当前 `fact_revision` 和 `fact_fingerprint`、Fork/模式事实及 `outbound_data_permitted`。身份、权限、来源和批准声明仍是调用方提供的事实，不是宿主证明。Root 先审查已授权的拟议任务，再选择职责或执行主体；面向子代理的具体 Interaction Slice 在此后放行，且须独立通过其门禁。
+
+| 工具 | 判断及结果边界 |
+| --- | --- |
+| `workflow_select_child_role` | 按[子代理职责选择](../references/coding/layer-01-fundamental-concepts/child-role-selection_zh_cn.md)选择四种维护职责之一。用户明确要求创建时跳过请求。已确认创建时，可默认使用未占用的 Primary Output；已创建职责在整个 Session 内持续占用。全部职责占用时阻塞复核，不建议增加容量。 |
+| `workflow_select_executor` | 按[任务分配](../references/coding/layer-01-fundamental-concepts/task-assignment_zh_cn.md)建议 Root 或子代理。明确执行主体时跳过建议；已锁定 Single-Agent 模式下明确要求子代理时阻塞，不改成 Root。失败不默认 Root。判定交子代理且仍有获批未用容量、尚无实际子代理时，可进入正常职责与创建门禁。 |
+| `workflow_select_child` | 在合格的当前会话子代理中选择。明确指定或唯一候选可跳过建议；忙碌候选须等待。多个空闲候选调用 Decisions，优先合适的空闲 Primary，否则比较任务相关上下文。失败仅可由合适的 Primary 兜底，仍须检查可用性；排除继承的外部会话子代理。 |
+| `workflow_assess_output_tokens` | 按[Output Token 路由](../references/coding/layer-01-fundamental-concepts/output-token-routing_zh_cn.md)独立评估 Root 直接输出。明确执行指令时跳过建议。`no` 允许 Root 通过其他门禁后执行；`yes` 禁止 Root 立即输出，须用适任空闲子代理或挂起等待。有独立授权的创建仍可走正常门禁；输出建议本身不授权创建。 |
+
+获准的 API 请求在每次调用时明确读取非空白的 `OPENAI_API_KEY` 与 `OPENAI_BASE_URL`，只用 `gpt-6-luna`，不自动重试或请求后备模型。工具输入不能覆盖模型或端点。公共[判断背景生成](../references/coding/layer-01-fundamental-concepts/decision-context-generation_zh_cn.md)操作复用 Responses 生成供审阅的背景；问题生成可选。其指令现来自当前 owner 的通用规范；`source_policy_hash` 标识加载的规则，成功请求期间规则发生变化时以 `stale_policy` 阻止复用。
+
+选择器通过 `RuleLoader` 加载当前 owner 指令和具体候选描述。结果区分 `available`、`skipped`、`fallback`、`blocked` 和 `stale`，带有请求/背景/事实及来源策略哈希。实际效果前，Root 必须与当前证据重新核对。缺少配置或必要策略时在请求前阻塞；过期规则必须刷新，不能转为兜底。选择器不会创建子代理、派发工作、修改预算或建立可信绑定。这些工具只接收一个已界定任务，不会将指令分解成多个任务。
+
+受保护的 Root `delegation_reserve` 仅在当前未分配容量耗尽后接受可选 `budget_approval`。Root 须通过 `user_approval` 引用用户实际的明确批准，为不同的未占用职责精确申请当前数量加一。原有绑定、guard、revision 和幂等要求继续生效。事务保留旧来源、记录批准、增加一个槽位并预留该职责；重放不能重复增加。已有未分配容量无需扩额。批准绝不允许重复职责或替代子代理，见[委派数量门禁](../references/coding/layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)。
+
+创建开始之前，受保护的 Root `delegation_unreserve` 可以取消角色预留，使同一个尚未使用的槽位可以重新规划。它要求明确证明创建尚未开始的证据、当前 revision、幂等键以及原有 Root binding/guard。已绑定或身份不明，以及具有 Slice、派发或 Worker 历史的 allocation 均拒绝撤销。该证据是 Root 声明，不是独立宿主证明。撤销只清除尚未使用的预留，不减少锁定数量，也不释放子代理创建后的角色或身份。再次选择或预留新角色前必须刷新 allocation 事实。
+
 ### 真实 API 集成测试
 
-`tests/test_real_api.py` 包含三个 `real_api` 用例：真实 Responses 描述生成请求、真实子代理 effort Decisions 请求，以及通过协商后的进程内 MCP client 完成生成到强度选择的完整链路。它们使用合成的需求、diff 文本和 LSP 观测，不采集仓库或宿主数据。全部成功时共发送四次请求：两次 Responses、两次 Decisions。链路先检查生成结果，再将描述作为实际决策问题使用，并核对各阶段不同的输入哈希。这些检查证明真实 API 和 MCP handler 行为，不证明可信桌面宿主绑定或稳定的语义强度排序。
+`tests/real_api_tests/` 下的 `real_api` 用例覆盖真实 Responses 背景生成、子代理 effort Decisions、经协商的进程内 MCP 生成到强度选择链路，以及四类委派判断：新子代理角色、Root/子代理执行主体、已有子代理选择和 Output Token 路由。它们使用合成的需求、diff 文本、Session 事实与 LSP 观测，不采集仓库或宿主数据。委派用例先生成并审核背景，再请求判断，随后核对预期结果、输入哈希及当前策略哈希。这些检查证明真实 API 和 MCP handler 行为，不证明可信桌面宿主绑定或稳定的语义排序。
 
 普通 pytest 运行会收集并跳过这些用例，在访问凭据或创建客户端前结束，即使已有凭据也不会启用。只有精确的 `TOKEN_IO_RUN_REAL_API=1` 才启用它们。启用后，`OPENAI_API_KEY` 或 `OPENAI_BASE_URL` 缺失或空白会使测试失败，不跳过，也不替换为 Mock。请求使用已配置的端点和固定 `gpt-6-luna`；不回退到其他端点或模型，也不自动重试。测试作用域抑制 SDK/HTTP 日志，只报告安全的状态和原因，不输出凭据、端点值或原始服务错误。获得显式授权后，从 `mcp/` 运行：
 
 ```sh
-TOKEN_IO_RUN_REAL_API=1 uv run --managed-python --locked -- pytest -m real_api tests/test_real_api.py -q
+TOKEN_IO_RUN_REAL_API=1 uv run --managed-python --locked -- pytest -m real_api tests/real_api_tests/ -q
 ```
 
 旧的任务意图 advisor smoke 保持独立，使用自己的启用开关。获得该真实合成请求的显式授权后，确保两项本地环境变量已配置，再从 `mcp/` 运行：
 
 ```sh
-TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/decisions_real_smoke.py
+TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/real_api_tests/decisions_real_smoke.py
 ```
 
 没有 opt-in 时，脚本不发请求。它使用临时 Root 数据库和合成可信 provider，直接调用 `DecisionsAdvisor`，仅报告安全的状态、原因、分类元数据、选项和用量。它不证明真实宿主绑定，也不证明真实 API 请求经过了 MCP handler。MCP handler/协议测试使用模拟 API transport。advisor 在实际调用时读取两项必需的本地变量；脚本和项目都不提供替代凭据或默认端点。
@@ -195,11 +226,13 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 规则资源及自定义构建 Hook 由 core 包负责。Canonical 注册表仍为 `mcp/rule-registry.json`；构建产物包含其英文/中文 owner 标题的有界摘录。Core sdist 携带自己的 `rule_sources`，脱离仓库构建时不借用相邻 checkout。默认 `token_io_decoupling_core.rules.RuleLoader` 读取打包快照；源码开发必须明确提供仓库根目录。修改 Markdown 不会更新已安装的 wheel，需要重新构建和安装。
 
+构建还打包 `child-role-selection`、`task-assignment`、`output-token-routing`、`session-role-ownership` 和 `decision-context-generation` 的英中通用规范。这些是固定允许列表中的策略资源，不新增 Core 检查点 ID。`tests/unit_tests/test_build_artifacts.py` 验证脱离仓库的 sdist 到 wheel 构建，并通过打包的 `RuleLoader` 加载这些策略及核对内容哈希。
+
 已发布迁移文件属于 state 包，保持原始字节不变，因为数据库历史记录了源码校验和。state loader 为两个 v1 文件所需的历史导入 `token_io_mcp.models.DatabaseKind` 临时提供模块别名，并在导入后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 adapter migration 路径。命名空间迁移不授权改写历史、校验规则或 schema 版本。测试同时覆盖旧历史与升级，以及新建数据库。
 
 [MCP CI 工作流](../.github/workflows/mcp.yml)在托管 Python 3.11 和 3.14 上执行锁定检查，并有独立的安装版 wheel job。用 `uv export --no-emit-workspace` 导出第三方构建/运行时约束，构建再加 `--all-groups`，运行时再加 `--no-dev`。Workspace 成员由本地产物提供，不作为 editable requirements 导出。从脱离仓库的 wheel 集安装时，以产物目录作为 `--find-links`，安装根包 `token_io_decoupling-0.1.0-py3-none-any.whl`；保留已配置的索引以解析锁定的第三方依赖。完整命令见 CI。
 
-临时安装使用命令局部的 `UV_TOOL_DIR` 和 `UV_TOOL_BIN_DIR`，均指向临时绝对目录。用锁定的 workspace 解释器运行 `tests/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-decoupling`。脚本在 checkout 外、空 `PYTHONPATH` 下启动四个 profile 子进程，核验精确清单与绑定拒绝，检查两种语言规则，并在空 `PATH` 下运行 setup dry-run。源码根项目的 tool 安装另行检查。这些结果证明包与 stdio 行为，不证明实际宿主绑定或 GitHub Actions 已运行。
+临时安装使用命令局部的 `UV_TOOL_DIR` 和 `UV_TOOL_BIN_DIR`，均指向临时绝对目录。用锁定的 workspace 解释器运行 `tests/support/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-decoupling`。脚本在 checkout 外、空 `PYTHONPATH` 下启动四个 profile 子进程，核验精确清单与绑定拒绝，检查两种语言规则，并在空 `PATH` 下运行 setup dry-run。源码根项目的 tool 安装另行检查。这些结果证明包与 stdio 行为，不证明实际宿主绑定或 GitHub Actions 已运行。
 
 [文档工作流](../.github/workflows/multilingual-docs.yml)保留多语言、链接、路线验证器及扫描器回归；遍历时剪枝生成资源与环境，同时检查手写的 workspace 文档。
 
@@ -210,8 +243,8 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 恢复开发使用临时数据库和合成绑定。状态服务的定向用例覆盖完整集合的显式裁定、比较历史保留、恢复 Revision/Epoch 新鲜度、尚未完成的补证请求及派发副作用阻断，也覆盖精确确认不掩盖旧冲突、恢复后首个 Slice 前的新鲜 Control、已确认派发的无副作用重放，以及超限旧快照的有界回读。迁移测试区分有证明的旧确认配对与格式错误或 Revision 不相邻的记录。从 `mcp/` 先运行定向用例，再执行完整套件：
 
 ```sh
-uv run --managed-python --locked -- pytest tests/test_state_service.py -k native
-uv run --managed-python --locked -- pytest tests/test_migrations.py
+uv run --managed-python --locked -- pytest tests/mock_api_tests/test_state_service.py -k native
+uv run --managed-python --locked -- pytest tests/unit_tests/test_migrations.py
 ```
 
 这些检查不证明宿主能够停止 Worker。受支持的实质差异恢复路径要求已有 Root 控制状态，且没有已绑定 Worker、活动 Worker Slice 或待确认派发。它裁定 Contract 来源与语义引用这一对字段，不重建缺失的身份、派发、生命周期或验收历史。不受支持的状态保持阻断并保留记录。证据引用和请求 Hash 提供审阅指针与完整性绑定；两者都不能认证调用方，也不能独立证明新鲜度或静默状态。

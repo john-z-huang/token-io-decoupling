@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 def test_detached_core_sdist_builds_bilingual_rule_resources(tmp_path: Path) -> None:
-    workspace = Path(__file__).parents[1]
+    workspace = Path(__file__).parents[2]
     sdist_output = tmp_path / "sdist-output"
     sdist_output.mkdir()
     subprocess.run(
@@ -57,24 +57,68 @@ def test_detached_core_sdist_builds_bilingual_rule_resources(tmp_path: Path) -> 
         capture_output=True,
         text=True,
     )
-    with zipfile.ZipFile(next(wheel_output.glob("*.whl"))) as wheel:
+    wheel_path = next(wheel_output.glob("*.whl"))
+    with zipfile.ZipFile(wheel_path) as wheel:
         members = set(wheel.namelist())
         assert "token_io_decoupling_core/_resources/registry.json" in members
-        assert (
-            len(
-                [
-                    name
-                    for name in members
-                    if name.startswith("token_io_decoupling_core/_resources/rules/")
-                ]
+        rule_resources = {
+            name
+            for name in members
+            if name.startswith("token_io_decoupling_core/_resources/rules/")
+        }
+        assert len(rule_resources) == 46
+        expected_delegation_owners = {
+            f"token_io_decoupling_core/_resources/rules/{owner}.{language}.md"
+            for owner in (
+                "child-role-selection",
+                "task-assignment",
+                "output-token-routing",
+                "session-role-ownership",
+                "decision-context-generation",
             )
-            == 36
-        )
+            for language in ("en", "zh_cn")
+        }
+        assert expected_delegation_owners <= rule_resources
         assert not any(name.startswith("token_io_decoupling_mcp/_resources/") for name in members)
+
+    packaged_owner_check = r"""
+import hashlib
+import sys
+from importlib.resources import files
+
+sys.path.insert(0, sys.argv[1])
+
+from token_io_decoupling_core.rules import RuleLoader
+
+markers = {
+    "child-role-selection": ("Role Decisions instructions", "职责 Decisions 指令"),
+    "task-assignment": ("Child-selection Decisions instructions", "子代理选择 Decisions 指令"),
+    "output-token-routing": ("Output-token Decisions instructions", "Output Token Decisions 指令"),
+    "session-role-ownership": ("Primary Output Role", "Primary 输出角色"),
+    "decision-context-generation": ("Source and provenance boundary", "来源和 provenance 边界"),
+}
+resources = files("token_io_decoupling_core").joinpath("_resources", "rules")
+loader = RuleLoader()
+for owner, (english_marker, chinese_marker) in markers.items():
+    english = resources.joinpath(f"{owner}.en.md").read_text(encoding="utf-8")
+    chinese = resources.joinpath(f"{owner}.zh_cn.md").read_text(encoding="utf-8")
+    assert english_marker in english
+    assert chinese_marker in chinese
+    loaded, digest = loader.load_delegation_policy(owner)
+    assert loaded == english
+    assert digest == hashlib.sha256(english.encode("utf-8")).hexdigest()
+"""
+    subprocess.run(
+        [sys.executable, "-I", "-c", packaged_owner_check, str(wheel_path)],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_workspace_builds_eight_wheels_with_disjoint_files(tmp_path: Path) -> None:
-    workspace = Path(__file__).parents[1]
+    workspace = Path(__file__).parents[2]
     output = tmp_path / "dist"
     subprocess.run(
         ["uv", "build", "--all-packages", "--out-dir", str(output)],

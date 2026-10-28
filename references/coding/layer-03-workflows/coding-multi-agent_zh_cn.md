@@ -32,13 +32,39 @@ flowchart TD
     ACT_AUDIT_WAIT["截止前等待；保留 pending 状态"]
     ACT_AUDIT_TIMEOUT["无回复且实际经过>=60秒；Root 默认 balanced/milestone_only；保留 Worker 值，缺失才补 full"]
     ACT_AUDIT_CONFIRM["确认所选规范 Root 审计记录并读回后才离开 Session"]
-    M05["05 Allocation / 分配名额"]
-    M06["06 Context / 上下文与可选项目 Memory"]
-    M07["07 Decision / 决策与两级规划"]
-    M08["08 Slice / 切片放行"]
-    M09["09 Child Creation / effort 与当前切片指纹和输入 Hash 核对"]
+    M05["05 Allocation / 只核验未分配容量"]
+    M06["06 Context / 核实事实与已审阅决策上下文"]
+    M07["07 Decision / 任务分配、独立输出判断和职责"]
+    M08["08 Slice / 放行具体 Interaction Slice"]
+    M09["09 Child Creation / 使用已预留职责、effort 和当前 Hash"]
     D_WORKER_STORE{"是否选择 Enhanced 且真实子代理身份已绑定到已放行 allocation？"}
     ACT_WORKER_OPEN["仅在身份绑定且 Schema 核验后初始化或恢复该 Worker 自身 store"]
+    D_CONTEXT_GEN{"未决后续判断是否需要已审阅上下文？"}
+    ACT_CONTEXT_GEN["根据带来源事实生成有界上下文；审阅来源、相关性和精确输入哈希"]
+    ACT_CONTEXT_DIRECT["使用直接 owner 和已核实事实；跳过已确定建议，或直接复核生成失败"]
+    ACT_TASK_ASSIGN["应用 Task Assignment；明确指令或上下文不可用时跳过对应建议，依据直接事实"]
+    D_EXECUTOR{"是否依据当前任务、Session 和权限事实确定执行主体？"}
+    D_CHILD_POOL{"当前会话中是否有合适的子代理？"}
+    ACT_CHILD_DIRECT["直接使用明确、唯一或筛选后唯一空闲候选；重新核验身份和权限"]
+    ACT_CHILD_ADVICE["至少 2 个空闲候选时，优先合适空闲 Primary；否则比较任务相关上下文"]
+    ACT_CHILD_REVIEW["依据当前职责、能力、权限、身份和可用性审阅建议"]
+    ACT_CHILD_WAIT["合适现有子代理忙碌时等待；空闲后重新核验"]
+    D_OUTPUT_EXPLICIT{"用户是否已明确由谁生成或是否生成此输出？"}
+    ACT_OUTPUT_ADVICE["依据 Output Token 路由独立评估直接输出规模"]
+    D_OUTPUT_RESULT{"输出规模判断结果？"}
+    ACT_OUTPUT_CHILD["大输出：使用合适的空闲现有子代理"]
+    ACT_OUTPUT_HOLD["大输出且没有空闲子代理：挂起；输出建议本身不授权创建"]
+    ACT_OUTPUT_WAIT["保持所请求输出待处理，直到合适子代理空闲"]
+    ACT_OUTPUT_NO["不是大输出：Root 可在其他门禁通过后执行"]
+    D_NEW_CHILD{"Task Assignment 是否独立要求创建新子代理？"}
+    D_INDEPENDENT_CHILD{"Task Assignment 是否独立确认此已授权任务需要新子代理？"}
+    ACT_ROLE_NA["职责选择不适用：无需新子代理；记录原因"]
+    D_ROLE_SELECT{"用户是否明确要求创建子代理或指定职责？"}
+    ACT_ROLE_ADVICE["根据已审阅上下文和当前会话状态选择一个受维护职责"]
+    ACT_ROLE_REVIEW["Root 核实职责匹配、当前会话唯一性、权限和直接事实兜底"]
+    D_ROLE_CAPACITY{"是否有锁定名额且另一职责仍未占用？"}
+    ACT_ROLE_RESERVE["在放行 Slice 前，于获准名额中预留唯一职责"]
+    ACT_BUDGET_APPROVAL["请求用户明确批准为不同职责精确增加 1 个名额"]
     M10["10 Dispatch / 按预设展示预览或全文；无子代理时不适用"]
     M11["11 Implementation / Worker 输出 / 读取实际返回并应用审计预设"]
     M12["12 Verification / 读取实际报告并应用审计预设"]
@@ -52,8 +78,8 @@ flowchart TD
     D_ARCHIVE{"是否存在本任务对应的活动计划 Memory？"}
     ACT_ARCHIVE["移至归档并读回核验"]
     D_ARCHIVED{"归档计划是否已核验？"}
-    D_BOOT{"是否需要 Bootstrap？"}
-    ACT_BOOT_PLAN["只预留 Bootstrap 角色，不创建代理"]
+    D_BOOT{"当前事实是否满足 Bootstrap/Refresh 触发条件？"}
+    ACT_BOOT_PLAN["仅在满足触发条件时规划；M07 再选择/预留职责；此处不创建代理"]
     D_PLAN_MATCH{"是否存在相关活动计划？"}
     ACT_PLAN_SCAN["列出活动 plans/ 计划"]
     ACT_PLAN_READ["读取并核对匹配计划"]
@@ -132,10 +158,7 @@ flowchart TD
     ACT_AUDIT_CONFIRM -- 规范 Root 审计记录已确认并读回 --> M05
     ACT_AUDIT_CONFIRM -- 规范记录缺失或未确认 --> BLOCK
     D_AUDIT_REPLY -- 提问或计时不可用 --> BLOCK
-    M05 --> D_BOOT
-    D_BOOT -- 需要 --> ACT_BOOT_PLAN
-    ACT_BOOT_PLAN --> M06
-    D_BOOT -- 不需要 --> M06
+    M05 --> M06
     M06 --> D_RULE_ACCESS
     D_RULE_ACCESS -- 是／选择有界读取 --> ACT_RULE_CONTEXT
     D_RULE_ACCESS -- 否／直接来源／不适用 --> ACT_RULE_DIRECT
@@ -145,9 +168,15 @@ flowchart TD
     ACT_PLAN_SCAN --> D_PLAN_MATCH
     ACT_PLAN_SCAN -- 失败／不可用 --> BLOCK
     D_PLAN_MATCH -- 是 --> ACT_PLAN_READ
-    D_PLAN_MATCH -- 无／不适用 --> M07
-    ACT_PLAN_READ --> M07
+    D_PLAN_MATCH -- 无／不适用 --> D_CONTEXT_GEN
+    ACT_PLAN_READ --> D_CONTEXT_GEN
     ACT_PLAN_READ -- 失败／不可用 --> BLOCK
+    D_CONTEXT_GEN -- 未决建议需要上下文 --> ACT_CONTEXT_GEN
+    D_CONTEXT_GEN -- 明确指令已定分支／无需建议：不适用 --> ACT_CONTEXT_DIRECT
+    ACT_CONTEXT_GEN -- 上下文已审阅且精确输入哈希仍当前 --> M07
+    ACT_CONTEXT_GEN -- 失败／证据不足；仅直接复核 --> ACT_CONTEXT_DIRECT
+    ACT_CONTEXT_DIRECT -- 已核实事实足够／遵循明确指令 --> M07
+    ACT_CONTEXT_DIRECT -- 必需事实缺失或冲突 --> BLOCK
     M07 --> D_DECISION_ADVICE
     D_DECISION_ADVICE -- 是／明确启用且与当前问题相关 --> ACT_DECISION_ADVICE
     D_DECISION_ADVICE -- 否／Native／关闭／不可用／不适用 --> ACT_DECISION_DIRECT
@@ -160,12 +189,61 @@ flowchart TD
     D_PLAN_SAVED -- 是 --> D_RECON
     D_PLAN_SAVED -- 失败／不可用 --> BLOCK
     D_RECON -- 需要 --> ACT_RECON_PLAN
-    D_RECON -- 不需要 --> D_RECOVERY_GATE
-    ACT_RECON_PLAN --> D_RECOVERY_GATE
+    ACT_RECON_PLAN --> D_BOOT
+    D_RECON -- 不需要 --> D_BOOT
+    D_BOOT -- 当前事实证明需要 Bootstrap/Refresh --> ACT_BOOT_PLAN
+    ACT_BOOT_PLAN -- 仅规划；不提前预留职责 --> ACT_TASK_ASSIGN
+    D_BOOT -- 不满足触发条件／记录不适用原因 --> ACT_TASK_ASSIGN
+    ACT_TASK_ASSIGN --> D_EXECUTOR
+    D_EXECUTOR -- root --> D_OUTPUT_EXPLICIT
+    D_EXECUTOR -- sub_agent --> D_CHILD_POOL
+    D_EXECUTOR -- 证据不足／未决 --> BLOCK
+    D_CHILD_POOL -- 明确指定且空闲、唯一合格空闲或筛选后唯一空闲 --> ACT_CHILD_DIRECT
+    D_CHILD_POOL -- 至少 2 个合格空闲候选 --> ACT_CHILD_ADVICE
+    D_CHILD_POOL -- 合适子代理忙碌；先评估输出再等待 --> D_OUTPUT_EXPLICIT
+    D_CHILD_POOL -- 没有合适现有子代理；可能需要创建新代理 --> D_OUTPUT_EXPLICIT
+    D_CHILD_POOL -- 身份、能力或权限不确定 --> BLOCK
+    ACT_CHILD_ADVICE --> ACT_CHILD_REVIEW
+    ACT_CHILD_REVIEW -- 已确认当前合适空闲候选；应用 Primary/上下文偏好 --> ACT_CHILD_DIRECT
+    ACT_CHILD_REVIEW -- 建议 API 失败；合格 Primary 忙碌；先评估输出再等待 --> D_OUTPUT_EXPLICIT
+    ACT_CHILD_REVIEW -- 事实过期或无安全候选 --> BLOCK
+    ACT_CHILD_DIRECT --> D_OUTPUT_EXPLICIT
+    ACT_CHILD_WAIT -- 候选变为空闲；重新核实当前事实 --> D_CHILD_POOL
+    D_OUTPUT_EXPLICIT -- 用户明确指令；跳过对应建议 --> D_NEW_CHILD
+    D_OUTPUT_EXPLICIT -- 没有明确指令；评估直接输出 --> ACT_OUTPUT_ADVICE
+    ACT_OUTPUT_ADVICE --> D_OUTPUT_RESULT
+    D_OUTPUT_RESULT -- no --> ACT_OUTPUT_NO
+    D_OUTPUT_RESULT -- yes／有合适空闲子代理 --> ACT_OUTPUT_CHILD
+    D_OUTPUT_RESULT -- yes／没有合适空闲子代理 --> ACT_OUTPUT_HOLD
+    D_OUTPUT_RESULT -- 证据不足 --> BLOCK
+    ACT_OUTPUT_NO --> D_NEW_CHILD
+    ACT_OUTPUT_CHILD --> ACT_ROLE_NA
+    ACT_OUTPUT_HOLD -- Task Assignment 独立确认创建需要 --> D_INDEPENDENT_CHILD
+    ACT_OUTPUT_HOLD -- 无独立创建需要；保持待处理 --> ACT_OUTPUT_WAIT
+    ACT_OUTPUT_WAIT -- 合适候选变为空闲；重新评估输出 --> ACT_OUTPUT_ADVICE
+    D_INDEPENDENT_CHILD -- 是／经职责、预算、Slice 和创建门禁继续 --> D_ROLE_SELECT
+    D_INDEPENDENT_CHILD -- 否／输出建议本身不授权创建；保持待处理 --> ACT_OUTPUT_WAIT
+    D_NEW_CHILD -- 是／Assignment 独立需要新子代理 --> D_ROLE_SELECT
+    D_NEW_CHILD -- 否／合适现有子代理忙碌 --> ACT_CHILD_WAIT
+    D_NEW_CHILD -- 否／Root 或合适子代理空闲：不适用 --> ACT_ROLE_NA
+    D_ROLE_SELECT -- 用户明确要求创建／指定职责；跳过职责建议 --> ACT_ROLE_REVIEW
+    D_ROLE_SELECT -- 无明确职责；已有审阅上下文 --> ACT_ROLE_ADVICE
+    D_ROLE_SELECT -- 上下文生成失败但直接事实足够；不发下游建议 --> ACT_ROLE_REVIEW
+    ACT_ROLE_ADVICE -- 建议成功、失败或证据不足；交 Root 审阅 --> ACT_ROLE_REVIEW
+    ACT_ROLE_REVIEW -- 职责与当前事实已确认 --> D_ROLE_CAPACITY
+    ACT_ROLE_REVIEW -- 职责、事实或权限未决 --> BLOCK
+    D_ROLE_CAPACITY -- 有锁定未分配名额；另一职责可用 --> ACT_ROLE_RESERVE
+    D_ROLE_CAPACITY -- 无空闲名额；另一职责仍可用 --> ACT_BUDGET_APPROVAL
+    D_ROLE_CAPACITY -- 所有职责已占用或没有适合职责 --> BLOCK
+    ACT_BUDGET_APPROVAL -- 用户经 Count Gate 明确批准精确 +1 --> ACT_ROLE_RESERVE
+    ACT_BUDGET_APPROVAL -- 未批准、不可用或批准超出 +1 --> BLOCK
+    ACT_ROLE_RESERVE -- 唯一职责已记录；创建后仍保持占用 --> D_RECOVERY_GATE
+    ACT_ROLE_RESERVE -- 状态过期／冲突或预留失败 --> BLOCK
+    ACT_ROLE_NA --> D_RECOVERY_GATE
     D_RECOVERY_GATE -- 无恢复 floor／不适用，或 floor 后 Continue 对当前 Control 规则和相关 Epoch 仍有效 --> M08
     D_RECOVERY_GATE -- 需要新的当前 Continue --> D_CONTROL_ADVICE
     M08 --> M09
-    M09 -- 已创建真实子代理且身份已绑定 --> D_WORKER_STORE
+    M09 -- 已使用预留职责创建子代理且身份已绑定 --> D_WORKER_STORE
     D_WORKER_STORE -- 已选择 Enhanced；身份已绑定；守卫有效 --> ACT_WORKER_OPEN
     D_WORKER_STORE -- Native／未选择 Enhanced／不适用 --> D_MEMO
     ACT_WORKER_OPEN --> D_MEMO
@@ -217,7 +295,6 @@ flowchart TD
     D_ARCHIVED -- 是 --> DONE
     D_ARCHIVED -- 否／失败／不可用 --> BLOCK
 ```
-
 编号节点与下方唯一路线顺序检查清单一一对应。未触发的条件概念记录 `Not applicable` 原因；路线图只负责概念选择和排序，具体动作、证据与失败处理以清单及同语言 owner 为准。
 
 ## 模式 Contract
@@ -256,12 +333,21 @@ flowchart TD
    - **答复与澄清。** 有效答复仅更新点名 Root 字段并将来源设为 `explicit`，状态设为 `answered`，resolution 设为 `question_reply`；有效迟到答复使用 `question_reply_after_timeout`，保留超时证据，只影响后续消息，不重放。预设同时设置 Root 两字段；键值自由文本仅更新点名字段，其他缺失 Root 字段默认为 `balanced`/`milestone_only`。`response_at` 记录实际观察时间。无效/歧义答复保持 `pending`；沿原问题/截止时间只澄清受影响字段，更新 `response_at`；观察到任何答复后不得自动超时。
    - **超时与读回核对。** 仅当从未观察到任何答复且可信时钟确认实际经过至少 60 秒时，将状态设为 `timed_out`、resolution 设为 `timeout_default`。此时 Root 使用 `balanced`/`milestone_only` 且来源为 `default`；Worker 保留有效频率，缺失时补 `full/default`。读回值、来源、提问字段和修订版本。此偏好不改变 Mode/count 或授权。本路线创建 Worker Session 时，在首次需要日志证据时检查一次是否可访问其完整安全会话记录并记录证据；Root 收到完整返回正文或工具存在本身不能证明可访问。仅当审计依赖不可用/未验证日志证据时才阻塞；否则报告限制，同时仍取得并读取完整实际返回正文。未创建 Worker 时记录 `Not applicable` 及原因。
    - 为父级和每个 Worker 配置其独立记录的摘要频率。按[推理摘要可见性](../layer-01-fundamental-concepts/reasoning-summary-visibility_zh_cn.md)要求的边界、标记、字段和安全摘要内容执行；确认每份必需摘要完整，缺失或格式错误时报告并阻塞依赖动作。应用 [Context Firewall](../layer-01-fundamental-concepts/session-context-firewall_zh_cn.md)：父级有界侦察，Worker 只消费已放行原始状态，返回带源指针的压缩事实。语义决策和最终验收由输入侧阶段负责。
-5. **分配与子代理预算。** 若选择 Enhanced，通过[增强状态存储](../layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md)核对现有 Root 记录及预留 Allocation；Mode 通过本身未初始化 store。只读取有界当前状态；Native 模式使用 parent context 规范记录。 按[子代理职责分配](../layer-01-fundamental-concepts/delegation-child-role-allocation_zh_cn.md)确认每个独立职责占用一个已锁定名额，不得虚构未分配的 verifier 或辅助角色。只有至少两个独立下游 Worker、宽范围探索且需路由至少三个策略模块，或源材料约超过 20k 字符 / 5k token-equivalents 时才分配 Context Bootstrap/Refresh。只有一个小 Worker 或仅文档快速路径时跳过，并记录原因。此时不要创建子代理：先在第 6–8 阶段确认相关事实、上下文、决策和已放行切片。只有一个子代理时，将 Primary Output 预留给符合条件的代码/配置实现或本 Skill 指令/参考文档编写。普通非 Skill 文档由父级编写且不触发或消耗该名额，即使任务包含代码修改也一样。不得回收已创建 Agent 的名额。
+5. **仅核验预留容量。** Native 实质恢复后，重新读取当前 allocation，再依赖既有子代理分配；不得重建身份或臆测缺失历史。选择 Enhanced 时，通过[增强状态存储](../layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md)核验现有 Root 记录与 allocation；Native 模式读取 parent context 规范记录。只读取有界当前状态。应用[委派数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)和[子代理职责分配](../layer-01-fundamental-concepts/delegation-child-role-allocation_zh_cn.md)，确认已锁定正数容量、当前已占用职责及真实未分配名额。M05 只核验并保留未分配容量：此处不选择或预留职责、不放行 Slice，也不创建子代理。保持未分配名额为 `agent: unbound`、`role: unassigned`、`slice_status: pending`；不得回收已创建子代理的名额。只有在 M06–M07 核实当前事实并由 Root 授权 proposed task 后，才判断是否需要 Context Bootstrap/Refresh；规划该任务不等于提前预留职责。状态缺失或不一致时阻塞依赖工作；容量不足只能在 M07 走明确预算门禁，不得自动扩额。
 6. **上下文与传输。** 选择 Enhanced 时，使用[增强状态存储](../layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md)读取当前 Root 状态及有界恢复索引；只读或 Schema 状态检查不得创建、迁移或推进状态。记录当前 Revision，省略项仅用绑定同一 Revision 的有效游标读取；Native 模式读取 parent context 规范记录。 在 [Context](../layer-02-workflow-concepts/context_zh_cn.md)提出下一切片的最小问题，只读取必需源材料，并检查复用上下文的 owner、源路径、新鲜度和 epoch。在此 Context 阶段，始终使用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)列出 `plans/` 下的活动计划，筛选与当前任务相关的计划并逐一读取。核对任务匹配、新鲜度及与当前指令的一致性；当前指令优先，报告冲突并重新评估，Memory 不构成授权。没有匹配的活动计划时，记录 `Not applicable` 及原因。列表或相关计划读取不可用/失败时，报告并阻塞依赖该上下文的工作；不得回退到文件。回答问题需要复用 Agent 项目知识时，应用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)读取相关项目 Memory，并对照权威项目文件核验来源指针和新鲜度。不存在相关 Memory 或无需跨会话知识时，记录 `Not applicable` 及原因。能力不可用时，报告限制并读取获准的权威来源；只有必需事实无法通过其他方式确认时才阻塞。Memory 不能替代获准路径中的权威来源。Worker 需要持久化交换记录时，应用[上下文交换](../layer-01-fundamental-concepts/context-exchange_zh_cn.md)：只保存精简中性事实、准确权威指针、哈希和新鲜度；bootstrap Memory 沿用 `MANIFEST`、`project-context`、`policy-context` 名称；对照 HEAD/tree、已跟踪差异、来源哈希、相关未跟踪状态及任务/范围核验新鲜度；拒绝过期记录，且记录不能替代 Contract 或验证。按[上下文工作区边界](../layer-01-fundamental-concepts/context-exchange-workspace-boundary_zh_cn.md)将原文件名/子目录意图映射为具名 Memory，并遵守已放行任务的逻辑归属指令；Serena 不强制 Worker 级隔离，能力不可用时报告并阻塞依赖工作，不得回退为文件。仅在具体交接或恢复时应用[上下文交接](../layer-01-fundamental-concepts/context-exchange-handoff_zh_cn.md)：记录已完成状态、带证据的失败尝试、当前改动与验证、阻塞和下一步；只读取任务明确暴露的记录。无需交换或交接时分别记录原因。Worker memo 与跨 Worker 交换仍是独立触发条件。Context ID 不授予创建 Agent 的权限。
    - **有界规则上下文。** 仅在当前问题需要注册节点时应用[增强规则上下文](../layer-01-fundamental-concepts/enhanced-rule-context_zh_cn.md)。核验其当前来源、语言和 Hash；单独读取判断必需的链接 owner。若直接核验 owner 已足够，记录有界读取为 `Not applicable` 并沿用该来源。读取失败时直接读取当前 owner；只有必需权威内容不可用时才阻塞。
+   - **审阅决策上下文。** 核验来源事实后，若未决执行主体、子代理候选、输出规模或职责判断将使用建议，则应用[决策上下文生成](../layer-01-fundamental-concepts/decision-context-generation_zh_cn.md)。只用带来源标签的有界当前事实和明确目标生成上下文；复用前审阅事实准确性、来源、语言、相关性、缺失信息及精确输入哈希。上下文不超过 6,000 字符，不代替决策或授权；生成决策问题是可选的。明确用户指令已决定相应选择或无下游建议需要上下文时，跳过相应请求并说明 `Not applicable`。生成失败或必需事实缺失/冲突时，不得伪造上下文/哈希，也不得向下游发送无效上下文；只有已核实事实足够时 Root 才可直接判断，否则阻塞依赖分支。
 7. **决策与两级规划。** Native 实质恢复后，重新评估当前 Decision 和 Contract，再授权下一 Slice；不得重开已锁定 Mode 或重复已完成的审计提问。在 [Decision](../layer-02-workflow-concepts/decision_zh_cn.md)说明实质问题、事实、约束、选项、选定方向、舍弃方案、授权路径/修改和未发布边界。应用[决策门禁](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md)：除非符合简单快速路径，否则先形成包含 Problem、Known facts、Assumptions and unknowns、Decision questions、Solution envelope、Risks、Acceptance 和 Stages/checkpoints 的简洁 Decision Brief；实质选择未定时只发布侦察。用[执行规划](../layer-01-fundamental-concepts/execution-planning_zh_cn.md)安排有界检查、实现和聚焦检查，并写明预期证据。用户任务目标是规划、探索、制定/输出/更新计划时，应用[规划意图下的计划 Memory 生命周期](../layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle_zh_cn.md)持久化精简综合计划并读回确认存储结果；用户任务目标不包含规划、探索、制定/输出/更新计划时，记录 `Not applicable` 及原因。必需持久化能力不可用或写入/读回失败时，报告失败并阻塞依赖工作；不得回退到文件。分配任何子代理或实质派发前，确认 Contract 允许一个具体切片。 已有获授权 Root 上下文后，才可按需使用当前相关的 `task_intent`、`output_class` 或 `contract_change` 建议；核验其规则/输入/状态绑定和当前直接 owner，再依据证据作出实际 Decision。建议绝不改变已锁定 Mode/count，也不释放 Slice。建议关闭、过期、失败或走 Native 路径时，使用直接 owner；未请求建议时明确记录 `Not applicable` 及原因。遵循[Decisions 建议](../layer-01-fundamental-concepts/decisions-advisory_zh_cn.md)。
+   - **Root 授权、执行主体、输出路由和职责预留。** Root 重新核验当前 Context 和 Decision，授权并界定 proposed task 的目标、范围、交付物、权限与未发布边界。Context 和 Decision 通过后，该 proposed task 可用于职责选择；它不同于 M08 才放行的子代理专属 Interaction Slice。应用[任务执行主体分配](../layer-01-fundamental-concepts/task-assignment_zh_cn.md)：遵循用户明确的执行主体或候选指令并跳过对应建议；否则依据当前事实和权限判断由 Root 还是子代理执行，建议失败绝不默认 Root。只用身份已核实的当前会话子代理；Fork 是新 Session，必须先重新通过模式/数量门禁，继承子代理不可作为候选。唯一合格候选或筛选后唯一空闲候选可直接使用。仍有至少 2 个合格空闲候选时，即使 Primary Output 优先也必须作具体选择；有合适空闲 Primary 时仅提供该候选和 `insufficient_evidence`，否则提供所有合格空闲候选；没有合适 Primary 时，比较候选当前上下文对任务的直接相关性，不使用 transcript 大小或数值置信阈值。若合适子代理忙碌，先按[Output Token 路由](../layer-01-fundamental-concepts/output-token-routing_zh_cn.md)独立评估每项 Root 直接输出。`no` 允许 Root 通过其余门禁继续；`yes` 则要求有合适空闲子代理，否则将输出挂起直至有子代理空闲。不得在该输出评估前等待忙碌候选。派发前复核身份、职责、能力、权限、范围和最新可用性；建议失败只有在当前事实仍有效且合格 Primary 空闲时才能兜底，否则保持未决并由 Root 审阅。
+
+   - 独立应用[Output Token 路由](../layer-01-fundamental-concepts/output-token-routing_zh_cn.md)，判断每项形态可能较大的 Root 直接输出。依据请求形态和预期输出量判断，不设数值阈值，也不以无关输入量代替。用户明确指定谁生成或是否生成输出时，跳过相应建议并在其他门禁约束下遵循指令。`no` 允许 Root 通过其余门禁后执行；`yes` 禁止 Root 立即物化该大输出：使用合适且空闲的当前会话子代理，否则等待/挂起。输出判断本身不授权创建子代理；若 Task Assignment 已独立确认该已授权任务需要新子代理，仍只能经下述职责、预算、Slice 和创建门禁继续，同时保持该大输出挂起直至有空闲合适子代理。证据不足或冲突时保持未决；建议不能授权派发或推翻用户明确指令。
+
+   - 仅当 Task Assignment 已独立确认需要新子代理、且没有合适现有子代理可执行该任务时，应用[子代理职责选择](../layer-01-fundamental-concepts/child-role-selection_zh_cn.md)。从四种受维护职责中为 Root 已授权的 proposed task 选择一个，并在 M08 前写入当前会话记录。职责必须唯一；同 Session 已预留或已创建的职责不能再次选择，已创建职责在完成、失败、中断、取消或不可用后仍永久占用。用户明确要求创建时跳过职责建议；遵循用户指定职责；若用户明确要求创建但未指定职责，仅当创建已由其他门禁确认且 Primary Output 可用时才用它兜底。否则依据已审阅上下文和当前职责事实作建议，Root 仍须审阅；生成或建议失败时只有已核实事实足够才可直接判断。Primary Output 直接兜底须匹配职责且未占用；状态过期、无可用职责或判断未决时阻塞。无新子代理需求时，将职责选择记为 `Not applicable` 并说明原因。容量内为不同可用职责创建无需扩额申请；容量不足但尚有另一未占用职责时，按[委派数量门禁](../layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md)请求用户明确批准精确 `+1` 个名额。四种职责全占用时阻止创建且不申请预算；不得自动扩额、重复职责或替换已创建子代理。
+   - **Bootstrap/Refresh 规划触发条件。** 只有 M06 已核实当前事实后才判断：至少两个独立下游 Worker、跨至少三个策略模块的宽范围探索，或源材料约超过 20k 字符 / 5k token-equivalents 时才规划。一个小 Worker 或仅普通文档快速路径时跳过，并记录 `Not applicable` 及原因。规划不等于职责预留；若 Root 授权 Bootstrap/Refresh proposed task，则仍须在 M07 通过子代理职责选择门禁选择并预留唯一职责。
 8. **切片与阶段放行。** 放行下一 Slice 前，按[Native 对账](../layer-01-fundamental-concepts/native-reconciliation_zh_cn.md)执行条件门禁：恢复后必须有 floor 后且对当前 Control 规则和相关 Epoch 仍有效的 `Continue`。若缺失或过期，通过现有 Control 分支重新核验；`Amend` 后先重新检查当前 Context 和 Decision，再回到 Control。`Stop` 会阻塞。无 recovery floor 时记录 `Not applicable` 及原因。Enhanced 状态下，仅通过携带预期 Revision 与幂等键的类型化 Root 转换持久化具体 Slice，并在子代理操作前核验返回状态；遵循[增强状态存储](../layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md)及[增强 Schema 迁移](../layer-01-fundamental-concepts/enhanced-schema-migrations_zh_cn.md)，Schema 不兼容时不得写入。Native 模式按原 owner 更新 parent context 规范记录。 按[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)写明 `Objective`、`Authorized scope/mutations`、`Return conditions` 和 `Unreleased boundary`；有依赖关系的写操作按顺序发布。对高不确定性工作应用[执行阶段反馈](../layer-01-fundamental-concepts/execution-stage-feedback_zh_cn.md)：预先声明短小、产出证据的阶段，将常规机械操作留在阶段内，只在实质边界返回压缩 Progress Signals。新的语义选择返回第 7 阶段。 只有 Context 和 Decision 已确认具体任务，才将其 allocation 标记为 `slice_status: released`。此门禁分类已放行输出：只有实际代码/配置实现或本 Skill 指令/参考文档编写编辑符合创建条件；普通非 Skill 文档始终由父级编写，即使同时存在代码修改也一样。没有符合条件的输出时，记录 `Not applicable` 及原因，保留未绑定名额且不得初始化子代理。
+   - **具体 Interaction Slice 放行。** 只有 M06–M07 已核实当前事实并授权具体任务后，才放行子代理专属 Slice。若由新子代理执行，先核实 M07 已预留唯一职责，且具体目标、范围、路径和返回条件符合该职责；不得将职责选择推迟到 Slice 放行之后。预留缺失或冲突时阻止放行并返回 M07。Output hold 本身不授权放行 Slice。若 Task Assignment 独立确认该已授权任务需要新执行者，则只有通过 M07 职责和预算门禁以及 M08 常规核验后，才放行该任务 Slice；之后 M09 才能创建该执行者。没有适用子代理 Slice 时，记录 `Not applicable` 及原因。
 9. **条件创建子代理及生命周期。** 按[委派状态记录](../layer-01-fundamental-concepts/delegation-state-record_zh_cn.md)使用稳定的 `run_id` 和 `allocation_id`；按[子代理创建](../layer-01-fundamental-concepts/delegation-child-creation_zh_cn.md)仅当第 8 步放行了符合条件的输出时，确认真实且由父级控制的创建机制、已放行记录、锁定数量、预留名额、已分配职责、已放行 Slice、允许路径、返回条件和必需上下文，然后仅创建获准子代理。创建新 Child 时，应用[运行环境与模型供应商支持](../layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)：提供当前具体任务事实，按适用运行环境指令得出 effort 选择，并保留所选值及运行环境/模型支持和能够应用该值的证据。选择足以满足任务的最低受支持 effort；证据不足、没有任何档位足够、选择证据过期或运行环境/模型不能接受并确认所选 effort 时阻止创建。如果分配模型没有 effort 参数且运行环境 Profile 允许省略，记录 `Not applicable` 和原因。创建前解析有效运行时优先级。创建前立即按运行时 owner 的要求分别比较任何实际返回的当前 Slice fingerprint 与当前 Slice 证据，以及任何决策输入 Hash 与规范化审阅事实。若不匹配、选择证据过期或必需证据不可用，则阻止创建。若运行时 owner 明确允许省略某项，则记录 `Not applicable` 及原因。若创建接受必需控制但没有额外运行时解析观察，无需额外观察即可继续任务。子代理不得检查、读取或报告自己的模型/effort。将实际子代理身份和生命周期写入 allocation。选择 Enhanced 持久化时，只有在真实子代理身份核验并绑定到已放行 Allocation 后，才按[增强状态存储](../layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md)及[增强 Schema 迁移](../layer-01-fundamental-concepts/enhanced-schema-migrations_zh_cn.md)初始化或恢复该 Worker 自身 store。Native 或未选择 Enhanced 时，将 Worker store 记为 `Not applicable` 且不初始化。必需身份、守卫或 Schema 失败时阻塞依赖的 Enhanced 操作。按[子代理生命周期](../layer-01-fundamental-concepts/delegation-child-lifecycle_zh_cn.md)保留身份/生命周期；pending/running 时在可用情况下采用有界事件驱动等待，仅在状态变化时更新；收到最终证据后才标记完成，并保留错误/中断状态。不得为错误恢复额外创建子代理。复用现有 Agent 的原身份，不回收名额或创建替代者。按[子代理消息可见性](../layer-01-fundamental-concepts/delegation-child-message-visibility_zh_cn.md)执行：按配置预设展示预览或完整安全消息；仅当选择 preview 时限制为最多 3 项、总计 600 个 Unicode 码位，并在实际创建载荷中包含完整已放行任务和审计配置。Worker 在可用时完整展示安全入站提示；缺少 Worker 侧正文时定向报告审计限制。没有符合条件的输出时记录 `Not applicable` 及原因，保留名额未绑定且不初始化子代理；复用现有子代理且无需新创建提示时，也记录 Not applicable 及复用原因；follow-up 按步骤 10 处理。
+   - **创建沿用 M07 的职责预留。** M09 只选择 effort 并创建子代理：创建前核实 M07 的职责已预留、M08 的 Interaction Slice 已按该职责放行，以及锁定容量或获批精确 `+1` 仍有效。不得在 M09 重新选择/预留职责、创建重复职责，或仅为满足大输出判断而创建子代理。已创建子代理的职责和名额在当前 Session 始终保持占用；不得将其回收给另一个子代理。遵循生命周期和复用规则时，原子代理可继续承担已授权 follow-up。无需创建新子代理时记录 `Not applicable` 及原因。
 10. **条件派发、Worker 记录和 memo。** 仅当第 8 步放行符合条件的输出且第 9 步创建或复用了已分配子代理时，应用[子代理派发](../layer-01-fundamental-concepts/delegation-child-dispatch_zh_cn.md)：创建后不得重复核验模型/effort，也不得要求子代理检查或报告这些设置。每次派发或 follow-up 仍须核验任务授权、已放行范围、返回条件和必需上下文。父级先核实前置事实，仅当审计预设选择 preview 时限制为最多 3 项、总计 600 个 Unicode 码位；若选择 full，则展示完整安全消息正文，只命名获准代码/上下文路径；除非已批准独立且不冲突的工作，否则一次只发布一个切片。按 [Worker 边界](../layer-01-fundamental-concepts/delegation-worker-boundary_zh_cn.md)只传相关已放行记录快照；Worker 不得修改记录、重开门禁、协调同级或创建子代理；记录无法持久化或返回时阻塞派发。应用[内容 memo 派发](../layer-01-fundamental-concepts/content-memo-dispatch_zh_cn.md)：每个已发布任务包都显式写入 `write_content_memo: true | false`。启用时应用[内容 memo 约束](../layer-01-fundamental-concepts/content-memo_zh_cn.md)及[内容 memo 生命周期](../layer-01-fundamental-concepts/content-memo-lifecycle_zh_cn.md)：Worker 将中文 memo 写入 `context-exchange/workers/<worker-context-id>/content-memo`，只记录稳定事实/证据/修改路径，并在实质里程碑更新；不得写入秘密、完整 transcript、完整 diff 或逐命令日志。Serena 不强制该名称的 Worker 级隔离。禁用时记录父级原因；不适用的职责不得创建无操作 Worker。Memo 开启时确认 Memory 能力和具名记录可用；不可用时报告并阻塞依赖切片，不得回退为文件。关闭时记录理由并跳过写入。整个路线中每条父子文本消息都按[子代理消息可见性](../layer-01-fundamental-concepts/delegation-child-message-visibility_zh_cn.md)和已配置审计预设执行：Worker 保持安全收发正文完整可见；Root 按预设展示预览、摘要或全文（预设要求全文时展示全文），并在依赖前完整读取实际返回正文。若已放行任务提示包含完整任务包，无需另发消息，则记录 Not applicable 及原因。实际正文不可取得或不完整，或审计预设要求的可见证据缺失时，阻塞依赖切片；按预设进行的简洁展示不属于正文隐藏。没有符合条件的输出时，记录 `Not applicable` 及原因；不创建派发、Worker 记录或 memo。
 11. **条件 Worker 实现与控制。** 有符合条件的子代理切片时，在 [Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)要求 Worker 重新读取已放行目标/范围/返回条件并只检查必需文件。需要理解代码结构时，应用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)：使用可用的语言服务器查询，并将准确符号/路径指针保留为证据。能力或所需语言语义不可用时，说明限制并使用定向文本搜索和小范围读取；不得声称获得语言服务器证据；必需关系仍无法核实时阻塞。无需查询代码结构时，记录 `Not applicable` 及原因。随后实施最小授权的代码/配置或 Skill 文档改动，运行聚焦临时检查且不把它当作最终验收，并返回修改路径、证据、问题和未发布边界。在 [Control](../layer-02-workflow-concepts/control_zh_cn.md)由父级记录 `Status`、`Findings`、`Changed`、`Verification`、`Issue`、`Need` 和 `Unreleased boundary`，检查实质风险/范围/影响，并明确选择 Continue、Amend、Stop 或 Evidence-on-Demand。按[子代理复用/替换](../layer-01-fundamental-concepts/delegation-child-reuse-replacement_zh_cn.md)复用同一子代理处理授权后续工作；数量锁定后不得替换失败的子代理，也不得重新核验模型/effort。其他获准切片才重复第 6–11 阶段。 `Evidence-on-Demand` 只是暂停放行并获取证据的中间动作，返回本 Control 后才从 `Continue`、`Amend`、`Stop` 中选择结果；消费 Progress Signal 而不重复汇报。每次 Worker 返回都按[子代理消息可见性](../layer-01-fundamental-concepts/delegation-child-message-visibility_zh_cn.md)处理：依赖返回前，完整读取实际正文并按已配置审计预设展示。若运行环境只显示活动/状态或正文不完整，不得将其用于 Control，并阻塞依赖切片。没有符合条件的输出时，记录 `Not applicable` 及原因；由根父级保留工作并直接进入验证。 只有核验当前状态、输入/规则绑定和直接 Control owner 后，才可考虑 `control` 建议。它仅为建议；关闭、过期或失败时回到直接 owner，再通过可信转换持久化显式选择的结果。遵循[Decisions 建议](../layer-01-fundamental-concepts/decisions-advisory_zh_cn.md)。
 12. **最终状态验证。** 在 [Verification](../layer-02-workflow-concepts/verification_zh_cn.md)记录当前指纹和验收条件，针对该状态运行适用的整体与聚焦检查。应用[验证独立性](../layer-02-workflow-concepts/verification-independence_zh_cn.md)：需要时使用已分配的独立 verifier，否则将同一 Session 检查标为逻辑验证，并报告独立性不可用。应用[验证报告](../layer-02-workflow-concepts/verification-reporting_zh_cn.md)：记录通过、失败、不可用、假设、剩余风险、未解决项及阻塞影响。应用[验证 epoch](../layer-02-workflow-concepts/verification-epoch_zh_cn.md)：分别跟踪实现/内容、文档和 Git 元数据；对变化的覆盖范围使用当前证据重新评估，后续 epoch 复用已分配 verifier。必需证据仍有缺口时不得放行依赖工作。使用已分配的子代理 verifier 时，按[子代理消息可见性](../layer-01-fundamental-concepts/delegation-child-message-visibility_zh_cn.md)执行：完整读取实际请求和报告；Worker 在自身会话保留安全正文可见性，Root 按已配置预设展示。实际请求/报告正文不可取得或不完整，或预设要求的可见证据缺失时，阻塞验证验收；按预设进行的简洁展示不构成缺失。仅当允许同一 Session 验证且无需独立验证时，才将子代理通信记录为 Not applicable 并说明原因；缺少必需 verifier 仍按验证独立性规则阻塞。 `verification_impact` 建议只能提示候选覆盖维度；必须与当前 fingerprint 和直接 Verification/Epoch owner 对照，再运行所有必需检查及变化 Epoch 的重新验证。它绝不是通过结论。建议关闭、过期或失败时，直接判定覆盖范围。遵循[Decisions 建议](../layer-01-fundamental-concepts/decisions-advisory_zh_cn.md)。

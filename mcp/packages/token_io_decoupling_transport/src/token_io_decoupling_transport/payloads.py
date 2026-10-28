@@ -9,6 +9,8 @@ from token_io_decoupling_core.models import NonEmptyString, StrictModel
 from token_io_decoupling_core.state_models import (
     BlockerRecord,
     CheckpointNode,
+    DelegationBudgetApproval,
+    DelegationUnreserveRequest,
     EvidenceSubmission,
     NativeWorkflowSnapshot,
     ProgressRecord,
@@ -55,7 +57,9 @@ _RESERVE = payload_model(
     role=(NonEmptyString, ...),
     expected_revision=(int, ...),
     idempotency_key=(NonEmptyString, ...),
+    budget_approval=(DelegationBudgetApproval | None, None),
 )
+_UNRESERVE = DelegationUnreserveRequest
 _BIND = payload_model(
     "BindPayload",
     allocation_id=(NonEmptyString, ...),

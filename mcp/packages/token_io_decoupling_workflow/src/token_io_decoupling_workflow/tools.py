@@ -25,6 +25,13 @@ from token_io_decoupling_workflow.decisions import (
     DecisionsRuntimeConfig,
     EvaluationWithAdvice,
 )
+from token_io_decoupling_workflow.delegation_decisions import (
+    ChildCandidateSelectionPayload,
+    ChildRoleSelectionPayload,
+    DelegationDecisionSelector,
+    ExecutorSelectionPayload,
+    OutputTokenRoutingPayload,
+)
 from token_io_decoupling_workflow.payloads import _CONTROL_EVALUATE, _EVALUATE
 
 
@@ -71,7 +78,8 @@ def register_workflow_tools(
     binding_diagnostic: Any,
 ) -> None:
     effort_selector = ChildEffortSelector()
-    context_generator = DecisionContextGenerator()
+    context_generator = DecisionContextGenerator(rules=rules)
+    delegation_selector = DelegationDecisionSelector(rules)
     registrar.register_no_args(
         "workflow_capabilities",
         lambda: {
@@ -97,6 +105,7 @@ def register_workflow_tools(
             if decisions_config and decisions_config.enabled
             else "disabled",
             "child_effort_decisions": "available_per_invocation",
+            "delegation_decisions": "available_per_invocation",
             "decision_context_generation": "available_per_invocation",
             "protocol_target": "2026-07-28",
         },
@@ -117,6 +126,30 @@ def register_workflow_tools(
         "workflow_generate_decision_context",
         DecisionContextPayload,
         lambda payload: context_generator.generate(payload.request),
+        enhanced=False,
+    )
+    registrar.register(
+        "workflow_select_child_role",
+        ChildRoleSelectionPayload,
+        lambda payload: delegation_selector.select_child_role(payload.request),
+        enhanced=False,
+    )
+    registrar.register(
+        "workflow_select_executor",
+        ExecutorSelectionPayload,
+        lambda payload: delegation_selector.select_executor(payload.request),
+        enhanced=False,
+    )
+    registrar.register(
+        "workflow_select_child",
+        ChildCandidateSelectionPayload,
+        lambda payload: delegation_selector.select_child_candidate(payload.request),
+        enhanced=False,
+    )
+    registrar.register(
+        "workflow_assess_output_tokens",
+        OutputTokenRoutingPayload,
+        lambda payload: delegation_selector.assess_output_tokens(payload.request),
         enhanced=False,
     )
 

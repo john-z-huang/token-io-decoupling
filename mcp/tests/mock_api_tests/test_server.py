@@ -12,10 +12,6 @@ from mcp.server import MCPServer
 from mcp.types import TextContent
 from token_io_decoupling_core.binding import BindingError
 from token_io_decoupling_core.models import CodingMode, EvidenceRef, ModeCount, SemanticRef
-from token_io_decoupling_core.project_identity import (
-    ProjectIdentityError,
-    project_id_from_git_common_dir,
-)
 from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.state_models import (
     BindingIdentity,
@@ -45,12 +41,18 @@ PUBLIC_TOOLS = {
     "rules_get_context",
     "workflow_select_child_effort",
     "workflow_generate_decision_context",
+    "workflow_select_child_role",
+    "workflow_select_executor",
+    "workflow_select_child",
+    "workflow_assess_output_tokens",
     "database_schema_status",
 }
+
 ROOT_TOOLS = {
     "workflow_open",
     "workflow_get_state",
     "delegation_reserve",
+    "delegation_unreserve",
     "delegation_bind",
     "slice_check",
     "slice_release",
@@ -61,6 +63,7 @@ ROOT_TOOLS = {
     "parent_get_worker_summary",
     "workflow_reconcile",
 }
+
 WORKER_TOOLS = {
     "worker_get_assignment",
     "worker_get_state",
@@ -165,12 +168,34 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
     }
     assert parameters["database_schema_status"]["properties"] == {}
     assert "path" not in str(parameters)
+    root_server = create_server(FakeBindingProvider())
+    root_tool_specs = {tool.name: tool for tool in root_server._tool_manager.list_tools()}
+    unreserve_parameters = root_tool_specs["delegation_unreserve"].parameters
+    unreserve_payload = unreserve_parameters["properties"]["payload"]
+    assert set(unreserve_payload["properties"]) == {
+        "allocation_id",
+        "creation_not_started",
+        "creation_not_started_reference",
+        "expected_revision",
+        "idempotency_key",
+    }
+    assert set(unreserve_payload["required"]) == set(unreserve_payload["properties"])
+    assert unreserve_payload["properties"]["allocation_id"]["type"] == "string"
+    assert unreserve_payload["properties"]["creation_not_started"]["type"] == "boolean"
+    assert unreserve_payload["properties"]["expected_revision"]["type"] == "integer"
+    assert unreserve_payload["properties"]["idempotency_key"]["type"] == "string"
+    proof_schema = unreserve_payload["properties"]["creation_not_started_reference"]
+    assert proof_schema["anyOf"]
+    assert all(
+        {"uri", "content_hash"} <= set(variant["properties"]) for variant in proof_schema["anyOf"]
+    )
     capabilities = asyncio.run(_call(unbound, "workflow_capabilities", {}))
     assert capabilities["host_adapters"]["Codex Desktop"]["identity_attestation"] == "unavailable"
     assert capabilities["host_adapters"]["ChatGPT Desktop"]["guard_binding"] == "unavailable"
     assert capabilities["mode_fallback"] == "Native"
     assert capabilities["api_decisions"] == "disabled"
     assert capabilities["child_effort_decisions"] == "available_per_invocation"
+    assert capabilities["delegation_decisions"] == "available_per_invocation"
     assert capabilities["decision_context_generation"] == "available_per_invocation"
     denied_context = asyncio.run(
         _call(
@@ -199,9 +224,9 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
     worker_tools = _tool_names(create_server(FakeBindingProvider(SessionRole.WORKER)))
     assert root_tools == PUBLIC_TOOLS | ROOT_TOOLS
     assert worker_tools == PUBLIC_TOOLS | WORKER_TOOLS
-    assert len(root_tools) == 17
-    assert len(worker_tools) == 12
-    assert len(root_tools | worker_tools) == 24
+    assert len(root_tools) == 22
+    assert len(worker_tools) == 16
+    assert len(root_tools | worker_tools) == 29
     for tool in create_server(FakeBindingProvider())._tool_manager.list_tools():
         assert not any(
             forbidden in str(tool.parameters).casefold()
@@ -217,158 +242,6 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
         update={"guards": frozenset({HostGuard.IDENTITY_BOUND, HostGuard.SESSION_BOUND})}
     )
     assert _tool_names(create_server(insufficient)) == PUBLIC_TOOLS
-
-
-def test_profiles_have_fixed_disjoint_inventories_and_fail_closed() -> None:
-    expected = {
-        "workflow": {
-            "workflow_capabilities",
-            "rules_get_context",
-            "workflow_select_child_effort",
-            "workflow_generate_decision_context",
-            "workflow_evaluate",
-            "evaluate_control_checkpoint",
-        },
-        "root": {
-            "workflow_open",
-            "delegation_reserve",
-            "delegation_bind",
-            "slice_check",
-            "slice_release",
-            "workflow_transition",
-            "parent_get_worker_summary",
-            "workflow_reconcile",
-        },
-        "worker": {
-            "worker_get_assignment",
-            "worker_record_progress",
-            "worker_get_evidence",
-            "worker_report_blocker",
-            "worker_get_recovery_context",
-        },
-        "share": {"database_schema_status", "state_get", "record_evidence"},
-    }
-    servers = {name: create_server(profile=name) for name in expected}
-    inventories = {name: _tool_names(server) for name, server in servers.items()}
-    assert inventories == expected
-    assert all(
-        inventories[left].isdisjoint(inventories[right])
-        for left in expected
-        for right in expected
-        if left != right
-    )
-
-    async def denied() -> None:
-        async with Client(servers["workflow"], mode="auto") as client:
-            capabilities = await client.call_tool("workflow_capabilities", {})
-            assert not capabilities.is_error
-            rules = await client.call_tool(
-                "rules_get_context", {"payload": {"node_id": "contract", "language": "en"}}
-            )
-            assert not rules.is_error
-        for profile, tool, payload in (
-            ("root", "workflow_transition", {"payload": {"request": {}}}),
-            ("worker", "worker_get_assignment", {}),
-            ("share", "state_get", {"payload": {}}),
-        ):
-            async with Client(servers[profile], mode="auto") as client:
-                result = await client.call_tool(tool, payload)
-                assert result.is_error
-        async with Client(servers["share"], mode="auto") as client:
-            diagnostics = await client.call_tool("database_schema_status", {})
-            assert not diagnostics.is_error
-            assert '"available": false' in _result_text(diagnostics)
-            assert "no state path was inspected" in _result_text(diagnostics)
-
-    asyncio.run(denied())
-
-
-def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
-    expected = {
-        "workflow": {
-            "workflow_capabilities",
-            "rules_get_context",
-            "workflow_select_child_effort",
-            "workflow_generate_decision_context",
-            "workflow_evaluate",
-            "evaluate_control_checkpoint",
-        },
-        "root": {
-            "workflow_open",
-            "delegation_reserve",
-            "delegation_bind",
-            "slice_check",
-            "slice_release",
-            "workflow_transition",
-            "parent_get_worker_summary",
-            "workflow_reconcile",
-        },
-        "worker": {
-            "worker_get_assignment",
-            "worker_record_progress",
-            "worker_get_evidence",
-            "worker_report_blocker",
-            "worker_get_recovery_context",
-        },
-        "share": {"database_schema_status", "state_get", "record_evidence"},
-    }
-
-    async def check_profile(profile: str, mode: str) -> None:
-        server = create_server(profile=profile)
-        async with Client(server, mode=mode) as client:
-            assert client.protocol_version == ("2026-07-28" if mode == "auto" else "2025-11-25")
-            assert client.server_info is not None
-            assert client.server_info.description
-            assert client.instructions
-            assert profile in client.instructions
-            listed = await client.list_tools()
-            by_name = {tool.name: tool for tool in listed.tools}
-            assert set(by_name) == expected[profile]
-            assert all(tool.description for tool in by_name.values())
-            # Check the public wire schema itself, not the SDK's internal tool model.
-            if "workflow_capabilities" in by_name:
-                assert by_name["workflow_capabilities"].input_schema["properties"] == {}
-            if "workflow_select_child_effort" in by_name:
-                schema = by_name["workflow_select_child_effort"].input_schema
-                selector_schema = schema["properties"]["payload"]["properties"]
-                assert "request" in selector_schema
-                assert "outbound_data_permitted" in selector_schema["request"]["properties"]
-                request_schema = selector_schema["request"]
-                assert "decision_question" in request_schema["required"]
-                assert request_schema["properties"]["decision_question"]["minLength"] == 1
-                assert request_schema["properties"]["decision_question"]["maxLength"] == 1200
-                description = by_name["workflow_select_child_effort"].description
-                assert description is not None
-                assert "grants no creation authority" in description
-            if "workflow_generate_decision_context" in by_name:
-                schema = by_name["workflow_generate_decision_context"].input_schema
-                request_schema = schema["properties"]["payload"]["properties"]["request"]
-                assert set(request_schema["required"]) == {
-                    "raw_content",
-                    "decision_goal",
-                    "output_kind",
-                    "outbound_data_permitted",
-                }
-                request_properties = request_schema["properties"]
-                assert request_properties["raw_content"]["maxLength"] == 60_000
-                assert request_properties["decision_goal"]["maxLength"] == 1200
-                assert request_properties["output_kind"]["enum"] == [
-                    "decision_question",
-                    "decision_context",
-                ]
-                description = by_name["workflow_generate_decision_context"].description
-                assert description is not None
-                assert "does not inspect repositories" in description
-                assert "automatic downstream Decisions call" in description
-            if "state_get" in by_name:
-                assert "payload" in by_name["state_get"].input_schema["properties"]
-
-    async def run() -> None:
-        for profile in expected:
-            await check_profile(profile, "auto")
-            await check_profile(profile, "legacy")
-
-    asyncio.run(run())
 
 
 def test_default_and_embedded_discovery_metadata_matches_bound_role() -> None:
@@ -389,6 +262,55 @@ def test_default_and_embedded_discovery_metadata_matches_bound_role() -> None:
                 assert all(tool.description for tool in tool_list.tools)
                 if role == "parent":
                     assert "No Worker operations" in (client.instructions or "")
+                    descriptions = {tool.name: tool.description or "" for tool in tool_list.tools}
+                    unreserve_description = descriptions["delegation_unreserve"]
+                    for required in (
+                        "literal JSON true",
+                        "SemanticRef or EvidenceRef",
+                        "verified Root binding",
+                        "reserved state",
+                        "unknown/corrupt/missing identity blocks",
+                        "worker.sqlite3",
+                        "fail closed",
+                        "Success changes only role to null and status to unassigned",
+                        "slot and child_count stay fixed",
+                        "not host proof",
+                        "makes no API request",
+                    ):
+                        assert required in unreserve_description
+                    for name in (
+                        "workflow_select_child_role",
+                        "workflow_select_executor",
+                        "workflow_select_child",
+                        "workflow_assess_output_tokens",
+                    ):
+                        description = descriptions[name]
+                        for required in (
+                            "status is available, skipped, fallback, blocked, or stale",
+                            "fact_revision",
+                            "fact_fingerprint",
+                            "context_input_hash",
+                            "source_policy_hashes",
+                            "authority=advisory_only",
+                            "outbound_data_permitted=true",
+                            "OPENAI_API_KEY",
+                            "OPENAI_BASE_URL",
+                            "gpt-6-luna",
+                            "refresh current facts",
+                        ):
+                            assert required in description
+                    assert (
+                        "Documentation/Comments & Git Operations"
+                        in descriptions["workflow_select_child_role"]
+                    )
+                    assert (
+                        "suggested_value is root or sub_agent"
+                        in descriptions["workflow_select_executor"]
+                    )
+                    assert "busy Primary requires waiting" in descriptions["workflow_select_child"]
+                    assert (
+                        "suggested_value yes or no" in descriptions["workflow_assess_output_tokens"]
+                    )
                 elif role == "worker":
                     assert "No parent operations" in (client.instructions or "")
 
@@ -402,6 +324,7 @@ def test_profile_role_and_revocation_are_rechecked_per_call(tmp_path: Path) -> N
     expected = {
         "workflow_open",
         "delegation_reserve",
+        "delegation_unreserve",
         "delegation_bind",
         "slice_check",
         "slice_release",
@@ -485,6 +408,45 @@ def test_profile_role_and_revocation_are_rechecked_per_call(tmp_path: Path) -> N
                     "parent_session_id": None,
                 }
             )
+            reserved = await client.call_tool(
+                "delegation_reserve",
+                {
+                    "payload": {
+                        "role": "Primary Output",
+                        "expected_revision": 1,
+                        "idempotency_key": "wire-reserve-for-unreserve",
+                    }
+                },
+            )
+            assert not reserved.is_error
+            reservation = json.loads(_result_text(reserved))
+            allocation_id = reservation["result"]["allocation_id"]
+            unreserve_payload = {
+                "payload": {
+                    "allocation_id": allocation_id,
+                    "creation_not_started": True,
+                    "creation_not_started_reference": {
+                        "uri": "evidence://wire-creation-not-started",
+                        "content_hash": "f" * 64,
+                    },
+                    "expected_revision": reservation["receipt_revision"],
+                    "idempotency_key": "wire-unreserve",
+                }
+            }
+            unreserved = await client.call_tool("delegation_unreserve", unreserve_payload)
+            assert not unreserved.is_error
+            unreserve_receipt = json.loads(_result_text(unreserved))
+            assert unreserve_receipt["result"]["allocation_id"] == allocation_id
+            assert unreserve_receipt["result"]["status"] == "unassigned"
+            assert unreserve_receipt["result"]["proof"]["uri"] == (
+                "evidence://wire-creation-not-started"
+            )
+            assert unreserve_receipt["result"]["root_attestation"]["authority_limit"] == (
+                "Root attestation with referenced evidence; not host proof"
+            )
+            replay = await client.call_tool("delegation_unreserve", unreserve_payload)
+            assert not replay.is_error
+            assert json.loads(_result_text(replay))["replayed"] is True
             before_revoked_call = {
                 path.relative_to(state_root): (path.stat().st_size, path.stat().st_mtime_ns)
                 for path in state_root.rglob("*")
@@ -504,7 +466,7 @@ def test_profile_role_and_revocation_are_rechecked_per_call(tmp_path: Path) -> N
             async with Client(share, mode="auto") as share_client:
                 unchanged = await share_client.call_tool("state_get", {"payload": {}})
                 assert not unchanged.is_error
-                assert '"revision": 1' in _result_text(unchanged)
+                assert '"revision": 3' in _result_text(unchanged)
 
     asyncio.run(run())
 
@@ -515,37 +477,6 @@ async def _call(server: MCPServer[Any], name: str, arguments: dict[str, object])
         assert not result.is_error
         assert result.content
         return json.loads(cast(TextContent, result.content[0]).text or "{}")
-
-
-def test_real_stdio_sdk_discovery_and_public_wire_calls_are_fail_closed(tmp_path: Path) -> None:
-    async def run() -> None:
-        parameters = StdioServerParameters(
-            command=sys.executable,
-            args=["-m", "token_io_decoupling.cli"],
-            cwd=Path(__file__).parents[1],
-            env={"PYTHONDONTWRITEBYTECODE": "1"},
-        )
-        async with Client(parameters, mode="auto") as client:
-            assert client.protocol_version == "2026-07-28"
-            result = await client.list_tools()
-            assert {tool.name for tool in result.tools} == PUBLIC_TOOLS
-            context = await client.call_tool(
-                "rules_get_context",
-                {"payload": {"node_id": "contract", "language": "zh_cn"}},
-            )
-            assert not context.is_error
-            assert '"language": "zh_cn"' in _result_text(context)
-            diagnostics = await client.call_tool("database_schema_status", {})
-            assert not diagnostics.is_error
-            assert '"available": false' in _result_text(diagnostics)
-            assert "no state path was inspected" in _result_text(diagnostics)
-            extra = await client.call_tool(
-                "rules_get_context",
-                {"payload": {"node_id": "contract", "language": "en", "path": "/tmp"}},
-            )
-            assert extra.is_error
-
-    asyncio.run(run())
 
 
 def test_bound_wire_parses_enum_json_and_revocation_is_checked_per_call(tmp_path: Path) -> None:
@@ -620,7 +551,7 @@ def test_bound_stdio_subprocess_root_and_worker_protocols(tmp_path: Path, bridge
     service = StateService(
         provider,
         state_root=state_root,
-        rule_loader=RuleLoader(repository_root=Path(__file__).resolve().parents[2]),
+        rule_loader=RuleLoader(repository_root=Path(__file__).resolve().parents[3]),
     )
     service.workflow_open(
         WorkflowOpenRequest(
@@ -697,8 +628,8 @@ def test_bound_stdio_subprocess_root_and_worker_protocols(tmp_path: Path, bridge
         idempotency_key="stdio-setup-bind",
     )
 
-    harness = Path(__file__).with_name("stdio_binding_harness.py")
-    project_root = Path(__file__).parents[1]
+    harness = Path(__file__).parents[1] / "support" / "stdio_binding_harness.py"
+    project_root = Path(__file__).parents[2]
     root_state = tmp_path / "root-stdio-state"
 
     def server_parameters(role: str) -> StdioServerParameters:
@@ -1028,7 +959,7 @@ def test_worker_protocol_reads_and_writes_its_confirmed_assignment(tmp_path: Pat
     service = StateService(
         provider,
         state_root=state_root,
-        rule_loader=RuleLoader(repository_root=Path(__file__).resolve().parents[2]),
+        rule_loader=RuleLoader(repository_root=Path(__file__).resolve().parents[3]),
     )
     source = SemanticRef(uri="memory://contract", content_hash="a" * 64)
     service.workflow_open(
@@ -1225,72 +1156,3 @@ def test_worker_schema_status_requires_isolation_guard_without_path_side_effect(
     result = asyncio.run(_call(server, "database_schema_status", {}))
     assert result["available"] is False
     assert not bound_root.exists()
-
-
-def test_git_common_directory_identity_matches_worktrees_and_rejects_symlinks(
-    tmp_path: Path,
-) -> None:
-    main = tmp_path / "main"
-    (main / ".git" / "worktrees" / "wt1").mkdir(parents=True)
-    (main / ".git" / "config").write_text("", encoding="utf-8")
-    wt = tmp_path / "worktree"
-    wt.mkdir()
-    (wt / ".git").write_text(f"gitdir: {main / '.git' / 'worktrees' / 'wt1'}\n", encoding="utf-8")
-    (main / ".git" / "worktrees" / "wt1" / "commondir").write_text("../..\n", encoding="utf-8")
-    assert project_id_from_git_common_dir(main) == project_id_from_git_common_dir(wt)
-
-    separate_common = tmp_path / "separate-main"
-    separate_common.mkdir()
-    common_dir = tmp_path / "repo.git"
-    (common_dir / "worktrees" / "linked").mkdir(parents=True)
-    (separate_common / ".git").write_text(f"gitdir: {common_dir}\n", encoding="utf-8")
-    linked = tmp_path / "separate-worktree"
-    linked.mkdir()
-    linked_git_dir = common_dir / "worktrees" / "linked"
-    (linked / ".git").write_text(f"gitdir: {linked_git_dir}\n", encoding="utf-8")
-    (linked_git_dir / "commondir").write_text("../..\n", encoding="utf-8")
-    assert project_id_from_git_common_dir(separate_common) == project_id_from_git_common_dir(linked)
-
-    clone = tmp_path / "clone"
-    (clone / ".git").mkdir(parents=True)
-    assert project_id_from_git_common_dir(clone) != project_id_from_git_common_dir(main)
-    assert project_id_from_git_common_dir(
-        clone, trusted_association="trusted-project-1"
-    ) == project_id_from_git_common_dir(main, trusted_association="trusted-project-1")
-
-    symlinked = tmp_path / "symlinked"
-    symlinked.mkdir()
-    (symlinked / ".git").symlink_to(main / ".git", target_is_directory=True)
-    try:
-        project_id_from_git_common_dir(symlinked)
-    except ProjectIdentityError:
-        pass
-    else:
-        raise AssertionError("symlinked .git metadata must be rejected")
-
-    escaping = tmp_path / "escaping"
-    escaping_gitdir = escaping / ".git" / "worktrees" / "wt2"
-    escaping_gitdir.mkdir(parents=True)
-    evil_worktree = tmp_path / "evil-worktree"
-    evil_worktree.mkdir()
-    (evil_worktree / ".git").write_text(f"gitdir: {escaping_gitdir}\n", encoding="utf-8")
-    (escaping_gitdir / "commondir").write_text("../../../../\n", encoding="utf-8")
-    try:
-        project_id_from_git_common_dir(evil_worktree)
-    except ProjectIdentityError:
-        pass
-    else:
-        raise AssertionError("commondir outside the linked Git directory must be rejected")
-
-    symlink_gitdir = tmp_path / "linked" / ".git" / "worktrees" / "wt3"
-    symlink_gitdir.mkdir(parents=True)
-    symlink_worktree = tmp_path / "symlink-worktree"
-    symlink_worktree.mkdir()
-    (symlink_worktree / ".git").write_text(f"gitdir: {symlink_gitdir}\n", encoding="utf-8")
-    (symlink_gitdir / "commondir").symlink_to(main / ".git", target_is_directory=True)
-    try:
-        project_id_from_git_common_dir(symlink_worktree)
-    except ProjectIdentityError:
-        pass
-    else:
-        raise AssertionError("symlinked commondir metadata must be rejected")

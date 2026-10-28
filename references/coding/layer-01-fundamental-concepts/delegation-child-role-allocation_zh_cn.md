@@ -8,7 +8,7 @@
 
 ### 职责分配
 
-父级完成有界事实确认后，只能在已锁定和预留的数量预算内分配职责。预留名额在用途未确定前可以保持 `role: unassigned`；创建子代理前必须分配并放行其职责。只有一个子代理时，将其分配给符合条件的代码/配置实现或本 Skill 指令/参考文档编写的 Primary Output。普通非 Skill 文档仍由父级编写且不消耗预留名额，即使任务同时包含代码工作也一样。Primary Output、Change Verification、Documentation/Comments & Git Operations、Context Bootstrap/Refresh 及其他独立职责各自消耗一个名额。获准修改未绑定名额的计划不属于创建替代子代理，不得突破预算；创建后子代理身份保持绑定。未分配独立 verifier 或辅助职责时，安全情况下可使用当前或已分配 Agent，否则报告不可用；不得通过改名将同一 Session 的工作冒充独立验证。
+在任务上下文和 Decision 完成前，先将锁定数量预留为未绑定、未分配职责的名额。该预留阶段不得仅因只有一个名额就选择或分配 Primary Output；名额保持 `role: unassigned`、`slice_status: pending` 和 `agent: unbound`。Root 审阅当前任务上下文和 Decision 后，使用[子代理职责选择](child-role-selection_zh_cn.md)为拟创建子代理确定一个职责；用户明确指令可跳过职责选择建议，但不能跳过 Root 的职责和政策检查。若上下文生成或建议能力不可用，Root 可直接根据当前 owner 和核实事实作出判断。随后在一个未分配名额中预留所选职责，并在创建子代理前放行职责及具体 Slice。普通非 Skill 文档仍由父级编写且不消耗预留名额，即使任务同时包含代码工作也一样。每项独立职责各自消耗一个名额。尚未创建子代理的 unbound 名额可由父级授权在当前数量内调整职责计划，但新职责不得分配给其他任何已预留或已创建子代理。子代理一旦创建，其职责和身份就保持绑定，不得回收或替换。未分配独立 verifier 或辅助职责时，安全情况下可使用当前或已分配 Agent，否则报告不可用；不得通过改名将同一 Session 的工作冒充独立验证。
 
 ### Context Bootstrap/Refresh 分配
 
@@ -27,6 +27,7 @@ Claude Code 可以利用 `.claude/agents/` 或 `~/.claude/agents/` 中自定义 
 ## 相关概念
 
 - [Coding Child Creation](delegation-child-creation_zh_cn.md) — 定位子 Agent 创建归属。
+- [Coding Child Role Selection](child-role-selection_zh_cn.md) — 定位职责预留之前的选择判断。
 - [Coding Child Dispatch](delegation-child-dispatch_zh_cn.md) — 定位实际派发边界。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 状态归属。
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement_zh_cn.md) — 定位获准的复用和替换。

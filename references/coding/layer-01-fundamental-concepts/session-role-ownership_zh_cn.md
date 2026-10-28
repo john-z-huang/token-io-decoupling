@@ -42,3 +42,5 @@
 - [Coding Delegation State Record](delegation-state-record_zh_cn.md) — 定位任务控制状态归属。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位阶段和 slice 边界归属。
 - [Coding Session 审计可见性](session-audit-visibility_zh_cn.md) — 定位 Worker 消息与摘要策略。
+- [子代理职责选择](child-role-selection_zh_cn.md) — 定位受维护职责之间的建议选择。
+- [任务执行主体分配](task-assignment_zh_cn.md) — 定位 Root 和现有子代理的选择。

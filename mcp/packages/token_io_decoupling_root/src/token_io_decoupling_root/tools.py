@@ -14,6 +14,7 @@ from token_io_decoupling_transport.payloads import (
     _SLICE,
     _SLICE_RELEASE,
     _TRANSITION,
+    _UNRESERVE,
 )
 from token_io_decoupling_transport.registration import ToolRegistrar
 
@@ -38,7 +39,14 @@ def register_root_tools(registrar: ToolRegistrar, service: StateService) -> None
             payload.role,
             expected_revision=payload.expected_revision,
             idempotency_key=payload.idempotency_key,
+            budget_approval=payload.budget_approval,
         ),
+        role="parent",
+    )
+    registrar.register(
+        "delegation_unreserve",
+        _UNRESERVE,
+        lambda payload: service.delegation_unreserve(payload),
         role="parent",
     )
     registrar.register(

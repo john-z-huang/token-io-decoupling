@@ -42,3 +42,5 @@ No provider-specific optimization instructions at present; follow the general ru
 - [Coding Delegation State Record](delegation-state-record.md) — locate task-control state ownership.
 - [Coding Execution Control](execution-control.md) — locate stage and slice boundary ownership.
 - [Coding Session Audit Visibility](session-audit-visibility.md) — locate Worker message and summary policy.
+- [Child Role Selection](child-role-selection.md) — locate the advisory choice among maintained roles.
+- [Task Assignment](task-assignment.md) — locate Root and existing-child selection.

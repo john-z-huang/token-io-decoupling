@@ -14,7 +14,7 @@
 
 ### 替换关系
 
-数量锁定后、名额中的子代理创建前，允许父级授权修改 `agent: unbound` 的预留 allocation 计划；只能在锁定预算内调整未绑定职责或待放行 Slice。数量尚未锁定时，awaiting-count 记录不存在可替换的 allocation。已创建子代理的名额不得回收；数量锁定后不得再创建额外或替代子代理。不得重复询问数量、fork 或 handoff 给新子代理。上下文交接由[上下文交换交接](context-exchange-handoff_zh_cn.md)拥有，不授予创建 Agent 的能力。
+创建该名额的子代理前，父级授权的计划修订可在当前批准数量内调整 `agent: unbound` allocation 的职责或待放行 Slice。数量尚未锁定时，awaiting-count 记录不存在可修订的 allocation。在现有数量内，可通过正常放行和创建门禁，使用未分配名额及尚未占用的职责创建额外子代理。子代理一旦创建，其身份、名额和职责在本 Session 中永久绑定，不得回收或替换。超过当前数量的任何子代理，都必须取得[委派数量门禁](delegation-mode-count-gate_zh_cn.md)要求的实际用户批准，精确增加一个名额并使用不同且未占用的职责；该批准绝不允许替换或重复职责。不得重新打开数量问题、fork 或 handoff 到新子代理以绕过这些门禁。上下文交接由[上下文交换交接](context-exchange-handoff_zh_cn.md)负责，不授予创建 Agent 的能力。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 

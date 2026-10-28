@@ -18,7 +18,19 @@ uv run --managed-python --locked -- ruff format --check .
 uv run --managed-python --locked -- ty check
 ```
 
-`ty` covers root sources, tests, library packages, and the core build hook. Set `UV_PROJECT_ENVIRONMENT` to an absolute temporary directory to keep the environment outside the checkout. Tests use temporary databases, mocked bindings and API transport; they need no real API request. Run the documentation checks required by [repository instructions](../AGENTS.md) from the repository root.
+`ty` covers root sources, tests, library packages, and the core build hook. Set `UV_PROJECT_ENVIRONMENT` to an absolute temporary directory to keep the environment outside the checkout. The default suite uses temporary databases and offline transport; live API tests require explicit opt-in. Run the documentation checks required by [repository instructions](../AGENTS.md) from the repository root.
+
+### Test organization
+
+Classify every new or changed test by its actual dependencies and behavior:
+
+| Directory | Responsibility |
+| --- | --- |
+| `tests/mock_api_tests/` | Tests that replace collaborators, host bindings, API clients or HTTP transport with mocks, fakes or stubs. |
+| `tests/unit_tests/` | Deterministic local unit tests that exercise the real tested code without mocked collaborators or live API calls. |
+| `tests/real_api_tests/` | Explicitly opted-in tests and smoke scripts that send real Decisions or Responses requests. |
+
+Split mixed modules by test case; a marker or filename does not replace correct placement. Shared fixtures and subprocess helpers may live outside these three case directories, but must not become an unclassified home for test cases. Preserve assertions, parametrization and collection coverage when moving tests, and update imports, repository-root discovery and CI/script references together. Ordinary pytest must collect and skip live cases without reading credentials or sending requests. The same placement rules apply to future tests.
 
 ## Unified launcher and profile tools
 
@@ -32,8 +44,8 @@ token-io-decoupling start-mcp-server --profile workflow
 
 | Profile / Codex server registration | Tools |
 | --- | --- |
-| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`, `rules_get_context`, `workflow_generate_decision_context`, `workflow_select_child_effort`, `workflow_evaluate`, `evaluate_control_checkpoint` |
-| `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`, `delegation_reserve`, `delegation_bind`, `slice_check`, `slice_release`, `workflow_transition`, `parent_get_worker_summary`, `workflow_reconcile` |
+| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`, `rules_get_context`, `workflow_generate_decision_context`, `workflow_select_child_effort`, `workflow_select_child_role`, `workflow_select_executor`, `workflow_select_child`, `workflow_assess_output_tokens`, `workflow_evaluate`, `evaluate_control_checkpoint` |
+| `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`, `delegation_reserve`, `delegation_unreserve`, `delegation_bind`, `slice_check`, `slice_release`, `workflow_transition`, `parent_get_worker_summary`, `workflow_reconcile` |
 | `worker` / `token-io-decoupling-worker-agent-tools` | `worker_get_assignment`, `worker_record_progress`, `worker_get_evidence`, `worker_report_blocker`, `worker_get_recovery_context` |
 | `share` / `token-io-decoupling-share-tools` | `database_schema_status`, `state_get`, `record_evidence` |
 
@@ -167,20 +179,39 @@ Only `status: available` carries a nonblank `description`: at most 1,200 charact
 
 The required `decision_question` is a nonblank strict string of at most 1,200 characters asking which supported effort is minimally sufficient for this released child task. The tool sends it explicitly in the Decisions input and includes it in the canonical input hash; changing only the question invalidates the previous hash. It is task data, without authority to change the fixed model, candidate levels, instructions, or permissions. Local validation enforces the string constraints; fixed API instructions require `insufficient_evidence` for an out-of-scope question or an attempted rule override. This semantic judgment and the parent's review remain necessary. Each offered level describes concrete task evidence, adjacent-level boundaries, and exclusions; file count, impact, or a missing fact alone does not justify a higher level.
 
+### Delegation decisions and approved capacity
+
+Four stateless public tools provide delegation advice independently of the optional five-checkpoint advisor and Enhanced state. Each accepts `payload.request` with bounded task facts, reviewed context and its `context_input_hash`, current `fact_revision` and `fact_fingerprint`, Fork/mode facts, and `outbound_data_permitted`. Identity, permission, provenance, and approval assertions remain caller-supplied facts, not host proofs. Root reviews an authorized proposed task before choosing a role or executor; the child-specific Interaction Slice is released afterward and must pass its own gates.
+
+| Tool | Decision and result boundary |
+| --- | --- |
+| `workflow_select_child_role` | Select one of the four maintained roles under [Child Role Selection](../references/coding/layer-01-fundamental-concepts/child-role-selection.md). Explicit user creation skips the request. An established creation may default to an unoccupied Primary Output; a role already created remains occupied for the entire Session. All roles occupied returns a blocked result for Root review rather than suggesting more capacity. |
+| `workflow_select_executor` | Suggest Root or a child under [Task Assignment](../references/coding/layer-01-fundamental-concepts/task-assignment.md). Explicit executor instructions skip advice; an explicit child under locked Single-Agent mode blocks instead of becoming Root. Failure never defaults to Root. A child decision with unused approved capacity and no actual child can continue through the normal role and creation gates. |
+| `workflow_select_child` | Select among eligible current-session children. Explicit or unique candidates can bypass advice; busy selections wait. Multiple idle candidates use Decisions, preferring a suitable idle Primary and otherwise task-relevant context. Failure may use only a suitable Primary fallback, subject to availability; inherited foreign-session children are excluded. |
+| `workflow_assess_output_tokens` | Independently assess direct Root output under [Output Token Routing](../references/coding/layer-01-fundamental-concepts/output-token-routing.md). Explicit execution instructions skip advice. `no` permits Root subject to other gates; `yes` prevents immediate Root output and requires an idle suitable child or hold/wait. Independently authorized creation can still follow its normal gates; output advice alone does not authorize it. |
+
+Permitted API calls explicitly read both nonblank `OPENAI_API_KEY` and `OPENAI_BASE_URL` at invocation time, use exactly `gpt-6-luna`, and make no automatic retries or fallback-model requests. Tool inputs cannot override the model or endpoint. The common [Decision Context Generation](../references/coding/layer-01-fundamental-concepts/decision-context-generation.md) operation reuses Responses for the reviewed background; generating a question is optional. Its instructions now come from that current owner's General rules. Its `source_policy_hash` identifies the loaded rules, and a change during a successful request blocks reuse with `stale_policy`.
+
+The selectors load their current owner instructions and concrete choice descriptions through `RuleLoader`. Results distinguish `available`, `skipped`, `fallback`, `blocked`, and `stale`, with request/context/fact and source-policy hashes. Root must recheck them against current evidence before any effect. Missing configuration or required policy blocks before a request; stale rules require refresh rather than fallback. No selector creates a child, dispatches work, changes a budget, or establishes trusted binding. These tools accept one already bounded task; they do not decompose an instruction into multiple tasks.
+
+The protected Root `delegation_reserve` accepts optional `budget_approval` only after current unassigned capacity is exhausted. Root must reference actual explicit user approval through `user_approval` and request exactly the current count plus one for a different unoccupied role. Existing binding, guards, revision, and idempotency requirements still apply. The transaction retains the prior source, records the approval, adds one slot, and reserves that role atomically; replay cannot add it twice. Existing unassigned capacity needs no increase. Approval never permits a repeated role or replacement child; see [Delegation Count Gate](../references/coding/layer-01-fundamental-concepts/delegation-mode-count-gate.md).
+
+Before creation begins, protected Root `delegation_unreserve` can cancel a role reservation so that the same unused slot can be planned again. It requires explicit evidence that creation has not started, current revision and idempotency, and the existing Root binding/guards. It rejects bound or ambiguous identities and any allocation with Slice, dispatch or Worker history. The evidence is a Root attestation, not independent host proof. Cancellation clears only the unused reservation: it neither reduces the locked count nor releases a role or identity after child creation. Refresh allocation facts before selecting or reserving a new role.
+
 ### Real API integration tests
 
-`tests/test_real_api.py` contains three `real_api` cases: a real Responses description request, a real child-effort Decisions request, and the complete generation-to-effort chain through the negotiated in-process MCP client. They use synthetic requirements, diff text, and LSP observations rather than collecting repository or host data. A successful run sends four requests in total: two Responses and two Decisions requests. The chain reviews the generation result before using its description as the actual decision question and checks each stage's distinct input hash. These checks establish live API and MCP-handler behavior; they do not prove a trusted desktop-host binding or stable semantic effort rankings.
+The `real_api` cases under `tests/real_api_tests/` exercise real Responses context generation, child-effort Decisions, the negotiated in-process MCP generation-to-effort chain, and the four delegation decisions: new-child role, Root/child executor, existing-child selection, and output-token routing. They use synthetic requirements, diff text, Session facts and LSP observations rather than collecting repository or host data. Delegation cases generate and review context before requesting a decision, then check the expected result, input hash and current policy hashes. These checks establish live API and MCP-handler behavior; they do not prove a trusted desktop-host binding or stable semantic rankings.
 
 Ordinary pytest runs collect and skip these cases before credentials or clients are accessed, even when credentials exist. Only the exact opt-in `TOKEN_IO_RUN_REAL_API=1` enables them. Once enabled, a missing or blank `OPENAI_API_KEY` or `OPENAI_BASE_URL` fails the tests instead of skipping them or using mocks. Requests use the configured endpoint and fixed `gpt-6-luna`; there is no endpoint/model fallback or automatic retry. The test scope suppresses SDK/HTTP logging and reports safe status/reason data without credentials, endpoint values, or raw provider errors. After explicit authorization, run from `mcp/`:
 
 ```sh
-TOKEN_IO_RUN_REAL_API=1 uv run --managed-python --locked -- pytest -m real_api tests/test_real_api.py -q
+TOKEN_IO_RUN_REAL_API=1 uv run --managed-python --locked -- pytest -m real_api tests/real_api_tests/ -q
 ```
 
 The older task-intent advisor smoke remains separate and uses its own opt-in. After explicit authorization for that real synthetic request, run from `mcp/` with both local environment variables configured:
 
 ```sh
-TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/decisions_real_smoke.py
+TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/real_api_tests/decisions_real_smoke.py
 ```
 
 Without the opt-in, the script makes no request. It uses a temporary Root database and a synthetic trusted provider, calls `DecisionsAdvisor` directly, and reports only safe status, reason, classification metadata, choice, and usage. It does not prove a real host binding or a real API call through the MCP handler. MCP handler/protocol tests instead use mocked API transport. The advisor reads both required local variables at invocation time; neither the script nor the project supplies replacement credentials or a default endpoint.
@@ -195,11 +226,13 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 The core package owns rule resources and its custom build hook. The canonical registry remains `mcp/rule-registry.json`; build output contains bounded excerpts from its English/Chinese owner headings. Core sdists carry their own `rule_sources`, so a detached build does not borrow a neighboring checkout. The default `token_io_decoupling_core.rules.RuleLoader` reads packaged snapshots; source development must explicitly supply the repository root. Editing Markdown does not update an installed wheel: rebuild and reinstall it.
 
+The build also packages General rules in both languages for `child-role-selection`, `task-assignment`, `output-token-routing`, `session-role-ownership`, and `decision-context-generation`. These are fixed allowlisted policy resources, not additional Core checkpoint IDs. `tests/unit_tests/test_build_artifacts.py` verifies a detached sdist-to-wheel build and loads these policies through the packaged `RuleLoader`, including their content hashes.
+
 Released migration files belong to the state package and remain byte-for-byte unchanged because database history records source checksums. The state loader temporarily supplies the historical `token_io_mcp.models.DatabaseKind` import required by the two v1 files; it removes the alias after importing them. Directly importing frozen state migration modules bypasses this scoped loader and is unsupported; use the renamed adapter migration path for direct imports. Namespace relocation does not authorize rewriting history, checksum verification, or schema versions. Tests cover legacy history and upgrades as well as fresh databases.
 
 The [MCP CI workflow](../.github/workflows/mcp.yml) runs locked checks on managed Python 3.11 and 3.14 and a separate installed-wheel job. Export third-party build/runtime constraints with `uv export --no-emit-workspace` (plus `--all-groups` for builds or `--no-dev` for runtime). Workspace members are supplied by the local artifacts, not editable requirements. To install from the detached wheel set, use its directory as `--find-links` and install the root `token_io_decoupling-0.1.0-py3-none-any.whl`; retain the configured index for locked third-party dependencies. See CI for the complete commands.
 
-For temporary installation, set command-local `UV_TOOL_DIR` and `UV_TOOL_BIN_DIR` to absolute temporary directories. Run `tests/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-decoupling` with the locked workspace interpreter. It starts four profile subprocesses outside the checkout with an empty `PYTHONPATH`, verifies exact inventories and binding rejection, checks both rule languages, and runs setup dry-run with an empty `PATH`. Source-root tool installation is checked separately. These results prove packaging and stdio behavior, not actual host binding or a GitHub Actions run.
+For temporary installation, set command-local `UV_TOOL_DIR` and `UV_TOOL_BIN_DIR` to absolute temporary directories. Run `tests/support/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-decoupling` with the locked workspace interpreter. It starts four profile subprocesses outside the checkout with an empty `PYTHONPATH`, verifies exact inventories and binding rejection, checks both rule languages, and runs setup dry-run with an empty `PATH`. Source-root tool installation is checked separately. These results prove packaging and stdio behavior, not actual host binding or a GitHub Actions run.
 
 The [documentation workflow](../.github/workflows/multilingual-docs.yml) retains multilingual/link/route validators and scanner regressions; it prunes generated resources and environments while checking authored workspace documentation.
 
@@ -210,8 +243,8 @@ The [Native Authority Transfer](../references/coding/layer-01-fundamental-concep
 Use temporary databases and synthetic bindings for recovery development. The focused state-service cases exercise explicit full-set adjudication, preserved comparison history, recovery Revision/Epoch freshness, outstanding evidence requests, and blocked dispatch side effects. They also cover exact confirmation without hiding older conflicts, fresh Control before the first post-recovery Slice, effect-free confirmed dispatch replay, and bounded readback of oversized legacy snapshots. Migration tests distinguish proven legacy confirmation pairs from malformed or nonadjacent records. Run them from `mcp/` before the complete suite:
 
 ```sh
-uv run --managed-python --locked -- pytest tests/test_state_service.py -k native
-uv run --managed-python --locked -- pytest tests/test_migrations.py
+uv run --managed-python --locked -- pytest tests/mock_api_tests/test_state_service.py -k native
+uv run --managed-python --locked -- pytest tests/unit_tests/test_migrations.py
 ```
 
 These checks do not prove a host can stop a Worker. The supported material-recovery path has existing Root control state and no bound Worker, active Worker Slice, or pending dispatch. It adjudicates the Contract source and semantic-reference pair; it does not reconstruct missing identity, dispatch, lifecycle, or acceptance history. Keep unsupported states blocked and preserve their records. Evidence references and request hashes provide review pointers and integrity binding; neither authenticates a caller or independently establishes freshness or quiescence.

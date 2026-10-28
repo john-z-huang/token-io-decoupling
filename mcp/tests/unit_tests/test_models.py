@@ -16,6 +16,10 @@ from token_io_decoupling_core.models import (
     SchemaVersion,
     SemanticRef,
 )
+from token_io_decoupling_core.state_models import DelegationUnreserveRequest
+from token_io_decoupling_mcp.state_models import (
+    DelegationUnreserveRequest as AdapterDelegationUnreserveRequest,
+)
 
 
 def test_mode_and_count_are_independent_strict_values() -> None:
@@ -54,3 +58,24 @@ def test_judgment_statuses_require_evidence_or_not_applicable_reason() -> None:
         JudgmentMissingEvidence(status="missing_evidence", required_evidence=[])
     with pytest.raises(ValidationError):
         JudgmentNotApplicable(status="not_applicable", reason=" ")
+
+
+def test_delegation_unreserve_requires_strict_true_attestation() -> None:
+    request = {
+        "allocation_id": "allocation-1",
+        "creation_not_started": True,
+        "creation_not_started_reference": {
+            "uri": "memory://plan",
+            "content_hash": "a" * 64,
+        },
+        "expected_revision": 2,
+        "idempotency_key": "unreserve-1",
+    }
+
+    assert DelegationUnreserveRequest.model_validate(request).creation_not_started is True
+    assert AdapterDelegationUnreserveRequest is DelegationUnreserveRequest
+    for invalid_value in (False, 1, "true"):
+        with pytest.raises(ValidationError):
+            DelegationUnreserveRequest.model_validate(
+                request | {"creation_not_started": invalid_value}
+            )
