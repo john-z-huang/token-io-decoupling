@@ -309,6 +309,10 @@ def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
                 selector_schema = schema["properties"]["payload"]["properties"]
                 assert "request" in selector_schema
                 assert "outbound_data_permitted" in selector_schema["request"]["properties"]
+                request_schema = selector_schema["request"]
+                assert "decision_question" in request_schema["required"]
+                assert request_schema["properties"]["decision_question"]["minLength"] == 1
+                assert request_schema["properties"]["decision_question"]["maxLength"] == 1200
                 description = by_name["workflow_select_child_effort"].description
                 assert description is not None
                 assert "grants no creation authority" in description

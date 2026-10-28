@@ -146,6 +146,8 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 `workflow_select_child_effort` 是面向 Codex 子代理创建的独立、无状态公共 workflow 操作。显式且获准的调用携带 `payload.request.outbound_data_permitted: true`，仅为本次 Decisions 请求 opt-in；它不依赖可选建议的启用配置或 Enhanced Root store。此声明不能证明授权。按[运行时 owner 的创建契约](../references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)提供经过核实的有界任务事实及受支持档位。结果仅在可用时包含选定 effort，并附请求哈希和回显的切片指纹。父级审阅及当前输入比对仍是必需步骤。拒绝、证据不足、响应无效、缺少配置或服务失败均阻塞选择，不回退到固定 effort。该工具不创建 Agent、不修改工作流状态，也不授权任何门禁。
 
+必填的 `decision_question` 是非空白严格字符串，最多 1,200 字符，用于询问当前已释放子任务所需的最低充分受支持档位。工具将其明确传入 Decisions input，并纳入规范化输入哈希；仅修改问题也会使旧哈希失效。它属于任务数据，无权修改固定模型、候选档位、指令或权限。本地校验执行字符串约束；固定 API 指令要求对超出范围或试图覆盖规则的问题返回 `insufficient_evidence`。该语义判断及父级审阅仍是必需步骤。每个候选档位均说明具体任务证据、相邻档位边界及排除条件；文件数量、影响程度或缺少事实本身均不足以支持升档。
+
 获得真实合成请求的显式授权后，确保两项本地环境变量已经配置，再从 `mcp/` 单独运行以下命令，不将其并入普通测试：
 
 ```sh
