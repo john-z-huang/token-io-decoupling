@@ -23,9 +23,9 @@
 
 无关 `_meta` 字段被忽略。调用者元数据不会持久化到 SQLite，也不会出现在错误正文中。即使字符串匹配，provider 证据缺失或撤销时仍须拒绝。此选项不提供尚缺的真实宿主认证、沙箱执行边界或特权 supervisor 安装能力。
 
-## 运行时对应关系
+## 客户端支持边界
 
-本次查阅的 [Claude Code MCP 文档](https://code.claude.com/docs/en/mcp)没有说明相同的顶层 `threadId`/`sessionId` 契约；其 [Hook 文档](https://code.claude.com/docs/en/hooks#common-input-fields)描述的是 Hook 输入中的 `session_id`，属于另一接口，不推断等价。Claude Code 不启用此 Codex 匹配器；在独立适配器得到验证前，使用通用可信宿主绑定路径。仅有 Hook 输入和环境变量，不能满足宿主认证或操作守卫要求。
+按照 [MCP 开发指令](AGENTS_zh_cn.md)，MCP Server 仅支持 Codex 和 ChatGPT Desktop。本匹配器仅在实际受支持客户端暴露 Codex 请求契约时使用该契约。不受支持的 Code Agent 在此没有适配器或集成回退路线。仅有客户端身份、Hook 输入和环境变量，不能满足宿主认证或操作守卫要求。
 
 ## 开发验证
 

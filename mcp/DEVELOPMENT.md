@@ -4,6 +4,8 @@
 
 This guide owns development, artifact checks, uv tool installation, and Codex setup for the Python workspace. The [architecture contract](../ENHANCED_ARCHITECTURE.md#implementation-packages) owns package responsibilities and dependency direction; the [Skill entry](../SKILL.md) and its linked owners remain the workflow authority.
 
+The MCP Server supports only Codex and ChatGPT Desktop. Follow the [directory instructions](AGENTS.md); development under `mcp/` does not maintain compatibility with other Code Agents. Supported scope does not establish a verified host adapter.
+
 ## Environment and checks
 
 The workspace contains eight independently buildable distributions, each with its own `pyproject.toml`, and one shared `uv.lock`. Only the root distribution, `token-io-decoupling`, exports a console script. Run these commands from `mcp/` using managed Python and locked dependencies:
@@ -114,7 +116,6 @@ Both new and matching registrations receive the forwarding merge during setup; `
 
 When a terminal invocation works but an MCP request reports missing configuration, check the client process environment, each registration's forwarding names, and whether the service was recreated. Record only variable presence/nonblank status. The current Decisions advisor returns `fallback` with reason `missing_credentials` before creating the SDK client when either required value is absent or blank; do not assume another service's `missing_api_key` error name applies here. Forwarding does not enable API requests, grant outbound-data authorization, or establish a trusted host binding; the separate requirements below still apply.
 
-This TOML setting is specific to Codex. For comparison, Claude Code supports `${VAR}` references in the `env` map of `.mcp.json`; see its [MCP environment expansion reference](https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcpjson). Check that client's own environment and configuration instead of copying Codex TOML into it. This comparison does not configure Claude Code or establish host-binding parity.
 
 
 ## Authenticated host channel
@@ -127,7 +128,7 @@ For a bound CLI launch, the state root is `.local/state/token-io-decoupling` ben
 
 The bridge pins project, Root, current Session, parent, and role at startup. Every protected call rereads current capability and guard evidence from the host; revocation or an identity change rejects the call. Child verification uses the host's current parent identity. The wire format accepts only the two binding operations, uses bounded frames and a finite timeout, and rejects malformed or mismatched responses without retry. A failed channel cannot regain trust through later responses.
 
-The host must enforce the actual sandbox, path, and Worker-store boundaries before reporting the corresponding guards. Kernel authentication identifies the trusted supervisor; it does not create those guards or prove that a runtime's Session mapping is correct. This package supplies the bridge and host-side serving API, not a privileged service installer or a verified Codex/Claude Code runtime integration. A normal MCP client configuration cannot manufacture the inherited privileged channel. Existing test providers and tests that mock peer credentials remain synthetic evidence; the unmodified same-user channel rejection test exercises the real local credential boundary.
+The host must enforce the actual sandbox, path, and Worker-store boundaries before reporting the corresponding guards. Kernel authentication identifies the trusted supervisor; it does not create those guards or prove that a runtime's Session mapping is correct. This package supplies the bridge and host-side serving API, not a privileged service installer or a verified Codex/ChatGPT Desktop runtime integration. A normal MCP client configuration cannot manufacture the inherited privileged channel. Existing test providers and tests that mock peer credentials remain synthetic evidence; the unmodified same-user channel rejection test exercises the real local credential boundary.
 
 Before claiming an actual runtime integration, verify Root initialization, evidence insertion, transition and readback through that runtime's MCP connection; verify a real released and bound Worker can read its assignment and write only its own progress/evidence; and test revocation and cross-Worker rejection with the actual host guards. Restart or reconnect an existing client to load changed startup arguments and tool inventory; editing this checkout does not change an already running MCP process.
 

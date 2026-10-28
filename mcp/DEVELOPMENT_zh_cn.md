@@ -4,6 +4,8 @@
 
 本指南负责 Python workspace 的开发、构建产物检查、uv tool 安装与 Codex setup。[架构契约](../ENHANCED_ARCHITECTURE_zh_cn.md#实现包)负责包职责与依赖方向；[Skill 入口](../SKILL_zh_cn.md)及其链接的 owner 仍是工作流权威。
 
+MCP Server 仅支持 Codex 和 ChatGPT Desktop。遵循[目录指令](AGENTS_zh_cn.md)；`mcp/` 下的开发不维护其他 Code Agent 的兼容性。支持范围不等于已验证宿主适配器。
+
 ## 环境与检查
 
 Workspace 包含八个可独立构建的分发包，各有自己的 `pyproject.toml`，共同使用一份 `uv.lock`。只有根分发包 `token-io-decoupling` 导出 console script。从 `mcp/` 使用托管 Python 和锁定依赖运行：
@@ -114,7 +116,6 @@ Codex 自身的环境中必须持有这两个非空白变量。`env_vars` 允许
 
 终端调用成功而 MCP 请求报告缺配置时，检查客户端进程环境、各注册项的转发变量名，以及服务是否已重新创建。只记录变量存在性及是否非空白。当前 Decisions advisor 在任一必需值缺失或为空白时，在创建 SDK client 之前返回 `fallback`，原因为 `missing_credentials`；不要套用其他服务的 `missing_api_key` 错误名称。转发不会启用 API 请求、授予出站数据权限或建立可信宿主绑定；下文的独立要求仍须满足。
 
-此 TOML 设置仅适用于 Codex。作为对应能力比较，Claude Code 支持在 `.mcp.json` 的 `env` 映射中使用 `${VAR}` 引用，见其 [MCP 环境展开参考](https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcpjson)。应检查该客户端自身的环境与配置，不要直接复制 Codex TOML。此比较不配置 Claude Code，也不证明宿主绑定能力等价。
 
 
 ## 已认证的宿主通道
@@ -127,7 +128,7 @@ CLI 使用操作系统凭据认证对端：Linux 使用 `SO_PEERCRED`，macOS �
 
 桥接在启动时锁定项目、Root、当前 Session、parent 和角色。每次受保护调用都会重新向宿主读取当前能力与守卫证据；撤销或身份变化会使调用被拒绝。子身份验证使用宿主当前的 parent 身份。线协议只接受两种绑定操作，限制帧大小并设置有限超时；格式错误或不匹配的响应直接拒绝，不重试。失败通道不能通过后续响应重新获得信任。
 
-宿主必须先落实实际 sandbox、路径与 Worker store 边界，再报告相应守卫。内核认证只确认可信 supervisor，不会创建这些守卫，也不证明某运行时的 Session 映射正确。此包提供桥接及宿主侧服务 API，不提供特权服务安装器，也不构成已经验证的 Codex/Claude Code 运行时集成。普通 MCP 客户端配置不能凭空建立继承的特权通道。既有测试 provider 和模拟对端凭据的测试仍属于合成证据；未修改认证逻辑的同用户通道拒绝测试覆盖真实本地凭据边界。
+宿主必须先落实实际 sandbox、路径与 Worker store 边界，再报告相应守卫。内核认证只确认可信 supervisor，不会创建这些守卫，也不证明某运行时的 Session 映射正确。此包提供桥接及宿主侧服务 API，不提供特权服务安装器，也不构成已经验证的 Codex/ChatGPT Desktop 运行时集成。普通 MCP 客户端配置不能凭空建立继承的特权通道。既有测试 provider 和模拟对端凭据的测试仍属于合成证据；未修改认证逻辑的同用户通道拒绝测试覆盖真实本地凭据边界。
 
 声明实际运行时集成前，必须通过该运行时的 MCP 连接验证 Root 初始化、证据插入、状态转换及回读；验证真实释放且绑定的 Worker 能读取任务并只写入自己的进度/证据；并在实际宿主守卫下检查撤销和跨 Worker 拒绝。现有客户端需要重启或重新连接，才能加载改变的启动参数与工具清单；编辑 checkout 不会改变已经运行的 MCP 进程。
 

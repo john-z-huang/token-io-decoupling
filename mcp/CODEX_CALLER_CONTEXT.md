@@ -23,9 +23,9 @@ Each protected Root/Worker callback and bound schema diagnostic runs inside its 
 
 Unrelated `_meta` fields are ignored. Caller metadata is not persisted in SQLite or emitted in error bodies. Missing or revoked provider evidence still rejects operations even when the strings match. This option does not provide the missing real-host attestation, sandbox enforcement, or privileged supervisor installation.
 
-## Runtime correspondence
+## Supported client boundary
 
-The inspected [Claude Code MCP documentation](https://code.claude.com/docs/en/mcp) does not document the same top-level `threadId`/`sessionId` contract. Its [hook documentation](https://code.claude.com/docs/en/hooks#common-input-fields) describes `session_id` in hook input, a different interface. No equivalence is inferred. Leave this Codex matcher disabled for Claude Code; use the general verified host-binding path until an independently verified adapter exists. Hook input and environment values alone do not satisfy host authentication or operation guards.
+The MCP Server supports only Codex and ChatGPT Desktop, as required by the [MCP development instructions](AGENTS.md). This matcher consumes the Codex request contract only when the actual supported client exposes it. Unsupported Code Agents have no adapter or fallback integration here. Client identity, hook input, and environment values alone do not satisfy host authentication or operation guards.
 
 ## Development verification
 

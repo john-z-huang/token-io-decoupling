@@ -76,10 +76,6 @@ def register_workflow_tools(
                     "identity_attestation": "unavailable",
                     "guard_binding": "unavailable",
                 },
-                "Claude Code CLI": {
-                    "identity_attestation": "unavailable",
-                    "guard_binding": "unavailable",
-                },
             },
             "enhanced_binding": "unverified" if not embedded else binding_diagnostic(provider),
             "binding_transport": (
