@@ -54,7 +54,7 @@ def main() -> int:
         service = StateService(
             SyntheticProvider(),
             state_root=Path(temp_dir) / "state",
-            rule_loader=RuleLoader(repository_root=Path(__file__).resolve().parents[2]),
+            rule_loader=RuleLoader(repository_root=Path(__file__).resolve().parents[3]),
         )
         service.workflow_open(
             WorkflowOpenRequest(
@@ -69,7 +69,7 @@ def main() -> int:
         )
         advisor = DecisionsAdvisor(
             service,
-            RuleLoader(repository_root=Path(__file__).resolve().parents[2]),
+            RuleLoader(repository_root=Path(__file__).resolve().parents[3]),
             DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True),
         )
         advice = advisor.advise(

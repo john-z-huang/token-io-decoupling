@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -18,12 +19,17 @@ EXPECTED_TOOLS = {
         "rules_get_context",
         "workflow_select_child_effort",
         "workflow_generate_decision_context",
+        "workflow_select_child_role",
+        "workflow_select_executor",
+        "workflow_select_child",
+        "workflow_assess_output_tokens",
         "workflow_evaluate",
         "evaluate_control_checkpoint",
     },
     "root": {
         "workflow_open",
         "delegation_reserve",
+        "delegation_unreserve",
         "delegation_bind",
         "slice_check",
         "slice_release",
@@ -116,6 +122,112 @@ async def _exercise(cli_path: Path, profile: str, repo_root: Path) -> None:
                     or denied_data.get("reason") != "outbound_data_not_permitted"
                 ):
                     raise AssertionError("unbound installed workflow called without permission")
+                common_decision_facts = {
+                    "task_id": "installed-stdio-delegation-smoke",
+                    "task_summary": "Synthetic smoke check for delegation advice.",
+                    "reviewed_context": (
+                        "Synthetic bounded facts only; no user data or repository content."
+                    ),
+                    "context_input_hash": "a" * 64,
+                    "fact_revision": 0,
+                    "fact_fingerprint": "b" * 64,
+                    "forked_session": False,
+                    "mode_reselected_after_fork": True,
+                    "outbound_data_permitted": False,
+                    "mode": "Multi-Agent Coding",
+                }
+                delegation_calls = (
+                    (
+                        "workflow_select_child_role",
+                        "child_role",
+                        {
+                            "created_roles": [],
+                            "reserved_roles": [],
+                            "available_slots": 1,
+                            "user_explicit_create_instruction": False,
+                        },
+                    ),
+                    (
+                        "workflow_select_executor",
+                        "executor",
+                        {"current_session_child_count": 1, "available_slots": 0},
+                    ),
+                    (
+                        "workflow_select_child",
+                        "child_candidate",
+                        {
+                            "candidates": [
+                                {
+                                    "candidate_ref": "primary-output-1",
+                                    "role": "Primary Output",
+                                    "responsibility_match": True,
+                                    "capability_match": True,
+                                    "permission_allows": True,
+                                    "same_current_session": True,
+                                    "availability": "idle",
+                                    "responsibility_summary": "Owns the released slice.",
+                                    "capability_summary": "Implementation tools are available.",
+                                    "permission_summary": "Slice permits the listed paths.",
+                                    "task_relevant_context": "Has the current task facts.",
+                                },
+                                {
+                                    "candidate_ref": "context-refresh-1",
+                                    "role": "Context Bootstrap/Refresh",
+                                    "responsibility_match": True,
+                                    "capability_match": True,
+                                    "permission_allows": True,
+                                    "same_current_session": True,
+                                    "availability": "idle",
+                                    "responsibility_summary": "Owns bounded context refresh.",
+                                    "capability_summary": "Context lookup tools are available.",
+                                    "permission_summary": "Slice permits the lookup paths.",
+                                    "task_relevant_context": "Has current source notes.",
+                                },
+                            ]
+                        },
+                    ),
+                    (
+                        "workflow_assess_output_tokens",
+                        "output_tokens",
+                        {
+                            "requested_output_shape": "A concise installed-launcher smoke result.",
+                            "expected_output_volume": "One short status summary.",
+                            "idle_suitable_child_count": 1,
+                            "busy_suitable_child_count": 0,
+                        },
+                    ),
+                )
+                for tool_name, expected_decision, specific_facts in delegation_calls:
+                    result = await client.call_tool(
+                        tool_name,
+                        {"payload": {"request": {**common_decision_facts, **specific_facts}}},
+                    )
+                    if result.is_error:
+                        raise AssertionError(
+                            f"installed {tool_name} outbound denial returned a tool error"
+                        )
+                    decision_data = json.loads(_text(result))
+                    if (
+                        decision_data.get("status") != "blocked"
+                        or decision_data.get("reason") != "outbound_data_not_permitted"
+                        or decision_data.get("decision") != expected_decision
+                    ):
+                        raise AssertionError(
+                            f"installed {tool_name} did not return its expected outbound denial"
+                        )
+                    source_policy_hashes = decision_data.get("source_policy_hashes")
+                    if (
+                        not isinstance(source_policy_hashes, dict)
+                        or not source_policy_hashes
+                        or any(
+                            not isinstance(value, str)
+                            or not re.fullmatch(r"[0-9a-fA-F]{64}", value)
+                            for value in source_policy_hashes.values()
+                        )
+                    ):
+                        raise AssertionError(
+                            f"installed {tool_name} did not return loaded owner policy hashes"
+                        )
                 for language, expected_text in (
                     ("en", "Before Mode and Session pass"),
                     ("zh_cn", "Mode 和 Session 通过前"),
@@ -236,7 +348,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cli", required=True, type=Path)
     args = parser.parse_args()
-    repo_root = Path(__file__).resolve().parents[2]
+    repo_root = Path(__file__).resolve().parents[3]
     cli_path = args.cli.resolve(strict=True)
     for profile in EXPECTED_TOOLS:
         asyncio.run(_exercise(cli_path, profile, repo_root))

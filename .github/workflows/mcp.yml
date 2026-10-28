@@ -49,7 +49,7 @@ jobs:
 
       - name: Run complete MCP tests
         working-directory: mcp
-        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" pytest -q
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" pytest -q tests/unit_tests tests/mock_api_tests tests/real_api_tests
 
       - name: Check Ruff lint
         working-directory: mcp
@@ -102,5 +102,5 @@ jobs:
       - name: Exercise installed wheel through negotiated stdio SDK
         working-directory: ${{ runner.temp }}
         run: |
-          uv run --project "$GITHUB_WORKSPACE/mcp" --locked --managed-python --python 3.14 python "$GITHUB_WORKSPACE/mcp/tests/installed_stdio_smoke.py" \
+          uv run --project "$GITHUB_WORKSPACE/mcp" --locked --managed-python --python 3.14 python "$GITHUB_WORKSPACE/mcp/tests/support/installed_stdio_smoke.py" \
             --cli "$RUNNER_TEMP/token-io-tool-bin/token-io-decoupling"

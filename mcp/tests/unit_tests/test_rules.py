@@ -20,7 +20,7 @@ def _repo(tmp_path: Path) -> tuple[Path, Path]:
         "# Owner\n\n## Scope\nEnglish rules.\n", encoding="utf-8"
     )
     (root / "owners" / "zh.md").write_text("# Owner\n\n## 范围\n中文规则。\n", encoding="utf-8")
-    canonical_registry = Path(__file__).parents[1] / "rule-registry.json"
+    canonical_registry = Path(__file__).parents[2] / "rule-registry.json"
     registry = json.loads(canonical_registry.read_text(encoding="utf-8"))
     contract = next(node for node in registry["nodes"] if node["node_id"] == "contract")
     contract["owner_path"] = "owners/en.md"

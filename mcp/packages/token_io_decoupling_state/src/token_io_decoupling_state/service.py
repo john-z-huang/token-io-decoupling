@@ -20,6 +20,8 @@ from token_io_decoupling_core.state_models import (
     CheckpointConfirmationTransition,
     CheckpointEvaluation,
     CheckpointNode,
+    DelegationBudgetApproval,
+    DelegationUnreserveRequest,
     EpochDimension,
     EvidenceSubmission,
     HostCapability,
@@ -395,11 +397,26 @@ class StateService:
         return _lifecycle_ops.database_schema_status(self)
 
     def delegation_reserve(
-        self, role: str, *, expected_revision: int, idempotency_key: str
+        self,
+        role: str,
+        *,
+        expected_revision: int,
+        idempotency_key: str,
+        budget_approval: DelegationBudgetApproval | None = None,
     ) -> MutationReceipt:
         return _delegation_ops.delegation_reserve(
-            self, role, expected_revision=expected_revision, idempotency_key=idempotency_key
+            self,
+            role,
+            expected_revision=expected_revision,
+            idempotency_key=idempotency_key,
+            budget_approval=budget_approval,
         )
+
+    def delegation_unreserve(
+        self,
+        request: DelegationUnreserveRequest,
+    ) -> MutationReceipt:
+        return _delegation_ops.delegation_unreserve(self, request)
 
     def slice_check(self, spec: SliceSpec) -> SliceCheckResult:
         return _delegation_ops.slice_check(self, spec)

@@ -8,7 +8,7 @@
 
 ### Ownership
 
-根父级负责一份会话级模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，不通过编辑 policy 文件保存。Native 运行时，parent context 中的结构化记录是 canonical，并须在每次路线放行前读回；短暂子代理状态不是 canonical。Enhanced 运行时，获授权的 Root store 初始化且身份和 Schema 核验通过后，Root SQLite 记录才是 Enhanced 持久状态的 canonical。此后 parent context 只保留可读快照或引用，不能成为竞争的可写权威。从 Native 到 Enhanced 的对账遵循[Native 对账](native-reconciliation_zh_cn.md)；回切 Native 遵循[Native 权威转移](native-authority-transfer_zh_cn.md)。两种转换都不改变本记录的字段归属，也不允许覆盖有效规范记录。
+根父级负责一份完整宿主 Session 生命周期的模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，不通过编辑 policy 文件保存。Native 运行时，parent context 中的结构化记录是 canonical，并须在每次路线放行前读回；短暂子代理状态不是 canonical。Enhanced 运行时，获授权的 Root store 初始化且身份和 Schema 核验通过后，Root SQLite 记录才是 Enhanced 持久状态的 canonical。此后 parent context 只保留可读快照或引用，不能成为竞争的可写权威。从 Native 到 Enhanced 的对账遵循[Native 对账](native-reconciliation_zh_cn.md)；回切 Native 遵循[Native 权威转移](native-authority-transfer_zh_cn.md)。两种转换都不改变本记录的字段归属，也不允许覆盖有效规范记录。
 
 ### 记录结构
 
@@ -21,6 +21,8 @@ gate_status: awaiting-mode | awaiting-count | released | blocked
 mode_source: unset | explicit | default | timeout-default（仅兼容旧记录）
 mode: unset | Single-Agent Coding | Multi-Agent Coding
 child_count: unset | 0 | <已锁定正整数>
+source: <当前模式/数量决策的 SemanticRef>
+semantic_references: [<保留的 SemanticRef，包括先前数量来源>]
 allocations: [{allocation_id: <稳定的子代理 allocation 标识>,
                agent: unbound | <已创建代理身份>, role: unassigned | <职责>,
                slice_status: pending | released, interaction_slice, scope, mutations,
@@ -57,11 +59,11 @@ block_reason: <仅 blocked 时必需>
 | `released` — Multi-Agent | Multi-Agent；已锁定正整数 | 恰好 `child_count` 个预留 allocation；`run_id` 已设置；每个 allocation 有唯一且稳定的 `allocation_id`，并初始为 `agent: unbound`、`role: unassigned`、`slice_status: pending`、`lifecycle: pending` | 只放行路线与数量预算，**不**放行具体子代理或 Interaction Slice。 |
 | `blocked` | 保留已确认值 | 保留现有 allocation/lifecycle | `unavailable_capabilities` 与 `block_reason` 必需；不得进入依赖路线。 |
 
-Role Allocation 阶段分配 allocation 的职责。具体 `slice_status: released` 必须具备已分配 `role`、`interaction_slice`、`scope`、`mutations`、`return_conditions` 和显式布尔 `write_content_memo`；pending Slice 可以暂不设置这些字段。序列化每个已放行 Worker bundle 前，必须显式写入 `write_content_memo: true` 或 `false`，Worker 不得推断默认值。Child Creation 只能在相应职责和 Slice 已放行后绑定 `agent` 与 lifecycle。后续 Slice 可在**同一个**已创建子代理上准备，不创建或回收名额。
+初始数量只预留恰好对应数量的未分配名额；预留本身不选择职责。一个名额的预算不会自动分配 Primary Output。审阅任务上下文和 Decision 后，由职责选择 owner 提供职责建议，或由 Root 直接判断；然后将选定的唯一职责记录到一个未分配名额。具体 `slice_status: released` 必须具备已分配 `role`、`interaction_slice`、`scope`、`mutations`、`return_conditions` 和显式布尔 `write_content_memo`；pending Slice 可以暂不设置这些字段。序列化每个已放行 Worker bundle 前，必须显式写入 `write_content_memo: true` 或 `false`，Worker 不得推断默认值。Child Creation 只能在相应职责和 Slice 已放行后绑定 `agent` 与 lifecycle。后续 Slice 可在**同一个**已创建子代理上准备，不创建或回收名额。
 
-`mode_source` 记录明确选择或默认值，并在整次会话固定。新会话不再写入 `timeout-default`；仅为读回按旧规则创建的会话而接受该来源。旧 `timeout-default` 记录必须保持 Single-Agent、`child_count: 0` 和 `allocations: []`；读回时不得重新解释或迁移。各 allocation 的 lifecycle 可不同于顶层任务的 lifecycle。阻塞保留已确认值；后续指令遵循 Re-entry owner，不改变已锁定的 mode/count。
+`mode_source` 和 `source` 记录当前模式/数量决策。本次会话中的模式保持固定。同会话唯一允许的数量变更，是按数量门禁获批增加一个名额：将 `mode_source` 设为 `explicit`，将 `source` 设为实际批准引用，并在 `semantic_references` 中保留先前来源。受保护的预留回执记录新旧数量及经 Root 审阅的批准引用。不得把建议推断成批准，也不得绕过此事务修改数量。新会话不再写入 `timeout-default`；仅为读回按旧规则创建的会话而接受该来源。旧 `timeout-default` 记录必须保持 Single-Agent、`child_count: 0` 和 `allocations: []`；读回时不得重新解释或迁移。各 allocation 的 lifecycle 可不同于顶层任务的 lifecycle。阻塞保留已确认值；后续指令中，Fork 或其他重入遵循 Re-entry owner，唯一获批扩展遵循数量门禁。
 
-当 `mode_source: default` 时，已放行记录必须是 Multi-Agent、`child_count: 1` 且恰好有一个预留 allocation；此预留不会初始化子代理。实际创建仍受输出类型和切片门禁约束。
+未经修改的初始 `mode_source: default` 记录必须是 Multi-Agent、`child_count: 1` 且恰好有一个预留 allocation；此预留不会初始化子代理。用户批准增加名额后，记录来源变为 explicit。所有已放行 Multi-Agent 记录都必须满足 `child_count` 等于 allocation 名额数量。当前会话中的每项职责和已绑定子代理身份都唯一；即使子代理已完成、失败、中断、取消或不可用也一样，生命周期变化不会释放职责。Native 导入或恢复必须拒绝重复职责或子代理身份。Fork 只有在重新通过模式/数量门禁后才能创建新记录，不得把来源 Session 的子代理身份导入为当前 allocation。实际子代理创建仍受输出类型和 Slice 门禁约束。
 
 `session_audit` 遵循[会话审计可见性](session-audit-visibility_zh_cn.md)定义的字段。仅根父级写入。`audit_config_prompt.status` 表示已记录的提问状态；时间戳是实际观察到的 UTC 时间或 `null`，`resolution` 标明记录的来源/结果。所选路线负责收集和更新这些字段。日志证据仅在首次需要 Worker，或出现新的实际能力/访问证据或失败时更新，不逐消息更新。此状态不得改变 `mode`、`child_count`、授权、allocation 或 Slice 放行。不得将完整 Root 审计记录复制到策略文件或 Worker 可控状态中。真实 `pending` 状态在解决前保持 pending；缺少持久化或审计更新失败不能证明用户已答复、已选默认值或已完成。
 
@@ -83,6 +85,7 @@ Claude Code 的 `/tasks` 显示当前／后台子代理任务状态，`/context`
 - [Coding Delegation Mode Confirmation](delegation-mode-confirmation_zh_cn.md) — 定位根模式确认归属。
 - [Coding Delegation Count Gate](delegation-mode-count-gate_zh_cn.md) — 定位子 Agent 数量门禁归属。
 - [Coding Delegation Re-entry](delegation-mode-reentry_zh_cn.md) — 定位模式/数量重新进入归属。
+- [Coding Child Role Selection](child-role-selection_zh_cn.md) — 定位预留前的职责选择边界。
 - [Coding Execution Control](execution-control_zh_cn.md) — 定位 Interaction Slice 字段归属。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 生命周期字段归属。
 - [Coding Session 审计可见性](session-audit-visibility_zh_cn.md) — 定位会话审计配置归属。

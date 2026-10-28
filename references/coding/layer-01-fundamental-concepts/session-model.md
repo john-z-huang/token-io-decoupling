@@ -10,6 +10,10 @@ This module owns Coding Session semantics, Single-Agent and Multi-Agent Session 
 
 The active workflow supplies mode, topology, role allocation, lifecycle, reuse, replacement, exceptions, and unavailable handling. A role label never authorizes a new Session or topology change.
 
+Here, a Session means the host-identified Session lifetime, not one user/assistant exchange. Later turns and a compacted or resumed instance of the same Session retain its mode, count, and child identities. A Fork with a new Session identity starts a separate lifetime and must pass fresh re-entry gates.
+
+A Fork starts a new Coding Session with a new root identity. Re-enter fresh mode/count selection before dependent work, even when the source Session used Single-Agent mode. Child identities bound to the source Session are foreign in the Fork: do not adopt them as created children, reuse or resume them, count them toward its capacity, or offer them as current-session candidates. The [Delegation Mode Re-entry](delegation-mode-reentry.md) and [Session State Record](delegation-state-record.md) owners govern the new record.
+
 In Single-Agent Coding, the current Session performs the logical decision, implementation, documentation, Git, and allowed-check phases; logical roles do not imply independent Agents. In Multi-Agent Coding, use only the child execution contexts explicitly supplied by the active workflow; their exact Session isolation depends on the runtime provider:
 
 ```text
@@ -19,17 +23,19 @@ assigned verifier child context → Change Verification
 assigned docs/Git child context → Documentation/Comments & Git Operations
 ```
 
-An unassigned role is unavailable as an independent child context. Do not simulate independence by relabeling same-context work.
+An unassigned role is unavailable as an independent child context. Do not infer a role from the number of reserved slots; one slot does not automatically mean Primary Output. Select a role only after current task context and Decision are reviewed, then record it in an unassigned slot under the role-selection and allocation owners. Do not simulate independence by relabeling same-context work.
 
 ### Primary Execution Session and affinity
 
-Maintain one Primary Execution Session: the assigned Primary Output Session in multi-agent mode, otherwise the current Session. Reuse it for related exploration, implementation, diagnosis, tests, repairs, and local execution to preserve stable context. A Session is sticky but not immortal; lifecycle changes use the active workflow's recorded state.
+Maintain one Primary Execution Session: the current Session in Single-Agent mode; in Multi-Agent mode, the created child assigned `Primary Output`, when one exists. Until that child exists, the current root Session remains the active decision context, not an implied Primary child. Reuse the assigned Primary Session for related exploration, implementation, diagnosis, tests, repairs, and local execution to preserve stable context. A Session is sticky but not immortal; lifecycle changes use the active workflow's recorded state.
 
 Session isolation and Git worktree isolation are distinct. Workspace and filesystem isolation requirements belong to [Coding Context Exchange Workspace Boundary](context-exchange-workspace-boundary.md); Session reuse alone does not prove cache hits or runtime savings.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
 An allocated Codex child uses an independent child Session. Confirm that relationship only through runtime metadata or a directly exposed child/thread tool, and report only the isolation those sources establish.
+
+For Codex, the Session runs from the host Session's start until it ends; it is not reset by each user/assistant turn. Compaction and reopening or resuming the same Session retain its mode/count and child-identity record. A Fork creates a new Session identity and follows the fresh re-entry gate.
 
 ### Desktop Session and child identities
 
@@ -48,5 +54,8 @@ In Claude Desktop, use the built-in `Agent` or `SendMessage` tool only when dire
 - [Coding Session Role Ownership](session-role-ownership.md) — locate role responsibility ownership.
 - [Coding Session Context Firewall](session-context-firewall.md) — locate raw-state ingress boundaries.
 - [Coding Delegation State Record](delegation-state-record.md) — locate task-control state ownership.
+- [Coding Delegation Mode Re-entry](delegation-mode-reentry.md) — locate fresh mode/count selection for a Fork.
+- [Coding Child Role Selection](child-role-selection.md) — locate the decision that supplies a new child's role.
+- [Coding Task Assignment](task-assignment.md) — locate Root and existing-child selection.
 - [Coding Context Exchange](context-exchange.md) — locate file-backed context transport ownership.
 - [Coding Execution Control](execution-control.md) — locate Interaction Slice and session-boundary controls.

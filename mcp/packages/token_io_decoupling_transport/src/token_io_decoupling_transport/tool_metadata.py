@@ -21,6 +21,25 @@ _RECEIPT = (
     "MutationReceipt fields are operation, payload_hash, result, receipt_revision, "
     "current_revision, and replayed."
 )
+_DECISION_RESULT = (
+    "DelegationDecisionResult status is available, skipped, fallback, blocked, or stale: "
+    "available is a suggestion; skipped means a local explicit/policy branch did not call "
+    "Decisions; fallback is a policy-permitted fallback; blocked means no suggestion is usable "
+    "until its guard, evidence, or review condition is resolved; "
+    "stale must be refreshed and is never a fallback. decision is child_role, executor, "
+    "child_candidate, or output_tokens. Inspect reason, suggested_value, fallback_value, "
+    "next_action, input_hash (nullable on a local branch), fact_revision, fact_fingerprint, "
+    "context_input_hash, source_policy_hashes, optional model/total_tokens, and "
+    "authority=advisory_only. Before acting, compare returned request/context/policy hashes and "
+    "fact revision/fingerprint with the exact current caller facts, reviewed context, and owner "
+    "text. On stale, refresh current facts and owner text, regenerate/review context if needed, "
+    "and obtain a new result; never reuse it or convert it to fallback. A Decisions request "
+    "requires per-call outbound_data_permitted=true plus nonblank OPENAI_API_KEY and "
+    "OPENAI_BASE_URL; the tool reads and explicitly uses both with fixed model gpt-6-luna, "
+    "without caller endpoint/model overrides or automatic retries. These advisory results do "
+    "not reserve, create, bind, dispatch, or authorize a child or Root execution; recheck current "
+    "mode, permissions, budget, role uniqueness, scope, and availability before an action."
+)
 
 TOOL_DESCRIPTIONS: dict[str, str] = {
     "workflow_capabilities": _description(
@@ -110,6 +129,105 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "There is no",
         "revision or idempotency key; the tool does not automatically retry or call Decisions.",
     ),
+    "workflow_select_child_role": _description(
+        "Select a permitted child role with one stateless Decisions choice.",
+        _PAYLOAD,
+        "request includes task_id, bounded task_summary, reviewed_context and its input hash,",
+        "fact_revision/fingerprint, mode, Fork/mode-reselection facts, created_roles,",
+        "reserved_roles, available_slots, explicit user creation/role facts, and the",
+        "per-call outbound_data_permitted assertion. Generate and review the context with",
+        "workflow_generate_decision_context first. An explicit user creation instruction skips",
+        "Decisions and uses its explicit role or Primary Output fallback, subject to mode,",
+        "Fork, same-role, budget, permission, and Root checks.",
+        "The tool loads current child-role-selection and session-role-ownership owner text from",
+        "the repository or packaged resources and returns policy/request hashes, a role suggestion",
+        "or Primary fallback, guard reason, and next action. An API call reads both",
+        "environment values and uses fixed model gpt-6-luna with zero retries. Missing",
+        "facts/policy/configuration, refusal, invalid/wrong-model response, or changed policy",
+        "blocks or marks the result stale. A suggested role is one of Primary Output, Change",
+        "Verification, Context Bootstrap/Refresh, or Documentation/Comments & Git Operations;",
+        "no role is available when one is already created or reserved in the current Session.",
+        "A Primary fallback applies only to an explicit user creation instruction with no explicit",
+        "role, and only after mode, Fork, role uniqueness, budget, permission, and Root",
+        "checks pass.",
+        "The result is advisory only and never reserves or creates a child.",
+        _DECISION_RESULT,
+    ),
+    "workflow_select_executor": _description(
+        "Suggest Root or a child as executor with one stateless Decisions choice.",
+        _PAYLOAD,
+        "request includes task and reviewed-context hashes, current fact revision/fingerprint,",
+        "Single/Multi mode, current-session child count, available approved slots, optional",
+        "explicit_user_executor (root or sub_agent), and outbound_data_permitted.",
+        "An explicit Root executor or an explicit executor in a compatible mode skips the API.",
+        "Explicit sub_agent under locked Single-Agent mode blocks for Root review; it is never",
+        "silently changed to Root. Single-Agent mode without an explicit executor skips the API",
+        "and routes the local suggestion to Root. Otherwise the",
+        "tool loads the current task-assignment owner and returns root, sub_agent, or a blocked",
+        "result with hashes and next_action; suggested_value is root or sub_agent. API failure,",
+        "stale facts/policy, or missing evidence never defaults to Root: refresh and review the",
+        "current task/context and owner hashes, then make a new authorized choice;",
+        "if still blocked,",
+        "keep the executor unresolved.",
+        "A sub_agent suggestion with unused approved capacity may continue through role selection",
+        "and creation after all current gates pass; budget exhaustion requires explicit",
+        "user approval",
+        "through the Root reservation path. This does not create, dispatch,",
+        "or authorize an executor. Permitted calls read both environment values and use fixed",
+        "model gpt-6-luna with zero retries. Errors are sanitized; changed policy is stale.",
+        _DECISION_RESULT,
+    ),
+    "workflow_select_child": _description(
+        "Select a suitable existing current-session child, or return a safe fallback/wait result.",
+        _PAYLOAD,
+        "request includes bounded candidate refs and responsibility, capability, permission,",
+        "current-session, availability, and task-relevant context facts. Candidate refs should be",
+        "opaque local labels; inherited foreign-session agents are excluded. An explicit user",
+        "candidate skips Decisions but still must pass eligibility checks. One eligible candidate",
+        "is selected directly. With multiple eligible candidates, a unique idle candidate can be",
+        "selected directly after busy candidates are filtered; multiple idle candidates still",
+        "require a Decisions request even when Primary Output is preferred. An idle Primary",
+        "narrows offered choices to that child plus insufficient_evidence; otherwise all suitable",
+        "idle candidates are offered for task-context comparison. No numeric confidence cutoff is",
+        "used. suggested_value is only one candidate_ref from the supplied eligible",
+        "current-Session",
+        "candidate pool. On API failure/refusal/invalid or insufficient response, an eligible idle",
+        "Primary Output may be the policy fallback; a busy Primary requires waiting,",
+        "and without an",
+        "eligible Primary the choice stays unresolved. A stale fact or owner hash is not an API",
+        "failure fallback: refresh assignment, availability, context, and owner policy,",
+        "then make a new authorized request. Recheck candidate identity and availability",
+        "before reuse or dispatch.",
+        "Only candidates in the offered pool are included in the Decisions request. The tool loads",
+        "current task-assignment and session-role-ownership owners, returns hashes",
+        "and action guidance, and never dispatches work. A permitted API call reads",
+        "both environment values, uses fixed model gpt-6-luna, and has zero retries. Invalid,",
+        "refused, insufficient,",
+        "wrong-model, or stale-policy results never become a successful selection.",
+        _DECISION_RESULT,
+    ),
+    "workflow_assess_output_tokens": _description(
+        "Assess independently whether direct Root output would be large in Output Token terms.",
+        _PAYLOAD,
+        "request includes reviewed task context, requested output shape/volume, current mode,",
+        "idle and busy suitable current-session child counts, fact revision/fingerprint, and the",
+        "optional explicit_user_executor and per-call outbound_data_permitted assertion. An",
+        "explicit user executor skips this output-size request, subject to the locked mode;",
+        "a sub_agent instruction under Single-Agent mode blocks for Root review. The",
+        "tool loads the current output-token-routing",
+        "owner and returns suggested_value yes or no, or a blocked/insufficient result",
+        "with reason,",
+        "hashes, and next_action. A no suggestion permits Root execution only after all other",
+        "gates pass. A yes suggestion forbids Root immediate execution: use an eligible idle",
+        "child, or keep waiting/hold if none is available; under Single-Agent, hold and report the",
+        "topology boundary without inventing a child or reframing the task. Stale facts or owner",
+        "hashes must be refreshed before another judgment.",
+        "This judgment is independent of executor selection and does not dispatch or authorize",
+        "work. Permitted calls read both environment values and use",
+        "only fixed",
+        "model gpt-6-luna with zero retries; errors are sanitized and policy changes stale.",
+        _DECISION_RESULT,
+    ),
     "workflow_evaluate": _description(
         "Persist an evaluation for one checkpoint using supplied evidence context.",
         _PAYLOAD,
@@ -175,14 +293,24 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         _RETRY,
     ),
     "delegation_reserve": _description(
-        "Reserve a child allocation for the requested role.",
+        "Reserve one child allocation for a maintained role under the current Root workflow.",
         _PAYLOAD,
         "role must be Primary Output, Change Verification, Context",
         "Bootstrap/Refresh, or Documentation/Comments & Git Operations.",
-        "Supply expected_revision and idempotency_key. Requires verified",
-        "parent identity and delegation guards; Single-Agent has no allocations.",
+        "Supply expected_revision and idempotency_key. Requires verified Root",
+        "identity and delegation guards; Single-Agent has no allocations.",
+        "A role already reserved or created in this Session cannot be reserved again.",
+        "The optional budget_approval object is accepted only when the locked budget",
+        "has no unassigned slot. It contains requested_child_count (exactly current count + 1)",
+        "and user_approval (SemanticRef or EvidenceRef to the actual explicit user approval).",
+        "Call only after Root reviews that evidence; the reference is a trusted Root",
+        "attestation, not cryptographic host proof. The transaction changes the count source",
+        "to that approval, retains the prior source, adds one slot, and reserves the",
+        "requested different role atomically. Approval cannot authorize a duplicate role.",
         "Returns MutationReceipt whose result contains allocation_id, slot,",
-        "and normalized role; reservation does not bind a child.",
+        "normalized role, and (for an approved increase) an audit record; reservation does not",
+        "create or bind a child. Replaying the same key and request does not increase",
+        "the count twice.",
         _RECEIPT,
         _RETRY,
     ),
@@ -193,6 +321,34 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "Requires verified parent identity and host verification of the",
         "child; returns receipt with allocation_id and child_session_id.",
         "Unknown or mismatched child binding fails closed.",
+        _RECEIPT,
+        _RETRY,
+    ),
+    "delegation_unreserve": _description(
+        "Protected Root operation to clear one role reservation only when child creation",
+        "has not started.",
+        _PAYLOAD,
+        "The payload is DelegationUnreserveRequest and all fields are required: allocation_id,",
+        "creation_not_started (literal JSON true; false, 1, and string values are invalid),",
+        "creation_not_started_reference is a SemanticRef or EvidenceRef with uri and",
+        "SHA-256 content_hash.",
+        "expected_revision, and idempotency_key.",
+        "Requires verified Root binding, workflow-write capability, and identity/session/path",
+        "guards.",
+        "Only a Multi-Agent allocation in reserved state with no worker_session_id, worker",
+        "event, or output can be released.",
+        "Any Slice, Root outbox, dispatch event, delegation-bind receipt, or matching Worker",
+        "identity, or unknown/corrupt/missing identity blocks.",
+        "Existing subagents worker.sqlite3 files are inspected read-only; this operation",
+        "creates no Worker database and runs no migrations.",
+        "Symlinked paths, WAL/SHM/journal sidecars, or directory/database changes during",
+        "inspection fail closed. Do not remove/checkpoint files to force a release.",
+        "After confirming creation is still unstarted and the Worker store is stable, refresh",
+        "current state/revision; use a new key if the request content changed.",
+        "Success changes only role to null and status to unassigned; slot and child_count stay",
+        "fixed. The MutationReceipt result includes the proof and a Root attestation whose",
+        "authority limit states it is not host proof.",
+        "This operation does not create, bind, or dispatch a child and makes no API request.",
         _RECEIPT,
         _RETRY,
     ),
@@ -375,8 +531,8 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
 
 SERVER_INSTRUCTIONS: dict[str, str] = {
     "workflow": (
-        "Profile workflow exposes capabilities, rules, stateless decision-context generation and "
-        "child-effort selection, and "
+        "Profile workflow exposes capabilities, rules, stateless decision-context generation, "
+        "child-effort selection, and delegation decisions, plus "
         "Root-bound persisted evaluations. Start with workflow_capabilities and rules_get_context; "
         "call workflow_generate_decision_context only with caller-composed, provenance-labeled "
         "source material and explicit outbound_data_permitted=true when a question or context "
@@ -387,8 +543,16 @@ SERVER_INSTRUCTIONS: dict[str, str] = {
         "invoke workflow_select_child_effort only for an authorized child-creation decision with "
         "explicit outbound_data_permitted=true and bounded current slice facts, then compare its "
         "input_hash and selected effort with verified runtime facts before creation. The selector "
-        "does not authorize creation. Evaluate against current "
-        "evidence and revision. Evaluation requires verified Root binding. Five-node semantic "
+        "does not authorize creation. "
+        "Use workflow_select_child_role, workflow_select_executor, workflow_select_child, and "
+        "workflow_assess_output_tokens only with current bounded facts and current owner policy. "
+        "These stateless Decisions suggestions require per-call outbound permission, read both "
+        "configured environment values explicitly, and use fixed model gpt-6-luna. Compare fact, "
+        "context, and policy hashes before acting; recheck Root identity, role uniqueness, locked "
+        "budget/user approval, scope, permissions, availability, and mode. Explicit user creation "
+        "or executor instructions skip the corresponding API. Suggestions never authorize child "
+        "creation, dispatch, or Root execution; a large-output yes requires delegation or waiting. "
+        "Evaluation requires verified Root binding. Five-node semantic "
         "advice is a separate optional feature, disabled by default. The child-effort selector "
         "makes an API request only for an explicit per-invocation outbound_data_permitted=true "
         "assertion; this assertion is not proof of authority. It never mutates workflow state. "

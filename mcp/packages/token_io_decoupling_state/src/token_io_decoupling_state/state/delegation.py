@@ -3,17 +3,24 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
+import stat
 import uuid
+from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import quote
 
 from token_io_decoupling_core.models import (
     DatabaseKind,
 )
 from token_io_decoupling_core.state_models import (
     AllocationRole,
+    BindingIdentity,
     ChangeCategory,
     CheckpointNode,
+    DelegationBudgetApproval,
+    DelegationUnreserveRequest,
     HostCapability,
     HostGuard,
     MutationReceipt,
@@ -33,36 +40,402 @@ from .validation import _epoch_snapshot
 
 
 def delegation_reserve(
-    self: StateService, role: str, *, expected_revision: int, idempotency_key: str
+    self: StateService,
+    role: str,
+    *,
+    expected_revision: int,
+    idempotency_key: str,
+    budget_approval: DelegationBudgetApproval | None = None,
 ) -> MutationReceipt:
     binding = self._parent_binding({HostCapability.WORKFLOW_WRITE}, {HostGuard.PATH_BOUNDARY})
     try:
         role = AllocationRole(role).value
     except ValueError as exc:
         raise InvalidStateTransitionError("unknown allocation role") from exc
+    if budget_approval is not None:
+        budget_approval = DelegationBudgetApproval.model_validate(budget_approval)
     payload = {"role": role}
+    if budget_approval is not None:
+        payload["budget_approval"] = budget_approval.model_dump(mode="json")
 
     def mutate(connection: sqlite3.Connection, revision: int) -> dict[str, object]:
         control = _required_control(connection)
         if control[4] != "Multi-Agent Coding":
             raise InvalidStateTransitionError("Single-Agent mode has no Worker allocations")
-        if control[5] == 1 and role != AllocationRole.PRIMARY_OUTPUT.value:
-            raise InvalidStateTransitionError("a single Worker slot is reserved for Primary Output")
+        already_claimed = _one(
+            connection,
+            "SELECT allocation_id FROM allocations WHERE role=? LIMIT 1",
+            (role,),
+        )
+        if already_claimed is not None:
+            raise InvalidStateTransitionError(
+                "an allocation already claims this role in this Session"
+            )
         allocation = _one(
             connection,
             "SELECT allocation_id, slot FROM allocations "
             "WHERE status='unassigned' ORDER BY slot LIMIT 1",
         )
         if allocation is None:
-            raise InvalidStateTransitionError("locked Worker allocation budget is exhausted")
+            if budget_approval is None:
+                raise InvalidStateTransitionError(
+                    "locked Worker allocation budget is exhausted; "
+                    "explicit user approval is required"
+                )
+            previous_count = int(control[5])
+            if budget_approval.requested_child_count != previous_count + 1:
+                raise InvalidStateTransitionError(
+                    "budget approval must authorize exactly one additional child slot"
+                )
+            approval_ref = budget_approval.user_approval
+            approval_semantic_ref = {
+                "uri": approval_ref.uri,
+                "content_hash": approval_ref.content_hash,
+            }
+            semantic_references = json.loads(control[9])
+            original_source = {"uri": control[7], "content_hash": control[8]}
+            if original_source not in semantic_references:
+                semantic_references.append(original_source)
+            if approval_semantic_ref not in semantic_references:
+                semantic_references.append(approval_semantic_ref)
+            connection.execute(
+                "UPDATE workflow_control SET child_count=?, mode_source='explicit', "
+                "source_uri=?, source_hash=?, semantic_references_json=? WHERE singleton=1",
+                (
+                    budget_approval.requested_child_count,
+                    approval_ref.uri,
+                    approval_ref.content_hash,
+                    _json(semantic_references),
+                ),
+            )
+            allocation_id = str(uuid.uuid4())
+            allocation = (allocation_id, previous_count)
+            connection.execute(
+                "INSERT INTO allocations(allocation_id, slot, role, status, created_at) "
+                "VALUES (?, ?, NULL, 'unassigned', ?)",
+                (allocation_id, previous_count, _now()),
+            )
+        elif budget_approval is not None:
+            raise InvalidStateTransitionError(
+                "budget approval is accepted only after the locked budget is exhausted"
+            )
         connection.execute(
             "UPDATE allocations SET role=?, status='reserved' WHERE allocation_id=?",
             (role, allocation[0]),
         )
-        return {"allocation_id": allocation[0], "slot": allocation[1], "role": role}
+        result: dict[str, object] = {
+            "allocation_id": allocation[0],
+            "slot": allocation[1],
+            "role": role,
+        }
+        if budget_approval is not None:
+            result["budget_approval_audit"] = {
+                "previous_child_count": int(control[5]),
+                "approved_child_count": budget_approval.requested_child_count,
+                "user_approval": budget_approval.user_approval.model_dump(mode="json"),
+                "reviewed_by_root": True,
+                "authority_limit": (
+                    "Root attestation with referenced user evidence; not cryptographic host proof"
+                ),
+            }
+        return result
 
     return self._mutate_root(
         binding, "delegation_reserve", payload, expected_revision, idempotency_key, mutate
+    )
+
+
+def _assert_no_worker_identity_for_allocation(
+    self: StateService,
+    binding: BindingIdentity,
+    root_connection: sqlite3.Connection,
+    allocation_id: str,
+) -> None:
+    _, root = self._root_database(binding, create=False)
+    subagents = root / "subagents"
+
+    def directory_snapshot() -> tuple[os.stat_result | None, tuple[Path, ...]]:
+        try:
+            info = subagents.lstat()
+        except FileNotFoundError:
+            return None, ()
+        except OSError as exc:
+            raise InvalidStateTransitionError(
+                "existing Worker identity history cannot be inspected safely"
+            ) from exc
+        if not stat.S_ISDIR(info.st_mode):
+            raise InvalidStateTransitionError(
+                "existing Worker identity history cannot be inspected safely"
+            )
+        try:
+            entries = tuple(sorted(subagents.iterdir(), key=lambda item: item.name))
+        except OSError as exc:
+            raise InvalidStateTransitionError(
+                "existing Worker identity history cannot be inspected safely"
+            ) from exc
+        return info, entries
+
+    def same_metadata(before: os.stat_result, after: os.stat_result) -> bool:
+        return (
+            before.st_dev == after.st_dev
+            and before.st_ino == after.st_ino
+            and before.st_size == after.st_size
+            and before.st_mtime_ns == after.st_mtime_ns
+            and before.st_ctime_ns == after.st_ctime_ns
+        )
+
+    def reject_sidecars(worker_database: Path, *, changed: bool = False) -> None:
+        message = (
+            "existing Worker identity history changed while being inspected"
+            if changed
+            else "existing Worker identity database has an unreadable sidecar"
+        )
+        for suffix in ("-wal", "-shm", "-journal"):
+            sidecar = Path(f"{worker_database}{suffix}")
+            try:
+                sidecar.lstat()
+            except FileNotFoundError:
+                continue
+            except OSError as exc:
+                raise InvalidStateTransitionError(
+                    "existing Worker identity history cannot be inspected safely"
+                ) from exc
+            raise InvalidStateTransitionError(message)
+
+    initial_directory_info, worker_directories = directory_snapshot()
+    for worker_directory in worker_directories:
+        try:
+            worker_directory_info = worker_directory.lstat()
+        except OSError as exc:
+            raise InvalidStateTransitionError(
+                "existing Worker identity history cannot be inspected safely"
+            ) from exc
+        if not stat.S_ISDIR(worker_directory_info.st_mode):
+            raise InvalidStateTransitionError(
+                "existing Worker identity history contains an unexpected path"
+            )
+
+        worker_database = worker_directory / "worker.sqlite3"
+        try:
+            database_info = worker_database.lstat()
+        except OSError as exc:
+            raise InvalidStateTransitionError(
+                "existing Worker identity history is missing or inaccessible"
+            ) from exc
+        if not stat.S_ISREG(database_info.st_mode):
+            raise InvalidStateTransitionError(
+                "existing Worker identity database is not a regular file"
+            )
+        reject_sidecars(worker_database)
+
+        connection: sqlite3.Connection | None = None
+        try:
+            database_uri = f"file:{quote(str(worker_database), safe='/')}?mode=ro&immutable=1"
+            connection = sqlite3.connect(database_uri, uri=True)
+            connection.execute("PRAGMA query_only = ON")
+            identity_table = connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='worker_identity'"
+            ).fetchone()
+            if identity_table is None:
+                raise InvalidStateTransitionError(
+                    "existing Worker database has no verifiable identity"
+                )
+            columns = {
+                str(row[1]) for row in connection.execute("PRAGMA table_info(worker_identity)")
+            }
+            if not {
+                "singleton",
+                "project_id",
+                "root_session_id",
+                "worker_session_id",
+                "allocation_id",
+            }.issubset(columns):
+                raise InvalidStateTransitionError(
+                    "existing Worker database identity schema is incomplete"
+                )
+            identity_rows = connection.execute(
+                "SELECT singleton,project_id,root_session_id,worker_session_id,allocation_id "
+                "FROM worker_identity"
+            ).fetchall()
+        except InvalidStateTransitionError:
+            raise
+        except (OSError, sqlite3.Error, ValueError) as exc:
+            raise InvalidStateTransitionError(
+                "existing Worker identity history is corrupt or unverifiable"
+            ) from exc
+        finally:
+            if connection is not None:
+                connection.close()
+
+        reject_sidecars(worker_database, changed=True)
+        try:
+            final_directory_info = worker_directory.lstat()
+            final_database_info = worker_database.lstat()
+        except OSError as exc:
+            raise InvalidStateTransitionError(
+                "existing Worker identity history changed while being inspected"
+            ) from exc
+        if (
+            not stat.S_ISDIR(final_directory_info.st_mode)
+            or not same_metadata(worker_directory_info, final_directory_info)
+            or not stat.S_ISREG(final_database_info.st_mode)
+            or not same_metadata(database_info, final_database_info)
+        ):
+            raise InvalidStateTransitionError(
+                "existing Worker identity history changed while being inspected"
+            )
+
+        if len(identity_rows) != 1:
+            raise InvalidStateTransitionError(
+                "existing Worker database has missing or ambiguous identity"
+            )
+        singleton, project_id, root_session_id, worker_session_id, recorded_allocation_id = (
+            identity_rows[0]
+        )
+        if (
+            type(singleton) is not int
+            or singleton != 1
+            or project_id != binding.project_id
+            or root_session_id != binding.root_session_id
+            or worker_session_id != worker_directory.name
+            or not isinstance(recorded_allocation_id, str)
+            or not recorded_allocation_id.strip()
+        ):
+            raise InvalidStateTransitionError(
+                "existing Worker database identity is unknown or inconsistent"
+            )
+        if recorded_allocation_id == allocation_id:
+            raise InvalidStateTransitionError(
+                "Worker identity history proves this allocation may have been created"
+            )
+        root_allocation = _one(
+            root_connection,
+            "SELECT status,worker_session_id FROM allocations WHERE allocation_id=?",
+            (recorded_allocation_id,),
+        )
+        if (
+            root_allocation is None
+            or root_allocation[0] not in {"bound", "initialized"}
+            or root_allocation[1] != worker_session_id
+        ):
+            raise InvalidStateTransitionError(
+                "existing Worker database identity does not match a bound Root allocation"
+            )
+
+    final_directory_info, final_worker_directories = directory_snapshot()
+    if (
+        (initial_directory_info is None) != (final_directory_info is None)
+        or tuple(item.name for item in worker_directories)
+        != tuple(item.name for item in final_worker_directories)
+        or (
+            initial_directory_info is not None
+            and final_directory_info is not None
+            and not same_metadata(initial_directory_info, final_directory_info)
+        )
+    ):
+        raise InvalidStateTransitionError("Worker identity history changed while being inspected")
+
+
+def delegation_unreserve(
+    self: StateService,
+    request: DelegationUnreserveRequest,
+) -> MutationReceipt:
+    request = DelegationUnreserveRequest.model_validate(request)
+    binding = self._parent_binding({HostCapability.WORKFLOW_WRITE}, {HostGuard.PATH_BOUNDARY})
+    proof = request.creation_not_started_reference.model_dump(mode="json")
+    payload = {
+        "allocation_id": request.allocation_id,
+        "creation_not_started": request.creation_not_started,
+        "creation_not_started_reference": proof,
+    }
+
+    def mutate(connection: sqlite3.Connection, revision: int) -> dict[str, object]:
+        control = _required_control(connection)
+        if control[4] != "Multi-Agent Coding":
+            raise InvalidStateTransitionError("Single-Agent mode has no Worker allocations")
+        allocation = _one(
+            connection,
+            "SELECT allocation_id,slot,role,status,worker_session_id,worker_event_id,output_class "
+            "FROM allocations WHERE allocation_id=?",
+            (request.allocation_id,),
+        )
+        if allocation is None or allocation[3] != "reserved" or allocation[2] is None:
+            raise InvalidStateTransitionError(
+                "only a reserved allocation with an assigned role can be unreserved"
+            )
+        if any(allocation[index] is not None for index in (4, 5, 6)):
+            raise InvalidStateTransitionError(
+                "allocation identity, event, or output history blocks unreserve"
+            )
+
+        for table, query in (
+            (
+                "Slice",
+                "SELECT 1 FROM workflow_slices WHERE allocation_id=? LIMIT 1",
+            ),
+            (
+                "Root outbox",
+                "SELECT 1 FROM root_outbox WHERE allocation_id=? LIMIT 1",
+            ),
+            (
+                "dispatch",
+                "SELECT 1 FROM workflow_dispatch_events WHERE allocation_id=? LIMIT 1",
+            ),
+        ):
+            if _one(connection, query, (request.allocation_id,)) is not None:
+                raise InvalidStateTransitionError(f"{table} history blocks unreserve")
+
+        bind_receipts = connection.execute(
+            "SELECT result_json FROM operation_receipts WHERE operation='delegation_bind'"
+        ).fetchall()
+        for receipt_row in bind_receipts:
+            try:
+                receipt_result = json.loads(receipt_row[0])
+            except (TypeError, json.JSONDecodeError) as exc:
+                raise InvalidStateTransitionError(
+                    "a delegation bind receipt cannot be verified"
+                ) from exc
+            if (
+                not isinstance(receipt_result, dict)
+                or not isinstance(receipt_result.get("allocation_id"), str)
+                or not receipt_result["allocation_id"].strip()
+            ):
+                raise InvalidStateTransitionError("a delegation bind receipt cannot be verified")
+            if receipt_result["allocation_id"] == request.allocation_id:
+                raise InvalidStateTransitionError(
+                    "delegation bind receipt history blocks unreserve"
+                )
+
+        _assert_no_worker_identity_for_allocation(self, binding, connection, request.allocation_id)
+        cursor = connection.execute(
+            "UPDATE allocations SET role=NULL,status='unassigned' "
+            "WHERE allocation_id=? AND status='reserved'",
+            (request.allocation_id,),
+        )
+        if cursor.rowcount != 1:
+            raise InvalidStateTransitionError(
+                "allocation changed while unreserve was being applied"
+            )
+        return {
+            "allocation_id": request.allocation_id,
+            "slot": int(allocation[1]),
+            "role": None,
+            "status": "unassigned",
+            "creation_not_started": True,
+            "proof": proof,
+            "root_attestation": {
+                "reviewed_by_root": True,
+                "authority_limit": "Root attestation with referenced evidence; not host proof",
+            },
+        }
+
+    return self._mutate_root(
+        binding,
+        "delegation_unreserve",
+        payload,
+        request.expected_revision,
+        request.idempotency_key,
+        mutate,
     )
 
 
@@ -207,6 +580,18 @@ def delegation_bind(
                 "allocation must have a reserved role or an initialized reusable identity"
             )
         first_binding = allocation[1] == "reserved" and allocation[2] is None
+        if first_binding:
+            duplicate_role = _one(
+                connection,
+                "SELECT allocation_id FROM allocations WHERE role=? "
+                "AND worker_session_id IS NOT NULL "
+                "AND allocation_id!=? LIMIT 1",
+                (allocation[0], allocation_id),
+            )
+            if duplicate_role is not None:
+                raise InvalidStateTransitionError(
+                    "another created child already occupies this role in the current Session"
+                )
         if not first_binding and allocation[2] != child_session_id:
             raise InvalidStateTransitionError("allocation identity is immutable once bound")
         active_slice = _one(

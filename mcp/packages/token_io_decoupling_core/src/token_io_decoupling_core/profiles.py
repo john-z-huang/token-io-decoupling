@@ -9,6 +9,10 @@ PROFILE_TOOLS: dict[str, frozenset[str]] = {
             "rules_get_context",
             "workflow_select_child_effort",
             "workflow_generate_decision_context",
+            "workflow_select_child_role",
+            "workflow_select_executor",
+            "workflow_select_child",
+            "workflow_assess_output_tokens",
             "workflow_evaluate",
             "evaluate_control_checkpoint",
         }
@@ -17,6 +21,7 @@ PROFILE_TOOLS: dict[str, frozenset[str]] = {
         {
             "workflow_open",
             "delegation_reserve",
+            "delegation_unreserve",
             "delegation_bind",
             "slice_check",
             "slice_release",

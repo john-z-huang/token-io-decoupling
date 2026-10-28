@@ -93,7 +93,7 @@ def _text_content(result: Any) -> str:
 def _service(
     tmp_path: Path, *, loader: RuleLoader | None = None
 ) -> tuple[StateService, RuleLoader]:
-    rule_loader = loader or RuleLoader(repository_root=Path(__file__).resolve().parents[2])
+    rule_loader = loader or RuleLoader(repository_root=Path(__file__).resolve().parents[3])
     service = StateService(Provider(), state_root=tmp_path / "state", rule_loader=rule_loader)
     service.workflow_open(
         WorkflowOpenRequest(
@@ -871,7 +871,7 @@ def test_core_evaluation_is_bound_to_root_identity_before_and_after_request(
     monkeypatch.setenv("OPENAI_BASE_URL", "https://example.invalid/v1")
     provider = Provider()
     state_root = tmp_path / "state"
-    loader = RuleLoader(repository_root=Path(__file__).resolve().parents[2])
+    loader = RuleLoader(repository_root=Path(__file__).resolve().parents[3])
     service = StateService(provider, state_root=state_root, rule_loader=loader)
     service.workflow_open(
         WorkflowOpenRequest(
@@ -1266,7 +1266,7 @@ def test_rule_hash_change_during_request_discards_the_advice(
 ) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test-secret-key")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://example.invalid/v1")
-    loader = RuleLoader(repository_root=Path(__file__).resolve().parents[2])
+    loader = RuleLoader(repository_root=Path(__file__).resolve().parents[3])
     service, _ = _service(tmp_path, loader=loader)
     original_load_context = loader.load_context
     calls = 0

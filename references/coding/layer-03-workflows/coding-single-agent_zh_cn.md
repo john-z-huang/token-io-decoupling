@@ -32,8 +32,8 @@ flowchart TD
     ACT_AUDIT_WAIT["截止前等待；保留 pending 状态"]
     ACT_AUDIT_TIMEOUT["无回复且实际经过>=60秒；Root 默认 balanced/milestone_only；保留 Worker 值，缺失才补 full"]
     ACT_AUDIT_CONFIRM["确认所选规范 Root 审计记录并读回后才离开 Session"]
-    S05["05 Context / 上下文与可选项目 Memory"]
-    S06["06 Decision / 决策与两级规划"]
+    S05["05 Context / 核实事实、决策上下文、可选项目 Memory"]
+    S06["06 Decision / 规划、Single 执行主体、输出路由"]
     S07["07 Implementation / 语言服务器代码结构"]
     S08["08 Stage Feedback / 阶段反馈"]
     S09["09 Control / 控制"]
@@ -66,6 +66,18 @@ flowchart TD
     ACT_EPOCH_DIRECT["核验当前 fingerprint 并运行必需验证"]
     D_RECON{"是否仍需事实？"}
     ACT_RECON["当前 Session 有界侦察"]
+    D_CONTEXT_GEN{"未决的下游决策是否需要审阅后的上下文？"}
+    ACT_CONTEXT_GEN["用带来源标签的有界事实生成上下文；Root 审阅准确性、相关性和精确输入 Hash"]
+    ACT_CONTEXT_DIRECT["使用已核实事实和直接 owner；跳过已定建议或审阅生成失败"]
+    D_TASK_ASSIGN{"执行主体指令是否符合已锁定的 Single-Agent 模式？"}
+    ACT_EXECUTOR_ROOT["Root 是本地确定性执行主体；不请求执行主体建议"]
+    ACT_EXECUTOR_CONFLICT["明确 sub_agent 与 Single-Agent 模式冲突；交 Root 审阅，不得静默回退 Root"]
+    D_OUTPUT_EXPLICIT{"用户是否已明确决定 Root/输出路由？"}
+    ACT_OUTPUT_ADVICE["按 Output Token 路由独立评估每项 Root 直接输出"]
+    D_OUTPUT_RESULT{"输出规模评估结果？"}
+    ACT_OUTPUT_NO["no：Root 可在满足其他门禁后继续"]
+    ACT_OUTPUT_HOLD["yes：挂起并报告 Single-Agent 拓扑边界；不得臆造子代理或任务重构路径"]
+    ACT_OUTPUT_DIRECT["证据不足或建议失败时，依据 owner 审阅已核实事实；不得默认选择 Root"]
     D_CONTROL{"控制：继续／修订／停止"}
     D_RECOVERY_GATE{"下一 Slice 前，floor 后的 Control Continue 对当前 Control 规则和相关 Epoch 是否仍有效？"}
     D_VERIFY{"当前 Epoch 是否通过？"}
@@ -138,7 +150,13 @@ S01 --> ACT_INITIAL_CLASSIFY
     ACT_PLAN_READ -- 失败／不可用 --> BLOCK
     D_RECON -- 需要 --> ACT_RECON
     ACT_RECON --> S05
-    D_RECON -- 不需要 --> S06
+    D_RECON -- 不需要／不适用 --> D_CONTEXT_GEN
+    D_CONTEXT_GEN -- 未决的下游决策需要背景 --> ACT_CONTEXT_GEN
+    D_CONTEXT_GEN -- 明确指令已定分支／无需下游建议：不适用 --> ACT_CONTEXT_DIRECT
+    ACT_CONTEXT_GEN -- 上下文已审阅且精确输入 Hash 仍当前 --> S06
+    ACT_CONTEXT_GEN -- 失败／事实不足；仅直接审阅 --> ACT_CONTEXT_DIRECT
+    ACT_CONTEXT_DIRECT -- 已核实事实足够／遵循明确指令 --> S06
+    ACT_CONTEXT_DIRECT -- 必需事实缺失或冲突 --> BLOCK
     S06 --> D_DECISION_ADVICE
     D_DECISION_ADVICE -- 是／明确启用且与当前问题相关 --> ACT_DECISION_ADVICE
     D_DECISION_ADVICE -- 否／Native／关闭／不可用／不适用 --> ACT_DECISION_DIRECT
@@ -150,8 +168,24 @@ S01 --> ACT_INITIAL_CLASSIFY
     ACT_PLAN --> D_PLAN_SAVED
     D_PLAN_SAVED -- 是 --> D_RECOVERY_GATE
     D_PLAN_SAVED -- 失败／不可用 --> BLOCK
-    D_RECOVERY_GATE -- 无恢复 floor／不适用，或 floor 后 Continue 对当前 Control 规则和相关 Epoch 仍有效 --> S07
+    D_RECOVERY_GATE -- 无恢复 floor／不适用，或 floor 后 Continue 对当前 Control 规则和相关 Epoch 仍有效 --> D_TASK_ASSIGN
     D_RECOVERY_GATE -- 需要新的当前 Continue --> D_CONTROL_ADVICE
+    D_TASK_ASSIGN -- 用户明确指定 Root 或无冲突执行主体指令；本地确定性路由 --> ACT_EXECUTOR_ROOT
+    D_TASK_ASSIGN -- 明确 sub_agent 与已锁定 Single 冲突；交 Root 审阅 --> ACT_EXECUTOR_CONFLICT
+    ACT_EXECUTOR_CONFLICT -- 冲突未解决；阻塞且不得静默回退 Root --> BLOCK
+    ACT_EXECUTOR_ROOT --> D_OUTPUT_EXPLICIT
+    D_OUTPUT_EXPLICIT -- Root/输出指令已明确决定路由；跳过对应建议 --> S07
+    D_OUTPUT_EXPLICIT -- 输出路由未定；独立评估输出 --> ACT_OUTPUT_ADVICE
+    ACT_OUTPUT_ADVICE -- 得到评估结果 --> D_OUTPUT_RESULT
+    ACT_OUTPUT_ADVICE -- 不可用或失败；仅直接审阅 owner --> ACT_OUTPUT_DIRECT
+    D_OUTPUT_RESULT -- no／当前事实已核实 --> ACT_OUTPUT_NO
+    D_OUTPUT_RESULT -- yes／路由未定；Single-Agent 拓扑边界 --> ACT_OUTPUT_HOLD
+    D_OUTPUT_RESULT -- 证据不足／事实冲突 --> ACT_OUTPUT_DIRECT
+    ACT_OUTPUT_DIRECT -- 已核实事实支持 no --> ACT_OUTPUT_NO
+    ACT_OUTPUT_DIRECT -- 已核实事实支持 yes --> ACT_OUTPUT_HOLD
+    ACT_OUTPUT_DIRECT -- 事实缺失、冲突或仍未决 --> BLOCK
+    ACT_OUTPUT_NO --> S07
+    ACT_OUTPUT_HOLD -- 挂起并报告拓扑边界；不得继续输出 --> BLOCK
     S07 --> S08
     S08 --> S09
     S09 --> D_CONTROL_ADVICE
@@ -230,7 +264,9 @@ S01 --> ACT_INITIAL_CLASSIFY
    - 根据已记录的 Root 频率应用[推理摘要可见性](../layer-01-fundamental-concepts/reasoning-summary-visibility_zh_cn.md)：在要求的边界使用其标记和完整安全摘要字段；必需摘要缺失或格式错误时，报告并阻塞依赖动作。按 [Context Firewall](../layer-01-fundamental-concepts/session-context-firewall_zh_cn.md)渐进读取并限制原始项目状态。语义决策和最终验收由输入侧阶段负责。
 5. **上下文。** Native 实质恢复后，在此重新核验当前任务边界和受影响事实；已恢复记录不能证明旧 Context 仍新鲜。 选择 Enhanced 时，通过[增强状态存储](../layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md)读取当前 Root 记录和有界恢复索引；只读状态检查不得创建、迁移、刷新快照或推进 Revision。记录当前 Revision，仅用绑定同一 Revision 的有效游标读取省略项。Native 模式读取 parent context 规范记录。在 [Context 检查点](../layer-02-workflow-concepts/context_zh_cn.md)提出下一切片所需回答的最小问题，只读取回答该问题必需的源文件、元数据、历史或证据。复用上下文前核对范围、owner、源路径、新鲜度和 epoch；只刷新受影响的事实。在此 Context 阶段，始终使用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)列出 `plans/` 下的活动计划，筛选与当前任务相关的计划并逐一读取。核对任务匹配、新鲜度及与当前指令的一致性；当前指令优先，报告冲突并重新评估，Memory 不构成授权。没有匹配的活动计划时，记录 `Not applicable` 及原因。列表或相关计划读取不可用/失败时，报告并阻塞依赖该上下文的工作；不得回退到文件。回答问题需要复用 Agent 项目知识时，应用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)读取相关项目 Memory，并对照权威项目文件核验来源指针和新鲜度。不存在相关 Memory 或无需跨会话知识时，记录 `Not applicable` 及原因。能力不可用时，报告限制并读取获准的权威来源；只有必需事实无法通过其他方式确认时才阻塞。Memory 不能替代权威来源、Contract 或验证。不需要有界侦察或恢复时也记录原因。
    - **有界规则上下文。** 仅在当前问题需要注册节点时应用[增强规则上下文](../layer-01-fundamental-concepts/enhanced-rule-context_zh_cn.md)。核验其当前来源、语言和 Hash；单独读取判断必需的链接 owner。若直接核验 owner 已足够，记录有界读取为 `Not applicable` 并沿用该来源。读取失败时直接读取当前 owner；只有必需权威内容不可用时才阻塞。
+   - **决策上下文生成。** 当未解决的下游 Decision 需要背景时，使用[决策上下文生成](../layer-01-fundamental-concepts/decision-context-generation_zh_cn.md)，仅从来源和 provenance 已标明的有界事实生成上下文。Root 在复用前审查生成内容、来源和当前相关性，并将其 input 与 policy Hash 同精确的当前输入和规则核对。若明确指令已解决该决策，或无需上下文/建议，记录 `Not applicable` 及原因。若生成失败，仅当已核实事实和直接 owner 足以支持判断时才直接决策；不得伪造 description 或 Hash。若必需事实缺失、歧义或冲突，则阻塞并交由复核。
 6. **决策与两级规划。** Native 实质恢复后，重新评估当前 Decision 和 Contract，再授权下一 Slice；不得重开已锁定 Mode 或重复已完成的审计提问。 在 [Decision](../layer-02-workflow-concepts/decision_zh_cn.md)说明实质问题、事实、约束、选项、选定方向、舍弃方案、授权路径/修改和未发布边界。应用[决策门禁](../layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md)：除非任务符合简单快速路径，否则先形成包含 Problem、Known facts、Assumptions and unknowns、Decision questions、Solution envelope、Risks、Acceptance 和 Stages/checkpoints 的简洁 Decision Brief；实质选择未定时只发布侦察。用[执行规划](../layer-01-fundamental-concepts/execution-planning_zh_cn.md)安排有界检查、实现和聚焦检查，并写明预期证据。用户任务目标是规划、探索、制定/输出/更新计划时，应用[规划意图下的计划 Memory 生命周期](../layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle_zh_cn.md)持久化精简综合计划并读回确认存储结果；用户任务目标不包含规划、探索、制定/输出/更新计划时，记录 `Not applicable` 及原因。必需持久化能力不可用或写入/读回失败时，报告失败并阻塞依赖工作；不得回退到文件。放行一个切片前确认所选方向符合 Contract。 已有获授权 Root 上下文后，才可按需使用当前相关的 `task_intent`、`output_class` 或 `contract_change` 建议；核验其规则/输入/状态绑定和当前直接 owner，再依据证据作出实际 Decision。建议绝不改变已锁定 Mode/count，也不释放 Slice。建议关闭、过期、失败或走 Native 路径时，使用直接 owner；未请求建议时明确记录 `Not applicable` 及原因。遵循[Decisions 建议](../layer-01-fundamental-concepts/decisions-advisory_zh_cn.md)。
+   - **执行者与输出路径。** 分别应用[任务分配](../layer-01-fundamental-concepts/task-assignment_zh_cn.md)和[输出 Token 路由](../layer-01-fundamental-concepts/output-token-routing_zh_cn.md)。Single-Agent 模式下，Root 是本地确定性执行者；不得请求执行者建议。明确的 `sub_agent` 指令与锁定模式冲突，必须阻塞并交 Root 复核；不得静默改为 Root。独立评估输出路径，并在第 7 步实际输出前完成。明确指令已确定 Root/输出路径时，跳过对应建议，同时仍须遵守其他模式、权限和执行门禁。使用任何建议前，复核当前事实、模式、权限，并将当前 input/context 与 policy Hash 核对。`no` 只表示 Root 可在符合 Contract 和实际 Slice/执行门禁后继续；执行者选择或输出建议本身不释放 Slice。`yes` 要求暂停并报告 Single-Agent 拓扑限制；不得创建或派发子代理，也不得通过重构/拆分任务来路由输出。建议失败、过期或 Hash 不匹配、证据不足时，绝不能默认 Root 或 `no`：仅当当前 owner 和已核实事实足以支持判断时，Root 才可直接决策，否则阻塞并复核。
 7. **Interaction Slice 与实现。** 开始下一实现阶段前，按[Native 对账](../layer-01-fundamental-concepts/native-reconciliation_zh_cn.md)执行条件恢复门禁：存在 recovery floor 时，必须有 floor 后且对当前 Control 规则和相关 Epoch 仍有效的 `Continue`。若缺失或过期，通过现有 Control 分支重新核验；`Amend` 后先重新检查当前 Context 和 Decision，再回到 Control。`Stop` 会阻塞。无 recovery floor 时记录 `Not applicable` 及原因。Enhanced 状态下，仅通过带预期 Revision 和幂等键的类型化 Root 操作持久化获准的实现进度，并在继续前核验返回状态。遵循[增强状态存储](../layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md)及[增强 Schema 迁移](../layer-01-fundamental-concepts/enhanced-schema-migrations_zh_cn.md)；Schema 不兼容时阻塞依赖写入。Native 模式按其 owner 更新 parent context 规范记录。按[执行控制](../layer-01-fundamental-concepts/execution-control_zh_cn.md)写明 `Objective`、`Authorized scope/mutations`、`Return conditions` 和 `Unreleased boundary`。在 [Implementation](../layer-02-workflow-concepts/implementation_zh_cn.md)重新读取放行内容并只查看必需文件。需要理解代码结构时，应用[项目 Memory 与代码结构能力](../layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md)：使用可用的语言服务器查询，并将准确符号/路径指针保留为证据。能力或所需语言语义不可用时，说明限制并使用定向文本搜索和小范围读取；不得声称获得 LSP 证据；必需关系仍无法核实时阻塞。无需查询代码结构时，记录 `Not applicable` 及原因。随后实施最小授权改动，排除无关清理和外部影响，运行聚焦临时检查，并返回修改路径、证据、问题及仍未发布的边界。临时检查不是最终验收。
 8. **阶段反馈。** 不确定性需要有界、产出证据的阶段时，应用[执行阶段反馈](../layer-01-fundamental-concepts/execution-stage-feedback_zh_cn.md)。在实质性观察点只保留压缩后的状态、发现、改动范围、验证、问题和需求；常规读取、修改和重复检查留在获准阶段内。出现新的实质选择时先返回第 6 阶段。
 9. **控制边界。** 在 [Control](../layer-02-workflow-concepts/control_zh_cn.md)记录 `Status`、`Findings`、`Changed`、`Verification`、`Issue`、`Need` 和 `Unreleased boundary`。检查接口、schema、兼容、安全、风险、不可逆操作、范围或外部影响是否改变；明确选择 Continue、Amend、Stop 或 Evidence-on-Demand。只有处于现有边界内才可继续；越界前先修订 Contract 和 Decision。其他获准切片重复第 5–9 阶段。 `Evidence-on-Demand` 是暂停放行并获取证据的中间动作；返回本检查点后仅选择 `Continue`、`Amend` 或 `Stop`，并消费 Stage Feedback 的 Progress Signal 而不是重复汇报。 只有核验当前状态、输入/规则绑定和直接 Control owner 后，才可考虑 `control` 建议。它仅为建议；关闭、过期或失败时回到直接 owner，再通过可信转换持久化显式选择的结果。遵循[Decisions 建议](../layer-01-fundamental-concepts/decisions-advisory_zh_cn.md)。

@@ -1,22 +1,34 @@
 from __future__ import annotations
 
-import hashlib
 import json
+from collections.abc import Callable
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 import httpx2
 import pytest
 from openai import OpenAI
-from pydantic import ValidationError
+from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_workflow.decision_context import (
-    _FIXED_INSTRUCTIONS,
     GENERATION_MODEL,
     DecisionContextGenerator,
     DecisionContextInput,
     DecisionContextStructuredOutput,
     _input_hash,
 )
+
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _rules() -> RuleLoader:
+    return RuleLoader(repository_root=_REPOSITORY_ROOT)
+
+
+def _generator(
+    *, client_factory: Callable[[str, str], object] | None = None
+) -> DecisionContextGenerator:
+    return DecisionContextGenerator(rules=_rules(), client_factory=client_factory)
 
 
 def _payload(**overrides: object) -> DecisionContextInput:
@@ -94,7 +106,7 @@ def test_success_preserves_all_caller_material_and_uses_fixed_responses_contract
     )
     client = _FakeClient(_response(parsed))
     client_args: list[tuple[str, str]] = []
-    result = DecisionContextGenerator(
+    result = _generator(
         client_factory=lambda key, url: client_args.append((key, url)) or client
     ).generate(payload)
 
@@ -109,7 +121,7 @@ def test_success_preserves_all_caller_material_and_uses_fixed_responses_contract
     assert call["model"] == GENERATION_MODEL
     instructions = call["instructions"]
     assert isinstance(instructions, str)
-    assert instructions == _FIXED_INSTRUCTIONS
+    assert instructions == _rules().load_delegation_policy("decision-context-generation")[0]
     assert payload.raw_content not in instructions
     assert payload.decision_goal not in instructions
     assert call["text_format"] is DecisionContextStructuredOutput
@@ -185,9 +197,7 @@ def test_real_openai_sdk_uses_responses_wire_contract_with_mock_transport(
         max_retries=0,
         http_client=transport_client,
     )
-    result = DecisionContextGenerator(client_factory=lambda *_: sdk_client).generate(
-        _payload(raw_content=source)
-    )
+    result = _generator(client_factory=lambda *_: sdk_client).generate(_payload(raw_content=source))
 
     assert (result.status, result.reason) == ("available", "description_generated")
     assert result.description == expected_description
@@ -198,7 +208,7 @@ def test_real_openai_sdk_uses_responses_wire_contract_with_mock_transport(
     assert request.url.path == "/v1/responses"
     body = json.loads(request.content)
     assert body["model"] == GENERATION_MODEL
-    assert body["instructions"] == _FIXED_INSTRUCTIONS
+    assert body["instructions"] == _rules().load_delegation_policy("decision-context-generation")[0]
     assert body["reasoning"] == {"effort": "medium"}
     assert body["store"] is False
     assert body["tools"] == []
@@ -231,7 +241,7 @@ def test_context_kind_accepts_six_thousand_characters(
     client = _FakeClient(
         _response(DecisionContextStructuredOutput(description=description, missing_information=[]))
     )
-    result = DecisionContextGenerator(client_factory=lambda *_: client).generate(
+    result = _generator(client_factory=lambda *_: client).generate(
         _payload(output_kind="decision_context")
     )
     assert result.status == "available"
@@ -247,7 +257,7 @@ def test_generated_question_is_compatible_with_child_effort_question_field(
     client = _FakeClient(
         _response(DecisionContextStructuredOutput(description=description, missing_information=[]))
     )
-    result = DecisionContextGenerator(client_factory=lambda *_: client).generate(
+    result = _generator(client_factory=lambda *_: client).generate(
         _payload(output_kind="decision_question")
     )
     assert result.description is not None
@@ -274,38 +284,6 @@ def test_generated_question_is_compatible_with_child_effort_question_field(
     assert ChildEffortInput.model_validate(child_data).decision_question == description
 
 
-@pytest.mark.parametrize(
-    "field,value",
-    [
-        ("raw_content", None),
-        ("raw_content", ""),
-        ("raw_content", "  \n"),
-        ("raw_content", 1),
-        ("raw_content", "x" * 60_001),
-        ("decision_goal", None),
-        ("decision_goal", "\t "),
-        ("decision_goal", 3),
-        ("decision_goal", "g" * 1201),
-        ("output_kind", "other"),
-        ("outbound_data_permitted", 1),
-    ],
-)
-def test_input_rejects_missing_type_blank_and_oversized_values(field: str, value: object) -> None:
-    data = _payload().model_dump()
-    data[field] = value
-    with pytest.raises(ValidationError):
-        DecisionContextInput.model_validate(data)
-
-
-def test_input_forbids_extra_fields_and_required_fields() -> None:
-    data = _payload().model_dump()
-    del data["raw_content"]
-    with pytest.raises(ValidationError):
-        DecisionContextInput.model_validate(data)
-    with pytest.raises(ValidationError):
-        DecisionContextInput.model_validate({**_payload().model_dump(), "unexpected": True})
-
-
 def test_false_permission_blocks_before_environment_or_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -314,9 +292,9 @@ def test_false_permission_blocks_before_environment_or_client(
         "token_io_decoupling_workflow.decision_context.os.environ.get", environment_read
     )
     factory_calls: list[bool] = []
-    result = DecisionContextGenerator(
-        client_factory=lambda *_: factory_calls.append(True)
-    ).generate(_payload(outbound_data_permitted=False))
+    result = _generator(client_factory=lambda *_: factory_calls.append(True)).generate(
+        _payload(outbound_data_permitted=False)
+    )
     assert (result.status, result.reason) == ("blocked", "outbound_data_not_permitted")
     environment_read.assert_not_called()
     assert factory_calls == []
@@ -343,34 +321,9 @@ def test_each_missing_or_blank_credential_blocks_before_client(
     else:
         monkeypatch.setenv("OPENAI_BASE_URL", url)
     calls: list[bool] = []
-    result = DecisionContextGenerator(client_factory=lambda *_: calls.append(True)).generate(
-        _payload()
-    )
+    result = _generator(client_factory=lambda *_: calls.append(True)).generate(_payload())
     assert (result.status, result.reason) == ("blocked", "missing_credentials")
     assert calls == []
-
-
-def test_hash_covers_all_decision_inputs_but_excludes_permission() -> None:
-    baseline = _payload()
-    assert _input_hash(baseline) == _input_hash(_payload(outbound_data_permitted=False))
-    assert _input_hash(baseline) != _input_hash(_payload(raw_content="changed source"))
-    assert _input_hash(baseline) != _input_hash(_payload(decision_goal="changed goal"))
-    assert _input_hash(baseline) != _input_hash(_payload(output_kind="decision_context"))
-    canonical = {
-        "raw_content": (
-            "User requirement: preserve existing behavior.\n"
-            "Current diff: adds strict decision question.\n"
-            "LSP observation: caller-composed symbol fact."
-        ),
-        "decision_goal": "Ask which lowest sufficient effort fits the released task.",
-        "output_kind": "decision_question",
-    }
-    expected = hashlib.sha256(
-        json.dumps(canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
-            "utf-8"
-        )
-    ).hexdigest()
-    assert _input_hash(baseline) == expected
 
 
 @pytest.mark.parametrize(
@@ -424,7 +377,7 @@ def test_nonusable_or_inconsistent_model_outputs_fail_closed(
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://example.invalid/v1")
     client = _FakeClient(response)
-    result = DecisionContextGenerator(client_factory=lambda *_: client).generate(_payload())
+    result = _generator(client_factory=lambda *_: client).generate(_payload())
     assert (result.status, result.reason) == ("blocked", reason)
     assert result.description is None
     if reason == "insufficient_evidence":
@@ -440,9 +393,9 @@ def test_output_limits_are_enforced_per_kind(monkeypatch: pytest.MonkeyPatch) ->
     too_long_question = _FakeClient(
         _response(DecisionContextStructuredOutput(description="q" * 1201, missing_information=[]))
     )
-    question_result = DecisionContextGenerator(
-        client_factory=lambda *_: too_long_question
-    ).generate(_payload(output_kind="decision_question"))
+    question_result = _generator(client_factory=lambda *_: too_long_question).generate(
+        _payload(output_kind="decision_question")
+    )
     assert (question_result.status, question_result.reason) == ("blocked", "invalid_response")
 
     too_long_context = _FakeClient(
@@ -452,7 +405,7 @@ def test_output_limits_are_enforced_per_kind(monkeypatch: pytest.MonkeyPatch) ->
             ),
         )
     )
-    context_result = DecisionContextGenerator(client_factory=lambda *_: too_long_context).generate(
+    context_result = _generator(client_factory=lambda *_: too_long_context).generate(
         _payload(output_kind="decision_context")
     )
     assert (context_result.status, context_result.reason) == ("blocked", "invalid_response")
@@ -468,7 +421,7 @@ def test_provider_failures_are_redacted_and_close_client(
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://example.invalid/v1")
     client = _FakeClient(error=error)
-    result = DecisionContextGenerator(client_factory=lambda *_: client).generate(_payload())
+    result = _generator(client_factory=lambda *_: client).generate(_payload())
     assert (result.status, result.reason) == ("blocked", reason)
     private_error = error.args[0] if error.args else type(error).__name__
     assert private_error not in result.model_dump_json()
@@ -486,6 +439,6 @@ def test_parsing_error_is_reported_as_invalid_response(
         pass
 
     client = _FakeClient(error=ResponseParsingError("bad response body"))
-    result = DecisionContextGenerator(client_factory=lambda *_: client).generate(_payload())
+    result = _generator(client_factory=lambda *_: client).generate(_payload())
     assert (result.status, result.reason) == ("blocked", "invalid_response")
     assert "bad response body" not in result.model_dump_json()

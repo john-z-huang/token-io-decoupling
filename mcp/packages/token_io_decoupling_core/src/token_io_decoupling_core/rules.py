@@ -94,6 +94,33 @@ class RuleLoader:
             }
         )
 
+    def load_delegation_policy(self, owner: str) -> tuple[str, str]:
+        """Read an allowlisted current owner; standalone advice does not register a Core node."""
+        allowed = {
+            "child-role-selection",
+            "task-assignment",
+            "output-token-routing",
+            "session-role-ownership",
+            "decision-context-generation",
+        }
+        if owner not in allowed:
+            raise RuleLoadError("unknown delegation policy")
+        path = f"references/coding/layer-01-fundamental-concepts/{owner}.md"
+        if self._repository_root is not None:
+            text = self._read_repository_owner(path, "General rules")
+        else:
+            try:
+                text = (
+                    resources.files("token_io_decoupling_core")
+                    .joinpath("_resources", "rules", f"{owner}.en.md")
+                    .read_text(encoding="utf-8")
+                )
+            except OSError as exc:
+                raise RuleLoadError("missing packaged delegation policy") from exc
+        if not text.strip() or len(text) > 18000:
+            raise RuleLoadError("delegation policy is empty or exceeds its budget")
+        return text, hashlib.sha256(text.encode("utf-8")).hexdigest()
+
     def _load_registry(self) -> RuleRegistry:
         try:
             if self._repository_root is not None:

@@ -8,7 +8,7 @@ This module owns slot and auxiliary-role allocation under a locked Multi-Agent c
 
 ### Allocation
 
-Assign roles only within the locked, reserved count after bounded parent fact confirmation. A reserved slot may remain `role: unassigned` until its purpose is known; assign and release its role before child creation. With one child, assign Primary Output for eligible code/configuration implementation or this Skill's instruction/reference authoring. Ordinary non-Skill documentation remains parent-authored and does not consume the reserved slot, including when code work is also present. Primary Output, Change Verification, Documentation/Comments & Git Operations, Context Bootstrap/Refresh, and other independent responsibilities each consume a separate slot. An authorized revision of an unbound slot is not a replacement child and must not exceed the count; after creation, its child identity remains bound. If no independent verifier or auxiliary role was allocated, use the current or already allocated Agent when safe, or report it unavailable; never simulate independence by relabeling same-Session work.
+Reserve the locked count as unbound, unassigned slots before task context and Decision are complete. That reservation stage does not select or assign Primary Output merely because only one slot exists; the slots remain `role: unassigned`, `slice_status: pending`, and `agent: unbound`. After Root has reviewed current task context and Decision, use [Child Role Selection](child-role-selection.md) to identify one role for the proposed child; an explicit user instruction skips role-selection advice but not Root's role and policy checks. If context generation or advice is unavailable, Root may decide directly from the current owner and verified facts. Then reserve the selected role in one unassigned slot and release its role and concrete slice before child creation. Ordinary non-Skill documentation remains parent-authored and does not consume a reserved slot, including when code work is also present. Each independent role consumes a separate slot. A role on an unbound, not-yet-created slot may be revised only as a parent-authorized plan update within the current count, and the new role must not be assigned to any other reserved or created child. Once a child is created, its role and identity remain bound and cannot be recycled or replaced. If no independent verifier or auxiliary role was allocated, use the current or already allocated Agent when safe, or report it unavailable; never simulate independence by relabeling same-Session work.
 
 ### Context Bootstrap/Refresh allocation
 
@@ -27,6 +27,7 @@ Claude Code custom subagent definitions in `.claude/agents/` or `~/.claude/agent
 ## Related concepts
 
 - [Coding Child Creation](delegation-child-creation.md) — locate the child creation owner.
+- [Coding Child Role Selection](child-role-selection.md) — locate the decision that precedes role reservation.
 - [Coding Child Dispatch](delegation-child-dispatch.md) — locate material dispatch boundaries.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state ownership.
 - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.md) — locate authorized reuse and replacement.

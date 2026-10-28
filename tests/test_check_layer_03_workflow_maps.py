@@ -41,7 +41,7 @@ class WorkflowMapTests(unittest.TestCase):
                      f"{prefix}05" if dst == 'ROUTE_NEXT' else
                      f"{prefix}05" if dst == 'ROUTE_CONTEXT' and route == 'single-agent' else
                      f"{prefix}06" if dst == 'ROUTE_CONTEXT' else
-                     f"{prefix}07" if dst == 'ROUTE_SLICE' and route == 'single-agent' else
+                     'D_TASK_ASSIGN' if dst == 'ROUTE_SLICE' and route == 'single-agent' else
                      f"{prefix}08" if dst == 'ROUTE_SLICE' else dst): label
                     for (src, dst), label in validator.ENHANCED_EDGE_LABELS[lang].items()
                 }
@@ -55,15 +55,22 @@ class WorkflowMapTests(unittest.TestCase):
                     for (src, dst), label in validator.ADVISORY_EDGE_LABELS[lang].items()
                 }
                 lines = []
+                branch_label_edges = (validator.MULTI_AGENT_EDGE_LABEL_REQUIREMENTS[lang]
+                                      if route == 'multi-agent' else
+                                      validator.SINGLE_AGENT_EDGE_LABEL_REQUIREMENTS[lang])
                 for src, dst in sorted(spec['edges']):
+                    if (src, dst) in branch_label_edges:
+                        for label in branch_label_edges[(src, dst)]:
+                            lines.append(f'    {src} -- {label} --> {dst}\n')
+                        continue
                     target = dst
                     label = (audit_labels.get((src, dst)) or enhanced_labels.get((src, target))
                              or rule_context_labels.get((src, target))
                              or advisory_labels.get((src, target)))
                     if (src, dst) in {('D_PLAN', 'D_RECOVERY_GATE'),
                                       ('D_PLAN_SAVED', 'D_RECOVERY_GATE'),
-                                      ('D_RECON', 'D_RECOVERY_GATE')}:
-                        label = 'no / N/A' if lang == 'en' else '无计划／不适用'
+                                      ('D_RECON', 'D_BOOT')}:
+                        label = 'no / N/A' if lang == 'en' else '不适用'
                     if src == 'D_CONTROL' and dst == (f'{prefix}10' if route == 'single-agent' else f'{prefix}12'):
                         label = validator.CONTROL_COMPLETION_LABEL[lang]
                     if src == 'D_AUDIT_CONFIG' and target == 'ACT_AUDIT_CONFIRM':
@@ -86,12 +93,12 @@ class WorkflowMapTests(unittest.TestCase):
                         ' '.join(validator.SESSION_BOUNDARY_CHECKLIST_REQUIREMENTS[lang])
                         if name == 'Session' else 'Content and link.') + '\n'
                     for i, name in enumerate(spec['steps'], 1))
-                skip_edges = ((('D_PLAN_MATCH', 'D_RECON'), ('D_RECON', 'S06'), ('D_PLAN', 'S07'), ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('D_DOC', 'S13'), ('D_GIT', 'S14'),
+                skip_edges = ((('D_PLAN_MATCH', 'D_RECON'), ('D_RECON', 'D_CONTEXT_GEN'), ('D_PLAN', 'S07'), ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('D_DOC', 'S13'), ('D_GIT', 'S14'),
                                ('D_ARCHIVE', 'DONE'))
                               if route == 'single-agent' else
-                              (('D_BOOT', 'M06'), ('D_PLAN', 'D_RECON'), ('D_RECON', 'M08'), ('D_MEMO', 'M10'),
+                              (('D_BOOT', 'ACT_TASK_ASSIGN'), ('D_PLAN', 'D_RECON'), ('D_RECON', 'D_BOOT'), ('D_MEMO', 'M10'),
                                ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'),
-                               ('D_DOC', 'M15'), ('D_GIT', 'M16'), ('D_PLAN_MATCH', 'M07'),
+                               ('D_DOC', 'M15'), ('D_GIT', 'M16'), ('D_PLAN_MATCH', 'D_CONTEXT_GEN'),
                                ('D_ARCHIVE', 'DONE')))
                 localized = diagram
                 for source, target in skip_edges:
@@ -161,8 +168,58 @@ class WorkflowMapTests(unittest.TestCase):
         self.mutate(self.route(), 'S11 --> S10', 'S11 --> S12')
         self.reject('required map edge S11 -> S10')
 
+    def test_multi_agent_busy_candidate_output_label_is_required(self) -> None:
+        busy_labels = {
+            'en': 'D_CHILD_POOL -- suitable child busy; assess output before waiting --> D_OUTPUT_EXPLICIT',
+            'zh': 'D_CHILD_POOL -- 合适子代理忙碌；先评估输出再等待 --> D_OUTPUT_EXPLICIT',
+        }
+        for lang, edge in busy_labels.items():
+            path = self.route(mode='multi-agent', lang=lang)
+            original = path.read_text(encoding='utf-8')
+            self.mutate(path, edge, '')
+            self.reject('edge D_CHILD_POOL -> D_OUTPUT_EXPLICIT must preserve branch label')
+            path.write_text(original, encoding='utf-8')
+
+    def test_multi_agent_output_hold_keeps_independent_creation_path_to_role_gate(self) -> None:
+        path = self.route(mode='multi-agent')
+        self.mutate(path, 'ACT_OUTPUT_HOLD --> D_INDEPENDENT_CHILD',
+                    'ACT_OUTPUT_HOLD --> ACT_OUTPUT_WAIT')
+        self.reject('required map edge ACT_OUTPUT_HOLD -> D_INDEPENDENT_CHILD is missing')
+        self.mutate(path, 'ACT_OUTPUT_HOLD --> ACT_OUTPUT_WAIT',
+                    'ACT_OUTPUT_HOLD --> D_INDEPENDENT_CHILD')
+        self.mutate(path, 'D_INDEPENDENT_CHILD --> D_ROLE_SELECT',
+                    'D_INDEPENDENT_CHILD --> ACT_OUTPUT_WAIT')
+        self.reject('required map edge D_INDEPENDENT_CHILD -> D_ROLE_SELECT is missing')
+
+    def test_multi_agent_role_review_keeps_explicit_and_direct_review_branches(self) -> None:
+        role_labels = {
+            'en': (
+                'D_ROLE_SELECT -- explicit creation/role; skip role advice --> ACT_ROLE_REVIEW',
+                'D_ROLE_SELECT -- context generation failed; direct facts suffice; no downstream advice --> ACT_ROLE_REVIEW',
+            ),
+            'zh': (
+                'D_ROLE_SELECT -- 用户明确要求创建／指定职责；跳过职责建议 --> ACT_ROLE_REVIEW',
+                'D_ROLE_SELECT -- 上下文生成失败但直接事实足够；不发下游建议 --> ACT_ROLE_REVIEW',
+            ),
+        }
+        for lang, (explicit_edge, direct_review_edge) in role_labels.items():
+            path = self.route(mode='multi-agent', lang=lang)
+            original = path.read_text(encoding='utf-8')
+            self.mutate(path, explicit_edge, '')
+            self.reject('edge D_ROLE_SELECT -> ACT_ROLE_REVIEW must preserve branch label')
+            path.write_text(original, encoding='utf-8')
+            self.mutate(path, direct_review_edge, '')
+            self.reject('edge D_ROLE_SELECT -> ACT_ROLE_REVIEW must preserve branch label')
+            path.write_text(original, encoding='utf-8')
+
+    def test_multi_agent_full_role_capacity_must_block(self) -> None:
+        self.mutate(self.route(mode='multi-agent'),
+                    'D_ROLE_CAPACITY --> BLOCK',
+                    'D_ROLE_CAPACITY --> D_ROLE_SELECT')
+        self.reject('required map edge D_ROLE_CAPACITY -> BLOCK is missing')
+
     def test_missing_skip_label(self) -> None:
-        self.mutate(self.route(), 'D_RECON -- no / N/A --> S06', 'D_RECON --> S06')
+        self.mutate(self.route(), 'D_RECON -- no / N/A --> D_CONTEXT_GEN', 'D_RECON --> D_CONTEXT_GEN')
         # The fixture has no label; the structure requires a visible skip reason.
         self.reject('must label its skip/Not applicable path')
 
@@ -345,6 +402,47 @@ class WorkflowMapTests(unittest.TestCase):
     def test_single_agent_forbidden_branch(self) -> None:
         self.mutate(self.route(), 'S07["07 Implementation"]', 'S07["07 Child Creation Implementation"]')
         self.reject('inapplicable child branch')
+
+    def test_single_agent_executor_conflict_must_block(self) -> None:
+        path = self.route()
+        original = path.read_text(encoding='utf-8')
+        old = '    ACT_EXECUTOR_CONFLICT -- unresolved conflict; block without silent Root fallback --> BLOCK\n'
+        self.assertIn(old, original)
+        for replacement in ('', '    ACT_EXECUTOR_CONFLICT --> S07\n'):
+            with self.subTest(replacement=replacement):
+                path.write_text(original.replace(old, replacement, 1), encoding='utf-8')
+                self.reject('required map edge ACT_EXECUTOR_CONFLICT -> BLOCK is missing')
+
+    def test_single_agent_large_output_hold_must_block(self) -> None:
+        path = self.route()
+        original = path.read_text(encoding='utf-8')
+        old = '    ACT_OUTPUT_HOLD -- hold and report topology boundary; stop before output --> BLOCK\n'
+        self.assertIn(old, original)
+        for replacement in ('', '    ACT_OUTPUT_HOLD --> S07\n'):
+            with self.subTest(replacement=replacement):
+                path.write_text(original.replace(old, replacement, 1), encoding='utf-8')
+                self.reject('required map edge ACT_OUTPUT_HOLD -> BLOCK is missing')
+
+    def test_single_agent_output_gate_cannot_be_bypassed(self) -> None:
+        self.mutate(self.route(),
+                    '    ACT_EXECUTOR_ROOT --> D_OUTPUT_EXPLICIT\n',
+                    '    ACT_EXECUTOR_ROOT --> D_OUTPUT_EXPLICIT\n'
+                    '    ACT_EXECUTOR_ROOT --> S07\n')
+        self.reject('unexpected map edge ACT_EXECUTOR_ROOT -> S07')
+
+    def test_single_agent_output_branch_labels_are_required_in_both_languages(self) -> None:
+        for lang, old, new in (
+            ('en', 'D_OUTPUT_RESULT -- yes / unresolved route; Single-Agent topology boundary --> ACT_OUTPUT_HOLD',
+             'D_OUTPUT_RESULT -- no / verified current facts --> ACT_OUTPUT_HOLD'),
+            ('zh', 'D_OUTPUT_RESULT -- yes／路由未定；Single-Agent 拓扑边界 --> ACT_OUTPUT_HOLD',
+             'D_OUTPUT_RESULT -- no／当前事实已核实 --> ACT_OUTPUT_HOLD'),
+        ):
+            with self.subTest(lang=lang):
+                path = self.route(lang=lang)
+                original = path.read_text(encoding='utf-8')
+                self.assertIn(old, original)
+                path.write_text(original.replace(old, new, 1), encoding='utf-8')
+                self.reject('edge D_OUTPUT_RESULT -> ACT_OUTPUT_HOLD must preserve branch label')
 
     def test_shortcut_around_verification(self) -> None:
         path = self.route(mode='multi-agent')

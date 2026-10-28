@@ -14,6 +14,7 @@ from token_io_decoupling_core.state_models import (
     ControlEvidenceRequestIndex,
     ControlTransitionRequest,
     CountFactValue,
+    DelegationUnreserveRequest,
     EnumFactValue,
     EpochAdvanceTransition,
     EpochDimension,
@@ -62,6 +63,9 @@ from token_io_decoupling_core.state_models import (
     WorkflowOpenRequest,
     WorkflowState,
 )
+from token_io_decoupling_core.state_models import (
+    DelegationBudgetApproval as DelegationBudgetApproval,
+)
 
 __all__ = [
     "ModeSource",
@@ -71,6 +75,8 @@ __all__ = [
     "OutputClass",
     "AllocationStatus",
     "AllocationRole",
+    "DelegationBudgetApproval",
+    "DelegationUnreserveRequest",
     "ChangeCategory",
     "CheckpointNode",
     "FactKey",

@@ -69,6 +69,35 @@ class AllocationRole(StrEnum):
     DOCUMENTATION_COMMENTS_GIT = "Documentation/Comments & Git Operations"
 
 
+class DelegationBudgetApproval(StrictModel):
+    """Root-reviewed evidence for adding one different-role child slot."""
+
+    requested_child_count: Annotated[StrictInt, Field(ge=2, le=4)]
+    user_approval: SemanticRef | EvidenceRef
+
+    @model_validator(mode="after")
+    def approval_reference_is_nonblank(self) -> DelegationBudgetApproval:
+        if not self.user_approval.uri.strip():
+            raise ValueError("user_approval.uri must not be blank")
+        return self
+
+
+class DelegationUnreserveRequest(StrictModel):
+    """Root attestation for releasing a reserved allocation before creation starts."""
+
+    allocation_id: NonEmptyString
+    creation_not_started: StrictBool
+    creation_not_started_reference: SemanticRef | EvidenceRef
+    expected_revision: Annotated[StrictInt, Field(ge=0)]
+    idempotency_key: NonEmptyString
+
+    @model_validator(mode="after")
+    def creation_attestation_is_true(self) -> DelegationUnreserveRequest:
+        if self.creation_not_started is not True:
+            raise ValueError("creation_not_started must be true")
+        return self
+
+
 class ChangeCategory(StrEnum):
     SOURCE_CODE = "source_code"
     CONFIGURATION = "configuration"
@@ -607,6 +636,23 @@ class NativeWorkflowSnapshot(StrictModel):
     allocations: list[NativeAllocation]
     epochs: EpochSnapshot
     evidence_refs: list[EvidenceRef] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def allocation_identities_are_unique(self) -> NativeWorkflowSnapshot:
+        allocation_ids = [item.allocation_id for item in self.allocations]
+        roles = [item.role for item in self.allocations if item.role is not None]
+        worker_session_ids = [
+            item.worker_session_id
+            for item in self.allocations
+            if item.worker_session_id is not None
+        ]
+        if len(allocation_ids) != len(set(allocation_ids)):
+            raise ValueError("Native allocation IDs must be unique")
+        if len(roles) != len(set(roles)):
+            raise ValueError("Native allocation roles must be unique")
+        if len(worker_session_ids) != len(set(worker_session_ids)):
+            raise ValueError("Native child Session IDs must be unique")
+        return self
 
 
 NativeReconcileTransition.model_rebuild()

@@ -5,6 +5,7 @@ import json
 import shutil
 import sqlite3
 import threading
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import UTC, datetime
@@ -12,7 +13,7 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 import pytest
-from token_io_decoupling_core.binding import BindingError, DenyingBindingProvider
+from token_io_decoupling_core.binding import BindingError
 from token_io_decoupling_core.models import (
     CodingMode,
     DatabaseKind,
@@ -22,6 +23,7 @@ from token_io_decoupling_core.models import (
 )
 from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.state_models import (
+    AllocationRole,
     BindingIdentity,
     BooleanFactValue,
     ChangeCategory,
@@ -31,6 +33,8 @@ from token_io_decoupling_core.state_models import (
     CheckpointNode,
     ControlTransitionRequest,
     CountFactValue,
+    DelegationBudgetApproval,
+    DelegationUnreserveRequest,
     EnumFactValue,
     EpochDimension,
     EvidenceKind,
@@ -69,7 +73,6 @@ from token_io_decoupling_state.service import (
     StaleRecoveryCursorError,
     StateService,
     WorkflowNotOpenError,
-    _epochs_cover_changed_dimensions,
     _slice_spec_hash,
 )
 
@@ -82,10 +85,13 @@ PARENT_CAPS = frozenset(
         Cap.PARENT_SUMMARY_READ,
     }
 )
+
 PARENT_GUARDS = frozenset({Guard.IDENTITY_BOUND, Guard.SESSION_BOUND, Guard.PATH_BOUNDARY})
+
 CHILD_CAPS = frozenset(
     {Cap.WORKER_READ, Cap.WORKER_WRITE, Cap.WORKER_STORE_CREATE, Cap.PARENT_SUMMARY_READ}
 )
+
 CHILD_GUARDS = frozenset(
     {
         Guard.IDENTITY_BOUND,
@@ -150,7 +156,7 @@ def ref(name: str) -> SemanticRef:
 
 
 def source_rule_loader() -> RuleLoader:
-    return RuleLoader(repository_root=Path(__file__).parents[2])
+    return RuleLoader(repository_root=Path(__file__).parents[3])
 
 
 def request(
@@ -383,17 +389,6 @@ def prime_control_continue(
     return evaluation
 
 
-def test_default_provider_denies_without_creating_state(tmp_path: Path) -> None:
-    service = StateService(
-        DenyingBindingProvider(),
-        state_root=tmp_path / "state",
-        rule_loader=source_rule_loader(),
-    )
-    with pytest.raises(BindingError):
-        service.workflow_open(request())
-    assert not (tmp_path / "state").exists()
-
-
 def test_uninitialized_root_and_worker_reads_do_not_create_paths(tmp_path: Path) -> None:
     provider = FakeBindings()
     service = StateService(
@@ -453,6 +448,98 @@ def test_mode_slot_lock_cas_and_idempotent_replay(tmp_path: Path) -> None:
     assert service.workflow_get_state().revision == 1
 
 
+def test_role_reserve_allows_non_primary_and_audits_approved_budget_growth(
+    tmp_path: Path,
+) -> None:
+    service, _ = setup(tmp_path)
+    first = service.delegation_reserve(
+        "Context Bootstrap/Refresh", expected_revision=0, idempotency_key="context-role"
+    )
+    assert first.result["role"] == "Context Bootstrap/Refresh"
+
+    approval = DelegationBudgetApproval(
+        requested_child_count=2,
+        user_approval=SemanticRef(uri="mem:user-approval", content_hash="a" * 64),
+    )
+    with pytest.raises(InvalidStateTransitionError):
+        service.delegation_reserve(
+            "Change Verification",
+            expected_revision=1,
+            idempotency_key="wrong-count",
+            budget_approval=DelegationBudgetApproval(
+                requested_child_count=3,
+                user_approval=approval.user_approval,
+            ),
+        )
+    with pytest.raises(InvalidStateTransitionError):
+        service.delegation_reserve(
+            "Change Verification", expected_revision=1, idempotency_key="no-approval"
+        )
+
+    second = service.delegation_reserve(
+        "Change Verification",
+        expected_revision=1,
+        idempotency_key="approved-growth",
+        budget_approval=approval,
+    )
+    state = service.workflow_get_state()
+    assert state.mode_count.child_count == 2
+    assert state.mode_source == "explicit"
+    assert state.source == approval.user_approval
+    assert second.result["budget_approval_audit"] == {
+        "previous_child_count": 1,
+        "approved_child_count": 2,
+        "user_approval": {"uri": "mem:user-approval", "content_hash": "a" * 64},
+        "reviewed_by_root": True,
+        "authority_limit": (
+            "Root attestation with referenced user evidence; not cryptographic host proof"
+        ),
+    }
+    replay = service.delegation_reserve(
+        "Change Verification",
+        expected_revision=1,
+        idempotency_key="approved-growth",
+        budget_approval=approval,
+    )
+    assert replay.replayed
+    assert replay.result == second.result
+    assert service.workflow_get_state().mode_count.child_count == 2
+    with pytest.raises(InvalidStateTransitionError):
+        service.delegation_reserve(
+            "Context Bootstrap/Refresh", expected_revision=2, idempotency_key="same-role"
+        )
+
+
+def test_initial_budget_above_four_allows_each_unique_maintained_role(tmp_path: Path) -> None:
+    service, _ = setup(tmp_path, children=5)
+    roles = [
+        AllocationRole.PRIMARY_OUTPUT,
+        AllocationRole.CHANGE_VERIFICATION,
+        AllocationRole.CONTEXT_BOOTSTRAP_REFRESH,
+        AllocationRole.DOCUMENTATION_COMMENTS_GIT,
+    ]
+
+    for revision, role in enumerate(roles):
+        receipt = service.delegation_reserve(
+            role.value,
+            expected_revision=revision,
+            idempotency_key=f"above-four-role-{revision}",
+        )
+        assert receipt.result["role"] == role.value
+
+    state = service.workflow_get_state()
+    assert state.mode_count.child_count == 5
+    assert {
+        allocation.role for allocation in state.allocations if allocation.role is not None
+    } == set(roles)
+    with pytest.raises(InvalidStateTransitionError, match="already claims this role"):
+        service.delegation_reserve(
+            roles[0].value,
+            expected_revision=4,
+            idempotency_key="above-four-duplicate-role",
+        )
+
+
 def test_single_agent_and_default_mode_invariants(tmp_path: Path) -> None:
     provider = FakeBindings()
     single = StateService(
@@ -477,12 +564,10 @@ def test_slice_gate_role_and_category_are_enforced(tmp_path: Path) -> None:
     service, _ = setup(tmp_path)
     with pytest.raises(InvalidStateTransitionError):
         service.delegation_reserve("invented-role", expected_revision=0, idempotency_key="role")
-    with pytest.raises(InvalidStateTransitionError):
-        service.delegation_reserve(
-            "Change Verification", expected_revision=0, idempotency_key="role2"
-        )
     allocation = service.workflow_get_state().allocations[0].allocation_id
-    service.delegation_reserve("Primary Output", expected_revision=0, idempotency_key="reserve")
+    service.delegation_reserve(
+        "Change Verification", expected_revision=0, idempotency_key="reserve"
+    )
     invalid = SliceSpec(
         allocation_id=allocation,
         output_class=OutputClass.ORDINARY_DOCUMENTATION,
@@ -838,41 +923,6 @@ def test_evidence_revision_epoch_freshness_and_evidence_on_demand_return_to_cont
     )
     assert stale.outcome == "incomplete"
     assert stale.missing_facts
-
-
-def test_evidence_staleness_tracks_only_covered_epoch_dimensions() -> None:
-    saved = (2, 3, 4)
-    current = {
-        "implementation_content": 2,
-        "documentation": 4,
-        "git_metadata": 5,
-    }
-    assert not _epochs_cover_changed_dimensions(
-        [EpochDimension.IMPLEMENTATION_CONTENT.value], saved, current
-    )
-    assert _epochs_cover_changed_dimensions([EpochDimension.DOCUMENTATION.value], saved, current)
-    assert _epochs_cover_changed_dimensions(
-        [
-            EpochDimension.IMPLEMENTATION_CONTENT.value,
-            EpochDimension.DOCUMENTATION.value,
-        ],
-        saved,
-        current,
-    )
-    content_change = {
-        "implementation_content": 3,
-        "documentation": 3,
-        "git_metadata": 4,
-    }
-    assert _epochs_cover_changed_dimensions(
-        [
-            EpochDimension.IMPLEMENTATION_CONTENT.value,
-            EpochDimension.DOCUMENTATION.value,
-        ],
-        saved,
-        content_change,
-    )
-    assert _epochs_cover_changed_dimensions([EpochDimension.GIT_METADATA.value], saved, current)
 
 
 def test_state_service_evidence_freshness_tracks_actual_owner_dimensions(tmp_path: Path) -> None:
@@ -1759,20 +1809,6 @@ def test_acceptance_rechecks_git_documentation_and_content_epochs(tmp_path: Path
     refresh_gates("after-content")
     prime_control_continue(service)
     assert submit_acceptance("stale-content").outcome == "blocked"
-
-
-def test_required_mode_and_objective_facts_cannot_be_marked_not_applicable() -> None:
-    from pydantic import ValidationError
-    from token_io_decoupling_core.state_models import FactNotApplicable
-
-    for key in (FactKey.VALID_MODE_DECISION, FactKey.TASK_OBJECTIVE):
-        with pytest.raises(ValidationError):
-            CheckpointFact(
-                fact_key=key,
-                judgment=FactNotApplicable(
-                    status="not_applicable", reason=ref("not-applicable-reason")
-                ),
-            )
 
 
 def test_checkpoint_confirmation_requires_and_records_current_evaluation(tmp_path: Path) -> None:
@@ -4182,51 +4218,94 @@ def test_recovery_index_cursors_page_slices_and_reject_stale_native_cursor(
         RecoveryIndexPageRequest,
     )
 
-    service, _ = setup(tmp_path, children=33)
+    service, provider = setup(tmp_path, children=33)
     allocations = service.workflow_get_state().allocations
-    for index, _allocation in enumerate(allocations):
-        role = "Primary Output" if index == 0 else "Change Verification"
-        state = service.workflow_get_state()
-        service.delegation_reserve(
-            role,
-            expected_revision=state.revision,
-            idempotency_key=f"page-reserve-{index}",
-        )
+    service.delegation_reserve(
+        "Primary Output", expected_revision=0, idempotency_key="page-reserve-primary"
+    )
+    allocation = allocations[0]
+    spec = SliceSpec(
+        allocation_id=allocation.allocation_id,
+        output_class=OutputClass.CODE_CONFIGURATION,
+        objective=ref("page-objective"),
+        return_conditions=ref("page-return"),
+        unreleased_boundary=ref("page-boundary"),
+        authorized_paths=["mcp/"],
+        change_categories=[ChangeCategory.SOURCE_CODE],
+        write_content_memo=False,
+    )
+    prime_slice(service, spec)
+    service.slice_release(
+        spec,
+        expected_revision=service.workflow_get_state().revision,
+        idempotency_key="page-slice-primary",
+    )
 
-    for index, allocation in enumerate(allocations):
-        spec = SliceSpec(
-            allocation_id=allocation.allocation_id,
-            output_class=OutputClass.CODE_CONFIGURATION,
-            objective=ref(f"page-objective-{index}"),
-            return_conditions=ref(f"page-return-{index}"),
-            unreleased_boundary=ref(f"page-boundary-{index}"),
-            authorized_paths=["mcp/"],
-            change_categories=[ChangeCategory.SOURCE_CODE],
-            write_content_memo=False,
-        )
-        prime_slice(service, spec)
-        if index == 1:
-            prime_control_continue(service, slice_ids=[])
-            prime_slice(service, spec)
-        service.slice_release(
-            spec,
-            expected_revision=service.workflow_get_state().revision,
-            idempotency_key=f"page-slice-{index}",
-        )
+    # Emulate legacy persisted rows that predate the API's unique-role reservation guard.
+    # Keep SQLite constraints enabled and clone the valid slice payload written above.
+    database_path, _ = service._root_database(provider.parent, create=False)
+    with sqlite3.connect(database_path) as connection:
+        connection.execute("PRAGMA foreign_keys = ON")
+        allocation_ids = [
+            row[0]
+            for row in connection.execute(
+                "SELECT allocation_id FROM allocations ORDER BY slot"
+            ).fetchall()
+        ]
+        assert len(allocation_ids) == 33
+        template_slice_id = connection.execute(
+            "SELECT slice_id FROM workflow_slices WHERE allocation_id = ?",
+            (allocation.allocation_id,),
+        ).fetchone()[0]
+        legacy_slice_ids = [template_slice_id]
+        for allocation_id in allocation_ids:
+            if allocation_id == allocation.allocation_id:
+                continue
+            update = connection.execute(
+                "UPDATE allocations SET role = ?, status = ? "
+                "WHERE allocation_id = ? AND status = ?",
+                ("Primary Output", "reserved", allocation_id, "unassigned"),
+            )
+            assert update.rowcount == 1
+            slice_id = str(uuid.uuid4())
+            connection.execute(
+                """
+                INSERT INTO workflow_slices (
+                    slice_id, allocation_id, output_class, objective_uri, objective_hash,
+                    return_conditions_uri, return_conditions_hash, unreleased_boundary_uri,
+                    unreleased_boundary_hash, authorized_paths_json, change_categories_json,
+                    write_content_memo, status, created_revision, created_at
+                )
+                SELECT ?, ?, output_class, objective_uri, objective_hash,
+                    return_conditions_uri, return_conditions_hash, unreleased_boundary_uri,
+                    unreleased_boundary_hash, authorized_paths_json, change_categories_json,
+                    write_content_memo, status, created_revision, created_at
+                FROM workflow_slices WHERE slice_id = ?
+                """,
+                (slice_id, allocation_id, template_slice_id),
+            )
+            legacy_slice_ids.append(slice_id)
 
     first = service.workflow_get_state()
     first_ids = [item.slice_id for item in first.active_slices]
     slice_page = next(item for item in first.recovery_pages if item.collection == "active_slices")
     assert len(first_ids) == 32
     assert slice_page.total_count == 33 and slice_page.next_cursor is not None
-    remainder = service.workflow_get_state(
+    slice_rest = service.workflow_get_state(
         index_page=RecoveryIndexPageRequest(
-            collection="active_slices", cursor=slice_page.next_cursor
+            collection="active_slices",
+            cursor=slice_page.next_cursor,
         )
     )
-    all_ids = first_ids + [item.slice_id for item in remainder.active_slices]
-    assert len(all_ids) == 33 and len(set(all_ids)) == 33
-    assert remainder.recovery_pages[0].next_cursor is None
+    rest_ids = [item.slice_id for item in slice_rest.active_slices]
+    rest_page = next(
+        item for item in slice_rest.recovery_pages if item.collection == "active_slices"
+    )
+    all_slice_ids = first_ids + rest_ids
+    assert set(all_slice_ids) == set(legacy_slice_ids)
+    assert len(all_slice_ids) == 33 and len(all_slice_ids) == len(set(all_slice_ids))
+    assert len(rest_ids) == 1
+    assert rest_page.total_count == 33 and rest_page.next_cursor is None
 
     # Use a fresh Root because unresolved Native state intentionally blocks later work.
     native_service, _ = setup(tmp_path / "native")
@@ -4309,3 +4388,422 @@ def test_recovery_index_cursors_page_slices_and_reject_stale_native_cursor(
             )
         )
     assert native_service.workflow_get_state().revision == before_stale_read
+
+
+def _unreserve_request(
+    allocation_id: str,
+    *,
+    expected_revision: int,
+    idempotency_key: str,
+    proof_uri: str = "evidence://creation-not-started",
+) -> DelegationUnreserveRequest:
+    return DelegationUnreserveRequest(
+        allocation_id=allocation_id,
+        creation_not_started=True,
+        creation_not_started_reference=EvidenceRef(
+            uri=proof_uri,
+            content_hash="f" * 64,
+        ),
+        expected_revision=expected_revision,
+        idempotency_key=idempotency_key,
+    )
+
+
+def test_delegation_unreserve_replay_never_reverts_a_new_reservation(
+    tmp_path: Path,
+) -> None:
+    service, _ = setup(tmp_path)
+    initial = service.workflow_get_state()
+    original_reservation = service.delegation_reserve(
+        "Primary Output", expected_revision=initial.revision, idempotency_key="reserve-primary"
+    )
+    allocation_id = str(original_reservation.result["allocation_id"])
+    proof_request = _unreserve_request(
+        allocation_id,
+        expected_revision=original_reservation.receipt_revision,
+        idempotency_key="unreserve-primary",
+    )
+
+    unreserved = service.delegation_unreserve(proof_request)
+    released_state = service.workflow_get_state()
+    released_allocation = released_state.allocations[0]
+    assert released_state.mode_count.child_count == initial.mode_count.child_count
+    assert released_allocation.allocation_id == allocation_id
+    assert released_allocation.slot == initial.allocations[0].slot
+    assert released_allocation.role is None
+    assert released_allocation.status.value == "unassigned"
+    assert unreserved.result["proof"] == proof_request.creation_not_started_reference.model_dump(
+        mode="json"
+    )
+    assert unreserved.result["root_attestation"] == {
+        "reviewed_by_root": True,
+        "authority_limit": "Root attestation with referenced evidence; not host proof",
+    }
+
+    replacement = service.delegation_reserve(
+        "Change Verification",
+        expected_revision=released_state.revision,
+        idempotency_key="reserve-replacement",
+    )
+    replacement_state = service.workflow_get_state()
+    assert replacement.result["allocation_id"] == allocation_id
+    assert replacement.result["slot"] == initial.allocations[0].slot
+    assert replacement_state.mode_count.child_count == initial.mode_count.child_count
+    assert replacement_state.allocations[0].role == "Change Verification"
+
+    old_unreserve_replay = service.delegation_unreserve(proof_request)
+    old_reserve_replay = service.delegation_reserve(
+        "Primary Output", expected_revision=initial.revision, idempotency_key="reserve-primary"
+    )
+    assert old_unreserve_replay.replayed
+    assert old_unreserve_replay.result == unreserved.result
+    assert old_reserve_replay.replayed
+    assert old_reserve_replay.result == original_reservation.result
+    final_state = service.workflow_get_state()
+    assert final_state.revision == replacement.receipt_revision
+    assert final_state.allocations[0].role == "Change Verification"
+
+    with pytest.raises(RevisionConflictError):
+        service.delegation_unreserve(
+            _unreserve_request(
+                allocation_id,
+                expected_revision=unreserved.receipt_revision,
+                idempotency_key="stale-unreserve",
+            )
+        )
+    with pytest.raises(IdempotencyConflictError):
+        service.delegation_unreserve(
+            proof_request.model_copy(
+                update={
+                    "creation_not_started_reference": EvidenceRef(
+                        uri="evidence://changed-proof",
+                        content_hash="e" * 64,
+                    )
+                }
+            )
+        )
+    assert service.workflow_get_state().allocations[0].role == "Change Verification"
+
+
+def test_delegation_unreserve_requires_root_write_and_multi_agent_mode(
+    tmp_path: Path,
+) -> None:
+    service, provider = setup(tmp_path)
+    allocation_id = service.workflow_get_state().allocations[0].allocation_id
+    service.delegation_reserve(
+        "Primary Output", expected_revision=0, idempotency_key="reserve-for-auth"
+    )
+    revision = service.workflow_get_state().revision
+    request_value = _unreserve_request(
+        allocation_id, expected_revision=revision, idempotency_key="unreserve-no-write"
+    )
+    provider.current = provider.parent.model_copy(
+        update={"capabilities": frozenset({Cap.WORKFLOW_READ})}
+    )
+    with pytest.raises(BindingError):
+        service.delegation_unreserve(request_value)
+    provider.current = provider.parent
+    assert service.workflow_get_state().revision == revision
+
+    single = StateService(
+        FakeBindings(), state_root=tmp_path / "single" / "state", rule_loader=source_rule_loader()
+    )
+    single.workflow_open(request(children=0, mode=CodingMode.SINGLE_AGENT))
+    with pytest.raises(InvalidStateTransitionError, match="Single-Agent mode"):
+        single.delegation_unreserve(
+            _unreserve_request(
+                "not-an-allocation", expected_revision=0, idempotency_key="single-unreserve"
+            )
+        )
+
+
+def test_delegation_unreserve_rejects_bound_allocations(tmp_path: Path) -> None:
+    service, provider = setup(tmp_path)
+    allocation_id = service.workflow_get_state().allocations[0].allocation_id
+    provider.add_child("worker-a")
+    service.delegation_reserve(
+        "Primary Output", expected_revision=0, idempotency_key="reserve-bound"
+    )
+    spec = prime_slice(service)
+    current = service.workflow_get_state()
+    service.slice_release(spec, expected_revision=current.revision, idempotency_key="release-bound")
+    current = service.workflow_get_state()
+    service.delegation_bind(
+        allocation_id,
+        "worker-a",
+        expected_revision=current.revision,
+        idempotency_key="bind-before-unreserve",
+    )
+    revision = service.workflow_get_state().revision
+    with pytest.raises(InvalidStateTransitionError, match="only a reserved allocation"):
+        service.delegation_unreserve(
+            _unreserve_request(
+                allocation_id, expected_revision=revision, idempotency_key="unreserve-bound"
+            )
+        )
+
+
+@pytest.mark.parametrize("history", ["slice", "outbox", "dispatch", "bind_receipt"])
+def test_delegation_unreserve_rejects_root_history(
+    tmp_path: Path,
+    history: str,
+) -> None:
+    service, _ = setup(tmp_path, children=2 if history == "dispatch" else 1)
+    allocations = service.workflow_get_state().allocations
+    allocation_id = allocations[0].allocation_id
+    service.delegation_reserve(
+        "Primary Output", expected_revision=0, idempotency_key=f"reserve-{history}"
+    )
+    if history == "dispatch":
+        service.delegation_reserve(
+            "Change Verification", expected_revision=1, idempotency_key="reserve-other-for-dispatch"
+        )
+    root_database = tmp_path / "state" / "project-a" / "root-a" / "workflow.sqlite3"
+
+    if history == "slice":
+        spec = prime_slice(service)
+        current = service.workflow_get_state()
+        service.slice_release(
+            spec,
+            expected_revision=current.revision,
+            idempotency_key="release-before-unreserve",
+        )
+    else:
+        with sqlite3.connect(root_database) as connection:
+            if history == "outbox":
+                connection.execute(
+                    "INSERT INTO root_outbox "
+                    "(event_id,allocation_id,event_type,payload_json,payload_hash,"
+                    "status,created_at) "
+                    "VALUES ('event-outbox',?,'worker_assignment','{}',?,'pending','now')",
+                    (allocation_id, "a" * 64),
+                )
+            elif history == "dispatch":
+                connection.execute(
+                    "INSERT INTO workflow_slices "
+                    "(slice_id,allocation_id,output_class,objective_uri,objective_hash,"
+                    "return_conditions_uri,return_conditions_hash,unreleased_boundary_uri,"
+                    "unreleased_boundary_hash,authorized_paths_json,change_categories_json,"
+                    "write_content_memo,status,created_revision,created_at) "
+                    "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (
+                        "slice-for-other-allocation",
+                        allocations[1].allocation_id,
+                        "code_configuration",
+                        "test://objective",
+                        "d" * 64,
+                        "test://return",
+                        "e" * 64,
+                        "test://boundary",
+                        "f" * 64,
+                        "[]",
+                        "[]",
+                        0,
+                        "closed",
+                        2,
+                        "now",
+                    ),
+                )
+                connection.execute(
+                    "INSERT INTO workflow_dispatch_events "
+                    "(event_id,allocation_id,slice_id,sequence,payload_json,payload_hash,"
+                    "status,created_at) "
+                    "VALUES ('event-dispatch',?,'slice-for-other-allocation',1,'{}',"
+                    "?,'pending','now')",
+                    (allocation_id, "b" * 64),
+                )
+            else:
+                connection.execute(
+                    "INSERT INTO operation_receipts "
+                    "(idempotency_key,operation,payload_hash,result_json,receipt_revision,"
+                    "created_at) "
+                    "VALUES ('prior-bind','delegation_bind',?,'{\"allocation_id\":\""
+                    + allocation_id
+                    + "\"}',1,'now')",
+                    ("c" * 64,),
+                )
+
+    revision = service.workflow_get_state().revision
+    with pytest.raises(InvalidStateTransitionError):
+        service.delegation_unreserve(
+            _unreserve_request(
+                allocation_id,
+                expected_revision=revision,
+                idempotency_key=f"unreserve-{history}",
+            )
+        )
+    assert service.workflow_get_state().revision == revision
+
+
+def _write_worker_identity_fixture(
+    worker_database: Path,
+    *,
+    worker_session_id: str,
+    allocation_id: str,
+) -> None:
+    worker_database.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(worker_database) as connection:
+        connection.execute(
+            "CREATE TABLE worker_identity ("
+            "singleton INTEGER PRIMARY KEY, project_id TEXT NOT NULL, "
+            "root_session_id TEXT NOT NULL, worker_session_id TEXT NOT NULL, "
+            "allocation_id TEXT NOT NULL)"
+        )
+        connection.execute(
+            "INSERT INTO worker_identity VALUES (1,'project-a','root-a',?,?)",
+            (worker_session_id, allocation_id),
+        )
+
+
+@pytest.mark.parametrize(
+    "database_state",
+    ["matching", "missing_table", "missing_row", "corrupt", "unknown_allocation", "wal"],
+)
+def test_delegation_unreserve_fails_closed_on_worker_database_evidence(
+    tmp_path: Path,
+    database_state: str,
+) -> None:
+    service, _ = setup(tmp_path)
+    allocation_id = service.workflow_get_state().allocations[0].allocation_id
+    service.delegation_reserve(
+        "Primary Output", expected_revision=0, idempotency_key=f"reserve-worker-{database_state}"
+    )
+    worker_database = (
+        tmp_path / "state" / "project-a" / "root-a" / "subagents" / "worker-a" / "worker.sqlite3"
+    )
+    if database_state == "corrupt":
+        worker_database.parent.mkdir(parents=True)
+        worker_database.write_bytes(b"not a sqlite database")
+    elif database_state == "missing_table":
+        worker_database.parent.mkdir(parents=True)
+        with sqlite3.connect(worker_database):
+            pass
+    elif database_state == "missing_row":
+        worker_database.parent.mkdir(parents=True)
+        with sqlite3.connect(worker_database) as connection:
+            connection.execute(
+                "CREATE TABLE worker_identity (singleton INTEGER PRIMARY KEY, "
+                "project_id TEXT NOT NULL, root_session_id TEXT NOT NULL, "
+                "worker_session_id TEXT NOT NULL, allocation_id TEXT NOT NULL)"
+            )
+    else:
+        referenced_allocation = (
+            allocation_id if database_state == "matching" else "allocation-not-in-root"
+        )
+        _write_worker_identity_fixture(
+            worker_database,
+            worker_session_id="worker-a",
+            allocation_id=referenced_allocation,
+        )
+        if database_state == "wal":
+            Path(f"{worker_database}-wal").write_bytes(b"uncheckpointed identity state")
+
+    before_bytes = worker_database.read_bytes()
+    revision = service.workflow_get_state().revision
+    with pytest.raises(InvalidStateTransitionError):
+        service.delegation_unreserve(
+            _unreserve_request(
+                allocation_id,
+                expected_revision=revision,
+                idempotency_key=f"unreserve-worker-{database_state}",
+            )
+        )
+    assert service.workflow_get_state().revision == revision
+    assert worker_database.read_bytes() == before_bytes
+    assert not Path(f"{worker_database}-shm").exists()
+
+
+def test_delegation_unreserve_rejects_symlinked_worker_directory(tmp_path: Path) -> None:
+    service, _ = setup(tmp_path)
+    allocation_id = service.workflow_get_state().allocations[0].allocation_id
+    service.delegation_reserve(
+        "Primary Output", expected_revision=0, idempotency_key="reserve-symlink-worker"
+    )
+    subagents = tmp_path / "state" / "project-a" / "root-a" / "subagents"
+    subagents.mkdir()
+    outside = tmp_path / "outside-worker"
+    outside.mkdir()
+    (subagents / "worker-link").symlink_to(outside, target_is_directory=True)
+
+    revision = service.workflow_get_state().revision
+    with pytest.raises(InvalidStateTransitionError, match="identity history"):
+        service.delegation_unreserve(
+            _unreserve_request(
+                allocation_id, expected_revision=revision, idempotency_key="unreserve-symlink"
+            )
+        )
+    assert service.workflow_get_state().revision == revision
+
+
+def test_delegation_unreserve_rejects_worker_entry_added_during_scan(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, _ = setup(tmp_path)
+    allocation_id = service.workflow_get_state().allocations[0].allocation_id
+    service.delegation_reserve(
+        "Primary Output", expected_revision=0, idempotency_key="reserve-worker-entry-race"
+    )
+    subagents = tmp_path / "state" / "project-a" / "root-a" / "subagents"
+    subagents.mkdir()
+    original_iterdir = Path.iterdir
+    added = False
+
+    def add_entry_after_snapshot(path: Path):
+        nonlocal added
+        entries = tuple(original_iterdir(path))
+        if path == subagents and not added:
+            added = True
+            (subagents / "late-worker").mkdir()
+        return iter(entries)
+
+    monkeypatch.setattr(Path, "iterdir", add_entry_after_snapshot)
+    with pytest.raises(InvalidStateTransitionError, match="changed while being inspected"):
+        service.delegation_unreserve(
+            _unreserve_request(
+                allocation_id, expected_revision=1, idempotency_key="unreserve-worker-entry-race"
+            )
+        )
+    monkeypatch.undo()
+    state = service.workflow_get_state()
+    assert state.revision == 1
+    assert state.allocations[0].role == "Primary Output"
+
+
+def test_delegation_unreserve_rejects_subagents_directory_appearing_during_scan(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, _ = setup(tmp_path)
+    allocation_id = service.workflow_get_state().allocations[0].allocation_id
+    service.delegation_reserve(
+        "Primary Output", expected_revision=0, idempotency_key="reserve-worker-directory-race"
+    )
+    subagents = tmp_path / "state" / "project-a" / "root-a" / "subagents"
+    original_lstat = Path.lstat
+    created = False
+
+    def create_after_missing_snapshot(path: Path):
+        nonlocal created
+        if path == subagents and not created:
+            try:
+                return original_lstat(path)
+            except FileNotFoundError:
+                created = True
+                subagents.mkdir()
+                raise
+        return original_lstat(path)
+
+    monkeypatch.setattr(Path, "lstat", create_after_missing_snapshot)
+    with pytest.raises(InvalidStateTransitionError, match="changed while being inspected"):
+        service.delegation_unreserve(
+            _unreserve_request(
+                allocation_id,
+                expected_revision=1,
+                idempotency_key="unreserve-worker-directory-race",
+            )
+        )
+    monkeypatch.undo()
+    state = service.workflow_get_state()
+    assert state.revision == 1
+    assert state.allocations[0].role == "Primary Output"

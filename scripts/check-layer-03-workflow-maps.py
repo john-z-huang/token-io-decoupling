@@ -31,7 +31,22 @@ ROUTE_SPECS = {
         'steps': ('Contract', 'Environment', 'Mode', 'Session', 'Context', 'Decision',
                   'Implementation', 'Stage Feedback', 'Control', 'Verification',
                   'Repair', 'Documentation', 'Git', 'Acceptance'),
-        'branches': {'D_ENHANCED', 'D_ENHANCED_HOST', 'ACT_NATIVE', 'D_ROOT_STORE', 'ACT_ROOT_OPEN', 'D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER', 'D_NATIVE_RECON', 'ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK', 'D_RECOVERY_GATE', 'ACT_AUDIT_CONFIRM', 'D_RULE_ACCESS', 'ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT', 'ACT_INITIAL_CLASSIFY', 'D_DECISION_ADVICE', 'ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT', 'D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT', 'D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT', 'D_PLAN', 'ACT_PLAN', 'D_PLAN_SAVED', 'D_PLAN_MATCH', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ', 'D_ARCHIVE', 'ACT_ARCHIVE', 'D_ARCHIVED', 'D_RECON', 'ACT_RECON', 'D_CONTROL', 'D_VERIFY', 'D_DOC', 'D_GIT', 'D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY', 'ACT_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT', 'ACT_AUDIT_WAIT', 'ACT_AUDIT_TIMEOUT', 'BLOCK', 'DONE'},
+        'branches': {
+            'ACT_CONTEXT_DIRECT', 'ACT_CONTEXT_GEN', 'ACT_EXECUTOR_CONFLICT', 'ACT_EXECUTOR_ROOT',
+            'ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_HOLD', 'ACT_OUTPUT_NO',
+            'ACT_NATIVE', 'ACT_ROOT_OPEN', 'ACT_NATIVE_TRANSFER', 'ACT_NATIVE_RECON',
+            'ACT_RECOVERY_RECHECK', 'ACT_AUDIT_CONFIRM', 'ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT',
+            'ACT_INITIAL_CLASSIFY', 'ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT', 'ACT_CONTROL_ADVICE',
+            'ACT_CONTROL_DIRECT', 'ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT', 'ACT_PLAN', 'ACT_PLAN_SCAN',
+            'ACT_PLAN_READ', 'ACT_ARCHIVE', 'ACT_RECON',
+            'ACT_AUDIT_PROMPT', 'ACT_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY', 'ACT_AUDIT_DEFAULT',
+            'ACT_AUDIT_WAIT', 'ACT_AUDIT_TIMEOUT', 'D_ENHANCED', 'D_ENHANCED_HOST', 'D_ROOT_STORE',
+            'D_AUTHORITY_TRANSFER', 'D_NATIVE_RECON', 'D_RECOVERY_GATE', 'D_RULE_ACCESS',
+            'D_DECISION_ADVICE', 'D_CONTROL_ADVICE', 'D_EPOCH_ADVICE', 'D_PLAN', 'D_PLAN_SAVED',
+            'D_PLAN_MATCH', 'D_ARCHIVE', 'D_ARCHIVED', 'D_RECON', 'D_CONTEXT_GEN', 'D_TASK_ASSIGN',
+            'D_OUTPUT_EXPLICIT', 'D_OUTPUT_RESULT', 'D_CONTROL', 'D_VERIFY', 'D_DOC', 'D_GIT',
+            'D_AUDIT_CONFIG', 'D_AUDIT_REPLY', 'D_AUDIT_CORRECTION', 'BLOCK', 'DONE',
+        },
         'edges': {
             ('S01', 'ACT_INITIAL_CLASSIFY'), ('ACT_INITIAL_CLASSIFY', 'S02'), ('ACT_INITIAL_CLASSIFY', 'BLOCK'), ('S02', 'D_ENHANCED'), ('D_ENHANCED', 'S03'),
             ('D_ENHANCED', 'D_ENHANCED_HOST'), ('D_ENHANCED_HOST', 'S03'),
@@ -61,10 +76,22 @@ ROUTE_SPECS = {
             ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_PLAN_SCAN', 'BLOCK'),
             ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'D_RECON'),
             ('ACT_PLAN_READ', 'D_RECON'), ('ACT_PLAN_READ', 'BLOCK'),
-            ('D_RECON', 'ACT_RECON'), ('ACT_RECON', 'S05'), ('D_RECON', 'S06'),
+            ('D_RECON', 'ACT_RECON'), ('ACT_RECON', 'S05'), ('D_RECON', 'D_CONTEXT_GEN'),
+            ('D_CONTEXT_GEN', 'ACT_CONTEXT_GEN'), ('D_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'),
+            ('ACT_CONTEXT_GEN', 'S06'), ('ACT_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'),
+            ('ACT_CONTEXT_DIRECT', 'S06'), ('ACT_CONTEXT_DIRECT', 'BLOCK'),
             ('S06', 'D_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_DIRECT', 'D_PLAN'), ('ACT_DECISION_DIRECT', 'BLOCK'), ('D_PLAN', 'ACT_PLAN'), ('D_PLAN', 'D_RECOVERY_GATE'),
             ('ACT_PLAN', 'D_PLAN_SAVED'), ('D_PLAN_SAVED', 'D_RECOVERY_GATE'), ('D_PLAN_SAVED', 'BLOCK'),
-            ('D_RECOVERY_GATE', 'S07'), ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'), ('S07', 'S08'), ('S08', 'S09'), ('S09', 'D_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_DIRECT', 'D_CONTROL'), ('ACT_CONTROL_DIRECT', 'BLOCK'),
+            ('D_RECOVERY_GATE', 'D_TASK_ASSIGN'), ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'),
+            ('D_TASK_ASSIGN', 'ACT_EXECUTOR_ROOT'), ('D_TASK_ASSIGN', 'ACT_EXECUTOR_CONFLICT'),
+            ('ACT_EXECUTOR_CONFLICT', 'BLOCK'), ('ACT_EXECUTOR_ROOT', 'D_OUTPUT_EXPLICIT'),
+            ('D_OUTPUT_EXPLICIT', 'S07'), ('D_OUTPUT_EXPLICIT', 'ACT_OUTPUT_ADVICE'),
+            ('ACT_OUTPUT_ADVICE', 'D_OUTPUT_RESULT'), ('ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_DIRECT'),
+            ('D_OUTPUT_RESULT', 'ACT_OUTPUT_NO'), ('D_OUTPUT_RESULT', 'ACT_OUTPUT_HOLD'),
+            ('D_OUTPUT_RESULT', 'ACT_OUTPUT_DIRECT'), ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_NO'),
+            ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_HOLD'), ('ACT_OUTPUT_DIRECT', 'BLOCK'),
+            ('ACT_OUTPUT_NO', 'S07'), ('ACT_OUTPUT_HOLD', 'BLOCK'),
+            ('S07', 'S08'), ('S08', 'S09'), ('S09', 'D_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_DIRECT', 'D_CONTROL'), ('ACT_CONTROL_DIRECT', 'BLOCK'),
             ('D_CONTROL', 'S05'), ('D_CONTROL', 'S06'), ('D_CONTROL', 'S10'), ('D_CONTROL', 'BLOCK'),
             ('S10', 'D_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_DIRECT', 'D_VERIFY'), ('ACT_EPOCH_DIRECT', 'BLOCK'), ('D_VERIFY', 'S11'), ('D_VERIFY', 'S12'), ('D_VERIFY', 'BLOCK'),
             ('S11', 'S10'), ('S12', 'D_DOC'), ('D_DOC', 'S10'), ('D_DOC', 'S06'),
@@ -81,57 +108,70 @@ ROUTE_SPECS = {
         'steps': ('Contract', 'Environment', 'Mode', 'Session', 'Allocation', 'Context',
                   'Decision', 'Slice', 'Child Creation', 'Dispatch', 'Implementation',
                   'Verification', 'Repair', 'Documentation', 'Git', 'Acceptance'),
-        'branches': {'D_ENHANCED', 'D_ENHANCED_HOST', 'ACT_NATIVE', 'D_ROOT_STORE', 'ACT_ROOT_OPEN', 'D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER', 'D_NATIVE_RECON', 'ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK', 'D_RECOVERY_GATE', 'ACT_AUDIT_CONFIRM', 'D_RULE_ACCESS', 'ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT', 'ACT_INITIAL_CLASSIFY', 'D_DECISION_ADVICE', 'ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT', 'D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT', 'D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT', 'D_WORKER_STORE', 'ACT_WORKER_OPEN', 'D_BOOT', 'ACT_BOOT_PLAN', 'D_PLAN', 'ACT_PLAN', 'D_PLAN_SAVED',
-                     'D_RECON', 'ACT_RECON_PLAN', 'D_MEMO', 'ACT_MEMO', 'D_CONTROL',
-                     'D_VERIFY', 'D_DOC', 'D_GIT', 'D_PLAN_MATCH', 'ACT_PLAN_SCAN', 'ACT_PLAN_READ', 'D_ARCHIVE', 'ACT_ARCHIVE', 'D_ARCHIVED', 'D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY', 'ACT_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT', 'ACT_AUDIT_WAIT', 'ACT_AUDIT_TIMEOUT', 'BLOCK', 'DONE'},
+        'branches': {
+            'ACT_ARCHIVE', 'ACT_AUDIT_CLARIFY', 'ACT_AUDIT_CONFIRM', 'ACT_AUDIT_DEFAULT', 'ACT_AUDIT_PROMPT', 'ACT_AUDIT_REPLY',
+            'ACT_AUDIT_TIMEOUT', 'ACT_AUDIT_WAIT', 'ACT_BOOT_PLAN', 'ACT_BUDGET_APPROVAL', 'ACT_CHILD_ADVICE', 'ACT_CHILD_DIRECT',
+            'ACT_CHILD_REVIEW', 'ACT_CHILD_WAIT', 'ACT_CONTEXT_DIRECT', 'ACT_CONTEXT_GEN', 'ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT',
+            'ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT', 'ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT', 'ACT_INITIAL_CLASSIFY', 'ACT_MEMO',
+            'ACT_NATIVE', 'ACT_NATIVE_RECON', 'ACT_NATIVE_TRANSFER', 'ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_CHILD', 'ACT_OUTPUT_HOLD',
+            'ACT_OUTPUT_NO', 'ACT_OUTPUT_WAIT', 'ACT_PLAN', 'ACT_PLAN_READ', 'ACT_PLAN_SCAN', 'ACT_RECON_PLAN',
+            'ACT_RECOVERY_RECHECK', 'ACT_ROLE_ADVICE', 'ACT_ROLE_NA', 'ACT_ROLE_RESERVE', 'ACT_ROLE_REVIEW', 'ACT_ROOT_OPEN',
+            'ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT', 'ACT_TASK_ASSIGN', 'ACT_WORKER_OPEN', 'BLOCK', 'DONE',
+            'D_ARCHIVE', 'D_ARCHIVED', 'D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION', 'D_AUDIT_REPLY', 'D_AUTHORITY_TRANSFER',
+            'D_BOOT', 'D_CHILD_POOL', 'D_CONTEXT_GEN', 'D_CONTROL', 'D_CONTROL_ADVICE', 'D_DECISION_ADVICE',
+            'D_DOC', 'D_ENHANCED', 'D_ENHANCED_HOST', 'D_EPOCH_ADVICE', 'D_EXECUTOR', 'D_GIT',
+            'D_INDEPENDENT_CHILD', 'D_MEMO', 'D_NATIVE_RECON', 'D_NEW_CHILD', 'D_OUTPUT_EXPLICIT', 'D_OUTPUT_RESULT',
+            'D_PLAN', 'D_PLAN_MATCH', 'D_PLAN_SAVED', 'D_RECON', 'D_RECOVERY_GATE', 'D_ROLE_CAPACITY',
+            'D_ROLE_SELECT', 'D_ROOT_STORE', 'D_RULE_ACCESS', 'D_VERIFY', 'D_WORKER_STORE',
+        },
         'edges': {
-            ('M01', 'ACT_INITIAL_CLASSIFY'), ('ACT_INITIAL_CLASSIFY', 'M02'), ('ACT_INITIAL_CLASSIFY', 'BLOCK'), ('M02', 'D_ENHANCED'), ('D_ENHANCED', 'M03'),
-            ('D_ENHANCED', 'D_ENHANCED_HOST'), ('D_ENHANCED_HOST', 'M03'),
-            ('D_ENHANCED_HOST', 'ACT_NATIVE'), ('ACT_NATIVE', 'M03'), ('D_ENHANCED_HOST', 'BLOCK'),
-            ('M03', 'M04'), ('M04', 'D_ROOT_STORE'),
-            ('D_ROOT_STORE', 'D_NATIVE_RECON'), ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'), ('D_ROOT_STORE', 'BLOCK'),
-            ('ACT_ROOT_OPEN', 'D_AUDIT_CONFIG'), ('ACT_ROOT_OPEN', 'BLOCK'),
-            ('D_AUTHORITY_TRANSFER', 'D_AUDIT_CONFIG'), ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'), ('D_AUTHORITY_TRANSFER', 'BLOCK'),
-            ('ACT_NATIVE_TRANSFER', 'D_AUDIT_CONFIG'), ('ACT_NATIVE_TRANSFER', 'BLOCK'),
-            ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'), ('D_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'),
-            ('ACT_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'), ('ACT_NATIVE_RECON', 'BLOCK'),
-            ('ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'),
-            ('D_AUDIT_CONFIG', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'),
-            ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'), ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'),
-            ('D_AUDIT_CONFIG', 'BLOCK'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'),
-            ('ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'),
-            ('ACT_AUDIT_REPLY', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'),
-            ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'),
-            ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'),
-            ('ACT_AUDIT_DEFAULT', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'),
-            ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'),
-            ('ACT_AUDIT_TIMEOUT', 'ACT_AUDIT_CONFIRM'), ('ACT_AUDIT_CONFIRM', 'M05'),
-            ('ACT_AUDIT_CONFIRM', 'BLOCK'), ('D_AUDIT_REPLY', 'BLOCK'),
-            ('M05', 'D_BOOT'), ('D_BOOT', 'ACT_BOOT_PLAN'), ('ACT_BOOT_PLAN', 'M06'), ('D_BOOT', 'M06'),
-            ('M06', 'D_RULE_ACCESS'), ('D_RULE_ACCESS', 'ACT_RULE_CONTEXT'),
-            ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'),
-            ('ACT_RULE_DIRECT', 'ACT_PLAN_SCAN'), ('ACT_RULE_DIRECT', 'BLOCK'),
-            ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_PLAN_SCAN', 'BLOCK'),
-            ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'M07'),
-            ('ACT_PLAN_READ', 'M07'), ('ACT_PLAN_READ', 'BLOCK'), ('M07', 'D_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_DIRECT', 'D_PLAN'), ('ACT_DECISION_DIRECT', 'BLOCK'), ('D_PLAN', 'ACT_PLAN'), ('D_PLAN', 'D_RECON'),
-            ('ACT_PLAN', 'D_PLAN_SAVED'), ('D_PLAN_SAVED', 'D_RECON'), ('D_PLAN_SAVED', 'BLOCK'),
-            ('D_RECON', 'ACT_RECON_PLAN'),
-            ('ACT_RECON_PLAN', 'D_RECOVERY_GATE'), ('D_RECON', 'D_RECOVERY_GATE'),
-            ('D_RECOVERY_GATE', 'M08'), ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'),
-            ('M08', 'M09'), ('M09', 'D_WORKER_STORE'), ('M09', 'D_MEMO'), ('M09', 'BLOCK'),
-            ('D_WORKER_STORE', 'ACT_WORKER_OPEN'), ('D_WORKER_STORE', 'D_MEMO'), ('D_WORKER_STORE', 'BLOCK'),
-            ('ACT_WORKER_OPEN', 'D_MEMO'), ('ACT_WORKER_OPEN', 'BLOCK'),
-            ('M10', 'M11'), ('M10', 'BLOCK'),
-            ('D_MEMO', 'ACT_MEMO'), ('ACT_MEMO', 'M10'), ('D_MEMO', 'M10'),
-            ('M11', 'D_CONTROL_ADVICE'), ('M11', 'BLOCK'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_DIRECT', 'D_CONTROL'), ('ACT_CONTROL_DIRECT', 'BLOCK'),
-            ('D_CONTROL', 'M06'), ('D_CONTROL', 'M07'),
-            ('D_CONTROL', 'M12'), ('D_CONTROL', 'BLOCK'), ('M12', 'D_EPOCH_ADVICE'), ('M12', 'BLOCK'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_DIRECT', 'D_VERIFY'), ('ACT_EPOCH_DIRECT', 'BLOCK'),
-            ('D_VERIFY', 'M13'), ('D_VERIFY', 'M14'), ('D_VERIFY', 'BLOCK'),
-            ('M13', 'M12'), ('M13', 'BLOCK'), ('M14', 'D_DOC'), ('M14', 'BLOCK'),
-            ('D_DOC', 'M12'), ('D_DOC', 'M07'), ('D_DOC', 'M15'),
-            ('M15', 'D_GIT'), ('M15', 'BLOCK'), ('D_GIT', 'M16'), ('D_GIT', 'BLOCK'),
-            ('M16', 'D_ARCHIVE'), ('D_ARCHIVE', 'ACT_ARCHIVE'), ('D_ARCHIVE', 'DONE'),
-            ('ACT_ARCHIVE', 'D_ARCHIVED'), ('D_ARCHIVED', 'DONE'), ('D_ARCHIVED', 'BLOCK'),
+            ('ACT_ARCHIVE', 'D_ARCHIVED'), ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'), ('ACT_AUDIT_CONFIRM', 'BLOCK'), ('ACT_AUDIT_CONFIRM', 'M05'),
+            ('ACT_AUDIT_DEFAULT', 'ACT_AUDIT_CONFIRM'), ('ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY'), ('ACT_AUDIT_REPLY', 'ACT_AUDIT_CONFIRM'), ('ACT_AUDIT_TIMEOUT', 'ACT_AUDIT_CONFIRM'),
+            ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'), ('ACT_BOOT_PLAN', 'ACT_TASK_ASSIGN'), ('ACT_BUDGET_APPROVAL', 'ACT_ROLE_RESERVE'), ('ACT_BUDGET_APPROVAL', 'BLOCK'),
+            ('ACT_CHILD_ADVICE', 'ACT_CHILD_REVIEW'), ('ACT_CHILD_DIRECT', 'D_OUTPUT_EXPLICIT'), ('ACT_CHILD_REVIEW', 'ACT_CHILD_DIRECT'), ('ACT_CHILD_REVIEW', 'BLOCK'),
+            ('ACT_CHILD_REVIEW', 'D_OUTPUT_EXPLICIT'), ('ACT_CHILD_WAIT', 'D_CHILD_POOL'), ('ACT_CONTEXT_DIRECT', 'BLOCK'), ('ACT_CONTEXT_DIRECT', 'M07'),
+            ('ACT_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'), ('ACT_CONTEXT_GEN', 'M07'), ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_DIRECT', 'BLOCK'),
+            ('ACT_CONTROL_DIRECT', 'D_CONTROL'), ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_DIRECT', 'BLOCK'), ('ACT_DECISION_DIRECT', 'D_PLAN'),
+            ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_DIRECT', 'BLOCK'), ('ACT_EPOCH_DIRECT', 'D_VERIFY'), ('ACT_INITIAL_CLASSIFY', 'BLOCK'),
+            ('ACT_INITIAL_CLASSIFY', 'M02'), ('ACT_MEMO', 'M10'), ('ACT_NATIVE', 'M03'), ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'),
+            ('ACT_NATIVE_RECON', 'BLOCK'), ('ACT_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('ACT_NATIVE_TRANSFER', 'BLOCK'), ('ACT_NATIVE_TRANSFER', 'D_AUDIT_CONFIG'),
+            ('ACT_OUTPUT_ADVICE', 'D_OUTPUT_RESULT'), ('ACT_OUTPUT_CHILD', 'ACT_ROLE_NA'), ('ACT_OUTPUT_HOLD', 'ACT_OUTPUT_WAIT'), ('ACT_OUTPUT_HOLD', 'D_INDEPENDENT_CHILD'),
+            ('ACT_OUTPUT_NO', 'D_NEW_CHILD'), ('ACT_OUTPUT_WAIT', 'ACT_OUTPUT_ADVICE'), ('ACT_PLAN', 'D_PLAN_SAVED'), ('ACT_PLAN_READ', 'BLOCK'),
+            ('ACT_PLAN_READ', 'D_CONTEXT_GEN'), ('ACT_PLAN_SCAN', 'BLOCK'), ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_RECON_PLAN', 'D_BOOT'),
+            ('ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'), ('ACT_ROLE_ADVICE', 'ACT_ROLE_REVIEW'), ('ACT_ROLE_NA', 'D_RECOVERY_GATE'), ('ACT_ROLE_RESERVE', 'BLOCK'),
+            ('ACT_ROLE_RESERVE', 'D_RECOVERY_GATE'), ('ACT_ROLE_REVIEW', 'BLOCK'), ('ACT_ROLE_REVIEW', 'D_ROLE_CAPACITY'), ('ACT_ROOT_OPEN', 'BLOCK'),
+            ('ACT_ROOT_OPEN', 'D_AUDIT_CONFIG'), ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'), ('ACT_RULE_DIRECT', 'ACT_PLAN_SCAN'), ('ACT_RULE_DIRECT', 'BLOCK'),
+            ('ACT_TASK_ASSIGN', 'D_EXECUTOR'), ('ACT_WORKER_OPEN', 'BLOCK'), ('ACT_WORKER_OPEN', 'D_MEMO'), ('D_ARCHIVE', 'ACT_ARCHIVE'),
+            ('D_ARCHIVE', 'DONE'), ('D_ARCHIVED', 'BLOCK'), ('D_ARCHIVED', 'DONE'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'),
+            ('D_AUDIT_CONFIG', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'), ('D_AUDIT_CONFIG', 'BLOCK'), ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'),
+            ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'),
+            ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'), ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'),
+            ('D_AUDIT_REPLY', 'BLOCK'), ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'), ('D_AUTHORITY_TRANSFER', 'BLOCK'), ('D_AUTHORITY_TRANSFER', 'D_AUDIT_CONFIG'),
+            ('D_BOOT', 'ACT_BOOT_PLAN'), ('D_BOOT', 'ACT_TASK_ASSIGN'), ('D_CHILD_POOL', 'ACT_CHILD_ADVICE'), ('D_CHILD_POOL', 'ACT_CHILD_DIRECT'),
+            ('D_CHILD_POOL', 'BLOCK'), ('D_CHILD_POOL', 'D_OUTPUT_EXPLICIT'), ('D_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'), ('D_CONTEXT_GEN', 'ACT_CONTEXT_GEN'),
+            ('D_CONTROL', 'BLOCK'), ('D_CONTROL', 'M06'), ('D_CONTROL', 'M07'), ('D_CONTROL', 'M12'),
+            ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('D_DECISION_ADVICE', 'ACT_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_DIRECT'),
+            ('D_DOC', 'M07'), ('D_DOC', 'M12'), ('D_DOC', 'M15'), ('D_ENHANCED', 'D_ENHANCED_HOST'),
+            ('D_ENHANCED', 'M03'), ('D_ENHANCED_HOST', 'ACT_NATIVE'), ('D_ENHANCED_HOST', 'BLOCK'), ('D_ENHANCED_HOST', 'M03'),
+            ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('D_EXECUTOR', 'BLOCK'), ('D_EXECUTOR', 'D_CHILD_POOL'),
+            ('D_EXECUTOR', 'D_OUTPUT_EXPLICIT'), ('D_GIT', 'BLOCK'), ('D_GIT', 'M16'), ('D_INDEPENDENT_CHILD', 'ACT_OUTPUT_WAIT'),
+            ('D_INDEPENDENT_CHILD', 'D_ROLE_SELECT'), ('D_MEMO', 'ACT_MEMO'), ('D_MEMO', 'M10'), ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'),
+            ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'), ('D_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('D_NEW_CHILD', 'ACT_CHILD_WAIT'), ('D_NEW_CHILD', 'ACT_ROLE_NA'),
+            ('D_NEW_CHILD', 'D_ROLE_SELECT'), ('D_OUTPUT_EXPLICIT', 'ACT_OUTPUT_ADVICE'), ('D_OUTPUT_EXPLICIT', 'D_NEW_CHILD'), ('D_OUTPUT_RESULT', 'ACT_OUTPUT_CHILD'),
+            ('D_OUTPUT_RESULT', 'ACT_OUTPUT_HOLD'), ('D_OUTPUT_RESULT', 'ACT_OUTPUT_NO'), ('D_OUTPUT_RESULT', 'BLOCK'), ('D_PLAN', 'ACT_PLAN'),
+            ('D_PLAN', 'D_RECON'), ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'D_CONTEXT_GEN'), ('D_PLAN_SAVED', 'BLOCK'),
+            ('D_PLAN_SAVED', 'D_RECON'), ('D_RECON', 'ACT_RECON_PLAN'), ('D_RECON', 'D_BOOT'), ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'),
+            ('D_RECOVERY_GATE', 'M08'), ('D_ROLE_CAPACITY', 'ACT_BUDGET_APPROVAL'), ('D_ROLE_CAPACITY', 'ACT_ROLE_RESERVE'), ('D_ROLE_CAPACITY', 'BLOCK'),
+            ('D_ROLE_SELECT', 'ACT_ROLE_ADVICE'), ('D_ROLE_SELECT', 'ACT_ROLE_REVIEW'), ('D_ROOT_STORE', 'BLOCK'), ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'),
+            ('D_ROOT_STORE', 'D_NATIVE_RECON'), ('D_RULE_ACCESS', 'ACT_RULE_CONTEXT'), ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('D_VERIFY', 'BLOCK'),
+            ('D_VERIFY', 'M13'), ('D_VERIFY', 'M14'), ('D_WORKER_STORE', 'ACT_WORKER_OPEN'), ('D_WORKER_STORE', 'BLOCK'),
+            ('D_WORKER_STORE', 'D_MEMO'), ('M01', 'ACT_INITIAL_CLASSIFY'), ('M02', 'D_ENHANCED'), ('M03', 'M04'),
+            ('M04', 'D_ROOT_STORE'), ('M05', 'M06'), ('M06', 'D_RULE_ACCESS'), ('M07', 'D_DECISION_ADVICE'),
+            ('M08', 'M09'), ('M09', 'BLOCK'), ('M09', 'D_MEMO'), ('M09', 'D_WORKER_STORE'),
+            ('M10', 'BLOCK'), ('M10', 'M11'), ('M11', 'BLOCK'), ('M11', 'D_CONTROL_ADVICE'),
+            ('M12', 'BLOCK'), ('M12', 'D_EPOCH_ADVICE'), ('M13', 'BLOCK'), ('M13', 'M12'),
+            ('M14', 'BLOCK'), ('M14', 'D_DOC'), ('M15', 'BLOCK'), ('M15', 'D_GIT'),
+            ('M16', 'D_ARCHIVE'),
         },
     },
 }
@@ -346,6 +386,74 @@ ADVISORY_EDGE_LABELS = {
     },
 }
 
+MULTI_AGENT_EDGE_LABEL_REQUIREMENTS = {
+    'en': {
+        ('D_CHILD_POOL', 'D_OUTPUT_EXPLICIT'): (
+            'suitable child busy; assess output before waiting',
+            'no suitable existing child; a new child may be required',
+        ),
+        ('D_ROLE_SELECT', 'ACT_ROLE_REVIEW'): (
+            'explicit creation/role; skip role advice',
+            'context generation failed; direct facts suffice; no downstream advice',
+        ),
+    },
+    'zh': {
+        ('D_CHILD_POOL', 'D_OUTPUT_EXPLICIT'): (
+            '合适子代理忙碌；先评估输出再等待',
+            '没有合适现有子代理；可能需要创建新代理',
+        ),
+        ('D_ROLE_SELECT', 'ACT_ROLE_REVIEW'): (
+            '用户明确要求创建／指定职责；跳过职责建议',
+            '上下文生成失败但直接事实足够；不发下游建议',
+        ),
+    },
+}
+
+SINGLE_AGENT_EDGE_LABEL_REQUIREMENTS = {
+    'en': {
+        ('D_CONTEXT_GEN', 'ACT_CONTEXT_GEN'): ('unresolved downstream decision needs background',),
+        ('D_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'): ('explicit direction settles choices / no downstream advice: N/A',),
+        ('ACT_CONTEXT_GEN', 'S06'): ('reviewed context and exact input hash are current',),
+        ('ACT_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'): ('failed / insufficient facts; direct review only',),
+        ('ACT_CONTEXT_DIRECT', 'S06'): ('verified facts suffice / explicit instruction honored',),
+        ('ACT_CONTEXT_DIRECT', 'BLOCK'): ('essential facts unavailable or conflicting',),
+        ('D_TASK_ASSIGN', 'ACT_EXECUTOR_ROOT'): ('explicit Root or no conflicting executor direction; local deterministic route',),
+        ('D_TASK_ASSIGN', 'ACT_EXECUTOR_CONFLICT'): ('explicit sub_agent conflicts with locked Single; return for review',),
+        ('ACT_EXECUTOR_CONFLICT', 'BLOCK'): ('unresolved conflict; block without silent Root fallback',),
+        ('D_OUTPUT_EXPLICIT', 'S07'): ('explicit Root/output direction; skip matching advice',),
+        ('D_OUTPUT_EXPLICIT', 'ACT_OUTPUT_ADVICE'): ('route unsettled; assess output independently',),
+        ('ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_DIRECT'): ('unavailable or failed; direct owner review only',),
+        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_NO'): ('no / verified current facts',),
+        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_HOLD'): ('yes / unresolved route; Single-Agent topology boundary',),
+        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_DIRECT'): ('insufficient evidence / conflicting facts',),
+        ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_NO'): ('verified facts establish no',),
+        ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_HOLD'): ('verified facts establish yes',),
+        ('ACT_OUTPUT_DIRECT', 'BLOCK'): ('facts missing, conflicting, or still unresolved',),
+        ('ACT_OUTPUT_HOLD', 'BLOCK'): ('hold and report topology boundary; stop before output',),
+    },
+    'zh': {
+        ('D_CONTEXT_GEN', 'ACT_CONTEXT_GEN'): ('未决的下游决策需要背景',),
+        ('D_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'): ('明确指令已定分支／无需下游建议：不适用',),
+        ('ACT_CONTEXT_GEN', 'S06'): ('上下文已审阅且精确输入 Hash 仍当前',),
+        ('ACT_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'): ('失败／事实不足；仅直接审阅',),
+        ('ACT_CONTEXT_DIRECT', 'S06'): ('已核实事实足够／遵循明确指令',),
+        ('ACT_CONTEXT_DIRECT', 'BLOCK'): ('必需事实缺失或冲突',),
+        ('D_TASK_ASSIGN', 'ACT_EXECUTOR_ROOT'): ('用户明确指定 Root 或无冲突执行主体指令；本地确定性路由',),
+        ('D_TASK_ASSIGN', 'ACT_EXECUTOR_CONFLICT'): ('明确 sub_agent 与已锁定 Single 冲突；交 Root 审阅',),
+        ('ACT_EXECUTOR_CONFLICT', 'BLOCK'): ('冲突未解决；阻塞且不得静默回退 Root',),
+        ('D_OUTPUT_EXPLICIT', 'S07'): ('Root/输出指令已明确决定路由；跳过对应建议',),
+        ('D_OUTPUT_EXPLICIT', 'ACT_OUTPUT_ADVICE'): ('输出路由未定；独立评估输出',),
+        ('ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_DIRECT'): ('不可用或失败；仅直接审阅 owner',),
+        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_NO'): ('no／当前事实已核实',),
+        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_HOLD'): ('yes／路由未定；Single-Agent 拓扑边界',),
+        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_DIRECT'): ('证据不足／事实冲突',),
+        ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_NO'): ('已核实事实支持 no',),
+        ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_HOLD'): ('已核实事实支持 yes',),
+        ('ACT_OUTPUT_DIRECT', 'BLOCK'): ('事实缺失、冲突或仍未决',),
+        ('ACT_OUTPUT_HOLD', 'BLOCK'): ('挂起并报告拓扑边界；不得继续输出',),
+    },
+}
+
 CONTEXT_PLAN_REQUIREMENTS = {
     'en': ('list active plan', 'plans/', 'read each match', 'freshness',
            'current instructions', 'not applicable', 'block'),
@@ -548,7 +656,7 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
          f'{prefix}05' if target == 'ROUTE_NEXT' else
          f'{prefix}05' if target == 'ROUTE_CONTEXT' and route == 'single-agent' else
          f'{prefix}05' if target == 'ROUTE_CONTEXT' else
-         f'{prefix}07' if target == 'ROUTE_SLICE' and route == 'single-agent' else
+         'D_TASK_ASSIGN' if target == 'ROUTE_SLICE' and route == 'single-agent' else
          f'{prefix}08' if target == 'ROUTE_SLICE' else
          f'{prefix}05' if target == 'ROOT_CONTEXT' and route == 'single-agent' else
          f'{prefix}05' if target == 'ROOT_CONTEXT' else target): label
@@ -590,6 +698,30 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
         )
         if not match or label.casefold() not in match.group(1).casefold():
             errors.append(f'{path}: advisory edge {source} -> {target} must label {label}')
+    if route == 'multi-agent':
+        for (source, target), required_labels in MULTI_AGENT_EDGE_LABEL_REQUIREMENTS[lang].items():
+            labels = re.findall(
+                r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+'
+                + re.escape(target) + r'\s*$',
+                map_text,
+            )
+            for required_label in required_labels:
+                if not any(required_label.casefold() in label.casefold() for label in labels):
+                    errors.append(
+                        f'{path}: edge {source} -> {target} must preserve branch label {required_label}'
+                    )
+    if route == 'single-agent':
+        for (source, target), required_labels in SINGLE_AGENT_EDGE_LABEL_REQUIREMENTS[lang].items():
+            labels = re.findall(
+                r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+'
+                + re.escape(target) + r'\s*$',
+                map_text,
+            )
+            for required_label in required_labels:
+                if not any(required_label.casefold() in label.casefold() for label in labels):
+                    errors.append(
+                        f'{path}: edge {source} -> {target} must preserve branch label {required_label}'
+                    )
     completion_target = f'{prefix}10' if route == 'single-agent' else f'{prefix}12'
     completion_match = re.search(
         r'(?m)^\s*D_CONTROL\s+--\s+(.+?)\s+-->\s+' + re.escape(completion_target) + r'\s*$',
@@ -627,13 +759,13 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
     for edge in sorted(edges - spec['edges']):
         errors.append(f'{path}: unexpected map edge {edge[0]} -> {edge[1]}; update the approved route contract explicitly')
     skip_edges = (
-        (('D_PLAN_MATCH', 'D_RECON'), ('D_RECON', 'S06'), ('D_PLAN', 'D_RECOVERY_GATE'), ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('D_DOC', 'S13'), ('D_GIT', 'S14'),
+        (('D_PLAN_MATCH', 'D_RECON'), ('D_RECON', 'D_CONTEXT_GEN'), ('D_PLAN', 'D_RECOVERY_GATE'), ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('D_DOC', 'S13'), ('D_GIT', 'S14'),
          ('D_ARCHIVE', 'DONE'))
         if route == 'single-agent' else
-        (('D_BOOT', 'M06'), ('D_PLAN', 'D_RECON'), ('D_RECON', 'D_RECOVERY_GATE'), ('D_MEMO', 'M10'),
+        (('D_BOOT', 'ACT_TASK_ASSIGN'), ('D_PLAN', 'D_RECON'), ('D_RECON', 'D_BOOT'), ('D_MEMO', 'M10'),
          ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'),
          ('D_WORKER_STORE', 'D_MEMO'),
-         ('D_DOC', 'M15'), ('D_GIT', 'M16'), ('D_PLAN_MATCH', 'M07'), ('D_ARCHIVE', 'DONE'))
+         ('D_DOC', 'M15'), ('D_GIT', 'M16'), ('D_PLAN_MATCH', 'D_CONTEXT_GEN'), ('D_ARCHIVE', 'DONE'))
     )
     skip_words = (r'\b(?:no|N/A|disabled|not applicable)\b'
                   if lang == 'en' else r'不适用|不需要|关闭|无变化')
