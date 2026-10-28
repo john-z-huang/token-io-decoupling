@@ -10,6 +10,14 @@ from token_io_decoupling_state.service import StateService
 from token_io_decoupling_transport.payloads import _RULE_CONTEXT
 from token_io_decoupling_transport.registration import ToolRegistrar
 
+from token_io_decoupling_workflow.child_effort import (
+    ChildEffortPayload,
+    ChildEffortSelector,
+)
+from token_io_decoupling_workflow.decision_context import (
+    DecisionContextGenerator,
+    DecisionContextPayload,
+)
 from token_io_decoupling_workflow.decisions import (
     DecisionAdvice,
     DecisionAdvisoryInput,
@@ -62,6 +70,8 @@ def register_workflow_tools(
     require_codex_context: bool,
     binding_diagnostic: Any,
 ) -> None:
+    effort_selector = ChildEffortSelector()
+    context_generator = DecisionContextGenerator()
     registrar.register_no_args(
         "workflow_capabilities",
         lambda: {
@@ -86,6 +96,8 @@ def register_workflow_tools(
             "api_decisions": "enabled"
             if decisions_config and decisions_config.enabled
             else "disabled",
+            "child_effort_decisions": "available_per_invocation",
+            "decision_context_generation": "available_per_invocation",
             "protocol_target": "2026-07-28",
         },
     )
@@ -93,6 +105,18 @@ def register_workflow_tools(
         "rules_get_context",
         _RULE_CONTEXT,
         lambda payload: rules.load_context(payload.node_id.value, language=payload.language),
+        enhanced=False,
+    )
+    registrar.register(
+        "workflow_select_child_effort",
+        ChildEffortPayload,
+        lambda payload: effort_selector.select(payload.request),
+        enhanced=False,
+    )
+    registrar.register(
+        "workflow_generate_decision_context",
+        DecisionContextPayload,
+        lambda payload: context_generator.generate(payload.request),
         enhanced=False,
     )
 

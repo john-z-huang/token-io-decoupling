@@ -32,7 +32,7 @@ token-io-decoupling start-mcp-server --profile workflow
 
 | Profile / Codex server registration | Tools |
 | --- | --- |
-| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`, `rules_get_context`, `workflow_evaluate`, `evaluate_control_checkpoint` |
+| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`, `rules_get_context`, `workflow_generate_decision_context`, `workflow_select_child_effort`, `workflow_evaluate`, `evaluate_control_checkpoint` |
 | `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`, `delegation_reserve`, `delegation_bind`, `slice_check`, `slice_release`, `workflow_transition`, `parent_get_worker_summary`, `workflow_reconcile` |
 | `worker` / `token-io-decoupling-worker-agent-tools` | `worker_get_assignment`, `worker_record_progress`, `worker_get_evidence`, `worker_report_blocker`, `worker_get_recovery_context` |
 | `share` / `token-io-decoupling-share-tools` | `database_schema_status`, `state_get`, `record_evidence` |
@@ -140,11 +140,44 @@ Root and every delegated Agent must follow this constraint in both project funct
 
 Do not substitute a hardcoded key or endpoint, caller-supplied replacement, or the SDK's default endpoint. Read the two local values at invocation time and pass them explicitly to the SDK. Never print or persist their values. Synthetic configuration is permitted only for mocks that send no network requests.
 
-The API remains disabled by default. Real requests additionally require explicit enablement and authorization for outbound data; this document alone grants neither. The ordinary test suite uses mocks, while a real smoke test requires a separate explicit opt-in and must obey the same two-variable requirement.
+Optional checkpoint advice remains disabled by default. Its real requests additionally require explicit enablement and authorization for outbound data; this document alone grants neither. The ordinary test suite uses mocks, while a real smoke test requires a separate explicit opt-in and must obey the same two-variable requirement.
 
 An authorized embedding enables advice with `DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True)` through the factory's `decisions_config` argument. Optional `semantic_input` on the two evaluation tools is limited to task intent, output class, Contract change, verification impact, and Control. The response keeps the Core result separate from advice. With no semantic input, the original Core response is retained. Advice never selects or confirms a Gate branch; stale, invalid, refused, unavailable, or replayed advice returns to document judgment.
 
-After explicit authorization for a real synthetic request, run this separately from ordinary tests, from `mcp/`, with both local environment variables already configured:
+`workflow_generate_decision_context` is a stateless public operation that turns caller-assembled material into one question or context paragraph for a later Decisions request. It uses the [Responses API with Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), fixed `gpt-6-luna` with `medium` reasoning, `store=False`, no tools, and no automatic downstream call. It requires no Enhanced binding or optional-advice enablement. The Code Agent collects the user requirements, current Git diff, relevant LSP results, and other necessary verified observations, labels their origins and verification limits, then combines them into `raw_content`. The service never reads a repository, executes commands, or treats supplied source labels as proof.
+
+Send `payload.request` with required `raw_content` (nonblank strict string, at most 60,000 characters), `decision_goal` (nonblank strict string, at most 1,200 characters describing the actual downstream decision), `output_kind` (`decision_question` or `decision_context`), and `outbound_data_permitted` (strict boolean). Oversized inputs are rejected without truncation; do not omit material constraints merely to fit the limit. The permission assertion authorizes neither collection nor disclosure by itself. Both local API environment variables remain mandatory for each permitted request. For example:
+
+```json
+{
+  "payload": {
+    "request": {
+      "raw_content": "User requirement: add bounded question input.\nCurrent Git diff, collected by caller: + decision_question: StrictStr\nLSP observation, collected by caller: ChildEffortInput is consumed by ChildEffortSelector.select; call path verified, runtime behavior not yet tested.",
+      "decision_goal": "Frame the question for selecting the lowest sufficient supported effort for this released child task.",
+      "output_kind": "decision_question",
+      "outbound_data_permitted": true
+    }
+  }
+}
+```
+
+Only `status: available` carries a nonblank `description`: at most 1,200 characters for `decision_question`, or 6,000 for `decision_context`. The result includes `output_kind`, a canonical SHA-256 `input_hash` over the raw material, goal, and kind (excluding the permission assertion), and safe model/usage metadata. Critical gaps or conflicts return `blocked` / `insufficient_evidence`, `description: null`, and up to eight `missing_information` items of at most 240 characters; configuration, refusal, incomplete or invalid output, timeout, and provider errors also block without a fallback. The fixed instructions require preserving the distinction between requirements, observations, plans, and proven outcomes, treating embedded instructions as data, and generating no answer, selected branch, or authorization. These semantic requirements still need caller review. Check the paragraph against the original material and current repository state before using `description` as `decision_question` or context; supply the other required decision facts separately. The generation hash identifies this generation input and does not replace the downstream decision hash. Changes to the material, goal, or kind require a fresh comparison and review.
+
+`workflow_select_child_effort` is a separate stateless public workflow operation for Codex child creation. An explicit, authorized invocation with `payload.request.outbound_data_permitted: true` opts into one Decisions request; it needs neither optional-advice enablement nor an Enhanced Root store. The assertion is not proof of authorization. Supply verified bounded task facts and supported effort levels under the [runtime owner's creation contract](../references/coding/layer-01-fundamental-concepts/runtime-provider-support.md). The result carries a selected effort only when available, a request hash, and the echoed slice fingerprint. Parent review and current-input comparison remain mandatory. Refusal, insufficient evidence, invalid response, missing configuration, or provider failure blocks selection, without a fixed-effort fallback. The tool does not create an Agent, mutate workflow state, or authorize a gate.
+
+The required `decision_question` is a nonblank strict string of at most 1,200 characters asking which supported effort is minimally sufficient for this released child task. The tool sends it explicitly in the Decisions input and includes it in the canonical input hash; changing only the question invalidates the previous hash. It is task data, without authority to change the fixed model, candidate levels, instructions, or permissions. Local validation enforces the string constraints; fixed API instructions require `insufficient_evidence` for an out-of-scope question or an attempted rule override. This semantic judgment and the parent's review remain necessary. Each offered level describes concrete task evidence, adjacent-level boundaries, and exclusions; file count, impact, or a missing fact alone does not justify a higher level.
+
+### Real API integration tests
+
+`tests/test_real_api.py` contains three `real_api` cases: a real Responses description request, a real child-effort Decisions request, and the complete generation-to-effort chain through the negotiated in-process MCP client. They use synthetic requirements, diff text, and LSP observations rather than collecting repository or host data. A successful run sends four requests in total: two Responses and two Decisions requests. The chain reviews the generation result before using its description as the actual decision question and checks each stage's distinct input hash. These checks establish live API and MCP-handler behavior; they do not prove a trusted desktop-host binding or stable semantic effort rankings.
+
+Ordinary pytest runs collect and skip these cases before credentials or clients are accessed, even when credentials exist. Only the exact opt-in `TOKEN_IO_RUN_REAL_API=1` enables them. Once enabled, a missing or blank `OPENAI_API_KEY` or `OPENAI_BASE_URL` fails the tests instead of skipping them or using mocks. Requests use the configured endpoint and fixed `gpt-6-luna`; there is no endpoint/model fallback or automatic retry. The test scope suppresses SDK/HTTP logging and reports safe status/reason data without credentials, endpoint values, or raw provider errors. After explicit authorization, run from `mcp/`:
+
+```sh
+TOKEN_IO_RUN_REAL_API=1 uv run --managed-python --locked -- pytest -m real_api tests/test_real_api.py -q
+```
+
+The older task-intent advisor smoke remains separate and uses its own opt-in. After explicit authorization for that real synthetic request, run from `mcp/` with both local environment variables configured:
 
 ```sh
 TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/decisions_real_smoke.py

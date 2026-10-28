@@ -43,6 +43,8 @@ from token_io_decoupling.server import create_server
 PUBLIC_TOOLS = {
     "workflow_capabilities",
     "rules_get_context",
+    "workflow_select_child_effort",
+    "workflow_generate_decision_context",
     "database_schema_status",
 }
 ROOT_TOOLS = {
@@ -167,6 +169,29 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
     assert capabilities["host_adapters"]["Codex Desktop"]["identity_attestation"] == "unavailable"
     assert capabilities["host_adapters"]["ChatGPT Desktop"]["guard_binding"] == "unavailable"
     assert capabilities["mode_fallback"] == "Native"
+    assert capabilities["api_decisions"] == "disabled"
+    assert capabilities["child_effort_decisions"] == "available_per_invocation"
+    assert capabilities["decision_context_generation"] == "available_per_invocation"
+    denied_context = asyncio.run(
+        _call(
+            unbound,
+            "workflow_generate_decision_context",
+            {
+                "payload": {
+                    "request": {
+                        "raw_content": "caller-composed material",
+                        "decision_goal": "Create a short question.",
+                        "output_kind": "decision_question",
+                        "outbound_data_permitted": False,
+                    }
+                }
+            },
+        )
+    )
+    assert (denied_context["status"], denied_context["reason"]) == (
+        "blocked",
+        "outbound_data_not_permitted",
+    )
 
     root_tools = _tool_names(
         create_server(FakeBindingProvider(), state_root=Path("/private/tmp/never-used"))
@@ -174,9 +199,9 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
     worker_tools = _tool_names(create_server(FakeBindingProvider(SessionRole.WORKER)))
     assert root_tools == PUBLIC_TOOLS | ROOT_TOOLS
     assert worker_tools == PUBLIC_TOOLS | WORKER_TOOLS
-    assert len(root_tools) == 15
-    assert len(worker_tools) == 10
-    assert len(root_tools | worker_tools) == 22
+    assert len(root_tools) == 17
+    assert len(worker_tools) == 12
+    assert len(root_tools | worker_tools) == 24
     for tool in create_server(FakeBindingProvider())._tool_manager.list_tools():
         assert not any(
             forbidden in str(tool.parameters).casefold()
@@ -199,6 +224,8 @@ def test_profiles_have_fixed_disjoint_inventories_and_fail_closed() -> None:
         "workflow": {
             "workflow_capabilities",
             "rules_get_context",
+            "workflow_select_child_effort",
+            "workflow_generate_decision_context",
             "workflow_evaluate",
             "evaluate_control_checkpoint",
         },
@@ -261,6 +288,8 @@ def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
         "workflow": {
             "workflow_capabilities",
             "rules_get_context",
+            "workflow_select_child_effort",
+            "workflow_generate_decision_context",
             "workflow_evaluate",
             "evaluate_control_checkpoint",
         },
@@ -299,6 +328,38 @@ def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
             # Check the public wire schema itself, not the SDK's internal tool model.
             if "workflow_capabilities" in by_name:
                 assert by_name["workflow_capabilities"].input_schema["properties"] == {}
+            if "workflow_select_child_effort" in by_name:
+                schema = by_name["workflow_select_child_effort"].input_schema
+                selector_schema = schema["properties"]["payload"]["properties"]
+                assert "request" in selector_schema
+                assert "outbound_data_permitted" in selector_schema["request"]["properties"]
+                request_schema = selector_schema["request"]
+                assert "decision_question" in request_schema["required"]
+                assert request_schema["properties"]["decision_question"]["minLength"] == 1
+                assert request_schema["properties"]["decision_question"]["maxLength"] == 1200
+                description = by_name["workflow_select_child_effort"].description
+                assert description is not None
+                assert "grants no creation authority" in description
+            if "workflow_generate_decision_context" in by_name:
+                schema = by_name["workflow_generate_decision_context"].input_schema
+                request_schema = schema["properties"]["payload"]["properties"]["request"]
+                assert set(request_schema["required"]) == {
+                    "raw_content",
+                    "decision_goal",
+                    "output_kind",
+                    "outbound_data_permitted",
+                }
+                request_properties = request_schema["properties"]
+                assert request_properties["raw_content"]["maxLength"] == 60_000
+                assert request_properties["decision_goal"]["maxLength"] == 1200
+                assert request_properties["output_kind"]["enum"] == [
+                    "decision_question",
+                    "decision_context",
+                ]
+                description = by_name["workflow_generate_decision_context"].description
+                assert description is not None
+                assert "does not inspect repositories" in description
+                assert "automatic downstream Decisions call" in description
             if "state_get" in by_name:
                 assert "payload" in by_name["state_get"].input_schema["properties"]
 

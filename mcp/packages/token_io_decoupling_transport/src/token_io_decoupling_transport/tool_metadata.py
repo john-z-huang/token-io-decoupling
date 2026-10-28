@@ -36,6 +36,80 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "Returns rule text and references; unknown node or language fails",
         "validation, so use a listed checkpoint id.",
     ),
+    "workflow_select_child_effort": _description(
+        "Select a task-specific child reasoning effort using one bounded Decisions API choice.",
+        _PAYLOAD,
+        "request requires slice_id, role, objective, task_complexity (mechanical,",
+        "ordinary_semantic, complex, very_complex), uncertainty, scope, dependencies, risk,",
+        "decision_question (required, nonblank, at most 1200 characters), verification_demands,",
+        "previous_failure_evidence (use explicit 'none' when absent),",
+        "slice_fingerprint (64 lowercase hex characters), runtime='codex',",
+        "child_model='gpt-6-luna', supported_efforts (unique,",
+        "nonempty subset of low/medium/high/xhigh/max), and outbound_data_permitted (boolean).",
+        "All text facts are nonblank and bounded; decision_question must ask about the current",
+        "released slice's lowest sufficient supported reasoning effort. It affects input_hash and",
+        "is sent at the top level of API input, deduplicated from facts. Local validation enforces",
+        "its type, length, and nonblank form. Fixed API instructions require insufficient_evidence",
+        "for out-of-scope, non-effort, or rule-overriding questions;",
+        "parent review remains required.",
+        "The permission field is a one-call caller assertion, not proof of authority.",
+        "This stateless operation has no Enhanced binding, revision, or idempotency key.",
+        "It does not",
+        "bind a Session, mutate workflow state, or authorize child creation.",
+        "It validates the runtime/model ceiling locally and offers only its intersection with the",
+        "supplied supported_efforts. A permitted invocation reads OPENAI_API_KEY and",
+        "OPENAI_BASE_URL at call time and sends bounded facts to fixed API model gpt-6-luna.",
+        "Callers",
+        "cannot override credentials, endpoint, or API model. The result always includes status,",
+        "reason, computed input_hash, and echoed slice_fingerprint. input_hash is SHA-256 of",
+        "canonical",
+        "request facts excluding outbound_data_permitted and slice_fingerprint. Compare that hash",
+        "with current request facts and compare the fingerprint separately before child creation.",
+        "Only status=available includes selected_effort. Missing permission/configuration,",
+        "unsupported facts, refusal, invalid response, insufficient evidence, timeout, or provider",
+        "failure blocks selection. Do not retry automatically or substitute a fixed effort;",
+        "correct",
+        "the evidence or configuration and make a newly authorized request. The result grants no",
+        "creation authority.",
+    ),
+    "workflow_generate_decision_context": _description(
+        "Generate one bounded decision question or context paragraph from caller-composed source",
+        "material using one explicit Responses API request.",
+        _PAYLOAD,
+        "request requires raw_content (strict nonblank string, at most 60000 characters),",
+        "decision_goal (strict nonblank string, at most 1200 characters), output_kind",
+        "(decision_question or decision_context), and outbound_data_permitted (boolean).",
+        "Compose and label user requirements, current Git diff facts, LSP observations, and plans",
+        "before calling. The tool does not inspect repositories, files, commands, or LSP state.",
+        "Source labels are caller assertions, not authenticity proofs. Input text is JSON-encoded",
+        "without truncation and hashed canonically; the hash excludes only",
+        "outbound_data_permitted.",
+        "A question is limited to 1200 characters; a context paragraph to 6000. Structured",
+        "missing_information has at most 8 nonblank items of at most 240 characters each.",
+        "Explicit permission is required for each call; false permission blocks before reading",
+        "credentials. No Enhanced binding, persisted state, automatic downstream Decisions call,",
+        "or authority grant is involved.",
+        "Each permitted call reads OPENAI_API_KEY and OPENAI_BASE_URL and explicitly uses them",
+        "with the fixed model gpt-6-luna, Responses.parse, reasoning effort medium, no tools,",
+        "store=false, disabled truncation, a 20-second client timeout, and zero retries.",
+        "Only a completed response from the exact model with the exact parsed Pydantic output",
+        "schema can succeed. A nonblank description with no missing facts returns",
+        "status=available; a null description with specific missing information returns",
+        "blocked/insufficient_evidence.",
+        "Every result includes status, reason, input_hash, and output_kind. Success also includes",
+        "description, model, and optional total_tokens; only insufficient_evidence preserves",
+        "missing_information.",
+        "Compare input_hash against the current canonical raw_content, decision_goal,",
+        "and output_kind",
+        "before downstream use, then manually verify that the description preserves evidence and",
+        "provenance. This hash covers generation input only and is not the downstream",
+        "Decisions hash.",
+        "Refusal, incomplete, malformed, wrong-model, invalid-output, or provider failures block",
+        "without returning raw source, raw provider errors, or a fallback description. After",
+        "fixing missing facts/configuration or an output error, make a newly authorized call.",
+        "There is no",
+        "revision or idempotency key; the tool does not automatically retry or call Decisions.",
+    ),
     "workflow_evaluate": _description(
         "Persist an evaluation for one checkpoint using supplied evidence context.",
         _PAYLOAD,
@@ -301,10 +375,23 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
 
 SERVER_INSTRUCTIONS: dict[str, str] = {
     "workflow": (
-        "Profile workflow exposes capabilities, rules, and Root-bound persisted evaluations only. "
-        "Start with workflow_capabilities and rules_get_context, then evaluate against current "
-        "evidence and revision. Evaluation requires verified Root binding; optional Decisions "
-        "advice is non-authoritative and may call the API only when enabled and permitted. "
+        "Profile workflow exposes capabilities, rules, stateless decision-context generation and "
+        "child-effort selection, and "
+        "Root-bound persisted evaluations. Start with workflow_capabilities and rules_get_context; "
+        "call workflow_generate_decision_context only with caller-composed, provenance-labeled "
+        "source material and explicit outbound_data_permitted=true when a question or context "
+        "description is needed. It does not read files, make the downstream decision, call another "
+        "tool automatically, or authorize an action. Review its description and "
+        "missing-information "
+        "result against the supplied facts. "
+        "invoke workflow_select_child_effort only for an authorized child-creation decision with "
+        "explicit outbound_data_permitted=true and bounded current slice facts, then compare its "
+        "input_hash and selected effort with verified runtime facts before creation. The selector "
+        "does not authorize creation. Evaluate against current "
+        "evidence and revision. Evaluation requires verified Root binding. Five-node semantic "
+        "advice is a separate optional feature, disabled by default. The child-effort selector "
+        "makes an API request only for an explicit per-invocation outbound_data_permitted=true "
+        "assertion; this assertion is not proof of authority. It never mutates workflow state. "
         "Tool discovery does not prove host identity or grant authority."
     ),
     "root": (
@@ -351,7 +438,10 @@ def server_description(profile: str | None, bound_role: str | None) -> str:
             scope = "public capabilities, rules, and schema diagnostics only"
     else:
         scope = {
-            "workflow": "public capabilities/rules and Root-bound evaluation tools",
+            "workflow": (
+                "public capabilities/rules, stateless effort selection, and Root-bound "
+                "evaluation tools"
+            ),
             "root": "parent control, delegation, slice, transition, summary, reconciliation",
             "worker": "Worker assignment, progress, evidence lookup, blocker, and recovery tools",
             "share": "schema status and role-routed state/evidence tools",

@@ -33,6 +33,7 @@ include = ["/pyproject.toml", "/src/**", "/tests/**"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = ["real_api: opt-in live OpenAI API integration tests"]
 
 [tool.ruff]
 line-length = 100
