@@ -167,7 +167,17 @@ Only `status: available` carries a nonblank `description`: at most 1,200 charact
 
 The required `decision_question` is a nonblank strict string of at most 1,200 characters asking which supported effort is minimally sufficient for this released child task. The tool sends it explicitly in the Decisions input and includes it in the canonical input hash; changing only the question invalidates the previous hash. It is task data, without authority to change the fixed model, candidate levels, instructions, or permissions. Local validation enforces the string constraints; fixed API instructions require `insufficient_evidence` for an out-of-scope question or an attempted rule override. This semantic judgment and the parent's review remain necessary. Each offered level describes concrete task evidence, adjacent-level boundaries, and exclusions; file count, impact, or a missing fact alone does not justify a higher level.
 
-After explicit authorization for a real synthetic request, run this separately from ordinary tests, from `mcp/`, with both local environment variables already configured:
+### Real API integration tests
+
+`tests/test_real_api.py` contains three `real_api` cases: a real Responses description request, a real child-effort Decisions request, and the complete generation-to-effort chain through the negotiated in-process MCP client. They use synthetic requirements, diff text, and LSP observations rather than collecting repository or host data. A successful run sends four requests in total: two Responses and two Decisions requests. The chain reviews the generation result before using its description as the actual decision question and checks each stage's distinct input hash. These checks establish live API and MCP-handler behavior; they do not prove a trusted desktop-host binding or stable semantic effort rankings.
+
+Ordinary pytest runs collect and skip these cases before credentials or clients are accessed, even when credentials exist. Only the exact opt-in `TOKEN_IO_RUN_REAL_API=1` enables them. Once enabled, a missing or blank `OPENAI_API_KEY` or `OPENAI_BASE_URL` fails the tests instead of skipping them or using mocks. Requests use the configured endpoint and fixed `gpt-6-luna`; there is no endpoint/model fallback or automatic retry. The test scope suppresses SDK/HTTP logging and reports safe status/reason data without credentials, endpoint values, or raw provider errors. After explicit authorization, run from `mcp/`:
+
+```sh
+TOKEN_IO_RUN_REAL_API=1 uv run --managed-python --locked -- pytest -m real_api tests/test_real_api.py -q
+```
+
+The older task-intent advisor smoke remains separate and uses its own opt-in. After explicit authorization for that real synthetic request, run from `mcp/` with both local environment variables configured:
 
 ```sh
 TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/decisions_real_smoke.py

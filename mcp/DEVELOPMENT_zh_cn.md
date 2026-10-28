@@ -167,7 +167,17 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 必填的 `decision_question` 是非空白严格字符串，最多 1,200 字符，用于询问当前已释放子任务所需的最低充分受支持档位。工具将其明确传入 Decisions input，并纳入规范化输入哈希；仅修改问题也会使旧哈希失效。它属于任务数据，无权修改固定模型、候选档位、指令或权限。本地校验执行字符串约束；固定 API 指令要求对超出范围或试图覆盖规则的问题返回 `insufficient_evidence`。该语义判断及父级审阅仍是必需步骤。每个候选档位均说明具体任务证据、相邻档位边界及排除条件；文件数量、影响程度或缺少事实本身均不足以支持升档。
 
-获得真实合成请求的显式授权后，确保两项本地环境变量已经配置，再从 `mcp/` 单独运行以下命令，不将其并入普通测试：
+### 真实 API 集成测试
+
+`tests/test_real_api.py` 包含三个 `real_api` 用例：真实 Responses 描述生成请求、真实子代理 effort Decisions 请求，以及通过协商后的进程内 MCP client 完成生成到强度选择的完整链路。它们使用合成的需求、diff 文本和 LSP 观测，不采集仓库或宿主数据。全部成功时共发送四次请求：两次 Responses、两次 Decisions。链路先检查生成结果，再将描述作为实际决策问题使用，并核对各阶段不同的输入哈希。这些检查证明真实 API 和 MCP handler 行为，不证明可信桌面宿主绑定或稳定的语义强度排序。
+
+普通 pytest 运行会收集并跳过这些用例，在访问凭据或创建客户端前结束，即使已有凭据也不会启用。只有精确的 `TOKEN_IO_RUN_REAL_API=1` 才启用它们。启用后，`OPENAI_API_KEY` 或 `OPENAI_BASE_URL` 缺失或空白会使测试失败，不跳过，也不替换为 Mock。请求使用已配置的端点和固定 `gpt-6-luna`；不回退到其他端点或模型，也不自动重试。测试作用域抑制 SDK/HTTP 日志，只报告安全的状态和原因，不输出凭据、端点值或原始服务错误。获得显式授权后，从 `mcp/` 运行：
+
+```sh
+TOKEN_IO_RUN_REAL_API=1 uv run --managed-python --locked -- pytest -m real_api tests/test_real_api.py -q
+```
+
+旧的任务意图 advisor smoke 保持独立，使用自己的启用开关。获得该真实合成请求的显式授权后，确保两项本地环境变量已配置，再从 `mcp/` 运行：
 
 ```sh
 TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/decisions_real_smoke.py
