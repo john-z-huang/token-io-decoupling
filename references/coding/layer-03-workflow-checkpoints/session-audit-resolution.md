@@ -6,7 +6,7 @@ This checkpoint owns route-level audit configuration resolution, prompt and resp
 
 ## Trigger and inputs
 
-At S04/M04, consume the verified canonical Root record returned by the preceding route action and current Session audit facts. Apply [Session Audit Visibility](../layer-01-fundamental-concepts/session-runtime/session-audit-visibility.md) for audit field values and display semantics, and [Delegation State Record](../layer-01-fundamental-concepts/delegation/delegation-state-record.md) for the audit record's supported states and resolution values.
+Once the verified canonical Root record is available, consume it and the current Session audit facts. Apply [Session Audit Visibility](../layer-01-fundamental-concepts/session-runtime/session-audit-visibility.md) for audit field values and display semantics, and [Delegation State Record](../layer-01-fundamental-concepts/delegation/delegation-state-record.md) for the audit record's supported states and resolution values.
 
 ## Decision and result
 

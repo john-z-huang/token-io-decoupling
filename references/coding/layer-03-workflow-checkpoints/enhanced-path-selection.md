@@ -5,7 +5,7 @@
 This checkpoint owns the task-specific choice to use the optional Enhanced path.
 ## Trigger and inputs
 
-At S02/M02, use current [Environment](../layer-02-workflow-concepts/entry-and-context/environment.md) and [capability inventory](../layer-02-workflow-concepts/entry-and-context/environment-capability-inventory.md) results to decide whether this task needs optional Enhanced operations. Apply [Enhanced Workflow Availability](../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md) and [Enhanced Host Binding](../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md) when the Enhanced branch is needed.
+Use current [Environment](../layer-02-workflow-concepts/entry-and-context/environment.md) and [capability inventory](../layer-02-workflow-concepts/entry-and-context/environment-capability-inventory.md) results to decide whether the task needs optional Enhanced operations. Apply [Enhanced Workflow Availability](../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md) and [Enhanced Host Binding](../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md) when the Enhanced branch is needed.
 
 ## Decision and result
 

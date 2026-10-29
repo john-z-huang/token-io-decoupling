@@ -7,7 +7,7 @@ This checkpoint owns whether the current task consumes the plan-memory output li
 
 ## Trigger and inputs
 
-At S06/M07, once current facts and Decision inputs are established, evaluate whether the user’s goal requests planning, exploration, or producing/updating a plan. Apply [Execution Planning](../layer-01-fundamental-concepts/execution-planning/execution-planning.md) and, only when triggered, [Planning Intent Plan Memory Lifecycle](../layer-01-fundamental-concepts/execution-planning/planning-intent-plan-memory-lifecycle.md).
+Once current facts and Decision inputs are established, evaluate whether the user’s goal requests planning, exploration, or producing/updating a plan. Apply [Execution Planning](../layer-01-fundamental-concepts/execution-planning/execution-planning.md) and, only when triggered, [Planning Intent Plan Memory Lifecycle](../layer-01-fundamental-concepts/execution-planning/planning-intent-plan-memory-lifecycle.md).
 
 ## Decision and result
 

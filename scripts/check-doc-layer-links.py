@@ -9,10 +9,16 @@ import sys
 from pathlib import Path, PurePosixPath
 
 from markdown_discovery import discover_markdown
+from workflow_module_contracts import MODULES, ROUTE_MODULES
 
 ROOT = Path(__file__).resolve().parents[1]
 LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
+INLINE_CODE_SPAN_RE = re.compile(r"(`+)(.*?)\1")
+ROUTE_COORDINATE_RE = re.compile(
+    r"(?<![A-Za-z0-9_])(?:SM|MM|ER|SR|WD|SE|DE|VR|DOC|DA|S|M)[0-9]{2}(?![A-Za-z0-9_])"
+)
 LANGUAGE_SWITCH_LABELS = {"english", "简体中文"}
+NAVIGATION_MODULES = set(MODULES)
 
 
 def layer(path: PurePosixPath) -> str:
@@ -24,7 +30,7 @@ def layer(path: PurePosixPath) -> str:
     if parts[:3] == ("references", "coding", "layer-03-workflow-checkpoints"):
         return "layer-03"
     if parts[:3] == ("references", "coding", "layer-04-workflows"):
-        return "layer-04"
+        return "layer-04-module" if len(parts) > 3 and parts[3] == "modules" else "layer-04-route"
     if parts[:2] == ("references", "share"):
         return "shared-protocols"
     if parts and parts[0] == "references":
@@ -65,7 +71,8 @@ def counterpart(path: PurePosixPath) -> PurePosixPath:
     return path.with_name(path.stem + "_zh_cn.md")
 
 
-def allowed(source: str, target: str, is_navigation: bool) -> bool:
+def allowed(source: str, target: str, is_navigation: bool, source_path: PurePosixPath | None = None,
+            target_path: PurePosixPath | None = None) -> bool:
     same_layer_navigation = is_navigation and source == target
     if source in {"references", "layer-01"}:
         return same_layer_navigation or target == "layer-01"
@@ -73,6 +80,28 @@ def allowed(source: str, target: str, is_navigation: bool) -> bool:
         return same_layer_navigation or target in {"references", "layer-01"}
     if source in {"exist-workflow", "layer-03"}:
         return same_layer_navigation or target in {"shared-protocols", "layer-01", "layer-02"}
+    if source == "layer-04-route":
+        module_root = PurePosixPath("references/coding/layer-04-workflows/modules")
+        canonical_modules = {
+            module_root / f"{module}{suffix}.md" for module in MODULES for suffix in ("", "_zh_cn")
+        }
+        if is_navigation and target == "layer-04-module" and target_path is not None:
+            return target_path.parent == module_root and target_path in canonical_modules
+        if same_layer_navigation or target in {"shared-protocols", "layer-01", "layer-02", "layer-03"}:
+            return True
+        if target != "layer-04-module" or source_path is None or target_path is None:
+            return False
+        canonical_route_root = PurePosixPath("references/coding/layer-04-workflows")
+        route_name = source_path.stem.removesuffix("_zh_cn")
+        canonical_route = canonical_route_root / f"{route_name}.md"
+        if source_path not in {canonical_route, canonical_route_root / f"{route_name}_zh_cn.md"}:
+            return False
+        if target_path.parent != module_root or target_path not in canonical_modules:
+            return False
+        module_slug = target_path.stem.removesuffix("_zh_cn")
+        return module_slug in ROUTE_MODULES.get(route_name, ())
+    if source == "layer-04-module":
+        return same_layer_navigation or target in {"shared-protocols", "layer-01", "layer-02", "layer-03"}
     if source == "layer-04":
         return same_layer_navigation or target in {"shared-protocols", "layer-01", "layer-02", "layer-03"}
     if source == "coding-selector":
@@ -82,6 +111,8 @@ def allowed(source: str, target: str, is_navigation: bool) -> bool:
             "layer-02",
             "layer-03",
             "layer-04",
+            "layer-04-route",
+            "layer-04-module",
         }
     return True
 
@@ -97,7 +128,14 @@ def iter_links(path: Path):
 
 
 def from_line(line: str):
-    return LINK_RE.findall(line)
+    return LINK_RE.findall(INLINE_CODE_SPAN_RE.sub("", line))
+
+
+def iter_route_coordinates(path: Path):
+    """Yield every concrete route coordinate in a Layer-03 Markdown file."""
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        for match in ROUTE_COORDINATE_RE.finditer(line):
+            yield line_number, match.group(0)
 
 
 def main(root: Path | None = None) -> int:
@@ -111,6 +149,11 @@ def main(root: Path | None = None) -> int:
         source_path = root / source
         source_layer = layer(source)
         source_language = language(source)
+        if source_layer == "layer-03":
+            for line_number, coordinate in iter_route_coordinates(source_path):
+                errors.append(
+                    f"Layer-03 route coordinate dependency: {source}:{line_number} -> {coordinate}"
+                )
         for line_number, links in iter_links(source_path):
             for label, raw_target in links:
                 target_text = raw_target.split("#", 1)[0].split("?", 1)[0]
@@ -149,7 +192,7 @@ def main(root: Path | None = None) -> int:
                     or is_navigation_document(source)
                 )
                 target_layer = layer(target)
-                if not allowed(source_layer, target_layer, navigation):
+                if not allowed(source_layer, target_layer, navigation, source, target):
                     errors.append(
                         f"layer violation: {source}:{line_number} ({source_layer}) -> "
                         f"{target} ({target_layer})"

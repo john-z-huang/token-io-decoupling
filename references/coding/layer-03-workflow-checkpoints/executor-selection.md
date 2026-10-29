@@ -2,7 +2,7 @@
 
 [English](executor-selection.md) | [简体中文](executor-selection_zh_cn.md)
 
-This checkpoint owns executor routing at S06/M07. [Task Assignment](../layer-01-fundamental-concepts/execution-planning/task-assignment.md) remains authoritative for executor and candidate selection policy.
+This checkpoint owns executor routing after the current task scope and mode are established. [Task Assignment](../layer-01-fundamental-concepts/execution-planning/task-assignment.md) remains authoritative for executor and candidate selection policy.
 
 ## Trigger and inputs
 

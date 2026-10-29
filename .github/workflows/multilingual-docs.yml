@@ -6,6 +6,7 @@ on:
       - "**/*.md"
       - "agents/openai.yaml"
       - "scripts/check-doc-layer-links.py"
+      - "scripts/workflow_module_contracts.py"
       - "scripts/markdown_discovery.py"
       - "scripts/check-multilingual-docs.py"
       - "scripts/check-layer-01-sections.py"
@@ -13,6 +14,7 @@ on:
       - "scripts/check-layer-04-workflow-maps.py"
       - "scripts/check-workflow-checkpoints.py"
       - "tests/test_workflow_checkpoints.py"
+      - "tests/test_doc_layer_links.py"
       - "scripts/check_coding_document_migration.py"
       - "tests/test_coding_document_migration.py"
       - "tests/test_check_layer_04_workflow_maps.py"
@@ -25,6 +27,7 @@ on:
       - "mcp/packages/token_io_decoupling_core/**"
       - "mcp/pyproject.toml"
       - "docs/coding-document-migration.json"
+      - "docs/workflow-module-migration.json"
   push:
     branches:
       - main
@@ -32,6 +35,7 @@ on:
       - "**/*.md"
       - "agents/openai.yaml"
       - "scripts/check-doc-layer-links.py"
+      - "scripts/workflow_module_contracts.py"
       - "scripts/markdown_discovery.py"
       - "scripts/check-multilingual-docs.py"
       - "scripts/check-layer-01-sections.py"
@@ -39,6 +43,7 @@ on:
       - "scripts/check-layer-04-workflow-maps.py"
       - "scripts/check-workflow-checkpoints.py"
       - "tests/test_workflow_checkpoints.py"
+      - "tests/test_doc_layer_links.py"
       - "scripts/check_coding_document_migration.py"
       - "tests/test_coding_document_migration.py"
       - "tests/test_check_layer_04_workflow_maps.py"
@@ -51,6 +56,7 @@ on:
       - "mcp/packages/token_io_decoupling_core/**"
       - "mcp/pyproject.toml"
       - "docs/coding-document-migration.json"
+      - "docs/workflow-module-migration.json"
 
 jobs:
   validate:

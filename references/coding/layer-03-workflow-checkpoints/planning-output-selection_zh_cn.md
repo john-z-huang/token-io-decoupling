@@ -7,7 +7,7 @@
 
 ## 触发与输入
 
-在 S06/M07 且已建立当前事实和 Decision 输入后，判断用户目标是否要求规划、探索或产出/更新计划。应用[Execution Planning](../layer-01-fundamental-concepts/execution-planning/execution-planning_zh_cn.md)，且仅在触发时应用[Planning Intent Plan Memory Lifecycle](../layer-01-fundamental-concepts/execution-planning/planning-intent-plan-memory-lifecycle_zh_cn.md)。
+在已建立当前事实和 Decision 输入后，判断用户目标是否要求规划、探索或产出/更新计划。应用[Execution Planning](../layer-01-fundamental-concepts/execution-planning/execution-planning_zh_cn.md)，且仅在触发时应用[Planning Intent Plan Memory Lifecycle](../layer-01-fundamental-concepts/execution-planning/planning-intent-plan-memory-lifecycle_zh_cn.md)。
 
 ## 决策与结果
 

@@ -6,7 +6,7 @@ This checkpoint owns whether a downstream decision needs generated background an
 
 ## Trigger and inputs
 
-At S05/M06, consume the current decision question, verified facts with their source provenance, explicit user direction, and the downstream decision that may use generated context. Apply [Decision Context Generation](../layer-01-fundamental-concepts/execution-planning/decision-context-generation.md). This checkpoint does not enable advice. The separate optional five-node stage-advice gate is governed by route Advisory Selection and [Decisions Advisory](../layer-01-fundamental-concepts/execution-planning/decisions-advisory.md); it does not reopen or change Mode. Executor, output-route, candidate, and role decisions remain with their direct owners.
+Consume the current decision question, verified facts with their source provenance, explicit user direction, and the downstream decision that may use generated context. Apply [Decision Context Generation](../layer-01-fundamental-concepts/execution-planning/decision-context-generation.md). This checkpoint does not enable advice. The separate optional five-node stage-advice gate is governed by route Advisory Selection and [Decisions Advisory](../layer-01-fundamental-concepts/execution-planning/decisions-advisory.md); it does not reopen or change Mode. Executor, output-route, candidate, and role decisions remain with their direct owners.
 
 ## Decision and result
 
