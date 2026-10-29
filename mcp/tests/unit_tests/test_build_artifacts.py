@@ -61,6 +61,7 @@ def test_detached_core_sdist_builds_bilingual_rule_resources(tmp_path: Path) -> 
     with zipfile.ZipFile(wheel_path) as wheel:
         members = set(wheel.namelist())
         assert "token_io_decoupling_core/_resources/registry.json" in members
+        assert "token_io_decoupling_core/owner_paths.py" in members
         rule_resources = {
             name
             for name in members
@@ -89,6 +90,9 @@ from importlib.resources import files
 sys.path.insert(0, sys.argv[1])
 
 from token_io_decoupling_core.rules import RuleLoader
+from token_io_decoupling_core.owner_paths import OWNER_PATHS
+mapped_owner = OWNER_PATHS["child-role-selection"]
+assert mapped_owner.endswith("delegation/child-role-selection.md")
 
 markers = {
     "child-role-selection": ("Role Decisions instructions", "职责 Decisions 指令"),

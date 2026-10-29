@@ -12,7 +12,7 @@ Markdown owner 文档仍是政策文本的唯一权威。JSON 注册表 [`mcp/ru
 
 SQLite 保存结构化控制状态、证据引用、语义正文引用及 Hash、索引。完整 Contract、Decision Brief、Plan、Memo、Capsule、Handoff 等语义正文仍保存在 Markdown 或 Serena Memory 中，并遵守各自 owner。SQLite 索引不取代正式消息、可见性要求或共享 worktree 冲突控制。
 
-[增强状态存储](references/coding/layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md)负责持久化权威和访问边界；[增强 Schema 迁移](references/coding/layer-01-fundamental-concepts/enhanced-schema-migrations_zh_cn.md)负责 Schema 兼容、迁移、备份和恢复。Native 模式下 parent context 记录仍为 canonical，并按其原 owner 读回。Enhanced 模式下，只有经授权初始化且身份/Schema 核验通过后，Root SQLite 才成为 canonical；此后 parent context 仅保留可读快照或引用。Mode 通过不初始化或迁移 store。首次 Root 写入必须在 Mode 通过且 Session 身份、职责、Context Firewall 已核验后进行。Root 审计仅由 Root 持有；Enhanced 模式须确认审计记录已写入获授权 store 并读回，Native 模式则读回其 parent context 规范记录。pending 或更新失败不代表完成。只有真实 Worker 身份绑定到已放行 allocation 且已选择 Enhanced 后才初始化 Worker store。
+[增强状态存储](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store_zh_cn.md)负责持久化权威和访问边界；[增强 Schema 迁移](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-schema-migrations_zh_cn.md)负责 Schema 兼容、迁移、备份和恢复。Native 模式下 parent context 记录仍为 canonical，并按其原 owner 读回。Enhanced 模式下，只有经授权初始化且身份/Schema 核验通过后，Root SQLite 才成为 canonical；此后 parent context 仅保留可读快照或引用。Mode 通过不初始化或迁移 store。首次 Root 写入必须在 Mode 通过且 Session 身份、职责、Context Firewall 已核验后进行。Root 审计仅由 Root 持有；Enhanced 模式须确认审计记录已写入获授权 store 并读回，Native 模式则读回其 parent context 规范记录。pending 或更新失败不代表完成。只有真实 Worker 身份绑定到已放行 allocation 且已选择 Enhanced 后才初始化 Worker store。
 
 ## 实现包
 
@@ -69,30 +69,30 @@ Schema 状态检查受角色绑定、只读且仅限调用者自己的 Root 或 
 
 ## Native 与 Enhanced 可用性
 
-Native 是默认运行方式：Agent 阅读权威文档，并按其 owner 维护既有结构化记录和语义正文。[增强工作流可用性](references/coding/layer-01-fundamental-concepts/enhanced-workflow-availability_zh_cn.md) owner 负责路线选择和不可用处置；[增强宿主绑定](references/coding/layer-01-fundamental-concepts/enhanced-host-binding_zh_cn.md) owner 负责可信身份和每次调用的守卫证据。公共规则访问不能证明 Enhanced 状态或权限访问。当前 SDK 与测试 harness 证据不能证明真实桌面宿主绑定，因此真实 Codex/ChatGPT Desktop Enhanced 可用性仍未验证。保留 Native 作为降级路径，只阻塞依赖缺失 Enhanced 能力的操作。Mode/count 和 Native 对账仍由各自既有 owner 负责。
+Native 是默认运行方式：Agent 阅读权威文档，并按其 owner 维护既有结构化记录和语义正文。[增强工作流可用性](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability_zh_cn.md) owner 负责路线选择和不可用处置；[增强宿主绑定](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md) owner 负责可信身份和每次调用的守卫证据。公共规则访问不能证明 Enhanced 状态或权限访问。当前 SDK 与测试 harness 证据不能证明真实桌面宿主绑定，因此真实 Codex/ChatGPT Desktop Enhanced 可用性仍未验证。保留 Native 作为降级路径，只阻塞依赖缺失 Enhanced 能力的操作。Mode/count 和 Native 对账仍由各自既有 owner 负责。
 
 Decisions API 默认关闭，普通测试使用 Mock。真实请求必须具备显式启用及出站数据授权，架构契约本身不授予这些权限。Root 和每个受委派的 Agent 都必须在项目功能代码及真实测试/smoke 代码中执行同一前置条件：在实际调用时读取本地进程环境中的 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，要求两项都非空，并显式传给 SDK。缺少任一项时，不得创建 client 或发送真实请求。禁止硬编码或调用方提供的替代值，也禁止使用 SDK 默认端点；不得打印或持久化其值。合成值仅用于不发送网络请求的 Mock。执行限制见[开发指南](mcp/DEVELOPMENT_zh_cn.md#真实-api-请求的必需配置)。
 
-Decisions advisor 已实现为针对五个固定语义节点的可选建议。一次 325-token 合成真实 smoke 直接调用 advisor，并使用临时 Root 状态和规则加载；它没有经过 MCP handler 或真实宿主。API 建议与 Core 结果分离，绝不授权操作或释放 Slice。 [Decisions 建议](references/coding/layer-01-fundamental-concepts/decisions-advisory_zh_cn.md) owner 负责五节点生命周期、输入绑定、过期结果处置和显式直接 owner 降级。显式启用的 API 不可用、超时、拒绝输入或返回无效/过期结果时，语义判断切回文档路径。若 MCP 和 SQLite 仍可用，继续维护其状态。
+Decisions advisor 已实现为针对五个固定语义节点的可选建议。一次 325-token 合成真实 smoke 直接调用 advisor，并使用临时 Root 状态和规则加载；它没有经过 MCP handler 或真实宿主。API 建议与 Core 结果分离，绝不授权操作或释放 Slice。 [Decisions 建议](references/coding/layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md) owner 负责五节点生命周期、输入绑定、过期结果处置和显式直接 owner 降级。显式启用的 API 不可用、超时、拒绝输入或返回无效/过期结果时，语义判断切回文档路径。若 MCP 和 SQLite 仍可用，继续维护其状态。
 
 Enhanced 不可用本身不会把权威转交给 Native。继续依赖状态的工作前，Root 必须确认最后已提交状态；在回执或经核验的回读可用时据此消解结果不明的在途操作；以真实证据停住竞争写入，并保留完整、经核验的 Native 权威记录。超时不能证明回滚或服务已停止。必需状态未知时阻塞依赖工作；独立且已获授权的工作可以继续。从开始即选择 Native 时无需转交。损坏或不兼容的数据库绝不通过 Native 降级直接写入。
 
 服务恢复后，Root 必须先比较有效 Native 记录与现有绑定数据库，再恢复普通 Enhanced 写入。一致记录需要显式确认；受支持的实质差异需要 Root 针对完整待审集合显式裁定，并保留双方记录及引用。裁定将 Revision 和每个 Epoch 推进到双方已审时间线之后，保留旧历史，并要求下一 Slice 前重新检查及作出 Control；旧验证和 Acceptance 不跨越恢复下界继续有效。不受支持的身份、生命周期、Worker 或待完成派发差异仍然阻塞。任何恢复都不创建新 Run，不重置已锁定 Mode/count 或审计，也不以引用 Hash 替代真实宿主授权。
 
-[Native 权威转交](references/coding/layer-01-fundamental-concepts/native-authority-transfer_zh_cn.md) owner 定义转交协议及能力不可用边界；[Native 对账](references/coding/layer-01-fundamental-concepts/native-reconciliation_zh_cn.md) owner 定义比较、受支持的裁定和恢复 Enhanced 写入前的检查。这些 owner 不证明宿主停写或完整导出能力已经实现。
+[Native 权威转交](references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer_zh_cn.md) owner 定义转交协议及能力不可用边界；[Native 对账](references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation_zh_cn.md) owner 定义比较、受支持的裁定和恢复 Enhanced 写入前的检查。这些 owner 不证明宿主停写或完整导出能力已经实现。
 
 ## 规则节点映射
 
 机器可读映射 [`mcp/rule-registry.json`](mcp/rule-registry.json) 只是节点映射，不是政策来源。每个节点包含稳定 ID、owner 路径和实际存在的章节标题、必需事实与证据、合法分支、判断方式（`direct`、`deterministic`、`semantic` 或 `hybrid`）、失败处理和后续检查点 ID。`contract_version` 标识映射结构。ID 保持稳定，不得重新分配给其他概念。节点 Hash 从已加载的 owner 正文计算，不在注册表中维护。
 
-注册表消费者只应加载当前检查点所需节点及其直接 owner 标题；每次请求都从同一来源、同一语言重新读取映射和标题，摘录不会递归加载链接 owner。判断依赖摘录未包含的链接 owner 时，必须单独取得并核验该 owner。不得扫描整个仓库。直接引用仍是解释规则的权威；确定性检查只执行明确的结构化约束；语义分类可以辅助判断，但不能授权；混合判断将语义结果与确定性硬约束校验组合。关于有界读取、来源、语言和新鲜度要求，见[增强规则上下文](references/coding/layer-01-fundamental-concepts/enhanced-rule-context_zh_cn.md)。
+注册表消费者只应加载当前检查点所需节点及其直接 owner 标题；每次请求都从同一来源、同一语言重新读取映射和标题，摘录不会递归加载链接 owner。判断依赖摘录未包含的链接 owner 时，必须单独取得并核验该 owner。不得扫描整个仓库。直接引用仍是解释规则的权威；确定性检查只执行明确的结构化约束；语义分类可以辅助判断，但不能授权；混合判断将语义结果与确定性硬约束校验组合。关于有界读取、来源、语言和新鲜度要求，见[增强规则上下文](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-rule-context_zh_cn.md)。
 
 ## 相关概念
 
-- [Coding Delegation State Record](references/coding/layer-01-fundamental-concepts/delegation-state-record_zh_cn.md) — 根控制记录的责任边界。
-- [Enhanced State Store](references/coding/layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md) — 持久化权威、Root/Worker 范围和有界状态索引。
-- [Enhanced Schema Migrations](references/coding/layer-01-fundamental-concepts/enhanced-schema-migrations_zh_cn.md) — Schema 诊断、迁移、备份和恢复边界。
-- [增强规则上下文](references/coding/layer-01-fundamental-concepts/enhanced-rule-context_zh_cn.md) — 有界读取当前注册 owner 标题。
-- [Coding Execution Control](references/coding/layer-01-fundamental-concepts/execution-control_zh_cn.md) — Slice 与控制边界的责任归属。
-- [Verification Epoch Checkpoint](references/coding/layer-02-workflow-concepts/verification-epoch_zh_cn.md) — Epoch 失效规则的责任归属。
+- [Coding Delegation State Record](references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record_zh_cn.md) — 根控制记录的责任边界。
+- [Enhanced State Store](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store_zh_cn.md) — 持久化权威、Root/Worker 范围和有界状态索引。
+- [Enhanced Schema Migrations](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-schema-migrations_zh_cn.md) — Schema 诊断、迁移、备份和恢复边界。
+- [增强规则上下文](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-rule-context_zh_cn.md) — 有界读取当前注册 owner 标题。
+- [Coding Execution Control](references/coding/layer-01-fundamental-concepts/execution-control/execution-control_zh_cn.md) — Slice 与控制边界的责任归属。
+- [Verification Epoch Checkpoint](references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch_zh_cn.md) — Epoch 失效规则的责任归属。
 - [Coding workflow selector](workflows/coding_zh_cn.md) — 路线导航。

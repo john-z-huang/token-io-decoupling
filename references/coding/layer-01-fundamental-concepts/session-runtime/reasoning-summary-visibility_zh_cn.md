@@ -1,0 +1,67 @@
+# Coding Agent 推理摘要可见性
+
+[English](reasoning-summary-visibility.md) | [简体中文](reasoning-summary-visibility_zh_cn.md)
+
+本模块定义 Agent 在一轮推理结束时向会话展示的安全、简洁摘要；不要求披露私有内部推理，也不替代决策、阶段反馈、验证或消息可见性 owner。
+
+## 通用规范
+
+### 摘要边界与内容
+
+“已完成的 Agent 推理回合”指 Agent 即将向用户或父级返回、暂停、让出控制或交接工作的可见会话边界。同一回合内的内部工具调用及继续处理无需逐项输出摘要。
+
+在此类边界按[会话审计可见性](session-audit-visibility_zh_cn.md)配置的频率执行。`full` 在每个已完成边界使用下文格式；`milestone_only` 仅在实质决策、授权变化、验证失败、阻塞和阶段验收时使用，普通无变化等待和机械步骤不重复生成摘要块；`off` 不输出此可选摘要。必需的 Progress Signal、证据、控制增量、验证报告和更高层周期更新仍须执行。
+
+### 固定可见格式
+
+摘要必须使用以下精确 ASCII 标记包围，并让每个标记各自独占一行：`[[REASONING_SUMMARY_BEGIN]]` 和 `[[REASONING_SUMMARY_END]]`。普通答复、状态说明及其他非摘要内容均放在标记之外；不得在标记外输出未标记的推理摘要。使用会话语言，并按固定顺序完整填写以下字段：结论/进展；关键证据及来源；简短依据；重要假设/不确定性/阻塞；下一步。
+
+需要输出摘要且没有实质变化时，仍保留两个标记及所有字段。写明“无实质变化”、无新增证据、决定或假设，并给出下一步；不得输出空块。推理回合尚未结束时，不输出空标记块。
+
+英文示例：
+
+```text
+[[REASONING_SUMMARY_BEGIN]]
+Conclusion / progress: No material change.
+Key evidence and source: No new evidence.
+Brief rationale: No new decision.
+Material assumptions / uncertainty / blockers: No new assumptions or blockers.
+Next step: Continue the released task.
+[[REASONING_SUMMARY_END]]
+```
+
+简体中文示例：
+
+```text
+[[REASONING_SUMMARY_BEGIN]]
+结论/进展：无实质变化。
+关键证据及来源：无新增证据。
+简短依据：无新增决定。
+重要假设/不确定性/阻塞：无新增假设或阻塞。
+下一步：继续已放行的任务。
+[[REASONING_SUMMARY_END]]
+```
+
+标记只标识安全摘要，不允许输出私有逐步内部推理、隐藏思维链或原始 scratchpad。
+
+不得包含私有逐步内部推理、隐藏思维链、原始 scratchpad、穷尽式内部过程、秘密或未核实断言。不得将摘要描述为完整的内部推理记录。
+
+### 与其他证据的关系
+
+摘要不能替代 Decision Brief、声明的阶段边界所需的 Progress Signal、验证证据或消息正文证据。推理回合结束与阶段边界重合时，将两者所需信息合并为一个简洁可见摘要，避免重复。Worker 已在自身会话完整可见的最终结果就是出站副本，不重复打印。Root 仍须完整读取实际返回正文后再依赖；Root 的可见副本遵循配置的消息预设。必需证据不可用时，报告限制并阻塞依赖动作。
+
+## Codex CLI / ChatGPT Desktop 特别优化指令
+
+应用[会话审计可见性](session-audit-visibility_zh_cn.md)中的 Root 或 Worker 配置频率。该 Skill 设置不是产品原生参数，也不允许披露私有推理。
+
+## Claude Code CLI / Claude Desktop 特别优化指令
+
+目前没有厂商专用优化；仅使用当前 Session 可见的会话输出遵循上述通用规范。
+
+## 相关概念
+
+- [Coding Session 职责归属](session-role-ownership_zh_cn.md)——定位职责及语义所有权。
+- [Coding 执行阶段反馈](../execution-control/execution-stage-feedback_zh_cn.md)——定位 Progress Signal 边界。
+- [Coding 子代理消息可见性](../delegation/delegation-child-message-visibility_zh_cn.md)——定位完整消息正文可见性要求。
+- [Coding Session 审计可见性](session-audit-visibility_zh_cn.md)——定位配置频率和默认值。
+- [Coding 执行决策门](../execution-planning/execution-decision-gate_zh_cn.md)——定位 Decision Brief 及决策职责。

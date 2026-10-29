@@ -9,17 +9,22 @@ on:
       - "scripts/markdown_discovery.py"
       - "scripts/check-multilingual-docs.py"
       - "scripts/check-layer-01-sections.py"
-      - "scripts/check-layer-02-03-provider-neutrality.py"
-      - "scripts/check-layer-03-workflow-maps.py"
-      - "tests/test_check_layer_03_workflow_maps.py"
+      - "scripts/check-layer-02-04-provider-neutrality.py"
+      - "scripts/check-layer-04-workflow-maps.py"
+      - "scripts/check-workflow-checkpoints.py"
+      - "tests/test_workflow_checkpoints.py"
+      - "scripts/check_coding_document_migration.py"
+      - "tests/test_coding_document_migration.py"
+      - "tests/test_check_layer_04_workflow_maps.py"
       - "tests/test_markdown_discovery.py"
       - "scripts/check-context-exchange.py"
       - "tests/test_check_context_exchange.py"
       - ".gitignore"
       - ".github/workflows/multilingual-docs.yml"
       - "mcp/rule-registry.json"
-      - "mcp/hatch_build.py"
+      - "mcp/packages/token_io_decoupling_core/**"
       - "mcp/pyproject.toml"
+      - "docs/coding-document-migration.json"
   push:
     branches:
       - main
@@ -30,17 +35,22 @@ on:
       - "scripts/markdown_discovery.py"
       - "scripts/check-multilingual-docs.py"
       - "scripts/check-layer-01-sections.py"
-      - "scripts/check-layer-02-03-provider-neutrality.py"
-      - "scripts/check-layer-03-workflow-maps.py"
-      - "tests/test_check_layer_03_workflow_maps.py"
+      - "scripts/check-layer-02-04-provider-neutrality.py"
+      - "scripts/check-layer-04-workflow-maps.py"
+      - "scripts/check-workflow-checkpoints.py"
+      - "tests/test_workflow_checkpoints.py"
+      - "scripts/check_coding_document_migration.py"
+      - "tests/test_coding_document_migration.py"
+      - "tests/test_check_layer_04_workflow_maps.py"
       - "tests/test_markdown_discovery.py"
       - "scripts/check-context-exchange.py"
       - "tests/test_check_context_exchange.py"
       - ".gitignore"
       - ".github/workflows/multilingual-docs.yml"
       - "mcp/rule-registry.json"
-      - "mcp/hatch_build.py"
+      - "mcp/packages/token_io_decoupling_core/**"
       - "mcp/pyproject.toml"
+      - "docs/coding-document-migration.json"
 
 jobs:
   validate:
@@ -55,14 +65,29 @@ jobs:
       - name: Validate Markdown layer links
         run: python3 scripts/check-doc-layer-links.py
 
+      - name: Validate coding document migration and navigation
+        run: python3 scripts/check_coding_document_migration.py
+
+      - name: Run coding document migration regressions
+        run: python3 -m unittest discover -s tests -p 'test_coding_document_migration.py'
+
+      - name: Run Markdown layer-link regressions
+        run: python3 -m unittest discover -s tests -p 'test_doc_layer_links.py'
+
       - name: Run bounded Markdown discovery regressions
         run: python3 -m unittest discover -s tests -p 'test_markdown_discovery.py'
 
       - name: Validate Layer-01 document sections
         run: python3 scripts/check-layer-01-sections.py
 
-      - name: Validate Layer-02 and Layer-03 provider neutrality
-        run: python3 scripts/check-layer-02-03-provider-neutrality.py
+      - name: Validate Layer-02 through Layer-04 provider neutrality
+        run: python3 scripts/check-layer-02-04-provider-neutrality.py
+
+      - name: Validate Layer-03 decision owners and route consumption
+        run: python3 scripts/check-workflow-checkpoints.py
+
+      - name: Run Layer-03 workflow checkpoint regressions
+        run: python3 -m unittest discover -s tests -p 'test_workflow_checkpoints.py'
 
       - name: Validate Context Exchange preservation
         run: python3 scripts/check-context-exchange.py
@@ -70,8 +95,8 @@ jobs:
       - name: Run Context Exchange regression tests
         run: python3 -m unittest discover -s tests -p 'test_check_context_exchange.py'
 
-      - name: Validate Layer-03 workflow maps and their bilingual structure
-        run: python3 scripts/check-layer-03-workflow-maps.py
+      - name: Validate Layer-04 workflow maps and their bilingual structure
+        run: python3 scripts/check-layer-04-workflow-maps.py
 
-      - name: Run Layer-03 workflow map regression tests
-        run: python3 -m unittest discover -s tests -p 'test_check_layer_03_workflow_maps.py'
+      - name: Run Layer-04 workflow map regression tests
+        run: python3 -m unittest discover -s tests -p 'test_check_layer_04_workflow_maps.py'

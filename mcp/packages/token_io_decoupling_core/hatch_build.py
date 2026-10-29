@@ -35,6 +35,7 @@ class RuleResourcesBuildHook(BuildHookInterface):
         registry = json.loads(registry_source.read_text(encoding="utf-8"))
         sys.path.insert(0, str(project_root / "src"))
         try:
+            from token_io_decoupling_core.owner_paths import OWNER_PATHS
             from token_io_decoupling_core.registry_contract import validate_supported_registry_shape
 
             validate_supported_registry_shape(registry)
@@ -84,11 +85,15 @@ class RuleResourcesBuildHook(BuildHookInterface):
             "session-role-ownership",
             "decision-context-generation",
         ):
-            for language, suffix, heading in (
+            for language, _suffix, heading in (
                 ("en", "", "General rules"),
                 ("zh_cn", "_zh_cn", "通用规范"),
             ):
-                relative = f"references/coding/layer-01-fundamental-concepts/{owner}{suffix}.md"
+                relative = OWNER_PATHS.get(owner)
+                if not isinstance(relative, str):
+                    raise RuntimeError(f"missing mapped Layer-01 owner path: {owner}")
+                if language == "zh_cn":
+                    relative = relative.removesuffix(".md") + "_zh_cn.md"
                 source = _safe_source(source_root, relative)
                 excerpt = _extract_heading(source.read_text(encoding="utf-8"), heading, relative)
                 staged = staging_root / "rules" / f"{owner}.{language}.md"

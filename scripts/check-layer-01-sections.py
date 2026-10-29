@@ -88,6 +88,16 @@ def check_document(path: Path, root: Path) -> list[str]:
     return errors
 
 
+def is_navigation_file(path: Path) -> bool:
+    """Navigation pages are validated separately and are never Layer-01 owners."""
+    return path.name in {"README.md", "README_zh_cn.md", "INDEX.md", "INDEX_zh_cn.md"}
+
+
+def discover_owner_documents(directory: Path) -> list[Path]:
+    """Recursively discover content owners while excluding explicit navigation files."""
+    return sorted(path for path in directory.rglob("*.md") if not is_navigation_file(path))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
@@ -97,7 +107,7 @@ def main() -> int:
     if not directory.is_dir():
         print(f"缺少 Layer-01 目录: {directory}")
         return 1
-    documents = sorted(directory.glob("*.md"))
+    documents = discover_owner_documents(directory)
     if not documents:
         print(f"Layer-01 目录没有 Markdown 文档: {directory}")
         return 1

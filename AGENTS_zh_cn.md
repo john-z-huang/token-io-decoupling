@@ -28,7 +28,7 @@
 - 每个受维护的 Markdown 文档必须只有一个清晰、可复用的责任。文件名、标题、开头的归属声明、章节和链接必须描述同一个责任。
 - 如果文档组合了可独立复用的概念，必须拆成独立的英文与 `_zh_cn.md` owner 文档对。不能为了少建文件而保留复杂的反向概念组合。
 - 拆分后不得残留重复的旧章节或旧尾部。原文档只能保留其声明的 owner 责任，被移动的内容只能归属于新 owner。
-- Layer-01 文档负责基础概念；Layer-02 文档负责单个工作流检查点或窄范围检查点 owner；Layer-03 文档把低层 owner 组合成带有明确检查的可执行路线，但不得重新定义低层策略。
+- Layer-01 文档负责基础概念；Layer-02 文档负责检查点动作和证据；Layer-03 文档负责当前任务的适用性和决策分支；Layer-04 文档负责将低层 owner 组合成完整可执行路线。每层仅承担自身职责，不重新定义低层策略。
 - 路线组合文档可以排序 owner，并复述其操作检查和所需证据，但不能成为模式门禁、委派生命周期、运行环境能力、修复执行、验证独立性/报告/epoch 或其他低层概念的第二个 owner。
 - 新 owner 文件及其组合入口必须在同一变更集中更新。英文和简体中文文件必须保持语义镜像，约束强度和动作要求等价。
 
@@ -48,37 +48,37 @@
 
 概念子主题放在三个章节下，使用三级标题。对于 ChatGPT Desktop 和 Claude Desktop，面向 Agent 的指令只能调用当前 Agent Session 实际暴露且已获授权的工具、命令或 API。即使暴露自动化工具，也绝不得指示 Agent 通过 Computer Use、GUI 截图／点击、模拟鼠标／键盘、辅助功能、窗口自动化或 Shell 驱动的 UI 脚本操作任一桌面应用。产品 UI 控件只能作为能力背景描述；如果必需步骤只能通过 Computer Use 完成，立即按上述仓库级停止规则中止并向用户报告阻塞。此限制由运行环境 owner 和适用厂商章节落实；不得将桌面界面导航写成 Agent 工作流指令。某厂商当前没有该概念的特别优化时，仍保留章节，明确写明目前没有，并要求 Agent 遵循通用规范。三个模块后可以保留独立的 `Related concepts` / `相关概念` 导航章节。每次修改或新增 Layer-01 文档后运行 `python3 scripts/check-layer-01-sections.py`；缺少、重复、顺序错误或空白模块都不能视为完成。
 
-## Layer-02 与 Layer-03 厂商无关约束
+## Layer-02 至 Layer-04 厂商无关约束
 
-- Layer-02 只负责超脱具体厂商的工作流检查点；Layer-03 只负责厂商无关的完整路线组合和顺序描述。这两层不得写出模型厂商、Agent 产品、厂商专属模型、工具、参数、命令、配置路径或启动方法，也不得引入厂商专属优化。
-- 所有厂商专属指令都放在适用的 Layer-01 owner 及其 Codex 或 Claude 章节。Layer-02/03 可以链接该 owner 并要求通用能力或结果，但不能以示例或括号列表形式重复厂商专属操作。
-- 将厂商细节移出 Layer-02/03 时，必须保留该层通用的动作、证据和失败边界，并在同一变更集中更新双语镜像及对应的 Layer-01 厂商章节。
-- 每次修改上述两层都运行 `python3 scripts/check-layer-02-03-provider-neutrality.py`。脚本报告任何厂商或 Agent 产品词时不得完成；不得通过代码块、链接或变形拼写规避检查。
+- Layer-02 负责厂商无关的检查点动作/证据；Layer-03 负责当前任务的适用性和分支决策；Layer-04 负责厂商无关的完整路线组合。这些层级不得写出模型厂商、Agent 产品、厂商专属模型、工具、参数、命令、配置路径或启动方法，也不得引入厂商专属优化。
+- 所有厂商专属指令都放在适用的 Layer-01 owner 及其 Codex 或 Claude 章节。Layer-02/03/04 可以链接该 owner 并要求通用能力或结果，但不能以示例或括号列表形式重复厂商专属操作。
+- 将厂商细节移出 Layer-02/03/04 时，必须保留该层通用的动作、证据和失败边界，并在同一变更集中更新双语镜像及对应的 Layer-01 厂商章节。
+- 每次修改上述两层都运行 `python3 scripts/check-layer-02-04-provider-neutrality.py`。脚本报告任何厂商或 Agent 产品词时不得完成；不得通过代码块、链接或变形拼写规避检查。
 
-## Layer-03 路线完整性
+## Layer-04 路线完整性
 
-- 每份最终 Layer-03 工作流必须有一份主要的编号执行检查清单。先核对 Contract、Environment、能力清单和 Mode 在进入路线前已通过的证据，再依次覆盖该路线实际消费的每个 Layer-02 检查点及 Layer-01 概念，包括通过操作性检查点要求间接涉及的概念。单纯的 `相关概念` 导航链接不构成执行依赖。
+- 每份最终 Layer-04 工作流必须有一份主要的编号执行检查清单。先核对 Contract、Environment、能力清单和 Mode 在进入路线前已通过的证据，再依次覆盖该路线实际消费的每个 Layer-02 检查点及 Layer-01 概念，包括通过操作性检查点要求间接涉及的概念。单纯的 `相关概念` 导航链接不构成执行依赖。
 - 对每个实际消费的 owner，在适用步骤链接同语言文件，并写明具体确认动作、所需结果或证据，以及失败或不可用时的处理。条件 owner 必须写明触发条件；未触发时要求明确记录 `Not applicable` 原因。不得用裸链接或“应用所有参考文档”等笼统表述代替检查。
 - 顺序必须可执行：路线前门禁；Session/职责和能力边界；有界上下文；决策与规划；切片放行；仅在获授权时创建/派发子代理；实现与控制；当前状态验证；条件修复与重新验证；文档；Git；最终验收。写出适用的返回循环和状态 epoch 变化后的检查，使小模型不会跳过必需边界。
 - 修改路线前，逐一对照所有实际消费的低层 owner 及其通过条件。实际消费的 owner 或其执行要求变化时，在同一变更集中更新检查清单及双语镜像。低层文件仍是权威来源；路线清单只概括并排列其要求，不得发明新策略。
 
-## Layer-03 工作流路线图
+## Layer-04 工作流路线图
 
-- 每份最终 Single-Agent / Multi-Agent Layer-03 路线及其双语镜像，必须在唯一路线顺序检查清单之前恰好包含一个 `## Workflow map` / `## 工作流路线图` 章节和一个 `mermaid` fenced 流程图。流程图是可执行导航与按需加载概念的路线图，**不是**新的政策 owner；清单中的低层 owner 链接仍负责动作、证据和失败边界。
+- 每份最终 Single-Agent / Multi-Agent Layer-04 路线及其双语镜像，必须在唯一路线顺序检查清单之前恰好包含一个 `## Workflow map` / `## 工作流路线图` 章节和一个 `mermaid` fenced 流程图。流程图是可执行导航与按需加载概念的路线图，**不是**新的政策 owner；清单中的低层 owner 链接仍负责动作、证据和失败边界。
 - 每个编号清单步骤必须对应稳定且有序的流程图节点（Single-Agent 用 `S01`…；Multi-Agent 用 `M01`…）。英文中文必须使用等价节点 ID、方向边与条件判断。单代理图不得加入 Child Creation/Dispatch/Lifecycle、Worker Memo 或跨 Worker 交换的执行分支；多代理图必须体现获准的职责分配、Context/Bootstrap 与 Memo 条件、Slice 先于创建/派发、验证、条件修复和变更 Epoch 重新验证、文档、Git 与验收。
 - 显式画出跳过/`Not applicable`、阻塞及返回路径，不得暗示每个条件概念都必须执行，也不得绕开模式/能力授权或当前状态验证。路线图节点可以概括检查点，但不得重定义低层政策。实际消费的 owner、路线顺序、分支或清单要求变化时，在同一变更集中同步更新**两张语言镜像流程图及两份清单**。
-- 每次修改 Layer-03 路线或本规范时运行 `python3 scripts/check-layer-03-workflow-maps.py`，检查图的存在和位置、编号节点与清单、必需分支/边、双语拓扑一致、模式隔离及 CI 接线。此脚本只检查结构，不证明翻译文本或所有政策解释语义等价；仍须人工审阅。
+- 每次修改 Layer-04 路线或本规范时运行 `python3 scripts/check-layer-04-workflow-maps.py`，检查图的存在和位置、编号节点与清单、必需分支/边、双语拓扑一致、模式隔离及 CI 接线。此脚本只检查结构，不证明翻译文本或所有政策解释语义等价；仍须人工审阅。
 
 ## Codex 与 Claude Code 工具双向对应
 
-每个概念的厂商特调和工具对应关系放在该 Layer-01 owner 的对应厂商章节。跨概念的运行环境识别和模型/effort 绑定统一维护在[运行环境与模型厂商支持](references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)及其英文镜像中；其他 owner 引用这些绑定，不重复其控制规则。每次依据 Codex 源码中的工具或指令调整本 Skill，必须检查 Claude Code 当前官方文档或实际暴露的运行时控制中是否有对应能力。每次针对 Claude Code 特调，也必须反向检查 Codex 的对应能力。完成双向核对前，不得把任一运行环境的行为当作共用能力。
+每个概念的厂商特调和工具对应关系放在该 Layer-01 owner 的对应厂商章节。跨概念的运行环境识别和模型/effort 绑定统一维护在[运行环境与模型厂商支持](references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)及其英文镜像中；其他 owner 引用这些绑定，不重复其控制规则。每次依据 Codex 源码中的工具或指令调整本 Skill，必须检查 Claude Code 当前官方文档或实际暴露的运行时控制中是否有对应能力。每次针对 Claude Code 特调，也必须反向检查 Codex 的对应能力。完成双向核对前，不得把任一运行环境的行为当作共用能力。
 
 每次此类改动都按以下顺序在双语镜像中完成：
 
 1. 写明来源运行环境的准确工具、指令或控制项，以及 Skill 依赖的行为；保留可核验的源码或官方文档指向，或运行时观察证据。
 2. 找出并核验另一运行环境的对应工具或控制项；若存在，写明具体调用方式、能力限制，以及生命周期或参数行为的差异。
 3. 若不存在对应能力，在另一运行环境的对应部分明确写明“没有”，并指定该 Agent 应使用运行时默认行为、通过现有机制保留等价证据，还是把该特调标记为 `Not applicable`。不得假定功能对等，也不得仅因可选特调缺失而阻断无关工作。
-4. 在同一变更集中更新受影响的 Layer-01 概念 owner 厂商章节；通用结果发生变化时，同步更新工作流检查点和 Layer-03 路线。跨概念的运行环境/模型绑定仍由运行环境 owner 负责，Layer-02/03 保持厂商无关；完成文档检查前确认英文和中文指令语义等价。
+4. 在同一变更集中更新受影响的 Layer-01 概念 owner 厂商章节；通用结果发生变化时，同步更新工作流检查点和 Layer-04 路线。跨概念的运行环境/模型绑定仍由运行环境 owner 负责，Layer-02/03/04 保持厂商无关；完成文档检查前确认英文和中文指令语义等价。
 
 ## Markdown 引用与层级方向
 
@@ -86,7 +86,7 @@
 - 应鼓励合法的 Markdown 引用。验证器只应拒绝不存在、跨语言或违反层级方向的引用，不得重新引入“禁止所有合法 Markdown 链接”的宽泛规则。
 - 每个新增或实质处理的双语 owner 文档都应在顶部附近包含可见的语言切换链接，并在存在相关 owner 时包含 `Related concepts`/`相关概念`，使用同语言 Markdown 链接。
 - 英文文档链接英文目标；简体中文文档链接 `_zh_cn.md` 目标。跨语言链接只用于可见的语言切换。
-- 遵循当前 `scripts/check-doc-layer-links.py` 的方向规则：普通 Layer-01 引用指向 Layer-01；普通 Layer-02 引用指向 `references/` 或 Layer-01；普通 Layer-03 引用指向共享协议、Layer-01 或 Layer-02。不得用链接格式绕过这些规则。
+- 遵循当前 `scripts/check-doc-layer-links.py` 的方向规则：普通 Layer-01 引用指向 Layer-01；普通 Layer-02 引用指向 `references/` 或 Layer-01；普通 Layer-03 引用指向共享协议、Layer-01 或 Layer-02；普通 Layer-04 可额外引用 Layer-03。不得用链接格式绕过这些规则。
 - 每个本地 Markdown 目标都必须存在，且链接必须指向当前 owner 文件名，不能继续使用拆分前的旧文件名。
 
 ## Worktree 与子代理文档工作流
@@ -119,9 +119,9 @@
 python3 scripts/check-multilingual-docs.py
 python3 scripts/check-doc-layer-links.py
 python3 scripts/check-layer-01-sections.py
-python3 scripts/check-layer-02-03-provider-neutrality.py
-python3 scripts/check-layer-03-workflow-maps.py
-python3 -m unittest discover -s tests -p 'test_check_layer_03_workflow_maps.py'
+python3 scripts/check-layer-02-04-provider-neutrality.py
+python3 scripts/check-layer-04-workflow-maps.py
+python3 -m unittest discover -s tests -p 'test_check_layer_04_workflow_maps.py'
 git diff --check
 ```
 
