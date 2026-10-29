@@ -17,6 +17,9 @@ from token_io_decoupling_root.tools import register_root_tools
 from token_io_decoupling_shared.tools import register_shared_tools
 from token_io_decoupling_state.service import StateService
 from token_io_decoupling_transport.identity import (
+    binding_details as _binding_details,
+)
+from token_io_decoupling_transport.identity import (
     binding_diagnostic as _binding_diagnostic,
 )
 from token_io_decoupling_transport.identity import (
@@ -93,7 +96,7 @@ def create_server(
         provider=provider,
         embedded=embedded,
         require_codex_context=require_codex_context,
-        binding_diagnostic=_binding_diagnostic,
+        binding_details=_binding_details,
     )
     register_shared_tools(
         registrar,

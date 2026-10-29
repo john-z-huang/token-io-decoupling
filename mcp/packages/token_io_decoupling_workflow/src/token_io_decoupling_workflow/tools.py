@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
+from token_io_decoupling_core.binding import BindingProvider
 from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.state_models import CheckpointNode
 from token_io_decoupling_state.service import StateService
 from token_io_decoupling_transport.payloads import _RULE_CONTEXT
 from token_io_decoupling_transport.registration import ToolRegistrar
 
+from token_io_decoupling_workflow.capabilities import capability_report
 from token_io_decoupling_workflow.child_effort import (
     ChildEffortPayload,
     ChildEffortSelector,
@@ -72,43 +75,23 @@ def register_workflow_tools(
     rules: RuleLoader,
     advisor: DecisionsAdvisor,
     decisions_config: DecisionsRuntimeConfig | None,
-    provider: Any,
+    provider: BindingProvider,
     embedded: bool,
     require_codex_context: bool,
-    binding_diagnostic: Any,
+    binding_details: Callable[[BindingProvider], dict[str, str]],
 ) -> None:
     effort_selector = ChildEffortSelector()
     context_generator = DecisionContextGenerator(rules=rules)
     delegation_selector = DelegationDecisionSelector(rules)
     registrar.register_no_args(
         "workflow_capabilities",
-        lambda: {
-            "subsystem": "token-io-mcp",
-            "supported_transports": ["stdio"],
-            "host_adapters": {
-                "Codex Desktop": {
-                    "identity_attestation": "unavailable",
-                    "guard_binding": "unavailable",
-                },
-                "ChatGPT Desktop": {
-                    "identity_attestation": "unavailable",
-                    "guard_binding": "unavailable",
-                },
-            },
-            "enhanced_binding": "unverified" if not embedded else binding_diagnostic(provider),
-            "binding_transport": (
-                getattr(provider, "transport", "embedded_provider") if embedded else "unavailable"
-            ),
-            "caller_match": "required" if require_codex_context else "disabled",
-            "mode_fallback": "Native",
-            "api_decisions": "enabled"
-            if decisions_config and decisions_config.enabled
-            else "disabled",
-            "child_effort_decisions": "available_per_invocation",
-            "delegation_decisions": "available_per_invocation",
-            "decision_context_generation": "available_per_invocation",
-            "protocol_target": "2026-07-28",
-        },
+        lambda: capability_report(
+            provider,
+            embedded=embedded,
+            require_codex_context=require_codex_context,
+            api_decisions_enabled=bool(decisions_config and decisions_config.enabled),
+            diagnose_binding=binding_details,
+        ),
     )
     registrar.register(
         "rules_get_context",

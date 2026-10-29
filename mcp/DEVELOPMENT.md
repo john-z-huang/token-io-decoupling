@@ -53,6 +53,35 @@ A profile controls discovery, not authority. Without a trusted host channel, pub
 
 Canonical Python implementations use the independent package names shown in the architecture contract. The renamed `token_io_decoupling_mcp` adapter namespace carries the former facade modules and default factory's public-only behavior; `python -m token_io_decoupling_mcp.cli` remains available. The old `token_io_mcp` import namespace is not exposed as a general API. The two immutable v1 migration sources retain `token_io_mcp.models` in their historical bytes; the state migration loader provides a temporary alias for `DatabaseKind` only while importing those modules, then removes it. Use the renamed adapter paths for direct migration imports; importing frozen state migration modules directly bypasses the scoped loader and is unsupported. Compatibility files are owned by core, state, or launcher without duplicate wheel paths. The old four console scripts and the former `token-io-mcp` console script are not exported by this workspace.
 
+## Capability report diagnostics
+
+`workflow_capabilities({})` is public and takes no arguments. It preserves top-level summaries and adds `capability_details` with `schema_version: 1`. Each detail contains `status`, `reason_code`, a safe `message`, diagnostic `source`, and `next_step`.
+
+| Detail group | Meaning and boundary |
+| --- | --- |
+| `support.host_adapters` | Static built-in Desktop identity/guard support: `unavailable/adapter_not_implemented`. This is not a provider probe; an injected trusted provider may still verify. |
+| `configuration.caller_match` | Startup `required/configured_required` or `disabled/configured_disabled`. Public discovery does not verify request caller metadata. |
+| `configuration.api_decisions` | Persisted advice `enabled/configured_enabled` or `disabled/configured_disabled`. Disabled is normal configuration. Per-invocation tools remain separate; no API readiness is tested. |
+| `runtime.binding` | Current session relationship and baseline guards. Success includes only role (`parent` or `worker`), never identity values; operation-specific authorization remains separate. |
+| `runtime.binding_transport` | Type classification: known inherited host channel `available/known_transport`; custom provider `unverified/transport_not_reported`. Recognizing a type does not prove current channel health. |
+| `runtime.server_mode` | Startup admission (`embedded` or `public_only`). Later diagnostics never expand registered scope or bypass checks. |
+
+Binding diagnostic outcomes:
+
+| Status / reason code | Evidence and next action |
+| --- | --- |
+| `unverified/provider_not_configured` | Default denying provider; no probe attempted. Use Native or configure a trusted host integration. |
+| `available/baseline_verified` | Session relationship and baseline guards passed. Check intended-operation guards and caller context separately. |
+| `unavailable/required_guards_missing` | Baseline guards are absent. Correct the host binding without bypassing checks. |
+| `unavailable/session_identity_mismatch` | Role/session relationship is invalid. Correct host-supplied identity. |
+| `unavailable/permission_denied` | Provider raised `PermissionError` other than `BindingError`. Have the host owner check permissions. |
+| `unknown/binding_unavailable` | `BindingError` cannot distinguish denial, timeout, or protocol failure. Consult trusted host diagnostics rather than guessing. |
+| `unknown/probe_failed` or `unknown/invalid_binding_response` | Unexpected exception or invalid typed result. Repair the provider before protected use. |
+
+`BindingError` inherits `PermissionError`, so it is classified first. A report reads the binding at most once, may contact the configured host channel, and makes no API request or state/path inspection. Fixed explanations never echo exceptions, credentials, identity values, paths, or arbitrary provider attributes.
+
+Legacy non-embedded summaries remain `enhanced_binding: unverified` and `binding_transport: unavailable`, even if a later probe succeeds; details separate current validation from startup admission. Embedded binding summaries remain `available`/`unavailable`. Transport summaries use only `authenticated_inherited_unix_socket` or `embedded_provider`, never custom labels. No result automatically enables Enhanced or grants authority.
+
 ## uv tool installation and Codex setup
 
 Use the [installation script](../scripts/install-codex-mcp.sh) to install or update the package and configure Codex in one invocation, from any working directory:

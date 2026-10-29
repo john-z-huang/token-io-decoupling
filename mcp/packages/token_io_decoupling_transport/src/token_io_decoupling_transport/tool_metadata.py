@@ -43,11 +43,22 @@ _DECISION_RESULT = (
 
 TOOL_DESCRIPTIONS: dict[str, str] = {
     "workflow_capabilities": _description(
-        "Read public transport, host-adapter, binding, API-decision, and",
-        "protocol capability status.",
-        "No arguments; returns a capability JSON object.",
-        "Unavailable adapters remain unavailable; this does not prove host",
-        "integration or grant authority.",
+        "Read public capability summaries and capability_details (schema_version=1). No arguments;",
+        "no identity or permission prerequisite. support describes built-in Desktop adapters,",
+        "configuration describes caller matching and persisted API advice, and runtime describes",
+        "the provider's baseline binding, transport classification, and startup server mode.",
+        "Status entries contain status, reason_code, message, source, and next_step; a verified",
+        "binding includes its role. Built-in adapters are not implemented; a separately supplied",
+        "provider may still verify. Disabled is normal configuration; unknown means the underlying",
+        "cause cannot be determined safely. Legacy top-level fields remain summaries: non-embedded",
+        "enhanced_binding stays unverified; binding_transport stays unavailable",
+        "even after a valid probe.",
+        "At most one provider read; no state/path inspection, mutation, or API request. Probes",
+        "may use the host channel. No credentials, identity values, or raw errors are returned.",
+        "On missing provider, guard failure, denial, or probe failure, inspect reason_code",
+        "and next_step; use Native until corrected. A known transport or verified",
+        "baseline does not verify caller metadata or operation-specific guards, enable Enhanced,",
+        "change startup admission, or grant authority. No revision or idempotency key is required.",
     ),
     "rules_get_context": _description(
         "Load bounded checkpoint rule context.",

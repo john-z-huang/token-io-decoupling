@@ -53,6 +53,35 @@ Profile 控制工具发现，不授予权限。没有可信宿主通道时，公
 
 Canonical Python 实现使用架构契约列出的独立包名。重命名后的 `token_io_decoupling_mcp` 适配命名空间承载原 façade 模块和默认 factory 的仅公共接口行为；`python -m token_io_decoupling_mcp.cli` 仍可使用。旧 `token_io_mcp` 导入命名空间不再作为通用 API 暴露。两个不可变 v1 迁移源仍保留历史字节中的 `token_io_mcp.models`；state migration loader 仅在导入期间临时提供 `DatabaseKind` 别名，随后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 adapter migration 路径。兼容文件分别由 core、state 或 launcher 负责，wheel 路径不重复。本 workspace 不导出旧四个 console script，也不导出之前的 `token-io-mcp` console script。
 
+## 能力报告诊断
+
+`workflow_capabilities({})` 是无参数公共工具。它保留顶层摘要，新增 `schema_version: 1` 的 `capability_details`。每个详情项包含 `status`、`reason_code`、安全的 `message`、诊断 `source` 和 `next_step`。
+
+| 详情分组 | 含义与边界 |
+| --- | --- |
+| `support.host_adapters` | 内置 Desktop 身份/守卫的静态支持：`unavailable/adapter_not_implemented`。这不是 provider 探测；注入的可信 provider 仍可能验证成功。 |
+| `configuration.caller_match` | 启动配置 `required/configured_required` 或 `disabled/configured_disabled`。公共发现不验证请求调用方元数据。 |
+| `configuration.api_decisions` | 持久化建议配置 `enabled/configured_enabled` 或 `disabled/configured_disabled`。disabled 是正常配置。逐调用工具独立，不测试 API 是否可用。 |
+| `runtime.binding` | 当前 Session 关系和基线守卫。成功仅含角色（`parent` 或 `worker`），不含身份值；具体操作授权另行检查。 |
+| `runtime.binding_transport` | 类型分类：已知继承宿主通道为 `available/known_transport`，自定义 provider 为 `unverified/transport_not_reported`。识别类型不证明当前通道健康。 |
+| `runtime.server_mode` | 启动准入（`embedded` 或 `public_only`）。后续诊断不扩大注册范围，不绕过检查。 |
+
+绑定诊断结果：
+
+| 状态 / 原因代码 | 证据与下一步 |
+| --- | --- |
+| `unverified/provider_not_configured` | 默认拒绝 provider，未尝试探测。使用 Native 或配置可信宿主集成。 |
+| `available/baseline_verified` | Session 关系和基线守卫通过。另行检查目标操作守卫和调用方上下文。 |
+| `unavailable/required_guards_missing` | 缺少基线守卫。修正宿主绑定，不绕过检查。 |
+| `unavailable/session_identity_mismatch` | 角色/Session 关系无效。修正宿主提供的身份。 |
+| `unavailable/permission_denied` | provider 抛出非 `BindingError` 的 `PermissionError`。由宿主维护者检查权限。 |
+| `unknown/binding_unavailable` | `BindingError` 无法区分拒绝、超时或协议故障。查阅可信宿主诊断，不猜测根因。 |
+| `unknown/probe_failed` 或 `unknown/invalid_binding_response` | 意外异常或无效类型结果。修复 provider 后再进行受保护访问。 |
+
+`BindingError` 继承 `PermissionError`，因此优先分类前者。一次报告最多读取一次绑定，可能联系已配置的宿主通道，不发送 API 请求，不检查状态或路径。固定解释不回显异常、凭据、身份值、路径或任意 provider 属性。
+
+非 embedded 的旧摘要保持 `enhanced_binding: unverified` 和 `binding_transport: unavailable`，即使后续探测成功也不改变；详情区分当前验证与启动准入。embedded 的绑定摘要仍为 `available`/`unavailable`。传输摘要仅使用 `authenticated_inherited_unix_socket` 或 `embedded_provider`，不回显自定义标签。任何结果均不自动启用 Enhanced 或授予权限。
+
 ## uv tool 安装与 Codex setup
 
 使用[安装脚本](../scripts/install-codex-mcp.sh)，从任意工作目录一次完成包安装或更新及 Codex 配置：
