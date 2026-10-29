@@ -27,6 +27,10 @@ For resumable work, the caller preserves the pending module and substep, complet
 
 The caller maps `needs_prerequisite` to the relevant prerequisite owner and resumes the pending module after that evidence is available. The direct caller can perform this continuation itself; a top-level route is not required. It must not restart unrelated completed gates or repeat Mode selection. A repeated prerequisite resolution with no new evidence, relevant epoch progress, or valid owner-state change is a loop; legitimate owner-directed repair and re-verification may continue when their evidence/epochs advance. If a required continuation position cannot be preserved or recovered, caller state is contradictory, or an attempted effect cannot be resolved by authorized readback, return `blocked`; do not guess or replay. Modules report their own result to the caller and never route to sibling modules or claim route-level completion.
 
+### Shared task-plan dependency
+
+Every current or future Coding route, and a standalone module that performs task work, consumes [Task Plan Memory Lifecycle](task-plan-memory-lifecycle.md). Establish a concrete shared plan after necessary fact/decision analysis and before implementation or dependent dispatch; carry its exact project/name and readback evidence between modules. Apply its update-before-report/action sequence at each affected boundary, including verification and requirement changes. Preserve an explicit persistence restriction as that owner's documented exception; absent optional planning intent never waives this dependency. A missing required plan/access or failed update blocks dependent effects without replaying completed module effects.
+
 ## Codex CLI / ChatGPT Desktop optimizations
 
 There are currently no Codex CLI or ChatGPT Desktop-specific optimizations for this concept. Follow the general rules.

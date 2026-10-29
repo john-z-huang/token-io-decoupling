@@ -98,8 +98,8 @@ class WorkflowMapMigrationTests(unittest.TestCase):
 
     def test_module_map_cannot_have_unreachable_orphan(self):
         self.mutate("references/coding/layer-04-workflows/modules/work-definition.md",
-                    'WD03["WD03 Resolve requested plan output"]',
-                    'WD03["WD03 Resolve requested plan output"]\n    ORPHAN["orphan"]')
+                    'WD03["WD03 Resolve default shared task plan"]',
+                    'WD03["WD03 Resolve default shared task plan"]\n    ORPHAN["orphan"]')
         self.assert_rejected()
 
     def test_fixed_module_contract_rejects_deleted_control_coverage_edge(self):
@@ -112,6 +112,62 @@ class WorkflowMapMigrationTests(unittest.TestCase):
         self.mutate("references/coding/layer-04-workflows/modules/documentation.md",
                     "DOC03 -- write succeeded and readback confirmed --> DOC04",
                     "DOC03 -- write succeeded and readback confirmed --> DOC05")
+        self.assert_rejected()
+
+    def test_plan_persistence_failure_cannot_continue_execution(self):
+        for module, checkpoint, block in (
+            ("single-execution", "SE02", "SE_BLOCK"),
+            ("delegated-execution", "DE04", "DE_BLOCK"),
+        ):
+            for suffix, label in (
+                ("", "required plan access or update failed"),
+                ("_zh_cn", "必需计划访问或更新失败"),
+            ):
+                with self.subTest(module=module, language=suffix):
+                    rel = f"references/coding/layer-04-workflows/modules/{module}{suffix}.md"
+                    path = self.root / rel
+                    original = path.read_text(encoding="utf-8")
+                    self.mutate(rel, f"{checkpoint} -- {label} --> {block}",
+                                f"{checkpoint} -- {label} --> D_GATE")
+                    self.assert_rejected()
+                    path.write_text(original, encoding="utf-8")
+
+    def test_plan_default_cannot_revert_to_optional_planning_intent(self):
+        for suffix, current, old in (
+            ("", "Persistence explicitly prohibited?", "Planning intent present?"),
+            ("_zh_cn", "明确禁止持久化？", "存在规划意图？"),
+        ):
+            with self.subTest(language=suffix):
+                rel = f"references/coding/layer-04-workflows/modules/work-definition{suffix}.md"
+                path = self.root / rel
+                original = path.read_text(encoding="utf-8")
+                self.mutate(rel, current, old)
+                self.assert_rejected()
+                path.write_text(original, encoding="utf-8")
+
+    def test_plan_restriction_cannot_skip_explicit_persistence_conflict(self):
+        rel = "references/coding/layer-04-workflows/modules/work-definition.md"
+        self.mutate(rel,
+                    "D_PLAN -- explicit persistence requirement conflicts --> WD_BLOCK",
+                    "D_PLAN -- explicit persistence requirement conflicts --> WD_PLAN_NA")
+        self.assert_rejected()
+
+    def test_completed_plan_cannot_skip_final_update_before_archive(self):
+        self.mutate("references/coding/layer-04-workflows/modules/delivery-acceptance.md",
+                    "DA04 Finalize/read back matching plan, then archive/read back",
+                    "DA04 Archive matching plan and read back")
+        self.assert_rejected()
+
+    def test_missing_required_plan_cannot_take_archive_exception(self):
+        self.mutate("references/coding/layer-04-workflows/modules/delivery-acceptance.md",
+                    "D_PLAN -- required plan missing or inaccessible --> DA_NEEDS_PLAN",
+                    "D_PLAN -- required plan missing or inaccessible --> DA_PLAN_NA")
+        self.assert_rejected()
+
+    def test_archive_exception_requires_documented_persistence_restriction(self):
+        self.mutate("references/coding/layer-04-workflows/modules/delivery-acceptance.md",
+                    "D_PLAN -- no active plan; documented persistence restriction --> DA_PLAN_NA",
+                    "D_PLAN -- no active plan --> DA_PLAN_NA")
         self.assert_rejected()
 
     def test_fixed_module_contract_rejects_archive_before_all_criteria_edge(self):
@@ -255,7 +311,7 @@ class WorkflowMapMigrationTests(unittest.TestCase):
                         docs.index("DOC04 -- only documentation dimension changed"))
         da = (ROUTES / "modules/delivery-acceptance.md").read_text(encoding="utf-8")
         self.assertIn("DA03 -- all criteria mapped; every applicable item passes on current epochs --> D_PLAN", da)
-        self.assertIn("DA04 -- archive or readback failed --> DA_BLOCK", da)
+        self.assertIn("DA04 -- plan update, archive or readback failed --> DA_BLOCK", da)
 
     def test_route_change_return_and_effect_epoch_rules_are_explicit(self):
         for name in ("coding-single-agent.md", "coding-multi-agent.md"):

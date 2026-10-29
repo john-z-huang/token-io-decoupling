@@ -13,6 +13,8 @@
 7. When a released Worker must persist a memo or exchange record, require the named persistent-memory capability and confirm its availability; memo and cross-Worker exchange remain independent triggers. Apply the linked Layer-01 owner for logical ownership. If the capability is unavailable, report it and block dependent work; do not fall back to file storage.
 8. When a released task requires reusable Agent project knowledge from prior work, use the [project-memory and code-structure capability](../../layer-01-fundamental-concepts/session-runtime/LSP-MCP-Tools.md) to access authorized Memory and check its source pointers and freshness against authoritative project files. Report unavailable capability; return to approved authoritative project files and pause only when an essential fact cannot be confirmed another approved way. A memory does not replace an authoritative project file in the approved paths.
 
+9. Apply [Task Plan Memory Lifecycle](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md): read the matching shared plan before reuse, qualify it against current authoritative sources, and record new material facts before reporting or dependent actions. Required access/update failure blocks dependent work; a documented persistence restriction follows the owner's exception.
+
 ## Pass condition
 
 The next slice has bounded, current context, or the exact missing context is recorded and the slice is paused.

@@ -9,6 +9,6 @@
 - [execution-decision-gate](execution-decision-gate.md)
 - [execution-planning](execution-planning.md)
 - [output-token-routing](output-token-routing.md)
-- [planning-intent-plan-memory-lifecycle](planning-intent-plan-memory-lifecycle.md)
+- [task-plan-memory-lifecycle](task-plan-memory-lifecycle.md)
 - [task-assignment](task-assignment.md)
 - [workflow-module-contract](workflow-module-contract.md)

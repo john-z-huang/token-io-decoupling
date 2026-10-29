@@ -12,6 +12,8 @@
 
 5. 路线提供建议输出时，仅将其作为输入。核验当前 Root 状态和直接 Control owner，再通过可信转换作出并持久化显式结果；建议本身不产生效果。使用当前直接证据作出决定。建议政策遵循[Decisions 建议](../../layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md)。
 
+应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)，在依赖释放前确认计划更新/读回。用户需求变化时，先记录指令，再分析并持久化影响/修订提议，之后才解决受影响 Contract/Decision 并授权改动。必需持久化失败暂停受影响释放；计划文字本身绝不构成授权。
+
 ## 通过条件
 
 下一步要么已在当前范围内发布，要么已暂停并明确需要的修改、证据、能力或授权。

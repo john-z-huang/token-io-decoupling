@@ -2,14 +2,14 @@
 
 [English](work-definition.md) | [简体中文](work-definition_zh_cn.md)
 
-本 Layer-04 模块用当前事实建立任务上下文，并产出符合 Contract 的决策及用户要求的规划输出。它不选择执行者、不评估输出路由、不预留角色、不释放 Slice，也不执行 Bootstrap。
+本 Layer-04 模块用当前事实建立任务上下文，并产出符合 Contract 的决策及默认共享任务计划。它不选择执行者、不评估输出路由、不预留角色、不释放 Slice，也不执行 Bootstrap。
 
 ## 入口声明
 
 | 字段 | 要求 |
 | --- | --- |
 | 必需输入 | 当前已授权 Contract 和任务范围、已释放路线/模式证据、当前规范 Session state 和已完成的审计读回、已知任务事实/来源指针、取得所需 Context 的已授权可用方式，以及调用方 continuation/效果状态。WD01 建立当前 Context；它不是入口前置条件。 |
-| 允许效果 | 有界且已授权的只读 Context 检索；仅在已有授权的当前 Root Session 下请求符合条件的语义建议；仅当用户要求且另有授权时持久化 plan-memory。不得执行 executor/output 路由、角色预留、Slice 释放、Bootstrap、实施或子代理派发。 |
+| 允许效果 | 有界且已授权的只读 Context 检索；仅在已有授权的当前 Root Session 下请求符合条件的语义建议；在既有授权内默认持久化任务计划，并遵守明确持久化限制。不得执行 executor/output 路由、角色预留、Slice 释放、Bootstrap、实施或子代理派发。 |
 | 结果 | 本模块以当前有来源的 Context、符合 Contract 的 Decision/未释放边界，以及计划证据或有依据的子步骤 `not_applicable` 返回 `complete`；否则返回带暂停位置的 `needs_prerequisite` 或 `blocked`。Context/建议/计划子步骤可根据触发证据标为 `not_applicable`，但不得整体跳过必需的工作定义模块。建议是待审证据，不是授权。 |
 | 新鲜度 | 保留来源/出处/新鲜度及相关 input/policy hash 和 epoch。建议或依赖决策前重新确认；实质变化会使受影响证据失效，并要求调用方从受影响子步骤重新进入。 |
 
@@ -21,13 +21,13 @@ flowchart TD
     D_ENTRY{"入口结果？"}
     WD01["WD01 建立有界当前 Context"]
     WD02["WD02 在 Contract 范围内决策"]
-    WD03["WD03 解决规划输出要求"]
-    D_PLAN{"存在规划意图？"}
-    WD_PLAN["持久化并读回所需计划"]
+    WD03["WD03 解决默认共享任务计划"]
+    D_PLAN{"明确禁止持久化？"}
+    WD_PLAN["持久化并读回共享任务计划"]
     WD_DONE["complete"]
     WD_CONTEXT_NA["not_applicable：可选 Context 来源不存在"]
     WD_ADVICE_NA["not_applicable：建议不存在或不符合条件"]
-    WD_PLAN_NA["not_applicable：没有规划意图"]
+    WD_PLAN_NA["not_applicable：已记录的持久化限制"]
     WD_NEEDS["needs_prerequisite：返回 owner 恢复"]
     WD_BLOCK["blocked"]
     WD00 --> D_ENTRY
@@ -45,10 +45,11 @@ flowchart TD
     WD02 -- 实质选择需要证据 --> WD_NEEDS
     WD02 -- Contract 或授权冲突 --> WD_BLOCK
     WD03 --> D_PLAN
-    D_PLAN -- 是 --> WD_PLAN
+    D_PLAN -- 否；默认 --> WD_PLAN
     WD_PLAN -- 已核验 --> WD_DONE
     WD_PLAN -- 持久化或读回失败 --> WD_BLOCK
-    D_PLAN -- 否 / N/A --> WD_PLAN_NA
+    D_PLAN -- 是；限制例外 --> WD_PLAN_NA
+    D_PLAN -- 与明确持久化要求冲突 --> WD_BLOCK
     WD_PLAN_NA --> WD_DONE
 ```
 
@@ -61,7 +62,7 @@ flowchart TD
 3. **WD02 — 在 Contract 范围内决策。** 应用[Decision](../../layer-02-workflow-concepts/decision-and-execution/decision_zh_cn.md)、[执行决策门禁](../../layer-01-fundamental-concepts/execution-planning/execution-decision-gate_zh_cn.md)和[执行规划](../../layer-01-fundamental-concepts/execution-planning/execution-planning_zh_cn.md)。说明实质问题、已核实事实、未知项、选项、所选方向、拒绝的替代方案、授权范围/效果、返回条件和未释放边界。对于仍开放的实质选择，准备必需的 Decision Brief，且只释放侦察；确认 Contract 允许所选方向后再进入后续释放。Session 实质恢复后，仅在调用方要求时于此重评当前 Decision/Contract 证据；不得重开 Mode 或重复已完成的审计提问。
    - 建议是可选的。仅当已有授权的当前 Root Session 存在，且 Decision 阶段符合资格、已启用并且相关时，应用[建议选择](../../layer-03-workflow-checkpoints/advisory-selection_zh_cn.md)和[Decisions Advisory](../../layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md)。否则依赖直接 owner 并将建议记录为带原因的 `not_applicable`。根据当前直接 owner 证据和 hash 审查任何建议；建议不会选择或授权工作。
    - 执行者选择和输出路由不属于本模块范围，仍由之后另行授权的执行路径处理。
-4. **WD03 — 解决用户要求的规划输出。** 调用[规划输出选择](../../layer-03-workflow-checkpoints/planning-output-selection_zh_cn.md)。若用户要求规划、探索或计划产物，应用[规划意图与计划记忆生命周期](../../layer-01-fundamental-concepts/execution-planning/planning-intent-plan-memory-lifecycle_zh_cn.md)，仅持久化已授权的简明计划，并在依赖工作前读回比对意图。若没有此意图，以目标证据记录子步骤 `not_applicable`，并保留普通有界执行计划。必需持久化不可用或读回失败时阻塞。只有当前事实、符合 Contract 的决策和未释放边界，以及计划证据或有依据的子步骤 `not_applicable` 均已确认时，才返回 `complete`；这不释放 Slice、不选择执行者，也不授权实施。必需的工作定义模块本身不得整体标为 `not_applicable`。
+4. **WD03 — 解决默认共享任务计划。** 调用[规划输出选择](../../layer-03-workflow-checkpoints/planning-output-selection_zh_cn.md)，应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)。无论有无 Issue 或明确规划请求，均综合当前事实与拟议方案，持久化具体计划，并在实施或依赖派发前读回。返回准确项目/计划身份、允许贡献及读回证据。仅已记录的明确持久化限制允许使用 owner 的例外；与明确持久化要求冲突、必需访问缺失或写入/读回失败时阻塞。需求变化先记录，再分析并持久化修订提议，然后才处理受影响工作。只有当前事实、符合 Contract 的 Decision/未释放边界，以及已核验计划证据或有依据的限制例外齐备时，才返回 `complete`。这不释放 Slice、不选择执行者，也不授权实施；必需模块不能整体跳过为 `not_applicable`。
 
 ## 相关概念
 

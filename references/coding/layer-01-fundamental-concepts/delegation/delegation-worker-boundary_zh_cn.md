@@ -14,6 +14,10 @@ Worker 只能通过父级控制的 Dispatch 接收相关的已放行快照。不
 
 放行后，Worker 通过父级提供的 Dispatch Preview 进入，不重新打开根用户模式或数量门禁。运行时无法持久化或返回任务控制记录时，依赖该记录的路线被阻塞。
 
+### 共享任务计划贡献
+
+每个分配角色都应用[任务计划 Memory 生命周期](../execution-planning/task-plan-memory-lifecycle_zh_cn.md)。派发指明准确项目与共享计划、允许贡献及串行写入轮次；Worker 在工作/恢复前确认访问并读取。新事实/进度先更新并读回，再汇报或执行依赖动作；需求变化先记录再分析，分析/修订提议写回后才请求父级释放。此具名贡献与 root 记录及可选执行 memo 分离，不授予源码/同级访问或 Contract 权威。验证者仅可贡献验证事实。必需访问/更新失败阻塞依赖工作，须向父级报告。
+
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
 Codex 已配置的 `PreToolUse` Hook 可以通过 `Agent` 别名匹配本地 `spawn_agent` 工具；可用时，经测试后将其作为阻止未授权递归委派的辅助保护，同时遵循运行时真实工具／sandbox 限制。部分专用工具绕过 Hook，因此仅有提示词或 Hook 不证明递归或 peer 消息完全不可用。父级控制的创建／follow-up 权限与 Worker 权限必须分离。[OpenAI：Hooks 工具覆盖](https://learn.chatgpt.com/docs/hooks)。

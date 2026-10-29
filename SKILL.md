@@ -13,6 +13,8 @@ Coding delegation and Session-topology rules are split into atomic references: t
 
 The Skill defines orchestration conventions only. It cannot bypass higher-priority permissions, user authorization, product limitations, repository instructions, or safety rules, and it must not present unmeasured claims about price, cache hits, quota savings, latency, or runtime quality as facts.
 
+Every Coding task uses a shared task plan by default under [Task Plan Memory Lifecycle](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md). Existing and future routes consume the same owner: analyze current facts, persist/read back before implementation, update before reporting new facts/progress, and record requirement changes before analysis and revised execution. Explicit persistence restrictions follow that owner; a plan never grants authority.
+
 ## Start here
 
 Follow these steps in order. Confirm each checkpoint's outcome before advancing; if a conditional step does not apply, record why instead of silently skipping it.

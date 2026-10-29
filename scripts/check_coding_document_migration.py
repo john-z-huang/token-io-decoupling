@@ -14,6 +14,13 @@ MAP = Path("docs/coding-document-migration.json")
 LAYERS = ("layer-01-fundamental-concepts", "layer-02-workflow-concepts")
 NAVIGATION = {"README.md", "README_zh_cn.md", "INDEX.md", "INDEX_zh_cn.md"}
 MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
+# Issue #164 broadens this owner from opt-in planning to the default task plan.
+# Keep the exact bilingual migration explicit; unrelated moves retain basename checks.
+OWNER_RENAMES = {
+    f"references/coding/layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle{suffix}.md":
+    f"references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle{suffix}.md"
+    for suffix in ("", "_zh_cn")
+}
 
 
 def _link_target(source: Path, raw_target: str, root: Path) -> str | None:
@@ -120,7 +127,7 @@ def validate(root: Path) -> list[str]:
             errors.append(f"migration source is not a former Layer-01/02 root owner: {old}")
         if new_path.parts[:3] != ("references", "coding", old_layer) or len(new_path.parts) < 5:
             errors.append(f"migration target is not nested under the same layer: {old} -> {new}")
-        if old_path.name != new_path.name or old_path.suffix != ".md":
+        if (old_path.name != new_path.name and OWNER_RENAMES.get(old) != new) or old_path.suffix != ".md":
             errors.append(f"migration changed owner filename: {old} -> {new}")
         if new_path.name in NAVIGATION:
             errors.append(f"migration target is a navigation file: {new}")
