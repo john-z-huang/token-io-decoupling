@@ -82,6 +82,22 @@ Binding diagnostic outcomes:
 
 Legacy non-embedded summaries remain `enhanced_binding: unverified` and `binding_transport: unavailable`, even if a later probe succeeds; details separate current validation from startup admission. Embedded binding summaries remain `available`/`unavailable`. Transport summaries use only `authenticated_inherited_unix_socket` or `embedded_provider`, never custom labels. No result automatically enables Enhanced or grants authority.
 
+### Installed client runtime checks
+
+The `real_client` cases in `tests/unit_tests/test_real_clients.py` run the actual installed Codex CLI and the Codex executable shipped inside ChatGPT Desktop. They exercise each executable's app-server MCP interface without mocked client transport or host identity. This covers the MCP host-runtime boundary, not Desktop GUI interaction, an already-running daemon, or authenticated Enhanced host binding.
+
+After authorization for temporary test threads and processes, run from `mcp/`:
+
+```sh
+TOKEN_IO_RUN_REAL_CLIENTS=1 uv run --managed-python --locked -- pytest -q -s tests/unit_tests/test_real_clients.py
+```
+
+The CLI defaults to `codex` on `PATH`; Desktop defaults to `/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex`. `TOKEN_IO_CODEX_CLI_PATH` and `TOKEN_IO_DESKTOP_CODEX_PATH` may point to other actual installations. Overrides are caller-supplied paths, not proof of client identity. Evidence includes the resolved executable path, actual version, executable SHA-256, tested source fingerprints, and successful checks; changing the JSON-RPC client name does not establish client coverage.
+
+Each case starts a separate real app-server with a process-local `mcp_servers` override that disables inherited configured servers using safe placeholders and enables the current workspace's workflow server. Only configured server names and transport types are read; URLs, arguments, environment values, and credentials are not copied. It asserts that inherited configured servers expose no tools; clients may retain built-in platform services, which the test never invokes. It verifies the target's no-argument schema and new description, calls `workflow_capabilities` and checks structured diagnostics, and confirms that `workflow_evaluate` rejects the missing trusted binding. It uses one ephemeral thread, starts no model turn, and terminates its owned process group to release the memory-only thread and MCP subprocess. No user configuration or installed MCP package is changed, and no model API request is needed for this capability check. The operating environment must permit launching and cleaning up these processes.
+
+Ordinary pytest skips both cases without probing installed clients. Explicit opt-in makes missing clients, permission failures, protocol errors, or old capability responses fail rather than skip or fall back to a fake. Existing SDK, Mock, and installed-stdio checks retain their narrower scope. A passing runtime check does not prove an existing client session has reloaded an updated MCP installation; that session still needs its own installation/reload verification.
+
 ## uv tool installation and Codex setup
 
 Use the [installation script](../scripts/install-codex-mcp.sh) to install or update the package and configure Codex in one invocation, from any working directory:

@@ -82,6 +82,22 @@ Canonical Python 实现使用架构契约列出的独立包名。重命名后的
 
 非 embedded 的旧摘要保持 `enhanced_binding: unverified` 和 `binding_transport: unavailable`，即使后续探测成功也不改变；详情区分当前验证与启动准入。embedded 的绑定摘要仍为 `available`/`unavailable`。传输摘要仅使用 `authenticated_inherited_unix_socket` 或 `embedded_provider`，不回显自定义标签。任何结果均不自动启用 Enhanced 或授予权限。
 
+### 已安装客户端运行时检查
+
+`tests/unit_tests/test_real_clients.py` 中的 `real_client` 用例运行真实安装的 Codex CLI，以及 ChatGPT Desktop 随附的 Codex 可执行文件。它们通过各自可执行文件的 app-server MCP 接口测试，不模拟客户端传输或宿主身份。覆盖范围是 MCP 宿主运行时边界，不包含 Desktop GUI 操作、已运行的 daemon，或已认证的 Enhanced 宿主绑定。
+
+获得创建临时测试线程和进程的授权后，从 `mcp/` 执行：
+
+```sh
+TOKEN_IO_RUN_REAL_CLIENTS=1 uv run --managed-python --locked -- pytest -q -s tests/unit_tests/test_real_clients.py
+```
+
+CLI 默认使用 `PATH` 中的 `codex`；Desktop 默认使用 `/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex`。可通过 `TOKEN_IO_CODEX_CLI_PATH` 和 `TOKEN_IO_DESKTOP_CODEX_PATH` 指向其他真实安装位置。覆盖值是调用方提供的路径，不构成客户端身份证明。证据包含解析后的可执行文件路径、实际版本、可执行文件 SHA-256、被测源码指纹和通过的检查；修改 JSON-RPC 客户端名称不能证明客户端覆盖。
+
+每个用例启动独立的真实 app-server，通过进程内 `mcp_servers` 覆盖值，用安全占位条目禁用继承的已配置 server，并启用当前 workspace 的 workflow server。仅读取已配置 server 名称和传输类型，不复制 URL、参数、环境变量值或凭据。它断言继承的已配置 server 不暴露工具；客户端可保留内置平台服务，测试不调用这些服务。它验证目标的无参 schema 和新版描述，调用 `workflow_capabilities` 并检查结构化诊断，确认 `workflow_evaluate` 拒绝缺少可信绑定的调用。每项使用一个 ephemeral 线程，不启动模型 turn，并通过终止自己创建的进程组释放仅驻内存的线程及 MCP 子进程。不修改用户配置或已安装 MCP 包，此能力检查不需要模型 API 请求。运行环境必须允许启动和清理这些进程。
+
+普通 pytest 跳过两项，不探测已安装客户端。显式启用后，客户端缺失、权限失败、协议错误或旧能力响应都会使测试失败，不跳过，也不回退到模拟客户端。已有 SDK、Mock 和安装版 stdio 检查继续保持各自较窄的证明范围。运行时检查通过不证明既有客户端会话已经重载更新后的 MCP 安装；该会话仍需单独验证安装和重载。
+
 ## uv tool 安装与 Codex setup
 
 使用[安装脚本](../scripts/install-codex-mcp.sh)，从任意工作目录一次完成包安装或更新及 Codex 配置：
