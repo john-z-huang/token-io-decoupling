@@ -33,7 +33,10 @@ include = ["/pyproject.toml", "/src/**", "/tests/**"]
 [tool.pytest.ini_options]
 testpaths = ["tests/unit_tests", "tests/mock_api_tests", "tests/real_api_tests"]
 addopts = "-ra"
-markers = ["real_api: opt-in live OpenAI API integration tests"]
+markers = [
+  "real_api: opt-in live OpenAI API integration tests",
+  "real_client: opt-in installed Codex CLI and ChatGPT Desktop Codex runtime integration tests",
+]
 
 [tool.ruff]
 line-length = 100
