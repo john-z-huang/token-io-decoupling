@@ -16,6 +16,10 @@
 
 如果阶段证据显示下一阶段依赖高价值判断，应将信号交给 Decision Gate。Decision Gate 负责方案选择和 Contract 更新；本文档不重复这些策略。
 
+### 反馈前的共享计划证据
+
+汇报进度变化或新确认项目事实前，应用[任务计划 Memory 生命周期](../execution-planning/task-plan-memory-lifecycle_zh_cn.md)：把有界增量持久化到共享任务计划并核验读回。所有参与角色均适用，包括声明的阶段边界以外的检查和修复。反馈携带准确计划身份及相关证据指针，不重复全文或改变释放权。必需持久化失败暂停依赖汇报/动作；仅已记录的持久化限制可使用该 owner 的例外。
+
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
 Codex 已配置的 `PostToolUse` 或 `SubagentStop` Hook 可以提供工具或子代理的观察结果，供父级压缩 Progress Signal；`PreCompact` 可以标记上下文将被压缩的边界。这些可选事件不证明语义验收，也不应导致完整工具日志或 transcript 倾倒。[OpenAI：工具与生命周期 Hooks](https://learn.chatgpt.com/docs/hooks)。

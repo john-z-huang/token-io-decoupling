@@ -12,6 +12,8 @@
 
 5. If the route supplies advisory output, treat it only as input. Verify current Root state and direct Control owner, then make and persist the explicit outcome through the trusted transition; advice itself has no effect. Use current direct evidence to make the decision. Apply [Decisions Advisory](../../layer-01-fundamental-concepts/execution-planning/decisions-advisory.md) for advisory policy.
 
+Apply [Task Plan Memory Lifecycle](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md) to confirm plan updates/readback before dependent release. On a user requirement change, record the instruction first, then analyze and persist the impact/revised proposal before resolving the affected Contract/Decision and authorizing changes. Required persistence failure pauses affected release; plan text alone never authorizes it.
+
 ## Pass condition
 
 The next action is either released within the current envelope or is paused with the required amendment, evidence, capability, or authorization named.

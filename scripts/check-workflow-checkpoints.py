@@ -51,8 +51,8 @@ OWNER_TERMS = {
         "zh": ("用户明确指令", "来源溯源", "输入 Hash", "政策绑定", "不得发送给下游建议", "已核实事实足够"),
     },
     "planning-output-selection": {
-        "en": ("planning intent", "stored item", "Not applicable", "Archive is owned only by Acceptance"),
-        "zh": ("规划意图", "存储项", "Not applicable", "归档只由 Acceptance 负责"),
+        "en": ("For every Coding task", "select a shared plan by default", "verified project facts", "verify its stored content", "Not applicable", "explicit user prohibition", "failed persistence are not skip conditions", "update-before-report/action", "Archive remains conditional on completed Acceptance"),
+        "zh": ("每项 Coding 任务", "默认选择共享计划", "已核实项目事实", "核验存储内容", "Not applicable", "用户明确禁止", "持久化失败不是跳过条件", "先更新再汇报/执行", "归档仍以 Acceptance 完成为条件"),
     },
     "bootstrap-selection": {
         "en": ("Bootstrap/Refresh", "separately review and authorize", "not applicable", "current task", "role occupancy", "does not reserve"),

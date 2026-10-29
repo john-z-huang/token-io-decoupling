@@ -14,6 +14,10 @@ Workers receive only the relevant released snapshot through the parent-controlle
 
 After release, a Worker enters through the parent-provided Dispatch Preview and does not reopen the root-user mode or count gates. If the runtime cannot persist or return the task-control record, the dependent route is blocked.
 
+### Shared task-plan contribution
+
+Apply [Task Plan Memory Lifecycle](../execution-planning/task-plan-memory-lifecycle.md) to every assigned role. Dispatch names the exact project and shared plan, permitted contribution and serialized write turn; the Worker confirms access and reads it before work/resume. Update and read back new facts/progress before reporting or a dependent action, and record changed requirements before analysis, then the analysis/revised proposal before requesting parent release. This named contribution is separate from the root record and optional execution memo; it grants no source/peer access or Contract authority. A verifier may contribute verification facts only. Required access/update failure blocks dependent work and must be reported to the parent.
+
 ## Codex CLI / ChatGPT Desktop optimizations
 
 Codex's configured `PreToolUse` hook can match the local `spawn_agent` tool under its `Agent` alias; where available, use it as a tested guardrail against unauthorized nested delegation, alongside the runtime's actual tool/sandbox restrictions. Some specialized tools bypass hook coverage, so a prompt or hook alone is not proof that recursion or peer messaging is impossible. Keep the parent-controlled spawn/follow-up role separate from Worker permissions. [OpenAI: hook tool coverage](https://learn.chatgpt.com/docs/hooks).

@@ -49,6 +49,14 @@ MODULE_REQUIRED_EDGES = {
     "delivery-acceptance": (("D_VERIFIED", "D_GIT"), ("D_GIT", "DA02"), ("DA02", "DA03"), ("DA03", "D_PLAN"), ("D_PLAN", "DA04"), ("DA04", "DA05")),
 }
 MODULE_REQUIRED_LABEL_FRAGMENTS = {
+    "delivery-acceptance": {
+        "en": {"DA04": "Finalize/read back matching plan, then archive/read back"},
+        "zh": {"DA04": "完成匹配计划更新/读回，再归档/读回"},
+    },
+    "work-definition": {
+        "en": {"D_PLAN": "Persistence explicitly prohibited?", "WD_PLAN_NA": "documented persistence restriction"},
+        "zh": {"D_PLAN": "明确禁止持久化？", "WD_PLAN_NA": "已记录的持久化限制"},
+    },
     "single-execution": {
         "en": {"D_CONTINUE_COVERS": "Does prior Continue still cover"},
         "zh": {"D_CONTINUE_COVERS": "先前 Continue 是否仍覆盖"},
@@ -59,13 +67,17 @@ MODULE_REQUIRED_LABEL_FRAGMENTS = {
     },
 }
 MODULE_REQUIRED_EDGE_LABELS = {
+    "work-definition": {
+        "en": {("D_PLAN", "WD_PLAN"): "no; default", ("D_PLAN", "WD_PLAN_NA"): "yes; restriction exception", ("D_PLAN", "WD_BLOCK"): "explicit persistence requirement conflicts"},
+        "zh": {("D_PLAN", "WD_PLAN"): "否；默认", ("D_PLAN", "WD_PLAN_NA"): "是；限制例外", ("D_PLAN", "WD_BLOCK"): "与明确持久化要求冲突"},
+    },
     "single-execution": {
-        "en": {("SE_NEEDS_AMEND", "SE05"): "Contract/Decision and needed Context current", ("D_CONTINUE_COVERS", "D_REROUTE"): "prior Continue covers Slice; boundary and epochs current"},
-        "zh": {("SE_NEEDS_AMEND", "SE05"): "Contract/Decision及所需Context已当前", ("D_CONTINUE_COVERS", "D_REROUTE"): "Continue仍覆盖该Slice；边界与epoch当前"},
+        "en": {("SE_NEEDS_AMEND", "SE05"): "Contract/Decision and needed Context current", ("D_CONTINUE_COVERS", "D_REROUTE"): "prior Continue covers Slice; boundary and epochs current", ("SE02", "SE_BLOCK"): "required plan access or update failed"},
+        "zh": {("SE_NEEDS_AMEND", "SE05"): "Contract/Decision及所需Context已当前", ("D_CONTINUE_COVERS", "D_REROUTE"): "Continue仍覆盖该Slice；边界与epoch当前", ("SE02", "SE_BLOCK"): "必需计划访问或更新失败"},
     },
     "delegated-execution": {
-        "en": {("DE01", "DE02"): "actual task explicitly authorized", ("D_RESULT", "DE_NEEDS_PENDING"): "child result pending", ("DE_NEEDS_AMEND", "DE08"): "Contract/Decision and needed Context current", ("D_CONTINUE_COVERS", "D_REROUTE"): "prior Continue covers Slice; boundary and epochs current"},
-        "zh": {("DE01", "DE02"): "实际任务已明确授权", ("D_RESULT", "DE_NEEDS_PENDING"): "子代理结果待处理", ("DE_NEEDS_AMEND", "DE08"): "Contract/Decision及所需Context已当前", ("D_CONTINUE_COVERS", "D_REROUTE"): "Continue仍覆盖Slice且边界/epoch当前"},
+        "en": {("DE01", "DE02"): "actual task explicitly authorized", ("D_RESULT", "DE_NEEDS_PENDING"): "child result pending", ("DE_NEEDS_AMEND", "DE08"): "Contract/Decision and needed Context current", ("D_CONTINUE_COVERS", "D_REROUTE"): "prior Continue covers Slice; boundary and epochs current", ("DE04", "DE_BLOCK"): "required plan access or update failed"},
+        "zh": {("DE01", "DE02"): "实际任务已明确授权", ("D_RESULT", "DE_NEEDS_PENDING"): "子代理结果待处理", ("DE_NEEDS_AMEND", "DE08"): "Contract/Decision及所需Context已当前", ("D_CONTINUE_COVERS", "D_REROUTE"): "Continue仍覆盖Slice且边界/epoch当前", ("DE04", "DE_BLOCK"): "必需计划访问或更新失败"},
     },
     "verification-repair": {
         "en": {("VR_SCOPE", "VR_EXEC"): "narrow repair authorized", ("VR_HANDOFF", "VR01"): "new fingerprint/epochs returned", ("D_RESULT", "VR06"): "all required items current and passed"},
@@ -76,30 +88,30 @@ MODULE_REQUIRED_EDGE_LABELS = {
         "zh": {("DOC03", "DOC04"): "写入成功且读回确认", ("DOC04", "DOC05"): "仅文档维度改变", ("DOC05", "DOC06"): "适用检查通过"},
     },
     "delivery-acceptance": {
-        "en": {("DA03", "D_PLAN"): "all criteria mapped", ("D_PLAN", "DA04"): "matching active plan exists", ("DA04", "DA05"): "archived plan read back"},
-        "zh": {("DA03", "D_PLAN"): "所有 criteria 已映射", ("D_PLAN", "DA04"): "存在匹配 active plan", ("DA04", "DA05"): "计划已归档且读回"},
+        "en": {("DA03", "D_PLAN"): "all criteria mapped", ("D_PLAN", "DA04"): "matching active plan exists", ("DA04", "DA05"): "archived plan read back", ("D_PLAN", "DA_PLAN_NA"): "documented persistence restriction", ("D_PLAN", "DA_NEEDS_PLAN"): "required plan missing or inaccessible"},
+        "zh": {("DA03", "D_PLAN"): "所有 criteria 已映射", ("D_PLAN", "DA04"): "存在匹配 active plan", ("DA04", "DA05"): "计划已归档且读回", ("D_PLAN", "DA_PLAN_NA"): "有记录的持久化限制", ("D_PLAN", "DA_NEEDS_PLAN"): "必需计划缺失或不可访问"},
     },
 }
 MODULE_GRAPH_SHA256 = {
     "en": {
-        "delegated-execution": "0d06299dd912dc34ed11fcaf59f40167144f4e92a64252a48963345531b6e432",
-        "delivery-acceptance": "7524c6a1f2d2611188a42fc206cb68d45dfec3fe753003765e4eadbc205e8ce3",
+        "delegated-execution": "a4f2251fe1ee0d2348518b57f6af35aef7452ac08fb8e5338ca2ac29287cb45a",
+        "delivery-acceptance": "6ce68b376aba42db959bac8bc438c0f3cbc3eb9de59a54bdd6912bb38d2983fe",
         "documentation": "9d5a8690dd8a436f651f08c54e4098385300fdef3ff91dd9894ffc001fce3480",
         "entry-readiness": "269dc96c4965b035ce5ad6d6ea1fb04dd0cafbe64a8ec84f58e36f9a4745c2f8",
         "session-readiness": "16f94918cc826fdf291d9102adc049acf5fca12d6778425d517845f257406252",
-        "single-execution": "19238454672f799be2dd120d7230294eaf73eb00308e11d8ae2d38999279d960",
+        "single-execution": "cc32ed177d01a5d92cc49c75a8fa328ae2e8c4f9aa1067a7491a11c358f94acd",
         "verification-repair": "9def420e7ebfb8ba6836c875960654b7038653bd36cab4d47121fb6c340decbb",
-        "work-definition": "abec8a47930c29f495b092e4d5a40ceb76a764d9f4c7fcd4807e86b2ed102c12",
+        "work-definition": "9a5df4637843934aa016d8718dfba2db450a912ffdd81c95bd64b9e437972f75",
     },
     "zh": {
-        "delegated-execution": "9c1445213f9867fd0f2298a3a6a0f8c18738bae2fe6f9d937bfec9f4130acffb",
-        "delivery-acceptance": "65f47da7b0e6d9a820ec1b30dc5323d70cb9f3664363b3a498dbb803390d723a",
+        "delegated-execution": "df575b169e8794b4d4d71142f36eeb0dd06bcf95829ce414ee372f810574d3a0",
+        "delivery-acceptance": "ecf51b71ed2ce33f23c2df9bbfe87cc834425c23ac55528406484c52644e2646",
         "documentation": "459c91325cc289b825f56c2d8ade809a1825658f9d65d2215507f8f1f702e017",
         "entry-readiness": "3c8a6bbf88b8d27126b04bde51fbe5c8b356e5cb4de13d2af0a145d642331b5e",
         "session-readiness": "a3756c195fef91d6e186c428fb1d030b0430d8dd0e677d10dd7da2af894245e1",
-        "single-execution": "739edd16c7b04e85b934e794621d4b8f498563710b95c60fb930ca7f3c1f1396",
+        "single-execution": "be759e0b0979026bc159caa5f7a924c9ffd7092e474cf63405df633ed1b46ba3",
         "verification-repair": "c02c391de233167a29141f3bfcd425eb7aa0f1ece0197eb35532ae3230e7f787",
-        "work-definition": "cbf59d6113953a9ebea2f4c561a842f35b026c6625be93c4c3d38024b959b6ef",
+        "work-definition": "546b7804368371f512ead8434a8914f7781b917aa5e5bc8be5f44f396bd24d54",
     },
 }
 MODULE_SEMANTIC_FRAGMENTS = {
@@ -119,7 +131,7 @@ MODULE_SEMANTIC_FRAGMENTS = {
     ),
     "delivery-acceptance": (
         "DA03 -- all criteria mapped; every applicable item passes on current epochs --> D_PLAN",
-        "DA04 -- archive or readback failed --> DA_BLOCK",
+        "DA04 -- plan update, archive or readback failed --> DA_BLOCK",
     ),
 }
 MANIFEST_ROUTE_SHA256 = {

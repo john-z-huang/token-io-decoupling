@@ -267,11 +267,11 @@
     },
     {
       "from": "references/coding/layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle.md",
-      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/planning-intent-plan-memory-lifecycle.md"
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md"
     },
     {
       "from": "references/coding/layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle_zh_cn.md",
-      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/planning-intent-plan-memory-lifecycle_zh_cn.md"
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md"
     },
     {
       "from": "references/coding/layer-01-fundamental-concepts/reasoning-summary-visibility.md",

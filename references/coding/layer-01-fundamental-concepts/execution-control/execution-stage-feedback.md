@@ -16,6 +16,10 @@ At a declared stage boundary, return only the compressed progress signals needed
 
 When stage evidence shows that the next stage depends on high-value judgment, route the signal to the Decision Gate. The Decision Gate owns solution selection and Contract updates; this module does not restate those policies.
 
+### Shared-plan evidence before feedback
+
+Before reporting changed progress or newly confirmed project facts, apply [Task Plan Memory Lifecycle](../execution-planning/task-plan-memory-lifecycle.md): persist the bounded delta and verify readback in the shared task plan. This applies to all participating roles, including checks and repairs outside a declared stage boundary. Feedback carries the exact plan identity and relevant evidence pointer; it does not duplicate the full plan or change release authority. Required persistence failure pauses dependent reporting/actions; only a documented persistence restriction permits the owner's exception.
+
 ## Codex CLI / ChatGPT Desktop optimizations
 
 A configured Codex `PostToolUse` or `SubagentStop` hook can supply observed tool or child results for the parent's compressed Progress Signal, while `PreCompact` can mark a pending context-loss boundary. These optional events never prove semantic acceptance and must not trigger a full tool-log or transcript dump. [OpenAI: tool and lifecycle hooks](https://learn.chatgpt.com/docs/hooks).

@@ -171,6 +171,34 @@ class CodingDocumentMigrationTests(unittest.TestCase):
         path.write_text(json.dumps(migration), encoding="utf-8")
         self.assertTrue(any("unsafe migration mapping" in e for e in MODULE.validate(root)))
 
+    def test_declared_task_plan_owner_rename_is_valid_in_both_languages(self):
+        root = self.make_valid_root()
+        layer = root / "references/coding/layer-01-fundamental-concepts"
+        destination = layer / "execution-planning"
+        destination.mkdir()
+        self.write_navigation(destination, root_owner=False, category=False)
+        self.write_index(layer, [], ["execution-planning/INDEX.md"])
+        self.write_index(layer, [], ["execution-planning/INDEX_zh_cn.md"], zh=True)
+        path = root / "docs/coding-document-migration.json"
+        migration = json.loads(path.read_text(encoding="utf-8"))
+        for old, new in MODULE.OWNER_RENAMES.items():
+            target = root / new
+            target.write_text("Task plan owner", encoding="utf-8")
+            self.write_index(destination, [target.name], [], zh=target.name.endswith("_zh_cn.md"))
+            migration["document_moves"].append({"from": old, "to": new})
+        path.write_text(json.dumps(migration), encoding="utf-8")
+        self.assertEqual(MODULE.validate(root), [])
+
+    def test_undeclared_owner_rename_is_still_rejected(self):
+        root = self.make_valid_root()
+        path = root / "docs/coding-document-migration.json"
+        migration = json.loads(path.read_text(encoding="utf-8"))
+        migration["document_moves"][0]["from"] = (
+            "references/coding/layer-01-fundamental-concepts/unapproved-owner.md"
+        )
+        path.write_text(json.dumps(migration), encoding="utf-8")
+        self.assertTrue(any("changed owner filename" in e for e in MODULE.validate(root)))
+
     def test_malformed_migration_source_is_reported_without_crashing(self):
         root = self.make_valid_root()
         path = root / "docs/coding-document-migration.json"

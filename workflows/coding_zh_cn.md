@@ -11,6 +11,8 @@
 3. 通过消费已建立的运行环境能力清单的模式检查点，组合根指令模式门禁所需的委派 references。
 4. 使用当前证据调用[路线入口](../references/coding/layer-03-workflow-checkpoints/route-entry_zh_cn.md)，确认 Contract、运行环境、能力清单和 Mode 均已通过。只选择其授权的完整路线，并将已释放的 mode/count 证据交给首个模块检查点 SM01/MM01。每条路线依次组合[入口就绪](../references/coding/layer-04-workflows/modules/entry-readiness_zh_cn.md)、[Session 就绪](../references/coding/layer-04-workflows/modules/session-readiness_zh_cn.md)、[工作定义](../references/coding/layer-04-workflows/modules/work-definition_zh_cn.md)、对应模式的执行模块、[验证与修复](../references/coding/layer-04-workflows/modules/verification-repair_zh_cn.md)、[文档](../references/coding/layer-04-workflows/modules/documentation_zh_cn.md)和[交付与验收](../references/coding/layer-04-workflows/modules/delivery-acceptance_zh_cn.md)。只在到达时加载已选路线及对应模块。
 
+所有现有及未来路线均通过工作定义和执行检查点消费[任务计划 Memory 生命周期](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)。向执行阶段传递共享计划身份/读回或有记录的限制例外；进度/事实汇报及受影响动作前保持更新，匹配计划生命周期解决后才完成。无需额外规划请求。
+
 ## 路线
 
 - [单代理 Coding](../references/coding/layer-04-workflows/coding-single-agent_zh_cn.md)：用户明确选择 `mode: Single-Agent Coding` 时使用；与指令相关的任务事项留在当前 Session 中完成。
