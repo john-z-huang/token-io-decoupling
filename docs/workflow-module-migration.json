@@ -1,0 +1,691 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "675627dc",
+  "purpose": "Development-only legacy checkpoint coverage; never a runtime route or authorization source.",
+  "routes": {
+    "single-agent": {
+      "baseline_route": "coding-single-agent",
+      "steps": [
+        {
+          "source_step": "S01",
+          "semantic_substeps": [
+            "Contract, shared protocols, intent/output preclassification"
+          ],
+          "targets": [
+            {
+              "module": "entry-readiness",
+              "checkpoints": [
+                "ER00",
+                "ER01"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "module-entry-resolution",
+                "route-entry"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Contract evidence is pre-route input"
+        },
+        {
+          "source_step": "S02",
+          "semantic_substeps": [
+            "Environment, capability inventory, Enhanced path and host binding"
+          ],
+          "targets": [
+            {
+              "module": "entry-readiness",
+              "checkpoints": [
+                "ER02"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "enhanced-path-selection"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "No additional conditional branch beyond the owner contract."
+        },
+        {
+          "source_step": "S03",
+          "semantic_substeps": [
+            "Mode confirmation, count/state, route entry and re-entry"
+          ],
+          "targets": [
+            {
+              "module": "entry-readiness",
+              "checkpoints": [
+                "ER00",
+                "ER03"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "module-entry-resolution",
+                "route-entry"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Released route evidence is consumed; do not re-prompt"
+        },
+        {
+          "source_step": "S04",
+          "semantic_substeps": [
+            "Session state/authority, Context Firewall, audit, visibility, role boundaries, migrations/reconciliation/transfer"
+          ],
+          "targets": [
+            {
+              "module": "session-readiness",
+              "checkpoints": [
+                "SR00",
+                "SR01",
+                "SR02",
+                "SR03",
+                "SR04"
+              ],
+              "consumption": "transitive",
+              "owner_refs": [
+                "module-entry-resolution",
+                "session-audit-resolution",
+                "session-state-resolution"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "No additional conditional branch beyond the owner contract."
+        },
+        {
+          "source_step": "S05",
+          "semantic_substeps": [
+            "Context sources, plan/Memory/rule lookup, reconnaissance and context generation"
+          ],
+          "targets": [
+            {
+              "module": "work-definition",
+              "checkpoints": [
+                "WD01"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "context-source-selection",
+                "decision-context-selection"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "No additional conditional branch beyond the owner contract."
+        },
+        {
+          "source_step": "S06",
+          "semantic_substeps": [
+            "Decision, Decision Brief and execution planning",
+            "Planning output/Memory lifecycle and optional advice",
+            "Executor/output disposition for implementation"
+          ],
+          "targets": [
+            {
+              "module": "work-definition",
+              "checkpoints": [
+                "WD01",
+                "WD02",
+                "WD03"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "advisory-selection",
+                "context-source-selection",
+                "decision-context-selection",
+                "planning-output-selection"
+              ],
+              "call_order": 1
+            },
+            {
+              "module": "single-execution",
+              "checkpoints": [
+                "SE01"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "executor-selection",
+                "output-route-selection"
+              ],
+              "call_order": 2
+            }
+          ],
+          "branch_or_return": "Do not merge later S09 Control advice with S06 Decision advice"
+        },
+        {
+          "source_step": "S07",
+          "semantic_substeps": [
+            "Implementation and conditional code-structure evidence"
+          ],
+          "targets": [
+            {
+              "module": "single-execution",
+              "checkpoints": [
+                "SE02",
+                "SE03"
+              ],
+              "consumption": "direct",
+              "owner_refs": [],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "No additional conditional branch beyond the owner contract."
+        },
+        {
+          "source_step": "S08",
+          "semantic_substeps": [
+            "Stage feedback and explicit trigger/N/A disposition"
+          ],
+          "targets": [
+            {
+              "module": "single-execution",
+              "checkpoints": [
+                "SE04"
+              ],
+              "consumption": "direct",
+              "owner_refs": [],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "No additional conditional branch beyond the owner contract."
+        },
+        {
+          "source_step": "S09",
+          "semantic_substeps": [
+            "Control, Execution Control and Control advice",
+            "Evidence-on-Demand, Amend, Continue/Stop and next-Slice continuation"
+          ],
+          "targets": [
+            {
+              "module": "single-execution",
+              "checkpoints": [
+                "SE05"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "advisory-selection"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Advice phase is distinct from Decision and verification-impact advice"
+        },
+        {
+          "source_step": "S10",
+          "semantic_substeps": [
+            "Final fingerprint/current Verification, independence, reporting, epochs and verification-impact advice"
+          ],
+          "targets": [
+            {
+              "module": "verification-repair",
+              "checkpoints": [
+                "VR01",
+                "VR02",
+                "VR03",
+                "VR04",
+                "VR06"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "advisory-selection"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Current successful Verification returns through VR06 before returning the result; conditional advice and verifier visibility remain owner-gated."
+        },
+        {
+          "source_step": "S11",
+          "semantic_substeps": [
+            "Repair disposition, scope gate, narrow repair, execution, handoff and changed-epoch re-verification"
+          ],
+          "targets": [
+            {
+              "module": "verification-repair",
+              "checkpoints": [
+                "VR05",
+                "VR06"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "repair-disposition"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Handoff returns to VR01"
+        },
+        {
+          "source_step": "S12",
+          "semantic_substeps": [
+            "Parent-owned documentation, impact, Memory write/readback, checks and epoch reuse"
+          ],
+          "targets": [
+            {
+              "module": "documentation",
+              "checkpoints": [
+                "DOC01",
+                "DOC02",
+                "DOC03",
+                "DOC04",
+                "DOC05",
+                "DOC06"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "documentation-impact"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Content changes return to VR"
+        },
+        {
+          "source_step": "S13",
+          "semantic_substeps": [
+            "Git target/effect/authorization and verified fingerprint match"
+          ],
+          "targets": [
+            {
+              "module": "delivery-acceptance",
+              "checkpoints": [
+                "DA02"
+              ],
+              "consumption": "direct",
+              "owner_refs": [],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Divergence returns to VR before more Git effects"
+        },
+        {
+          "source_step": "S14",
+          "semantic_substeps": [
+            "Acceptance criterion mapping, residual risks and conditional archive/readback"
+          ],
+          "targets": [
+            {
+              "module": "delivery-acceptance",
+              "checkpoints": [
+                "DA03",
+                "DA04",
+                "DA05"
+              ],
+              "consumption": "direct",
+              "owner_refs": [],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Archive only after every applicable criterion passes"
+        }
+      ]
+    },
+    "multi-agent": {
+      "baseline_route": "coding-multi-agent",
+      "steps": [
+        {
+          "source_step": "M01",
+          "semantic_substeps": [
+            "Contract/shared protocol, dispatch boundary"
+          ],
+          "targets": [
+            {
+              "module": "entry-readiness",
+              "checkpoints": [
+                "ER00",
+                "ER01"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "module-entry-resolution",
+                "route-entry"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Dispatch policy is consumed later in DE06"
+        },
+        {
+          "source_step": "M02",
+          "semantic_substeps": [
+            "Environment, capability inventory, Enhanced selection/host"
+          ],
+          "targets": [
+            {
+              "module": "entry-readiness",
+              "checkpoints": [
+                "ER02"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "enhanced-path-selection"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "No additional conditional branch beyond the owner contract."
+        },
+        {
+          "source_step": "M03",
+          "semantic_substeps": [
+            "Mode/count/state/re-entry and reserved-slot state"
+          ],
+          "targets": [
+            {
+              "module": "entry-readiness",
+              "checkpoints": [
+                "ER00",
+                "ER03"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "module-entry-resolution",
+                "route-entry"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Route/count release does not authorize a child"
+        },
+        {
+          "source_step": "M04",
+          "semantic_substeps": [
+            "Session identity/authority, Context Firewall, audit/visibility, Native/Enhanced transfer and readback"
+          ],
+          "targets": [
+            {
+              "module": "session-readiness",
+              "checkpoints": [
+                "SR00",
+                "SR01",
+                "SR02",
+                "SR03"
+              ],
+              "consumption": "transitive",
+              "owner_refs": [
+                "module-entry-resolution",
+                "session-audit-resolution",
+                "session-state-resolution"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "No additional conditional branch beyond the owner contract."
+        },
+        {
+          "source_step": "M05",
+          "semantic_substeps": [
+            "Read-only capacity/allocation confirmation"
+          ],
+          "targets": [
+            {
+              "module": "session-readiness",
+              "checkpoints": [
+                "SR04"
+              ],
+              "consumption": "direct",
+              "owner_refs": [],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "No role reservation"
+        },
+        {
+          "source_step": "M06",
+          "semantic_substeps": [
+            "Bounded Context, sources/transport, reusable Memory, handoff/exchange"
+          ],
+          "targets": [
+            {
+              "module": "work-definition",
+              "checkpoints": [
+                "WD01"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "context-source-selection",
+                "decision-context-selection"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Worker exchange owners remain conditional"
+        },
+        {
+          "source_step": "M07",
+          "semantic_substeps": [
+            "Decision, two-level plan, planning Memory and Decision advice",
+            "Bootstrap proposal plus actual-task authorization",
+            "Executor/output/role decision and Slice release"
+          ],
+          "targets": [
+            {
+              "module": "work-definition",
+              "checkpoints": [
+                "WD01",
+                "WD02",
+                "WD03"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "advisory-selection",
+                "context-source-selection",
+                "decision-context-selection",
+                "planning-output-selection"
+              ],
+              "call_order": 1
+            },
+            {
+              "module": "delegated-execution",
+              "checkpoints": [
+                "DE01",
+                "DE02",
+                "DE03",
+                "DE04"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "bootstrap-selection",
+                "executor-selection",
+                "output-route-selection",
+                "role-reservation"
+              ],
+              "call_order": 2
+            }
+          ],
+          "branch_or_return": "This Decision/Bootstrap step is distinct from M16 Acceptance/archive"
+        },
+        {
+          "source_step": "M08",
+          "semantic_substeps": [
+            "Slice/stage release, recovery Continue, Control rule/epochs and Native/Enhanced persistence"
+          ],
+          "targets": [
+            {
+              "module": "delegated-execution",
+              "checkpoints": [
+                "DE04"
+              ],
+              "consumption": "transitive",
+              "owner_refs": [],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "All executor branches pass the shared Slice gate"
+        },
+        {
+          "source_step": "M09",
+          "semantic_substeps": [
+            "Conditional child creation, runtime/effort binding, identity/allocation and reuse"
+          ],
+          "targets": [
+            {
+              "module": "delegated-execution",
+              "checkpoints": [
+                "DE05"
+              ],
+              "consumption": "direct",
+              "owner_refs": [],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Child creation only on eligible new-child branch"
+        },
+        {
+          "source_step": "M10",
+          "semantic_substeps": [
+            "Dispatch, Worker boundary/message visibility, explicit memo field and lifecycle"
+          ],
+          "targets": [
+            {
+              "module": "delegated-execution",
+              "checkpoints": [
+                "DE06"
+              ],
+              "consumption": "direct",
+              "owner_refs": [],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Existing bundle resumes recorded memo value; new bundle sets explicit value at DE04"
+        },
+        {
+          "source_step": "M11",
+          "semantic_substeps": [
+            "Implementation/LSP, stage feedback, Control and follow-up/reuse",
+            "Control advice; pending child recovery at DE07",
+            "Next-Slice freshness and reuse"
+          ],
+          "targets": [
+            {
+              "module": "delegated-execution",
+              "checkpoints": [
+                "DE07",
+                "DE08",
+                "DE09"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "advisory-selection"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Keep DE07 pending-result, DE08 Control, and DE09 result return distinct"
+        },
+        {
+          "source_step": "M12",
+          "semantic_substeps": [
+            "Final-state Verification, independence, reporting, epochs/advice and conditional child-body visibility"
+          ],
+          "targets": [
+            {
+              "module": "verification-repair",
+              "checkpoints": [
+                "VR01",
+                "VR02",
+                "VR03",
+                "VR04",
+                "VR06"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "advisory-selection"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Current successful Verification returns through VR06 before returning the result; conditional advice and verifier visibility remain owner-gated."
+        },
+        {
+          "source_step": "M13",
+          "semantic_substeps": [
+            "Repair diagnosis/disposition, scope/execution/handoff and changed-epoch Verification"
+          ],
+          "targets": [
+            {
+              "module": "verification-repair",
+              "checkpoints": [
+                "VR05",
+                "VR06"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "repair-disposition"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Handoff returns to VR01"
+        },
+        {
+          "source_step": "M14",
+          "semantic_substeps": [
+            "Parent-owned docs, impact, project Memory/readback, checks and epoch reuse"
+          ],
+          "targets": [
+            {
+              "module": "documentation",
+              "checkpoints": [
+                "DOC01",
+                "DOC02",
+                "DOC03",
+                "DOC04",
+                "DOC05",
+                "DOC06"
+              ],
+              "consumption": "direct",
+              "owner_refs": [
+                "documentation-impact"
+              ],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Content change returns to VR"
+        },
+        {
+          "source_step": "M15",
+          "semantic_substeps": [
+            "Git target/effect/authorization/fingerprints and conditional Worker visibility"
+          ],
+          "targets": [
+            {
+              "module": "delivery-acceptance",
+              "checkpoints": [
+                "DA02"
+              ],
+              "consumption": "direct",
+              "owner_refs": [],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Worker visibility applies only if that role is used"
+        },
+        {
+          "source_step": "M16",
+          "semantic_substeps": [
+            "Acceptance criteria/epochs, residual risks and matching active-plan archive/readback"
+          ],
+          "targets": [
+            {
+              "module": "delivery-acceptance",
+              "checkpoints": [
+                "DA03",
+                "DA04",
+                "DA05"
+              ],
+              "consumption": "direct",
+              "owner_refs": [],
+              "call_order": 1
+            }
+          ],
+          "branch_or_return": "Distinct from M07 Decision/Bootstrap"
+        }
+      ]
+    }
+  }
+}

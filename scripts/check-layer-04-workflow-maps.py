@@ -1,1018 +1,400 @@
 #!/usr/bin/env python3
-"""Check Layer-04 Mermaid route maps against checklists, mirrors, AGENTS rules, and CI.
-
-This is a structural check, not a proof of semantic equivalence of translations.
-Nodes have stable language-independent IDs; matching IDs and edges ensure that
-translations cannot silently change executable route topology.
-"""
-
+"""Validate bilingual Layer-04 route/module maps and their checklists."""
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import re
 import sys
 from pathlib import Path
 from urllib.parse import unquote
 
-ROUTES = Path('references/coding/layer-04-workflows')
-WORKFLOW = Path('.github/workflows/multilingual-docs.yml')
-SCRIPT = 'scripts/check-layer-04-workflow-maps.py'
-TEST = 'tests/test_check_layer_04_workflow_maps.py'
-RULE_TITLE = {'en': '## Layer-04 workflow maps', 'zh': '## Layer-04 工作流路线图'}
-MAP_TITLE = {'en': '## Workflow map', 'zh': '## 工作流路线图'}
-CHECKLIST_TITLE = {'en': '## Ordered route checklist', 'zh': '## 路线顺序检查清单'}
-FENCE_RE = re.compile(r'^\x60{3}([^\n]*)\n(.*?)^\x60{3}\s*$', re.M | re.S)
-STEP_RE = re.compile(r'(?m)^(\d+)\.\s+\*\*')
-NODE_RE = re.compile(r'^\s*([A-Z][A-Z0-9_]*)\s*[\[\{(]')
-ID_RE = re.compile(r'[A-Z][A-Z0-9_]*')
+from workflow_module_contracts import L3_REQUIRED_LAYER12_LINK, MANIFEST_ROUTE_SHA256, MIXED_STEP_CONTRACTS, MODULES, MODULE_CHECKPOINTS, MODULE_CHECKPOINT_L3_OWNERS, MODULE_CHECKPOINT_LAYER12_TARGETS, MODULE_GRAPH_SHA256, MODULE_PREFIXES, MODULES_DIR, MODULE_REQUIRED_EDGES, MODULE_REQUIRED_EDGE_LABELS, MODULE_REQUIRED_LABEL_FRAGMENTS, MIGRATION_MANIFEST, MODULE_SEMANTIC_FRAGMENTS, ROUTE_MODULES, ROUTES_DIR, TOP_PREFIXES, VERIFICATION_STEP_CONTRACTS
 
-ROUTE_SPECS = {
-    'single-agent': {
-        'prefix': 'S',
-        'steps': ('Contract', 'Environment', 'Mode', 'Session', 'Context', 'Decision',
-                  'Implementation', 'Stage Feedback', 'Control', 'Verification',
-                  'Repair', 'Documentation', 'Git', 'Acceptance'),
-        'branches': {
-            'ACT_CONTEXT_DIRECT', 'ACT_CONTEXT_GEN', 'ACT_EXECUTOR_CONFLICT', 'ACT_EXECUTOR_ROOT',
-            'ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_HOLD', 'ACT_OUTPUT_NO',
-            'ACT_NATIVE', 'ACT_ROOT_OPEN', 'ACT_NATIVE_TRANSFER', 'ACT_NATIVE_RECON',
-            'ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK', 'D_REPAIR', 'ACT_AUDIT_CONFIRM', 'ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT',
-            'ACT_INITIAL_CLASSIFY', 'ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT', 'ACT_CONTROL_ADVICE',
-            'ACT_CONTROL_DIRECT', 'ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT', 'ACT_PLAN', 'ACT_PLAN_SCAN',
-            'ACT_PLAN_READ', 'ACT_ARCHIVE', 'ACT_RECON',
-            'ACT_AUDIT_PROMPT', 'ACT_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY', 'ACT_AUDIT_DEFAULT',
-            'ACT_AUDIT_WAIT', 'ACT_AUDIT_TIMEOUT', 'D_ENHANCED', 'D_ENHANCED_HOST', 'D_ROOT_STORE',
-            'D_AUTHORITY_TRANSFER', 'D_NATIVE_RECON', 'D_RECOVERY_GATE', 'D_RULE_ACCESS',
-            'D_DECISION_ADVICE', 'D_CONTROL_ADVICE', 'D_EPOCH_ADVICE', 'D_PLAN', 'D_PLAN_SAVED',
-            'D_PLAN_MATCH', 'D_ARCHIVE', 'D_ARCHIVED', 'D_RECON', 'D_CONTEXT_GEN', 'D_TASK_ASSIGN',
-            'D_OUTPUT_EXPLICIT', 'D_OUTPUT_RESULT', 'D_CONTROL', 'D_VERIFY', 'D_DOC', 'D_GIT',
-            'D_AUDIT_CONFIG', 'D_AUDIT_REPLY', 'D_AUDIT_CORRECTION', 'BLOCK', 'DONE',
-        },
-        'edges': {
-            ('S01', 'ACT_INITIAL_CLASSIFY'), ('ACT_INITIAL_CLASSIFY', 'S02'), ('ACT_INITIAL_CLASSIFY', 'BLOCK'), ('S02', 'D_ENHANCED'), ('D_ENHANCED', 'S03'),
-            ('D_ENHANCED', 'D_ENHANCED_HOST'), ('D_ENHANCED_HOST', 'S03'),
-            ('D_ENHANCED_HOST', 'ACT_NATIVE'), ('ACT_NATIVE', 'S03'), ('D_ENHANCED_HOST', 'BLOCK'),
-            ('S03', 'S04'), ('S04', 'D_ROOT_STORE'),
-            ('D_ROOT_STORE', 'D_NATIVE_RECON'), ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'), ('D_ROOT_STORE', 'BLOCK'),
-            ('ACT_ROOT_OPEN', 'ACT_STATE_READBACK'), ('ACT_ROOT_OPEN', 'BLOCK'),
-            ('D_AUTHORITY_TRANSFER', 'ACT_STATE_READBACK'), ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'), ('D_AUTHORITY_TRANSFER', 'BLOCK'),
-            ('ACT_NATIVE_TRANSFER', 'ACT_STATE_READBACK'), ('ACT_NATIVE_TRANSFER', 'BLOCK'),
-            ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'), ('D_NATIVE_RECON', 'ACT_STATE_READBACK'), ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'),
-            ('ACT_NATIVE_RECON', 'ACT_STATE_READBACK'), ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'), ('ACT_NATIVE_RECON', 'BLOCK'),
-            ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'), ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'), ('ACT_STATE_READBACK', 'BLOCK'),
-            ('D_AUDIT_CONFIG', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'),
-            ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'), ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'),
-            ('D_AUDIT_CONFIG', 'BLOCK'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'),
-            ('ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'),
-            ('ACT_AUDIT_REPLY', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'),
-            ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'),
-            ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'),
-            ('ACT_AUDIT_DEFAULT', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'),
-            ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'),
-            ('ACT_AUDIT_TIMEOUT', 'ACT_AUDIT_CONFIRM'), ('ACT_AUDIT_CONFIRM', 'S05'),
-            ('ACT_AUDIT_CONFIRM', 'BLOCK'), ('D_AUDIT_REPLY', 'BLOCK'),
-            ('S05', 'D_RULE_ACCESS'), ('D_RULE_ACCESS', 'ACT_RULE_CONTEXT'),
-            ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'),
-            ('ACT_RULE_DIRECT', 'ACT_PLAN_SCAN'), ('ACT_RULE_DIRECT', 'BLOCK'),
-            ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_PLAN_SCAN', 'BLOCK'),
-            ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'D_RECON'),
-            ('ACT_PLAN_READ', 'D_RECON'), ('ACT_PLAN_READ', 'BLOCK'),
-            ('D_RECON', 'ACT_RECON'), ('ACT_RECON', 'S05'), ('D_RECON', 'D_CONTEXT_GEN'),
-            ('D_CONTEXT_GEN', 'ACT_CONTEXT_GEN'), ('D_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'),
-            ('ACT_CONTEXT_GEN', 'S06'), ('ACT_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'),
-            ('ACT_CONTEXT_DIRECT', 'S06'), ('ACT_CONTEXT_DIRECT', 'BLOCK'),
-            ('S06', 'D_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_DIRECT', 'D_PLAN'), ('ACT_DECISION_DIRECT', 'BLOCK'), ('D_PLAN', 'ACT_PLAN'), ('D_PLAN', 'D_RECOVERY_GATE'),
-            ('ACT_PLAN', 'D_PLAN_SAVED'), ('D_PLAN_SAVED', 'D_RECOVERY_GATE'), ('D_PLAN_SAVED', 'BLOCK'),
-            ('D_RECOVERY_GATE', 'D_TASK_ASSIGN'), ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'),
-            ('D_TASK_ASSIGN', 'ACT_EXECUTOR_ROOT'), ('D_TASK_ASSIGN', 'ACT_EXECUTOR_CONFLICT'),
-            ('ACT_EXECUTOR_CONFLICT', 'BLOCK'), ('ACT_EXECUTOR_ROOT', 'D_OUTPUT_EXPLICIT'),
-            ('D_OUTPUT_EXPLICIT', 'S07'), ('D_OUTPUT_EXPLICIT', 'ACT_OUTPUT_ADVICE'),
-            ('ACT_OUTPUT_ADVICE', 'D_OUTPUT_RESULT'), ('ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_DIRECT'),
-            ('D_OUTPUT_RESULT', 'ACT_OUTPUT_NO'), ('D_OUTPUT_RESULT', 'ACT_OUTPUT_HOLD'),
-            ('D_OUTPUT_RESULT', 'ACT_OUTPUT_DIRECT'), ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_NO'),
-            ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_HOLD'), ('ACT_OUTPUT_DIRECT', 'BLOCK'),
-            ('ACT_OUTPUT_NO', 'S07'), ('ACT_OUTPUT_HOLD', 'BLOCK'),
-            ('S07', 'S08'), ('S08', 'S09'), ('S09', 'D_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_DIRECT', 'D_CONTROL'), ('ACT_CONTROL_DIRECT', 'BLOCK'),
-            ('D_CONTROL', 'S05'), ('D_CONTROL', 'S06'), ('D_CONTROL', 'S10'), ('D_CONTROL', 'BLOCK'),
-            ('S10', 'D_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_DIRECT', 'D_VERIFY'), ('ACT_EPOCH_DIRECT', 'BLOCK'), ('D_VERIFY', 'S11'), ('D_VERIFY', 'S12'), ('D_VERIFY', 'BLOCK'),
-            ('S11', 'D_REPAIR'), ('D_REPAIR', 'S10'), ('D_REPAIR', 'S01'), ('D_REPAIR', 'S06'), ('D_REPAIR', 'BLOCK'), ('S12', 'D_DOC'), ('D_DOC', 'S10'), ('D_DOC', 'S06'),
-            ('D_DOC', 'S13'), ('S13', 'D_GIT'), ('D_GIT', 'S14'), ('D_GIT', 'BLOCK'),
-            ('S14', 'D_ARCHIVE'), ('D_ARCHIVE', 'ACT_ARCHIVE'), ('D_ARCHIVE', 'DONE'),
-            ('ACT_ARCHIVE', 'D_ARCHIVED'), ('D_ARCHIVED', 'DONE'), ('D_ARCHIVED', 'BLOCK'),
-        },
-        'forbidden': re.compile(r'\b(?:Child Creation|Child Dispatch|Worker Memo|Context Bootstrap|'
-                                r'Child Lifecycle|Child Role Allocation)\b|子代理创建|子代理派发|'
-                                r'子代理生命周期|子代理职责分配|跨 Worker', re.I),
-    },
-    'multi-agent': {
-        'prefix': 'M',
-        'steps': ('Contract', 'Environment', 'Mode', 'Session', 'Allocation', 'Context',
-                  'Decision', 'Slice', 'Child Creation', 'Dispatch', 'Implementation',
-                  'Verification', 'Repair', 'Documentation', 'Git', 'Acceptance'),
-        'branches': {
-            'ACT_ARCHIVE', 'ACT_AUDIT_CLARIFY', 'ACT_AUDIT_CONFIRM', 'ACT_AUDIT_DEFAULT', 'ACT_AUDIT_PROMPT', 'ACT_AUDIT_REPLY',
-            'ACT_AUDIT_TIMEOUT', 'ACT_AUDIT_WAIT', 'ACT_BOOT_PLAN', 'ACT_BUDGET_APPROVAL', 'ACT_CHILD_ADVICE', 'ACT_CHILD_DIRECT',
-            'ACT_CHILD_REVIEW', 'ACT_CHILD_WAIT', 'ACT_CONTEXT_DIRECT', 'ACT_CONTEXT_GEN', 'ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT',
-            'ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT', 'ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT', 'ACT_INITIAL_CLASSIFY', 'ACT_MEMO',
-            'ACT_NATIVE', 'ACT_NATIVE_RECON', 'ACT_NATIVE_TRANSFER', 'ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_CHILD', 'ACT_OUTPUT_HOLD',
-            'ACT_OUTPUT_NO', 'ACT_OUTPUT_WAIT', 'ACT_PLAN', 'ACT_PLAN_READ', 'ACT_PLAN_SCAN', 'ACT_RECON_PLAN',
-            'ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK', 'D_REPAIR', 'ACT_ROLE_ADVICE', 'ACT_ROLE_NA', 'ACT_ROLE_RESERVE', 'ACT_ROLE_REVIEW', 'ACT_ROOT_OPEN',
-            'ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT', 'ACT_TASK_ASSIGN', 'ACT_WORKER_OPEN', 'BLOCK', 'DONE',
-            'D_ARCHIVE', 'D_ARCHIVED', 'D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION', 'D_AUDIT_REPLY', 'D_AUTHORITY_TRANSFER',
-            'D_BOOT', 'D_CHILD_POOL', 'D_CONTEXT_GEN', 'D_CONTROL', 'D_CONTROL_ADVICE', 'D_DECISION_ADVICE',
-            'D_DOC', 'D_ENHANCED', 'D_ENHANCED_HOST', 'D_EPOCH_ADVICE', 'D_EXECUTOR', 'D_GIT',
-            'D_INDEPENDENT_CHILD', 'D_MEMO', 'D_NATIVE_RECON', 'D_NEW_CHILD', 'D_OUTPUT_EXPLICIT', 'D_OUTPUT_RESULT',
-            'D_PLAN', 'D_PLAN_MATCH', 'D_PLAN_SAVED', 'D_RECON', 'D_RECOVERY_GATE', 'D_ROLE_CAPACITY',
-            'D_ROLE_SELECT', 'D_ROOT_STORE', 'D_RULE_ACCESS', 'D_VERIFY', 'D_WORKER_STORE',
-        },
-        'edges': {
-            ('ACT_ARCHIVE', 'D_ARCHIVED'), ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'), ('ACT_AUDIT_CONFIRM', 'BLOCK'), ('ACT_AUDIT_CONFIRM', 'M05'),
-            ('ACT_AUDIT_DEFAULT', 'ACT_AUDIT_CONFIRM'), ('ACT_AUDIT_PROMPT', 'D_AUDIT_REPLY'), ('ACT_AUDIT_REPLY', 'ACT_AUDIT_CONFIRM'), ('ACT_AUDIT_TIMEOUT', 'ACT_AUDIT_CONFIRM'),
-            ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'), ('ACT_BOOT_PLAN', 'ACT_TASK_ASSIGN'), ('ACT_BUDGET_APPROVAL', 'ACT_ROLE_RESERVE'), ('ACT_BUDGET_APPROVAL', 'BLOCK'),
-            ('ACT_CHILD_ADVICE', 'ACT_CHILD_REVIEW'), ('ACT_CHILD_DIRECT', 'D_OUTPUT_EXPLICIT'), ('ACT_CHILD_REVIEW', 'ACT_CHILD_DIRECT'), ('ACT_CHILD_REVIEW', 'BLOCK'),
-            ('ACT_CHILD_REVIEW', 'D_OUTPUT_EXPLICIT'), ('ACT_CHILD_WAIT', 'D_CHILD_POOL'), ('ACT_CONTEXT_DIRECT', 'BLOCK'), ('ACT_CONTEXT_DIRECT', 'M07'),
-            ('ACT_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'), ('ACT_CONTEXT_GEN', 'M07'), ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_DIRECT', 'BLOCK'),
-            ('ACT_CONTROL_DIRECT', 'D_CONTROL'), ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_DIRECT', 'BLOCK'), ('ACT_DECISION_DIRECT', 'D_PLAN'),
-            ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_DIRECT', 'BLOCK'), ('ACT_EPOCH_DIRECT', 'D_VERIFY'), ('ACT_INITIAL_CLASSIFY', 'BLOCK'),
-            ('ACT_INITIAL_CLASSIFY', 'M02'), ('ACT_MEMO', 'M10'), ('ACT_NATIVE', 'M03'), ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'),
-            ('ACT_NATIVE_RECON', 'BLOCK'), ('ACT_NATIVE_RECON', 'ACT_STATE_READBACK'), ('ACT_NATIVE_TRANSFER', 'BLOCK'), ('ACT_NATIVE_TRANSFER', 'ACT_STATE_READBACK'),
-            ('ACT_OUTPUT_ADVICE', 'D_OUTPUT_RESULT'), ('ACT_OUTPUT_CHILD', 'ACT_ROLE_NA'), ('ACT_OUTPUT_HOLD', 'ACT_OUTPUT_WAIT'), ('ACT_OUTPUT_HOLD', 'D_INDEPENDENT_CHILD'),
-            ('ACT_OUTPUT_NO', 'D_NEW_CHILD'), ('ACT_OUTPUT_WAIT', 'ACT_OUTPUT_ADVICE'), ('ACT_PLAN', 'D_PLAN_SAVED'), ('ACT_PLAN_READ', 'BLOCK'),
-            ('ACT_PLAN_READ', 'D_CONTEXT_GEN'), ('ACT_PLAN_SCAN', 'BLOCK'), ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_RECON_PLAN', 'D_BOOT'),
-            ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'), ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'), ('ACT_STATE_READBACK', 'BLOCK'), ('ACT_ROLE_ADVICE', 'ACT_ROLE_REVIEW'), ('ACT_ROLE_NA', 'D_RECOVERY_GATE'), ('ACT_ROLE_RESERVE', 'BLOCK'),
-            ('ACT_ROLE_RESERVE', 'D_RECOVERY_GATE'), ('ACT_ROLE_REVIEW', 'BLOCK'), ('ACT_ROLE_REVIEW', 'D_ROLE_CAPACITY'), ('ACT_ROOT_OPEN', 'BLOCK'),
-            ('ACT_ROOT_OPEN', 'ACT_STATE_READBACK'), ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'), ('ACT_RULE_DIRECT', 'ACT_PLAN_SCAN'), ('ACT_RULE_DIRECT', 'BLOCK'),
-            ('ACT_TASK_ASSIGN', 'D_EXECUTOR'), ('ACT_WORKER_OPEN', 'BLOCK'), ('ACT_WORKER_OPEN', 'D_MEMO'), ('D_ARCHIVE', 'ACT_ARCHIVE'),
-            ('D_ARCHIVE', 'DONE'), ('D_ARCHIVED', 'BLOCK'), ('D_ARCHIVED', 'DONE'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'),
-            ('D_AUDIT_CONFIG', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'), ('D_AUDIT_CONFIG', 'BLOCK'), ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'),
-            ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'),
-            ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'), ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'),
-            ('D_AUDIT_REPLY', 'BLOCK'), ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'), ('D_AUTHORITY_TRANSFER', 'BLOCK'), ('D_AUTHORITY_TRANSFER', 'ACT_STATE_READBACK'),
-            ('D_BOOT', 'ACT_BOOT_PLAN'), ('D_BOOT', 'ACT_TASK_ASSIGN'), ('D_CHILD_POOL', 'ACT_CHILD_ADVICE'), ('D_CHILD_POOL', 'ACT_CHILD_DIRECT'),
-            ('D_CHILD_POOL', 'BLOCK'), ('D_CHILD_POOL', 'D_OUTPUT_EXPLICIT'), ('D_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'), ('D_CONTEXT_GEN', 'ACT_CONTEXT_GEN'),
-            ('D_CONTROL', 'BLOCK'), ('D_CONTROL', 'M06'), ('D_CONTROL', 'M07'), ('D_CONTROL', 'M12'),
-            ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('D_DECISION_ADVICE', 'ACT_DECISION_ADVICE'), ('D_DECISION_ADVICE', 'ACT_DECISION_DIRECT'),
-            ('D_DOC', 'M07'), ('D_DOC', 'M12'), ('D_DOC', 'M15'), ('D_ENHANCED', 'D_ENHANCED_HOST'),
-            ('D_ENHANCED', 'M03'), ('D_ENHANCED_HOST', 'ACT_NATIVE'), ('D_ENHANCED_HOST', 'BLOCK'), ('D_ENHANCED_HOST', 'M03'),
-            ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('D_EXECUTOR', 'BLOCK'), ('D_EXECUTOR', 'D_CHILD_POOL'),
-            ('D_EXECUTOR', 'D_OUTPUT_EXPLICIT'), ('D_GIT', 'BLOCK'), ('D_GIT', 'M16'), ('D_INDEPENDENT_CHILD', 'ACT_OUTPUT_WAIT'),
-            ('D_INDEPENDENT_CHILD', 'D_ROLE_SELECT'), ('D_MEMO', 'ACT_MEMO'), ('D_MEMO', 'M10'), ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'),
-            ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'), ('D_NATIVE_RECON', 'ACT_STATE_READBACK'), ('D_NEW_CHILD', 'ACT_CHILD_WAIT'), ('D_NEW_CHILD', 'ACT_ROLE_NA'),
-            ('D_NEW_CHILD', 'D_ROLE_SELECT'), ('D_OUTPUT_EXPLICIT', 'ACT_OUTPUT_ADVICE'), ('D_OUTPUT_EXPLICIT', 'D_NEW_CHILD'), ('D_OUTPUT_RESULT', 'ACT_OUTPUT_CHILD'),
-            ('D_OUTPUT_RESULT', 'ACT_OUTPUT_HOLD'), ('D_OUTPUT_RESULT', 'ACT_OUTPUT_NO'), ('D_OUTPUT_RESULT', 'BLOCK'), ('D_PLAN', 'ACT_PLAN'),
-            ('D_PLAN', 'D_RECON'), ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'D_CONTEXT_GEN'), ('D_PLAN_SAVED', 'BLOCK'),
-            ('D_PLAN_SAVED', 'D_RECON'), ('D_RECON', 'ACT_RECON_PLAN'), ('D_RECON', 'D_BOOT'), ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'),
-            ('D_RECOVERY_GATE', 'M08'), ('D_ROLE_CAPACITY', 'ACT_BUDGET_APPROVAL'), ('D_ROLE_CAPACITY', 'ACT_ROLE_RESERVE'), ('D_ROLE_CAPACITY', 'BLOCK'),
-            ('D_ROLE_SELECT', 'ACT_ROLE_ADVICE'), ('D_ROLE_SELECT', 'ACT_ROLE_REVIEW'), ('D_ROOT_STORE', 'BLOCK'), ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'),
-            ('D_ROOT_STORE', 'D_NATIVE_RECON'), ('D_RULE_ACCESS', 'ACT_RULE_CONTEXT'), ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('D_VERIFY', 'BLOCK'),
-            ('D_VERIFY', 'M13'), ('D_VERIFY', 'M14'), ('D_WORKER_STORE', 'ACT_WORKER_OPEN'), ('D_WORKER_STORE', 'BLOCK'),
-            ('D_WORKER_STORE', 'D_MEMO'), ('M01', 'ACT_INITIAL_CLASSIFY'), ('M02', 'D_ENHANCED'), ('M03', 'M04'),
-            ('M04', 'D_ROOT_STORE'), ('M05', 'M06'), ('M06', 'D_RULE_ACCESS'), ('M07', 'D_DECISION_ADVICE'),
-            ('M08', 'M09'), ('M09', 'BLOCK'), ('M09', 'D_MEMO'), ('M09', 'D_WORKER_STORE'),
-            ('M10', 'BLOCK'), ('M10', 'M11'), ('M11', 'BLOCK'), ('M11', 'D_CONTROL_ADVICE'),
-            ('M12', 'BLOCK'), ('M12', 'D_EPOCH_ADVICE'), ('M13', 'BLOCK'), ('M13', 'D_REPAIR'),
-            ('D_REPAIR', 'M12'), ('D_REPAIR', 'M01'), ('D_REPAIR', 'M07'), ('D_REPAIR', 'BLOCK'),
-            ('M14', 'BLOCK'), ('M14', 'D_DOC'), ('M15', 'BLOCK'), ('M15', 'D_GIT'),
-            ('M16', 'D_ARCHIVE'),
-        },
-    },
-}
+ROOT = Path(__file__).resolve().parents[1]
+WORKFLOW = Path(".github/workflows/multilingual-docs.yml")
+SCRIPT = "scripts/check-layer-04-workflow-maps.py"
+TEST = "tests/test_check_layer_04_workflow_maps.py"
+MAP_HEADERS = {"en": "## Workflow map", "zh": "## 工作流路线图"}
+LIST_HEADERS = {"en": "## Ordered module checklist", "zh": "## 有序模块清单"}
+ROUTE_LIST_HEADERS = {"en": "## Ordered route checklist", "zh": "## 路线顺序检查清单"}
+FENCE = re.compile(r"```mermaid\s*\n(.*?)\n```", re.S)
+NODE = re.compile(r"^\s*([A-Z][A-Z0-9_]*)\s*[\[({]", re.M)
+EDGE = re.compile(r"^\s*([A-Z][A-Z0-9_]*)\s*(?:--\s*(.*?)\s*-->|-->)\s*([A-Z][A-Z0-9_]*)\s*$", re.M)
+STEP = re.compile(r"(?m)^(\d+)\.\s+\*\*([A-Z]+\d{2}) —")
+LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+FENCED_CODE = re.compile(r"```[^\n]*\n.*?\n```", re.S)
+INLINE_CODE_SPAN = re.compile(r"(`+)(.*?)\1", re.S)
 
 
-PLAN_NODE_LABELS = {
-    'en': {'D_PLAN': 'User goal requests planning, exploration, or producing/updating a plan?',
-           'D_PLAN_SAVED': 'Plan Memory saved and read-verified?',
-           'D_ARCHIVE': 'Active plan Memory for this task exists?',
-           'D_PLAN_MATCH': 'Relevant active plan exists?', 'D_ARCHIVED': 'Archived plan verified?'},
-    'zh': {'D_PLAN': '用户目标是否要求规划、探索或制定／输出／更新计划？',
-           'D_PLAN_SAVED': '计划 Memory 是否写入并读回核验？',
-           'D_ARCHIVE': '是否存在本任务对应的活动计划 Memory？',
-           'D_PLAN_MATCH': '是否存在相关活动计划？', 'D_ARCHIVED': '归档计划是否已核验？'},
-}
-
-CONTROL_COMPLETION_LABEL = {
-    'en': 'normal post-implementation only; no recovery Slice pending',
-    'zh': '仅限正常实现后；不存在待放行的恢复 Slice',
-}
-
-SESSION_STATE_REQUIREMENTS = {
-    'en': ('Native Reconciliation', 'Native Authority Transfer', 'An outage alone never changes authority',
-           'Root-only access', 'read-only identity/status guards', 'compatible schema/history',
-           'Never recreate', 'block state-dependent work'),
-    'zh': ('Native 对账', 'Native 权威转移', '单纯故障绝不改变权威',
-           '仅 Root 访问', '只读身份/状态守卫', '兼容的 schema/history',
-           '不得把重建', '阻塞依赖 state 的工作'),
-}
-
-ENHANCED_NODE_LABEL_REQUIREMENTS = {
-    'en': {
-        'D_ENHANCED': ('Optional Enhanced operation needed?',),
-        'D_ENHANCED_HOST': ('Trusted identity', 'required operation guards'),
-        'ACT_NATIVE': ('Native candidate', 'verify prior Enhanced authority before use'),
-        'D_ROOT_STORE': ('Enhanced Root store', 'identity', 'guards', 'schema'),
-        'ACT_ROOT_OPEN': ('Open or resume Root store', 'audit as pending'),
-        'D_AUTHORITY_TRANSFER': ('previously canonical Enhanced record', 'transfer back to Native'),
-        'ACT_NATIVE_TRANSFER': ('Freeze Enhanced writers', 'complete canonical record', 'read back'),
-        'ACT_RECOVERY_RECHECK': ('Contract', 'Context', 'Decision', 'without reopening Mode', 'repeating a completed prompt'),
-        'ACT_STATE_READBACK': ('current canonical Session state', 'read it back before audit resolution'),
-        'D_REPAIR': ('narrow repair', 'material Contract change', 'material Decision change', 'blocked evidence'),
-        'D_NATIVE_RECON': ('Native currently canonical', 'Root comparison unresolved'),
-        'ACT_NATIVE_RECON': ('full set', 'exact comparison', 'supported differences'),
-        'D_RECOVERY_GATE': ('post-floor Control Continue', 'current', 'Control rule', 'relevant Epochs'),
-        'ACT_AUDIT_CONFIRM': ('selected canonical Root audit record', 'read it back'),
-        'D_WORKER_STORE': ('real child', 'identity bound'),
-        'ACT_WORKER_OPEN': ('Worker store', 'schema validation'),
-    },
-    'zh': {
-        'D_ENHANCED': ('是否需要可选 Enhanced 操作？',),
-        'D_ENHANCED_HOST': ('可信身份', '操作必需守卫'),
-        'ACT_NATIVE': ('Native 候选路径', '使用前核验既有 Enhanced 权威'),
-        'D_ROOT_STORE': ('Enhanced Root store', '身份', '守卫', 'Schema'),
-        'ACT_ROOT_OPEN': ('打开或恢复 Root store', '保持 pending'),
-        'D_AUTHORITY_TRANSFER': ('既有规范 Enhanced 记录', '转回 Native'),
-        'ACT_NATIVE_TRANSFER': ('冻结 Enhanced 写入者', '在途操作', '完整规范记录'),
-        'ACT_RECOVERY_RECHECK': ('Contract', 'Context', 'Decision', '不重开 Mode', '重复已完成提问'),
-        'ACT_STATE_READBACK': ('当前规范 Session state', '读回', '审计解析前'),
-        'D_REPAIR': ('窄修复', 'Contract 重大变化', 'Decision 重大变化', '证据阻塞'),
-        'D_NATIVE_RECON': ('Native 当前', 'Root 对账是否未决'),
-        'ACT_NATIVE_RECON': ('完整集合', '精确比较', '受支持差异'),
-        'D_RECOVERY_GATE': ('floor 后', 'Control Continue', '当前 Control 规则', '相关 Epoch'),
-        'ACT_AUDIT_CONFIRM': ('所选规范 Root 审计记录', '读回'),
-        'D_WORKER_STORE': ('真实子代理', 'allocation'),
-        'ACT_WORKER_OPEN': ('Worker 自身 store', 'Schema 核验'),
-    },
-}
-
-ENHANCED_EDGE_LABELS = {
-    'en': {
-        ('D_ENHANCED', 'MODE_CHECKPOINT'): 'no / Native default / N/A',
-        ('D_ENHANCED', 'D_ENHANCED_HOST'): 'yes / Enhanced needed',
-        ('D_ENHANCED_HOST', 'MODE_CHECKPOINT'): 'verified',
-        ('D_ENHANCED_HOST', 'ACT_NATIVE'): 'Native candidate; verify prior Enhanced authority before use',
-        ('D_ENHANCED_HOST', 'BLOCK'): 'required capability missing or unknown',
-        ('D_ROOT_STORE', 'D_NATIVE_RECON'): 'Enhanced selected; current identity and schema verified',
-        ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'): 'Native / Enhanced not selected / check existing authority',
-        ('ACT_ROOT_OPEN', 'ACT_STATE_READBACK'): 'open or resume Root store',
-        ('D_AUTHORITY_TRANSFER', 'ACT_STATE_READBACK'): 'no prior Enhanced authority / N/A',
-        ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'): 'prior Enhanced authority; transfer authorized',
-        ('D_AUTHORITY_TRANSFER', 'BLOCK'): 'history, freeze, or readback unknown / failed',
-        ('ACT_NATIVE_TRANSFER', 'ACT_STATE_READBACK'): 'complete record frozen, copied, and read back',
-        ('ACT_NATIVE_TRANSFER', 'BLOCK'): 'incomplete or indeterminate',
-        ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'): 'no Native history / N/A',
-        ('D_NATIVE_RECON', 'ACT_STATE_READBACK'): 'prior resolution current; no unresolved comparisons',
-        ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'): 'unresolved Native history or comparison',
-        ('ACT_NATIVE_RECON', 'ACT_STATE_READBACK'): 'exact comparison confirmed',
-        ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'): 'material resolution committed; recheck Contract',
-        ('ACT_NATIVE_RECON', 'BLOCK'): 'unsupported difference or incomplete review',
-        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): 're-establish canonical state',
-        ('D_ROOT_STORE', 'BLOCK'): 'required identity, guard, or schema unavailable',
-        ('ACT_ROOT_OPEN', 'BLOCK'): 'open or validation failed',
-        ('D_RECOVERY_GATE', 'ROUTE_SLICE'): 'no recovery floor / N/A or post-floor Continue is current for Control rule and relevant Epochs',
-        ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'): 'fresh or current Continue required',
-        ('ACT_AUDIT_CONFIRM', 'ROUTE_NEXT'): 'canonical Root audit record confirmed and read back',
-        ('ACT_AUDIT_CONFIRM', 'BLOCK'): 'canonical record missing or not confirmed',
-        ('D_WORKER_STORE', 'ACT_WORKER_OPEN'): 'Enhanced selected; identity bound; guards valid',
-        ('D_WORKER_STORE', 'D_MEMO'): 'Native / Enhanced not selected / N/A',
-        ('D_WORKER_STORE', 'BLOCK'): 'required identity, guard, or schema unavailable',
-        ('ACT_WORKER_OPEN', 'BLOCK'): 'open or validation failed',
-    },
-    'zh': {
-        ('D_ENHANCED', 'MODE_CHECKPOINT'): '否／Native 默认／不适用',
-        ('D_ENHANCED', 'D_ENHANCED_HOST'): '是／需要 Enhanced',
-        ('D_ENHANCED_HOST', 'MODE_CHECKPOINT'): '已验证',
-        ('D_ENHANCED_HOST', 'ACT_NATIVE'): 'Native 候选路径；使用前核验既有 Enhanced 权威',
-        ('D_ENHANCED_HOST', 'BLOCK'): '必需能力缺失或未知',
-        ('D_ROOT_STORE', 'D_NATIVE_RECON'): 'Enhanced 已选择；当前身份和 Schema 已核验',
-        ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'): 'Native／未选择 Enhanced／核验既有规范权威',
-        ('ACT_ROOT_OPEN', 'ACT_STATE_READBACK'): '对账后打开或恢复',
-        ('D_AUTHORITY_TRANSFER', 'ACT_STATE_READBACK'): '从未有 Enhanced 权威／不适用',
-        ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'): '已有 Enhanced 权威；转移获准且已核验',
-        ('D_AUTHORITY_TRANSFER', 'BLOCK'): '历史、冻结或读回未知／失败',
-        ('ACT_NATIVE_TRANSFER', 'ACT_STATE_READBACK'): '完整记录已冻结、写入并读回',
-        ('ACT_NATIVE_TRANSFER', 'BLOCK'): '不完整或结果不确定',
-        ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'): '无 Native 历史／不适用',
-        ('D_NATIVE_RECON', 'ACT_STATE_READBACK'): '先前裁决仍当前；无未决比较',
-        ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'): '存在未决 Native 历史或比较',
-        ('ACT_NATIVE_RECON', 'ACT_STATE_READBACK'): '精确比较已确认',
-        ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'): '实质差异已裁决并提交；重核 Contract',
-        ('ACT_NATIVE_RECON', 'BLOCK'): '差异不受支持或审阅不完整',
-        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): '重建规范 state',
-        ('D_ROOT_STORE', 'BLOCK'): '必需身份、守卫或 Schema 不可用',
-        ('ACT_ROOT_OPEN', 'BLOCK'): '打开或核验失败',
-        ('D_RECOVERY_GATE', 'ROUTE_SLICE'): '无恢复 floor／不适用，或 floor 后 Continue 对当前 Control 规则和相关 Epoch 仍有效',
-        ('D_RECOVERY_GATE', 'D_CONTROL_ADVICE'): '需要新的当前 Continue',
-        ('ACT_AUDIT_CONFIRM', 'ROUTE_NEXT'): '规范 Root 审计记录已确认并读回',
-        ('ACT_AUDIT_CONFIRM', 'BLOCK'): '规范记录缺失或未确认',
-        ('D_WORKER_STORE', 'ACT_WORKER_OPEN'): '已选择 Enhanced；身份已绑定；守卫有效',
-        ('D_WORKER_STORE', 'D_MEMO'): 'Native／未选择 Enhanced／不适用',
-        ('D_WORKER_STORE', 'BLOCK'): '必需身份、守卫或 Schema 不可用',
-        ('ACT_WORKER_OPEN', 'BLOCK'): '打开或核验失败',
-    },
-}
-
-RULE_CONTEXT_NODE_REQUIREMENTS = {
-    'en': {
-        'D_RULE_ACCESS': ('bounded current rule lookup',),
-        'ACT_RULE_CONTEXT': ('current node', 'mapped owner heading'),
-        'ACT_RULE_DIRECT': ('direct owner text', 'required references'),
-    },
-    'zh': {
-        'D_RULE_ACCESS': ('有界', '当前规则读取'),
-        'ACT_RULE_CONTEXT': ('当前节点', '映射的 owner 标题'),
-        'ACT_RULE_DIRECT': ('直接 owner 正文', '必需引用'),
-    },
-}
-
-RULE_CONTEXT_EDGE_LABELS = {
-    'en': {
-        ('D_RULE_ACCESS', 'ACT_RULE_CONTEXT'): 'yes / bounded lookup selected',
-        ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'): 'no / direct source / N/A',
-        ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'): 'loaded or unavailable / direct fallback',
-        ('ACT_RULE_DIRECT', 'RULE_NEXT'): 'current owner and required references confirmed',
-        ('ACT_RULE_DIRECT', 'BLOCK'): 'required owner unavailable',
-    },
-    'zh': {
-        ('D_RULE_ACCESS', 'ACT_RULE_CONTEXT'): '是／选择有界读取',
-        ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'): '否／直接来源／不适用',
-        ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'): '已读取或不可用／直接回退',
-        ('ACT_RULE_DIRECT', 'RULE_NEXT'): '已核验当前 owner 与必需引用',
-        ('ACT_RULE_DIRECT', 'BLOCK'): '必需 owner 不可用',
-    },
-}
-
-ADVISORY_EDGE_LABELS = {
-    'en': {
-        ('ACT_INITIAL_CLASSIFY', 'ROUTE_ENTRY'): 'direct sources confirmed / advice N/A before Root',
-        ('ACT_INITIAL_CLASSIFY', 'BLOCK'): 'required source unavailable',
-        ('D_DECISION_ADVICE', 'ACT_DECISION_ADVICE'): 'explicitly enabled and relevant',
-        ('D_DECISION_ADVICE', 'ACT_DECISION_DIRECT'): 'Native / disabled / unavailable / N/A',
-        ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'): 'current advice or failure / direct review',
-        ('ACT_DECISION_DIRECT', 'D_PLAN'): 'owner and facts confirmed',
-        ('ACT_DECISION_DIRECT', 'BLOCK'): 'required owner or evidence unavailable',
-        ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'): 'explicitly enabled',
-        ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'): 'Native / disabled / unavailable / N/A',
-        ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'): 'current advice or failure / direct review',
-        ('ACT_CONTROL_DIRECT', 'D_CONTROL'): 'explicit trusted outcome selected',
-        ('ACT_CONTROL_DIRECT', 'BLOCK'): 'required owner or essential evidence unobtainable',
-        ('D_CONTROL', 'ROUTE_CONTEXT'): 'Evidence-on-Demand (retrievable evidence pause)',
-        ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'): 'explicitly enabled',
-        ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'): 'Native / disabled / unavailable / N/A',
-        ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'): 'coverage hint or failure / direct verification',
-        ('ACT_EPOCH_DIRECT', 'D_VERIFY'): 'current evidence confirmed',
-        ('ACT_EPOCH_DIRECT', 'BLOCK'): 'required evidence unavailable',
-        ('M12', 'D_EPOCH_ADVICE'): 'verifier exchange visible / no child verifier required: N/A',
-    },
-    'zh': {
-        ('ACT_INITIAL_CLASSIFY', 'ROUTE_ENTRY'): '已核验直接来源／Root 前建议不适用',
-        ('ACT_INITIAL_CLASSIFY', 'BLOCK'): '必需来源不可用',
-        ('D_DECISION_ADVICE', 'ACT_DECISION_ADVICE'): '明确启用且与当前问题相关',
-        ('D_DECISION_ADVICE', 'ACT_DECISION_DIRECT'): 'Native／关闭／不可用／不适用',
-        ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'): '建议当前或失败／直接核验',
-        ('ACT_DECISION_DIRECT', 'D_PLAN'): '已核验 owner 和事实',
-        ('ACT_DECISION_DIRECT', 'BLOCK'): '必需 owner 或证据不可用',
-        ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'): '明确启用',
-        ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'): 'Native／关闭／不可用／不适用',
-        ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'): '建议当前或失败／直接核验',
-        ('ACT_CONTROL_DIRECT', 'D_CONTROL'): '已选择可信显式结果',
-        ('ACT_CONTROL_DIRECT', 'BLOCK'): '必需 owner 或关键证据不可取得',
-        ('D_CONTROL', 'ROUTE_CONTEXT'): 'Evidence-on-Demand（可补证据暂停）',
-        ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'): '明确启用',
-        ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'): 'Native／关闭／不可用／不适用',
-        ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'): '覆盖提示或失败／直接验证',
-        ('ACT_EPOCH_DIRECT', 'D_VERIFY'): '已核验当前证据',
-        ('ACT_EPOCH_DIRECT', 'BLOCK'): '必需证据不可用',
-        ('M12', 'D_EPOCH_ADVICE'): 'verifier 通信可见／无需子代理 verifier：N/A',
-    },
-}
-
-MULTI_AGENT_EDGE_LABEL_REQUIREMENTS = {
-    'en': {
-        ('D_CHILD_POOL', 'D_OUTPUT_EXPLICIT'): (
-            'suitable child busy; assess output before waiting',
-            'no suitable existing child; a new child may be required',
-        ),
-        ('D_ROLE_SELECT', 'ACT_ROLE_REVIEW'): (
-            'explicit creation/role; skip role advice',
-            'context generation failed; direct facts suffice; no downstream advice',
-        ),
-        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): ('re-establish canonical state',),
-        ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'): ('confirmed and read back',),
-        ('ACT_STATE_READBACK', 'BLOCK'): ('unavailable / failed',),
-        ('D_REPAIR', 'M12'): ('new fingerprint', 'evidence-backed no-failure N/A'),
-        ('D_REPAIR', 'M01'): ('material Contract change',),
-        ('D_REPAIR', 'M07'): ('material Decision change within Contract',),
-        ('D_REPAIR', 'BLOCK'): ('required diagnosis, authorization, scope, or handoff unavailable',),
-    },
-    'zh': {
-        ('D_CHILD_POOL', 'D_OUTPUT_EXPLICIT'): (
-            '合适子代理忙碌；先评估输出再等待',
-            '没有合适现有子代理；可能需要创建新代理',
-        ),
-        ('D_ROLE_SELECT', 'ACT_ROLE_REVIEW'): (
-            '用户明确要求创建／指定职责；跳过职责建议',
-            '上下文生成失败但直接事实足够；不发下游建议',
-        ),
-        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): ('重建规范 state',),
-        ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'): ('已确认并读回',),
-        ('ACT_STATE_READBACK', 'BLOCK'): ('不可用／失败',),
-        ('D_REPAIR', 'M12'): ('新指纹', '有依据的无失败 N/A'),
-        ('D_REPAIR', 'M01'): ('Contract 重大变化',),
-        ('D_REPAIR', 'M07'): ('Contract 内 Decision 重大变化',),
-        ('D_REPAIR', 'BLOCK'): ('必需诊断、授权、范围或 handoff 不可用',),
-    },
-}
-
-SINGLE_AGENT_EDGE_LABEL_REQUIREMENTS = {
-    'en': {
-        ('D_CONTEXT_GEN', 'ACT_CONTEXT_GEN'): ('unresolved downstream decision needs background',),
-        ('D_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'): ('explicit direction settles choices / no downstream advice: N/A',),
-        ('ACT_CONTEXT_GEN', 'S06'): ('reviewed context and exact input hash are current',),
-        ('ACT_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'): ('failed / insufficient facts; direct review only',),
-        ('ACT_CONTEXT_DIRECT', 'S06'): ('verified facts suffice / explicit instruction honored',),
-        ('ACT_CONTEXT_DIRECT', 'BLOCK'): ('essential facts unavailable or conflicting',),
-        ('D_TASK_ASSIGN', 'ACT_EXECUTOR_ROOT'): ('explicit Root or no conflicting executor direction; local deterministic route',),
-        ('D_TASK_ASSIGN', 'ACT_EXECUTOR_CONFLICT'): ('explicit sub_agent conflicts with locked Single; return for review',),
-        ('ACT_EXECUTOR_CONFLICT', 'BLOCK'): ('unresolved conflict; block without silent Root fallback',),
-        ('D_OUTPUT_EXPLICIT', 'S07'): ('explicit Root/output direction; skip matching advice',),
-        ('D_OUTPUT_EXPLICIT', 'ACT_OUTPUT_ADVICE'): ('route unsettled; assess output independently',),
-        ('ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_DIRECT'): ('unavailable or failed; direct owner review only',),
-        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_NO'): ('no / verified current facts',),
-        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_HOLD'): ('yes / unresolved route; Single-Agent topology boundary',),
-        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_DIRECT'): ('insufficient evidence / conflicting facts',),
-        ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_NO'): ('verified facts establish no',),
-        ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_HOLD'): ('verified facts establish yes',),
-        ('ACT_OUTPUT_DIRECT', 'BLOCK'): ('facts missing, conflicting, or still unresolved',),
-        ('ACT_OUTPUT_HOLD', 'BLOCK'): ('hold and report topology boundary; stop before output',),
-        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): ('re-establish canonical state',),
-        ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'): ('confirmed and read back',),
-        ('ACT_STATE_READBACK', 'BLOCK'): ('unavailable / failed',),
-        ('D_REPAIR', 'S10'): ('new fingerprint', 'evidence-backed no-failure N/A'),
-        ('D_REPAIR', 'S01'): ('material Contract change',),
-        ('D_REPAIR', 'S06'): ('material Decision change within Contract',),
-        ('D_REPAIR', 'BLOCK'): ('required diagnosis, authorization, scope, or handoff unavailable',),
-    },
-    'zh': {
-        ('D_CONTEXT_GEN', 'ACT_CONTEXT_GEN'): ('未决的下游决策需要背景',),
-        ('D_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'): ('明确指令已定分支／无需下游建议：不适用',),
-        ('ACT_CONTEXT_GEN', 'S06'): ('上下文已审阅且精确输入 Hash 仍当前',),
-        ('ACT_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'): ('失败／事实不足；仅直接审阅',),
-        ('ACT_CONTEXT_DIRECT', 'S06'): ('已核实事实足够／遵循明确指令',),
-        ('ACT_CONTEXT_DIRECT', 'BLOCK'): ('必需事实缺失或冲突',),
-        ('D_TASK_ASSIGN', 'ACT_EXECUTOR_ROOT'): ('用户明确指定 Root 或无冲突执行主体指令；本地确定性路由',),
-        ('D_TASK_ASSIGN', 'ACT_EXECUTOR_CONFLICT'): ('明确 sub_agent 与已锁定 Single 冲突；交 Root 审阅',),
-        ('ACT_EXECUTOR_CONFLICT', 'BLOCK'): ('冲突未解决；阻塞且不得静默回退 Root',),
-        ('D_OUTPUT_EXPLICIT', 'S07'): ('Root/输出指令已明确决定路由；跳过对应建议',),
-        ('D_OUTPUT_EXPLICIT', 'ACT_OUTPUT_ADVICE'): ('输出路由未定；独立评估输出',),
-        ('ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_DIRECT'): ('不可用或失败；仅直接审阅 owner',),
-        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_NO'): ('no／当前事实已核实',),
-        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_HOLD'): ('yes／路由未定；Single-Agent 拓扑边界',),
-        ('D_OUTPUT_RESULT', 'ACT_OUTPUT_DIRECT'): ('证据不足／事实冲突',),
-        ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_NO'): ('已核实事实支持 no',),
-        ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_HOLD'): ('已核实事实支持 yes',),
-        ('ACT_OUTPUT_DIRECT', 'BLOCK'): ('事实缺失、冲突或仍未决',),
-        ('ACT_OUTPUT_HOLD', 'BLOCK'): ('挂起并报告拓扑边界；不得继续输出',),
-        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): ('重建规范 state',),
-        ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'): ('已确认并读回',),
-        ('ACT_STATE_READBACK', 'BLOCK'): ('不可用／失败',),
-        ('D_REPAIR', 'S10'): ('新指纹', '有依据的无失败 N/A'),
-        ('D_REPAIR', 'S01'): ('Contract 重大变化',),
-        ('D_REPAIR', 'S06'): ('Contract 内 Decision 重大变化',),
-        ('D_REPAIR', 'BLOCK'): ('必需诊断、授权、范围或 handoff 不可用',),
-    },
-}
-
-CONTEXT_PLAN_REQUIREMENTS = {
-    'en': ('active plan', 'plans/', 'read every match', 'freshness',
-           'current instructions take precedence', 'infer authorization from memory',
-           'block work depending on it', 'do not substitute filesystem files',
-           'ordinary reusable project knowledge', 'approved authoritative project files',
-           'read that authoritative owner directly'),
-    'zh': ('活动计划', 'plans/', '读取每个匹配项', '新鲜度',
-           '当前指令优先', '从记忆推断授权',
-           '阻塞依赖工作', '不得用文件替代该计划',
-           '普通可复用项目知识', '已批准的权威项目文件', '直接读取权威 owner'),
-}
-
-DECISION_CONTEXT_REQUIREMENTS = {
-    'en': ('explicit user direction', 'source provenance', 'input hash', 'policy binding',
-           'do not send it to downstream advice', 'verified facts are sufficient'),
-    'zh': ('用户明确指令', '来源溯源', '输入 Hash', '政策绑定',
-           '不得发送给下游建议', '已核实事实足够'),
-}
-MIGRATED_CHECKPOINT_REQUIREMENTS = {
-    'en': {
-        'planning-output-selection': ('planning intent', 'stored item', 'Not applicable', 'Archive is owned only by Acceptance'),
-        'bootstrap-selection': ('current task', 'role occupancy', 'skip conditions', 'Bootstrap/Refresh', 'does not reserve'),
-        'executor-selection': ('current facts', 'explicit direction', 'Single-Agent mode', 'two or more eligible idle candidates', 'never defaults to Root', 'does not reserve'),
-        'output-route-selection': ('shape, expected output volume', '`yes` means Root should route', 'Single-Agent mode', 'Multi-Agent mode', 'does not authorize creating a child'),
-        'role-reservation': ('Child Role Selection', 'Count Gate', 'State Record', 'unique reservation', 'exactly `+1`', 'all four roles', 'Slice release and child creation remain later, separate gates.'),
-        'advisory-selection': ('Root authorization', 'freshness', 'policy/input/context hashes', 'Task Assignment', 'advice never authorizes work'),
-        'repair-disposition': ('concrete failing evidence', 'affected paths', 'smallest repair candidate', 'new fingerprint', 'changed epochs'),
-        'documentation-impact': ('before/after fingerprints', 'Git metadata', 'required checks', 'evidence that remains reusable', 'Verification disposition'),
-    },
-    'zh': {
-        'planning-output-selection': ('规划意图', '存储项', 'Not applicable', '归档只由 Acceptance 负责'),
-        'bootstrap-selection': ('当前任务', '角色占用', '跳过条件', 'Bootstrap/Refresh', '不预留'),
-        'executor-selection': ('当前事实', '明确指令', 'Single-Agent 模式', '两个或更多合格空闲候选', '绝不默认 Root', '不预留'),
-        'output-route-selection': ('请求形式、预期输出量', '`yes` 表示大型输出应避免由 Root 直接物化', 'Single-Agent 模式', 'Multi-Agent 模式', '不授权创建子代理'),
-        'role-reservation': ('Child Role Selection', 'Count Gate', 'State Record', '唯一预留', '恰好 `+1`', '四种角色', 'Slice 放行和子代理创建仍是后续独立门禁。'),
-        'advisory-selection': ('Root 授权', '新鲜度', '政策/输入/上下文 Hash', 'Task Assignment', '不授权工作'),
-        'repair-disposition': ('具体失败证据', '受影响路径', '最小修复候选', '新指纹', '变更 epoch'),
-        'documentation-impact': ('变更前后指纹', 'Git 元数据', '必需检查', '仍可复用的证据', 'Verification 处置结果'),
-    },
-}
-CHECKPOINT_LINK_RE = re.compile(r'\[[^\]]+\]\(([^)]+)\)')
-
-AUDIT_NODE_LABEL_REQUIREMENTS = {
-    'en': {
-        'D_AUDIT_CONFIG': ('valid explicit', 'completed', 'pending', 'unasked'),
-        'ACT_AUDIT_PROMPT': ('fixed audit question', 'only if unasked', 'deadline'),
-        'D_AUDIT_REPLY': ('valid reply', 'invalid/ambiguous', 'verified timeout', 'unavailable'),
-        'ACT_AUDIT_REPLY': ('valid reply', 'selected root fields'),
-        'ACT_AUDIT_CLARIFY': ('only invalid/ambiguous fields', 'pending prompt'),
-        'D_AUDIT_CORRECTION': ('valid correction', 'still invalid/ambiguous', 'explicit default'),
-        'ACT_AUDIT_DEFAULT': ('explicit root balanced/milestone_only', 'preserve worker value', 'timeout history'),
-        'ACT_AUDIT_WAIT': ('before deadline', 'pending state'),
-        'ACT_AUDIT_TIMEOUT': ('no reply', 'actual elapsed time >=60s', 'default root balanced/milestone_only', 'preserve worker or fill full'),
-    },
-    'zh': {
-        'D_AUDIT_CONFIG': ('有效显式', '已完成', 'pending', 'unasked'),
-        'ACT_AUDIT_PROMPT': ('固定审计问题', '仅在 unasked', '截止时间'),
-        'D_AUDIT_REPLY': ('有效答复', '无效/歧义答复', '已验证超时', '不可用'),
-        'ACT_AUDIT_REPLY': ('有效答复', '所选 root 字段'),
-        'ACT_AUDIT_CLARIFY': ('仅澄清无效/歧义字段', 'pending 提问'),
-        'D_AUDIT_CORRECTION': ('有效更正', '仍无效/歧义', '明确选择默认值'),
-        'ACT_AUDIT_DEFAULT': ('root 明确选择 balanced/milestone_only', '保留 worker 值', '超时历史'),
-        'ACT_AUDIT_WAIT': ('截止前等待', '保留 pending 状态'),
-        'ACT_AUDIT_TIMEOUT': ('无回复', '实际经过>=60秒', 'root 默认 balanced/milestone_only', '保留 worker 值，缺失才补 full'),
-    },
-}
-
-AUDIT_NODE_LABELS = {
-    'en': {
-        'D_AUDIT_CONFIG': 'Reuse valid explicit/completed settings, resume pending prompt, or ask if unasked?',
-        'ACT_AUDIT_PROMPT': 'Ask fixed audit question only if unasked; record actual prompt and deadline',
-        'D_AUDIT_REPLY': 'Valid reply, invalid/ambiguous reply, verified timeout, or unavailable?',
-        'ACT_AUDIT_REPLY': 'Record valid reply; update only selected Root fields',
-        'ACT_AUDIT_CLARIFY': 'Clarify only invalid/ambiguous fields; retain pending prompt',
-        'D_AUDIT_CORRECTION': 'Valid correction, still invalid/ambiguous, or explicit default?',
-        'ACT_AUDIT_DEFAULT': 'Record explicit Root balanced/milestone_only; preserve Worker value and timeout history',
-        'ACT_AUDIT_WAIT': 'Wait before deadline; preserve pending state',
-        'ACT_AUDIT_TIMEOUT': 'No reply and actual elapsed time >=60s; default Root balanced/milestone_only; preserve Worker or fill full',
-    },
-    'zh': {
-        'D_AUDIT_CONFIG': '复用有效显式／已完成配置、恢复 pending 提问，还是仅在 unasked 时询问？',
-        'ACT_AUDIT_PROMPT': '仅在 unasked 时调用固定审计问题；记录实际提问时间与截止时间',
-        'D_AUDIT_REPLY': '有效答复、无效/歧义答复、已验证超时或不可用？',
-        'ACT_AUDIT_REPLY': '记录有效答复；仅更新所选 Root 字段',
-        'ACT_AUDIT_CLARIFY': '仅澄清无效/歧义字段；保留 pending 提问',
-        'D_AUDIT_CORRECTION': '有效更正、仍无效/歧义或明确选择默认值？',
-        'ACT_AUDIT_DEFAULT': '记录 Root 明确选择 balanced/milestone_only；保留 Worker 值和超时历史',
-        'ACT_AUDIT_WAIT': '截止前等待；保留 pending 状态',
-        'ACT_AUDIT_TIMEOUT': '无回复且实际经过>=60秒；Root 默认 balanced/milestone_only；保留 Worker 值，缺失才补 full',
-    },
-}
-
-AUDIT_EDGE_LABELS = {
-    'en': {
-        ('D_AUDIT_CONFIG', 'AUDIT_NEXT'): 'yes / migration reuse',
-        ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'): 'unasked / first eligible question only',
-        ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'): 'pending / no reply observed; resume original deadline',
-        ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'): 'pending / invalid reply already observed',
-        ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'): 'invalid config / focused clarification',
-        ('D_AUDIT_CONFIG', 'BLOCK'): 'unavailable / unresolved schema conflict',
-        ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'): 'valid actual reply',
-        ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'): 'invalid / ambiguous reply',
-        ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'): 'same prompt / original deadline',
-        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'): 'valid correction',
-        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'): 'still invalid / ambiguous',
-        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'): 'explicit default choice',
-        ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'): 'pending / before deadline',
-        ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'): 'check reply / retain deadline',
-        ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'): 'no reply / actual elapsed >=60s',
-        ('D_AUDIT_REPLY', 'BLOCK'): 'prompt or timing unavailable',
-    },
-    'zh': {
-        ('D_AUDIT_CONFIG', 'AUDIT_NEXT'): '是／迁移后复用',
-        ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'): 'unasked／仅首次符合条件时询问',
-        ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'): 'pending／尚无答复；恢复原截止时间',
-        ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'): 'pending／已观察到无效答复',
-        ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'): '配置无效／定向澄清',
-        ('D_AUDIT_CONFIG', 'BLOCK'): '不可用／未解决的 schema 冲突',
-        ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'): '有效实际答复',
-        ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'): '无效／歧义答复',
-        ('ACT_AUDIT_CLARIFY', 'D_AUDIT_CORRECTION'): '沿用原问题／原截止时间',
-        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'): '有效更正',
-        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'): '仍无效／歧义',
-        ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'): '用户明确选择默认值',
-        ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'): 'pending／尚未到期',
-        ('ACT_AUDIT_WAIT', 'D_AUDIT_REPLY'): '检查答复／保留截止时间',
-        ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'): '无回复／实际经过>=60秒',
-        ('D_AUDIT_REPLY', 'BLOCK'): '提问或计时不可用',
-    },
-}
+def linked_paths(text: str) -> set[str]:
+    operational = INLINE_CODE_SPAN.sub("", FENCED_CODE.sub("", text))
+    return {unquote(raw.split("#", 1)[0].split("?", 1)[0]) for raw in LINK.findall(operational)}
 
 
-def section(content: str, header: str) -> tuple[str, int] | None:
-    """Locate exactly one top-level section, returning body and heading offset."""
-    hits = list(re.finditer(r'(?m)^' + re.escape(header) + r'\s*$', content))
-    if len(hits) != 1:
+def fail(errors: list[str], path: Path, message: str) -> None:
+    errors.append(f"{path}: {message}")
+
+
+def get_section(text: str, header: str) -> str | None:
+    lines = text.splitlines()
+    if lines.count(header) != 1:
         return None
-    match = hits[0]
-    following = re.search(r'(?m)^## ', content[match.end():])
-    end = match.end() + following.start() if following else len(content)
-    return content[match.end():end], match.start()
+    start = lines.index(header) + 1
+    end = next((i for i in range(start, len(lines)) if lines[i].startswith("## ")), len(lines))
+    return "\n".join(lines[start:end])
 
 
-def parse_map(raw: str, path: Path, errors: list[str]) -> tuple[dict[str, str], set[tuple[str, str]]]:
-    lines = raw.splitlines()
-    if not lines or not re.match(r'^flowchart\s+(?:TD|TB|LR)\s*$', lines[0].strip()):
-        errors.append(f'{path}: Mermaid map must begin with flowchart TD/TB/LR')
-    nodes: dict[str, str] = {}
-    edges: set[tuple[str, str]] = set()
-    for number, line in enumerate(lines, 1):
-        match = NODE_RE.match(line)
+def parse_diagram(text: str, path: Path, lang: str, errors: list[str]):
+    section = get_section(text, MAP_HEADERS[lang])
+    if section is None:
+        fail(errors, path, f"expected exactly one {MAP_HEADERS[lang]}")
+        return {}, set(), {}, ""
+    diagrams = FENCE.findall(section)
+    if len(diagrams) != 1:
+        fail(errors, path, "expected exactly one mermaid flowchart")
+        return {}, set(), {}, ""
+    raw = diagrams[0]
+    declarations = NODE.findall(raw)
+    if len(declarations) != len(set(declarations)):
+        fail(errors, path, "duplicate map node ID")
+    labels: dict[str, str] = {}
+    for line in raw.splitlines():
+        match = re.match(r"^\s*([A-Z][A-Z0-9_]*)\s*[\[({](.*?)[\])}]\s*$", line)
         if match:
-            name = match.group(1)
-            if name in nodes:
-                errors.append(f'{path}: duplicate Mermaid node {name} on map line {number}')
-            nodes[name] = line
-        if '-->' in line:
-            left, right = line.split('-->', 1)
-            src_match = ID_RE.match(left.strip())
-            dst_match = ID_RE.match(right.strip())
-            if src_match and dst_match:
-                edges.add((src_match.group(), dst_match.group()))
-            else:
-                errors.append(f'{path}: unparsable Mermaid edge on map line {number}')
+            labels[match.group(1)] = match.group(2)
+    edges = {(m.group(1), m.group(3)) for m in EDGE.finditer(raw)}
     for source, target in edges:
-        if source not in nodes or target not in nodes:
-            errors.append(f'{path}: edge {source} -> {target} refers to undefined node')
-    return nodes, edges
+        if source not in declarations or target not in declarations:
+            fail(errors, path, f"edge references undeclared node {source} -> {target}")
+    return labels, edges, {node: set() for node in declarations}, raw
 
 
-def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tuple[set[str], set[tuple[str, str]]] | None:
-    filename = f'coding-{route}{"_zh_cn" if lang == "zh" else ""}.md'
-    path = root / ROUTES / filename
+def graph_checks(path: Path, lang: str, labels: dict[str, str], edges: set[tuple[str, str]], raw: str, start: str, errors: list[str], final_checkpoint: str | None = None, require_skip: bool = True) -> None:
+    nodes = set(labels)
+    if start not in nodes:
+        fail(errors, path, f"missing map entry checkpoint {start}")
+        return
+    adjacency = {node: set() for node in nodes}
+    for source, target in edges:
+        adjacency.setdefault(source, set()).add(target)
+    reached = set()
+    pending = [start]
+    while pending:
+        node = pending.pop()
+        if node in reached:
+            continue
+        reached.add(node)
+        pending.extend(adjacency.get(node, set()) - reached)
+    for node in sorted(nodes - reached):
+        fail(errors, path, f"orphan/unreachable map node {node}")
+    for node, label in labels.items():
+        terminal_label = re.fullmatch(r"\s*(?:complete|blocked)\s*", label, re.I)
+        terminal_id = node in {"BLOCK", "DONE"} or node.endswith(("_BLOCK", "_DONE"))
+        if (terminal_label or terminal_id) and adjacency.get(node):
+            fail(errors, path, f"terminal node {node} has outgoing edges")
+    if not any(node == "BLOCK" or node.endswith("_BLOCK") or re.fullmatch(r"\s*blocked\s*", label, re.I) for node, label in labels.items()):
+        fail(errors, path, "map lacks explicit blocked result")
+    complete_node = (any(node == "DONE" or node.endswith("_DONE") or re.fullmatch(r"\s*complete\s*", label, re.I) for node, label in labels.items())
+                    or (final_checkpoint is not None and not adjacency.get(final_checkpoint)))
+    if not complete_node and final_checkpoint is None:
+        fail(errors, path, "map lacks explicit complete result")
+    if not any("needs_prerequisite" in label for label in labels.values()):
+        fail(errors, path, "map lacks explicit needs_prerequisite return")
+    if require_skip and not re.search(r"not_applicable|\bN/?A\b|不适用", raw, re.I):
+        fail(errors, path, "map lacks explicit conditional skip/not_applicable result")
+
+
+def module_checkpoint_ids(text: str, path: Path, lang: str, errors: list[str]) -> list[str]:
+    title = LIST_HEADERS[lang]
+    section = get_section(text, title)
+    if section is None:
+        fail(errors, path, f"expected exactly one {title}")
+        return []
+    matches = list(STEP.finditer(section))
+    numbers = [int(m.group(1)) for m in matches]
+    if numbers != list(range(1, len(matches) + 1)):
+        fail(errors, path, "module checklist numbering is not contiguous from 1")
+    ids = [m.group(2) for m in matches]
+    if len(ids) != len(set(ids)):
+        fail(errors, path, "duplicate checklist checkpoint ID")
+    return ids
+
+
+def graph_fingerprint(labels: dict[str, str], raw: str) -> str:
+    declared = [(match.group(1), labels.get(match.group(1), "")) for match in NODE.finditer(raw)]
+    edges = [(match.group(1), match.group(2) or "", match.group(3)) for match in EDGE.finditer(raw)]
+    payload = "\n".join(
+        [f"N {node} {label}" for node, label in sorted(declared)]
+        + [f"E {source} {label} {target}" for source, label, target in sorted(edges)]
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def check_module(root: Path, module: str, lang: str, errors: list[str]):
+    suffix = "_zh_cn" if lang == "zh" else ""
+    path = root / MODULES_DIR / f"{module}{suffix}.md"
     if not path.is_file():
-        errors.append(f'missing route file: {path}')
+        errors.append(f"missing module map/checklist: {path}")
         return None
-    content = path.read_text(encoding='utf-8')
-    expected_header = MAP_TITLE[lang]
-    map_section = section(content, expected_header)
-    checklist_section = section(content, CHECKLIST_TITLE[lang])
-    if map_section is None:
-        errors.append(f'{path}: exactly one {expected_header} section is required')
-        return None
-    if checklist_section is None:
-        errors.append(f'{path}: exactly one {CHECKLIST_TITLE[lang]} section is required')
-        return None
-    if map_section[1] >= checklist_section[1]:
-        errors.append(f'{path}: workflow map must precede the ordered checklist')
-    fences = list(FENCE_RE.finditer(content))
-    maps = [f for f in fences if f.group(1).strip() == 'mermaid']
-    if len(maps) != 1 or not (map_section[1] < maps[0].start() < checklist_section[1]):
-        errors.append(f'{path}: exactly one mermaid code block must be inside the workflow map section')
-        return None
-    nodes, edges = parse_map(maps[0].group(2).strip(), path, errors)
-    spec = ROUTE_SPECS[route]
-    prefix = spec['prefix']
-    steps = spec['steps']
-    expected = {f'{prefix}{n:02d}' for n in range(1, len(steps) + 1)} | spec['branches']
-    for name in sorted(expected - nodes.keys()):
-        errors.append(f'{path}: missing required map node {name}')
-    for name in sorted(nodes.keys() - expected):
-        errors.append(f'{path}: unexpected map node {name}')
-    for number, keyword in enumerate(steps, 1):
-        node = f'{prefix}{number:02d}'
-        if node in nodes and not re.search(r'\b' + re.escape(keyword) + r'\b', nodes[node], re.I):
-            errors.append(f'{path}: node {node} must identify {keyword} checkpoint')
-    for name, label in PLAN_NODE_LABELS[lang].items():
-        if name in nodes and label not in nodes[name]:
-            errors.append(f'{path}: node {name} must identify {label}')
-    for name, fragments in ENHANCED_NODE_LABEL_REQUIREMENTS[lang].items():
-        for fragment in fragments:
-            if name in nodes and fragment.casefold() not in nodes[name].casefold():
-                errors.append(f'{path}: node {name} must identify {fragment}')
-    recovery_fragments = (('Within S04', 'S01 Contract', 'S05 current Context', 'S06 Decision')
-                         if route == 'single-agent' and lang == 'en' else
-                         ('Within M04', 'M01 Contract', 'M06 current Context', 'M07 Decision')
-                         if route == 'multi-agent' and lang == 'en' else
-                         ('在 S04 内', 'S01 Contract', 'S05 当前 Context', 'S06 Decision')
-                         if route == 'single-agent' else
-                         ('在 M04 内', 'M01 Contract', 'M06 当前 Context', 'M07 Decision'))
-    for fragment in recovery_fragments:
-        if fragment.casefold() not in nodes.get('ACT_RECOVERY_RECHECK', '').casefold():
-            errors.append(f'{path}: ACT_RECOVERY_RECHECK must map the recovery review to {fragment}')
-    for name, fragments in RULE_CONTEXT_NODE_REQUIREMENTS[lang].items():
-        for fragment in fragments:
-            if name in nodes and fragment.casefold() not in nodes[name].casefold():
-                errors.append(f'{path}: node {name} must identify {fragment}')
-    audit_nodes = AUDIT_NODE_LABEL_REQUIREMENTS[lang]
-    for name, fragments in audit_nodes.items():
-        for fragment in fragments:
-            if name in nodes and fragment.casefold() not in nodes[name].casefold():
-                errors.append(f'{path}: node {name} must identify {fragment}')
-    audit_edges = dict(AUDIT_EDGE_LABELS[lang])
-    audit_edges[('D_AUDIT_CONFIG', 'ACT_AUDIT_CONFIRM')] = audit_edges.pop(('D_AUDIT_CONFIG', 'AUDIT_NEXT'))
-    map_text = maps[0].group(2)
-    for (source, target), label in audit_edges.items():
-        match = re.search(
-            r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+' + re.escape(target) + r'\s*$',
-            map_text,
-        )
-        if not match or label.casefold() not in match.group(1).casefold():
-            errors.append(f'{path}: audit edge {source} -> {target} must label {label}')
-    enhanced_edges = {
-        (source, f'{prefix}03' if target == 'MODE_CHECKPOINT' else
-         f'{prefix}05' if target == 'ROUTE_NEXT' else
-         f'{prefix}05' if target == 'ROUTE_CONTEXT' and route == 'single-agent' else
-         f'{prefix}05' if target == 'ROUTE_CONTEXT' else
-         'D_TASK_ASSIGN' if target == 'ROUTE_SLICE' and route == 'single-agent' else
-         f'{prefix}08' if target == 'ROUTE_SLICE' else
-         f'{prefix}05' if target == 'ROOT_CONTEXT' and route == 'single-agent' else
-         f'{prefix}05' if target == 'ROOT_CONTEXT' else target): label
-        for (source, target), label in ENHANCED_EDGE_LABELS[lang].items()
-    }
-    for (source, target), label in enhanced_edges.items():
-        if source not in nodes or target not in nodes:
-            continue
-        match = re.search(
-            r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+' + re.escape(target) + r'\s*$',
-            map_text,
-        )
-        if not match or label.casefold() not in match.group(1).casefold():
-            errors.append(f'{path}: enhanced edge {source} -> {target} must label {label}')
-    rule_context_edges = {
-        (source, 'ACT_PLAN_SCAN' if target == 'RULE_NEXT' else target): label
-        for (source, target), label in RULE_CONTEXT_EDGE_LABELS[lang].items()
-    }
-    for (source, target), label in rule_context_edges.items():
-        if source not in nodes or target not in nodes:
-            continue
-        match = re.search(
-            r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+' + re.escape(target) + r'\s*$',
-            map_text,
-        )
-        if not match or label.casefold() not in match.group(1).casefold():
-            errors.append(f'{path}: rule-context edge {source} -> {target} must label {label}')
-    advisory_edges = {
-        (source, f'{prefix}02' if target == 'ROUTE_ENTRY' else
-         f'{prefix}{5 if route == "single-agent" else 6:02d}' if target == 'ROUTE_CONTEXT' else target): label
-        for (source, target), label in ADVISORY_EDGE_LABELS[lang].items()
-    }
-    for (source, target), label in advisory_edges.items():
-        if source not in nodes or target not in nodes:
-            continue
-        match = re.search(
-            r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+' + re.escape(target) + r'\s*$',
-            map_text,
-        )
-        if not match or label.casefold() not in match.group(1).casefold():
-            errors.append(f'{path}: advisory edge {source} -> {target} must label {label}')
-    if route == 'multi-agent':
-        for (source, target), required_labels in MULTI_AGENT_EDGE_LABEL_REQUIREMENTS[lang].items():
-            labels = re.findall(
-                r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+'
-                + re.escape(target) + r'\s*$',
-                map_text,
-            )
-            for required_label in required_labels:
-                if not any(required_label.casefold() in label.casefold() for label in labels):
-                    errors.append(
-                        f'{path}: edge {source} -> {target} must preserve branch label {required_label}'
-                    )
-    if route == 'single-agent':
-        for (source, target), required_labels in SINGLE_AGENT_EDGE_LABEL_REQUIREMENTS[lang].items():
-            labels = re.findall(
-                r'(?m)^\s*' + re.escape(source) + r'\s+--\s+(.+?)\s+-->\s+'
-                + re.escape(target) + r'\s*$',
-                map_text,
-            )
-            for required_label in required_labels:
-                if not any(required_label.casefold() in label.casefold() for label in labels):
-                    errors.append(
-                        f'{path}: edge {source} -> {target} must preserve branch label {required_label}'
-                    )
-    completion_target = f'{prefix}10' if route == 'single-agent' else f'{prefix}12'
-    completion_match = re.search(
-        r'(?m)^\s*D_CONTROL\s+--\s+(.+?)\s+-->\s+' + re.escape(completion_target) + r'\s*$',
-        map_text,
-    )
-    if (not completion_match
-            or CONTROL_COMPLETION_LABEL[lang].casefold() not in completion_match.group(1).casefold()):
-        errors.append(f'{path}: D_CONTROL -> {completion_target} must restrict completion to normal post-implementation with no pending recovery Slice')
-    recorded_steps = [int(match.group(1)) for match in STEP_RE.finditer(checklist_section[0])]
-    wanted_steps = list(range(1, len(steps) + 1))
-    if recorded_steps != wanted_steps:
-        errors.append(f'{path}: checklist numbering must be {wanted_steps}, got {recorded_steps}')
-    context_step = steps.index('Context') + 1
-    context_match = next((match for match in STEP_RE.finditer(checklist_section[0])
-                          if int(match.group(1)) == context_step), None)
-    session_step = steps.index('Session') + 1
-    session_match = next((match for match in STEP_RE.finditer(checklist_section[0])
-                          if int(match.group(1)) == session_step), None)
+    text = path.read_text(encoding="utf-8")
+    ids = module_checkpoint_ids(text, path, lang, errors)
+    labels, edges, _, raw = parse_diagram(text, path, lang, errors)
+    prefix = MODULE_PREFIXES[module]
+    expected_ids = list(MODULE_CHECKPOINTS[module])
+    if ids != expected_ids:
+        fail(errors, path, f"module checklist must use the fixed ordered checkpoints {expected_ids}")
+    if len(ids) != len(set(ids)):
+        fail(errors, path, "checkpoint IDs are not unique")
+    for checkpoint in ids:
+        if checkpoint not in labels:
+            fail(errors, path, f"checklist checkpoint missing from map: {checkpoint}")
+    for source, target in MODULE_REQUIRED_EDGES[module]:
+        if (source, target) not in edges:
+            fail(errors, path, f"required module safety edge is missing: {source} -> {target}")
+    for node, fragment in MODULE_REQUIRED_LABEL_FRAGMENTS.get(module, {}).get(lang, {}).items():
+        if fragment not in labels.get(node, ""):
+            fail(errors, path, f"{node} is missing required safety label: {fragment}")
+    for (source, target), fragment in MODULE_REQUIRED_EDGE_LABELS.get(module, {}).get(lang, {}).items():
+        edge_label = next((match.group(2) or "" for match in EDGE.finditer(raw)
+                           if (match.group(1), match.group(3)) == (source, target)), None)
+        if edge_label is None or (fragment and fragment not in edge_label):
+            fail(errors, path, f"required safety edge label is missing or weakened: {source} -> {target} ({fragment})")
+    for checkpoint in labels:
+        if checkpoint.startswith(prefix) and re.fullmatch(prefix + r"\d{2}", checkpoint) and checkpoint not in ids:
+            fail(errors, path, f"map checkpoint is absent from checklist: {checkpoint}")
+    graph_checks(path, lang, labels, edges, raw, ids[0] if ids else "", errors,
+                 final_checkpoint=ids[-1] if ids else None)
+    if graph_fingerprint(labels, raw) != MODULE_GRAPH_SHA256[lang][module]:
+        fail(errors, path, "map nodes, critical labels, and directed branch edges differ from the fixed module contract")
+    if lang == "en":
+        for fragment in MODULE_SEMANTIC_FRAGMENTS.get(module, ()):
+            if fragment not in text:
+                fail(errors, path, f"module lost required semantic contract: {fragment}")
+    if ids and not re.search(r"complete|完成", get_section(text, LIST_HEADERS[lang]) or "", re.I):
+        fail(errors, path, "final module checkpoint must define its completion result")
+    # All modules resolve their own entry prerequisites first; all results must return, skip, complete, or block.
+    step_section = get_section(text, LIST_HEADERS[lang]) or ""
+    if not re.search(r"module-entry-resolution|模块入口解析", step_section, re.I):
+        fail(errors, path, "numbered entry step does not consume module-entry-resolution")
+    if "needs_prerequisite" not in raw:
+        fail(errors, path, "map has no needs_prerequisite node")
+    return ids, labels, edges, raw, text
 
-    def consumed_owner(match: re.Match[str] | None, slug: str, step_name: str) -> str | None:
-        if not match:
-            errors.append(f'{path}: missing {step_name} step for {slug} checkpoint')
-            return None
-        next_step = STEP_RE.search(checklist_section[0], match.end())
-        step_text = checklist_section[0][match.start():next_step.start() if next_step else None]
-        suffix = '_zh_cn' if lang == 'zh' else ''
-        expected = f'../layer-03-workflow-checkpoints/{slug}{suffix}.md'
-        targets = [unquote(target.strip()) for target in CHECKPOINT_LINK_RE.findall(step_text)]
-        if expected not in targets:
-            errors.append(f'{path}: {step_name} step must link the same-language {slug} checkpoint')
-            return None
-        owner = root / 'references/coding/layer-03-workflow-checkpoints' / f'{slug}{suffix}.md'
-        if not owner.is_file():
-            errors.append(f'{path}: consumed checkpoint is missing: {owner}')
-            return None
-        return owner.read_text(encoding='utf-8').casefold()
 
-    if context_match:
-        context_owner = consumed_owner(context_match, 'context-source-selection', 'Context')
-        decision_owner = consumed_owner(context_match, 'decision-context-selection', 'Context')
-        for owner_text, requirements, owner_slug in (
-            (context_owner, CONTEXT_PLAN_REQUIREMENTS[lang], 'context-source-selection'),
-            (decision_owner, DECISION_CONTEXT_REQUIREMENTS[lang], 'decision-context-selection'),
-        ):
-            if owner_text is None:
-                continue
-            for required in requirements:
-                if required.casefold() not in owner_text:
-                    errors.append(f'{path}: consumed {owner_slug} checkpoint must include requirement {required}')
-        context_end = STEP_RE.search(checklist_section[0], context_match.end())
-        context_text = checklist_section[0][context_match.start():context_end.start() if context_end else None].casefold()
-        context_route_terms = ((f'map its result to {prefix}'+('05' if route == 'single-agent' else '06'),
-                                'sourced current facts', 'not applicable', 'block') if lang == 'en' else
-                               (f'映射到 {prefix}'+('05' if route == 'single-agent' else '06'),
-                                '当前事实', 'not applicable', '阻塞'))
-        for required in context_route_terms:
-            if required.casefold() not in context_text:
-                errors.append(f'{path}: Context step must map its semantic result to {prefix}'+('05' if route == 'single-agent' else '06')+' with evidence, N/A, and block outcomes')
-    if session_match:
-        session_owner = consumed_owner(session_match, 'session-state-resolution', 'Session')
-        if session_owner is not None:
-            for required in SESSION_STATE_REQUIREMENTS[lang]:
-                if required.casefold() not in session_owner:
-                    errors.append(f'{path}: consumed session-state-resolution checkpoint must include requirement {required}')
-        session_end = STEP_RE.search(checklist_section[0], session_match.end())
-        session_text = checklist_section[0][session_match.start():session_end.start() if session_end else None].casefold()
-        session_route_terms = ((f'map the result to {prefix}04', 'conditional trigger is absent',
-                                'all successful paths consume only verified identity, current canonical record, and readback')
-                               if lang == 'en' else
-                               (f'映射到 {prefix}04', '条件触发器缺失',
-                                '所有成功路径均须先核实身份、当前规范记录并读回'))
-        for required in session_route_terms:
-            if required.casefold() not in session_text:
-                errors.append(f'{path}: Session step must map its result to {prefix}04 with canonical readback and trigger-based N/A')
-    # Validate migrated checkpoint material only through the route's verified same-language link.
-    all_route_steps = {
-        'planning-output-selection': 'Decision', 'bootstrap-selection': 'Decision',
-        'executor-selection': 'Decision', 'output-route-selection': 'Decision',
-        'role-reservation': 'Decision', 'advisory-selection': 'Decision',
-        'repair-disposition': 'Repair', 'documentation-impact': 'Documentation',
-    }
-    consumed_slugs = set(all_route_steps)
-    if route == 'single-agent':
-        consumed_slugs.discard('bootstrap-selection')
-        consumed_slugs.discard('role-reservation')
-    route_steps = {slug: step for slug, step in all_route_steps.items() if slug in consumed_slugs}
-    for slug in route_steps:
-        step_name = route_steps[slug]
-        step_index = steps.index(step_name) + 1
-        match = next((item for item in STEP_RE.finditer(checklist_section[0])
-                      if int(item.group(1)) == step_index), None)
-        owner_text = consumed_owner(match, slug, step_name)
-        if owner_text is not None:
-            for required in MIGRATED_CHECKPOINT_REQUIREMENTS[lang][slug]:
-                if required.casefold() not in owner_text:
-                    errors.append(f'{path}: consumed {slug} checkpoint must include requirement {required}')
-    decision_number = steps.index('Decision') + 1
-    decision_match = next((item for item in STEP_RE.finditer(checklist_section[0])
-                           if int(item.group(1)) == decision_number), None)
-    repair_number = steps.index('Repair') + 1
-    repair_match = next((item for item in STEP_RE.finditer(checklist_section[0])
-                         if int(item.group(1)) == repair_number), None)
-    for match, name, required_terms in (
-        (decision_match, 'Decision', (f'{prefix}{decision_number:02d}', 'Contract-consistent', 'authorized')) if lang == 'en'
-        else (decision_match, 'Decision', (f'{prefix}{decision_number:02d}', '符合 Contract', '授权')),
-        (repair_match, 'Repair', ('D_REPAIR', f'{prefix}{repair_number:02d}', 'evidence basis',
-                                  f'no-failure result returns to {prefix}'+('10' if route == 'single-agent' else '12'),
-                                  f'{prefix}01', f'{prefix}'+('06' if route == 'single-agent' else '07'), 'fingerprint', 'blocks')) if lang == 'en'
-        else (repair_match, 'Repair', ('D_REPAIR', f'{prefix}{repair_number:02d}', '有证据依据',
-                                       f'无失败结果也返回 {prefix}'+('10' if route == 'single-agent' else '12'),
-                                       f'{prefix}01', f'{prefix}'+('06' if route == 'single-agent' else '07'), '新指纹', '阻塞')),
-    ):
-        if match is None:
-            errors.append(f'{path}: missing {name} checklist mapping')
-            continue
-        next_match = STEP_RE.search(checklist_section[0], match.end())
-        step_text = checklist_section[0][match.start():next_match.start() if next_match else None].casefold()
-        for required in required_terms:
-            if required.casefold() not in step_text:
-                errors.append(f'{path}: {name} step must include route mapping requirement {required}')
-    for edge in sorted(spec['edges'] - edges):
-        errors.append(f'{path}: required map edge {edge[0]} -> {edge[1]} is missing')
-    for edge in sorted(edges - spec['edges']):
-        errors.append(f'{path}: unexpected map edge {edge[0]} -> {edge[1]}; update the approved route contract explicitly')
-    skip_edges = (
-        (('D_PLAN_MATCH', 'D_RECON'), ('D_RECON', 'D_CONTEXT_GEN'), ('D_PLAN', 'D_RECOVERY_GATE'), ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'), ('D_DOC', 'S13'), ('D_GIT', 'S14'),
-         ('D_ARCHIVE', 'DONE'))
-        if route == 'single-agent' else
-        (('D_BOOT', 'ACT_TASK_ASSIGN'), ('D_PLAN', 'D_RECON'), ('D_RECON', 'D_BOOT'), ('D_MEMO', 'M10'),
-         ('D_RULE_ACCESS', 'ACT_RULE_DIRECT'),
-         ('D_WORKER_STORE', 'D_MEMO'),
-         ('D_DOC', 'M15'), ('D_GIT', 'M16'), ('D_PLAN_MATCH', 'D_CONTEXT_GEN'), ('D_ARCHIVE', 'DONE'))
-    )
-    skip_words = (r'\b(?:no|N/A|disabled|not applicable)\b'
-                  if lang == 'en' else r'不适用|不需要|关闭|无变化')
-    for source, target in skip_edges:
-        match = re.search(
-            r'(?m)^\s*' + source + r'\s+--\s+(.+?)\s+-->\s+' + target,
-            maps[0].group(2),
-        )
-        if not match or not re.search(skip_words, match.group(1), re.I):
-            errors.append(f'{path}: conditional {source} -> {target} must label its skip/Not applicable path')
-    failure_label = (r'\b(?:no|failed|unavailable)\b'
-                     if lang == 'en' else r'失败|不可用')
-    for decision in ('D_PLAN_SAVED', 'D_ARCHIVED'):
-        blocked_result = re.search(
-            rf'(?m)^\s*{decision}\s+--\s+(.+?)\s+-->\s+BLOCK',
-            maps[0].group(2),
-        )
-        if not blocked_result or not re.search(failure_label, blocked_result.group(1), re.I):
-            errors.append(f'{path}: failed or unavailable {decision} Memory must route to BLOCK')
-    for action in ('ACT_PLAN_SCAN', 'ACT_PLAN_READ'):
-        blocked_action = re.search(
-            rf'(?m)^\s*{action}\s+--\s+(.+?)\s+-->\s+BLOCK',
-            maps[0].group(2),
-        )
-        if not blocked_action or not re.search(failure_label, blocked_action.group(1), re.I):
-            errors.append(f'{path}: unavailable or failed {action} must route to BLOCK')
-    # Extra edges are allowed only when they cannot bypass the permission/verification gates.
-    forbidden_shortcuts = {
-        (f'{prefix}03', f'{prefix}09'),
-        (f'{prefix}07', f'{prefix}12' if route == 'multi-agent' else f'{prefix}10'),
-        (f'{prefix}11' if route == 'multi-agent' else f'{prefix}09', 'DONE'),
-        ('BLOCK', 'DONE'),
-    }
-    for edge in sorted(forbidden_shortcuts & edges):
-        errors.append(f'{path}: unauthorized shortcut {edge[0]} -> {edge[1]}')
-    if route == 'single-agent' and (bad := spec['forbidden'].search(maps[0].group(2))):
-        errors.append(f'{path}: Single-Agent map contains an inapplicable child branch: {bad.group()}')
-    for target in ('BLOCK', 'DONE'):
-        if any(source == target for source, _ in edges):
-            errors.append(f'{path}: terminal node {target} must have no outgoing edges')
-    return set(nodes), edges
+def check_route(root: Path, route: str, lang: str, errors: list[str]):
+    suffix = "_zh_cn" if lang == "zh" else ""
+    path = root / ROUTES_DIR / f"{route}{suffix}.md"
+    if not path.is_file():
+        errors.append(f"missing route map/checklist: {path}")
+        return None
+    text = path.read_text(encoding="utf-8")
+    title = ROUTE_LIST_HEADERS[lang]
+    checklist = get_section(text, title)
+    if checklist is None:
+        fail(errors, path, f"expected exactly one {title}")
+        checklist = ""
+    matches = list(STEP.finditer(checklist))
+    prefix = TOP_PREFIXES[route]
+    expected_ids = [f"{prefix}{i:02d}" for i in range(1, 8)]
+    ids = [m.group(2) for m in matches]
+    if [int(m.group(1)) for m in matches] != list(range(1, 8)) or ids != expected_ids:
+        fail(errors, path, f"route checklist must have exactly ordered checkpoints {expected_ids}")
+    expected_modules = ROUTE_MODULES[route]
+    for i, match in enumerate(matches[:len(expected_modules)]):
+        step_text = checklist[match.start():matches[i + 1].start() if i + 1 < len(matches) else len(checklist)]
+        target = f"modules/{expected_modules[i]}{suffix}.md"
+        if target not in linked_paths(step_text):
+            fail(errors, path, f"{expected_ids[i]} must call its exact same-language module {target}")
+    labels, edges, _, raw = parse_diagram(text, path, lang, errors)
+    for checkpoint in expected_ids:
+        if checkpoint not in labels:
+            fail(errors, path, f"route checkpoint missing from map: {checkpoint}")
+    forbidden = "DE" if route == "coding-single-agent" else None
+    if forbidden and re.search(r"\bDE\d{2}\b|Child Creation|Child Dispatch|Worker Memo|子代理创建|子代理派发", raw):
+        fail(errors, path, "Single-Agent route map contains delegated-execution branch")
+    graph_checks(path, lang, labels, edges, raw, expected_ids[0], errors, require_skip=False)
+    allowed = {(expected_ids[i], expected_ids[i + 1]) for i in range(6)}
+    allowed.update({(expected_ids[4], expected_ids[4]), (expected_ids[5], expected_ids[4]),
+                    (expected_ids[6], "DONE"), ("NEEDS", "RESUME"), ("NEEDS", "BLOCK"),
+                    ("RESUME", "BLOCK"), ("ROUTE_ENTRY", "RESUME"), ("ROUTE_ENTRY", "BLOCK"),
+                    (expected_ids[1], "ROUTE_ENTRY"), (expected_ids[2], "ROUTE_ENTRY")})
+    allowed.update((f"{prefix}{i:02d}", target) for i in range(1, 8) for target in ("NEEDS", "BLOCK"))
+    allowed.update(("RESUME", checkpoint) for checkpoint in expected_ids)
+    for edge in edges - allowed:
+        fail(errors, path, f"unexpected route edge {edge[0]} -> {edge[1]}; possible gate bypass")
+    for edge in allowed - edges:
+        # These main-chain/continuation edges are required; outcome edges are conditional but still required.
+        if edge[0] in expected_ids or edge in {("NEEDS", "RESUME"), ("NEEDS", "BLOCK"), ("RESUME", "BLOCK"), ("ROUTE_ENTRY", "RESUME"), ("ROUTE_ENTRY", "BLOCK")}:
+            fail(errors, path, f"required route edge {edge[0]} -> {edge[1]} is missing")
+    if not re.search(r"ROUTE_ENTRY\s+--\s+[^\n]*resume original suspended caller[^\n]*-->\s+RESUME", raw, re.I) and lang == "en":
+        fail(errors, path, "Route Entry must return to the original suspended caller")
+    if lang == "zh" and not re.search(r"ROUTE_ENTRY\s+--\s+[^\n]*恢复原挂起调用位置[^\n]*-->\s+RESUME", raw):
+        fail(errors, path, "Route Entry must return to the original suspended caller")
+    for checkpoint in expected_ids:
+        guard = "recorded caller is" if lang == "en" else "记录目标为"
+        if not re.search(rf"RESUME\s+--\s+[^\n]*{re.escape(guard)}[^\n]*{checkpoint}[^\n]*-->\s+{checkpoint}", raw, re.I):
+            fail(errors, path, f"RESUME must have guarded recorded-target return for {checkpoint}")
+    if not re.search(r"RESUME\s+--\s+[^\n]*(?:record missing|conflicts|记录缺失|冲突)[^\n]*-->\s+BLOCK", raw, re.I):
+        fail(errors, path, "missing/conflicting continuation record must block")
+    return labels, edges
 
 
 def check_repository(root: Path) -> list[str]:
     errors: list[str] = []
-    for lang, policy_name in (('en', 'AGENTS.md'), ('zh', 'AGENTS_zh_cn.md')):
-        path = root / policy_name
-        if not path.is_file():
-            errors.append(f'missing policy file: {path}')
-            continue
-        policy = path.read_text(encoding='utf-8')
-        if RULE_TITLE[lang] not in policy:
-            errors.append(f'{path}: missing workflow-map ownership section {RULE_TITLE[lang]}')
-        if SCRIPT not in policy:
-            errors.append(f'{path}: required validator command is not documented')
-    for route in ROUTE_SPECS:
-        english = validate_route(root, route, 'en', errors)
-        chinese = validate_route(root, route, 'zh', errors)
-        if english and chinese and english != chinese:
-            errors.append(f'{route}: English and Chinese Mermaid node IDs/edges differ')
-    path = root / WORKFLOW
-    if not path.is_file():
-        errors.append(f'missing workflow file: {path}')
+    route_pairs: dict[str, tuple[set[str], set[tuple[str, str]]]] = {}
+    for route in ROUTE_MODULES:
+        en = check_route(root, route, "en", errors)
+        zh = check_route(root, route, "zh", errors)
+        if en and zh:
+            if (set(en[0]), en[1]) != (set(zh[0]), zh[1]):
+                fail(errors, root / ROUTES_DIR / f"{route}.md", "English/Chinese route map topology differs")
+            route_pairs[route] = (set(en[0]), en[1])
+    for module in MODULES:
+        en = check_module(root, module, "en", errors)
+        zh = check_module(root, module, "zh", errors)
+        if en and zh and (set(en[1]), en[2]) != (set(zh[1]), zh[2]):
+            fail(errors, root / MODULES_DIR / f"{module}.md", "English/Chinese module map topology differs")
+    for policy in ("AGENTS.md", "AGENTS_zh_cn.md"):
+        path = root / policy
+        if not path.is_file() or SCRIPT not in path.read_text(encoding="utf-8"):
+            errors.append(f"{path}: missing map validator rule/command")
+    validate_migration_manifest(root, errors)
+    workflow_path = root / WORKFLOW
+    if not workflow_path.is_file():
+        errors.append(f"missing CI workflow: {workflow_path}")
     else:
-        ci = path.read_text(encoding='utf-8')
-        for required in (SCRIPT, TEST, f'python3 {SCRIPT}',
-                         f"python3 -m unittest discover -s tests -p 'test_check_layer_04_workflow_maps.py'"):
+        ci = workflow_path.read_text(encoding="utf-8")
+        for required in (SCRIPT, TEST, f"python3 {SCRIPT}", f"python3 -m unittest discover -s tests -p '{Path(TEST).name}'"):
             if required not in ci:
-                errors.append(f'{path}: missing CI trigger or command: {required}')
-        if '"**/*.md"' not in ci and "'**/*.md'" not in ci:
-            errors.append(f'{path}: Markdown changes must trigger CI')
+                fail(errors, workflow_path, f"missing trigger or command {required}")
     return errors
+
+
+def validate_migration_manifest(root: Path, errors: list[str]) -> None:
+    path = root / MIGRATION_MANIFEST
+    if not path.is_file():
+        errors.append(f"missing development coverage manifest: {path}")
+        return
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        fail(errors, path, f"invalid JSON: {exc}")
+        return
+    if data.get("schema_version") != 1 or data.get("baseline_commit") != "675627dc":
+        fail(errors, path, "schema_version/baseline_commit mismatch")
+    routes = data.get("routes", {})
+    expected_steps = {"single-agent": [f"S{i:02d}" for i in range(1, 15)],
+                      "multi-agent": [f"M{i:02d}" for i in range(1, 17)]}
+    for route, source_steps in expected_steps.items():
+        route_data = routes.get(route, {})
+        entries = route_data.get("steps", [])
+        fingerprint = hashlib.sha256(json.dumps(entries, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+        if fingerprint != MANIFEST_ROUTE_SHA256[route]:
+            fail(errors, path, f"{route}: migration coverage differs from the fixed semantic mapping contract")
+        ids = [entry.get("source_step") for entry in entries]
+        if ids != source_steps:
+            fail(errors, path, f"{route} must map every legacy step in order: {source_steps}")
+        allowed_modules = set(ROUTE_MODULES[f"coding-{route}"])
+        for entry in entries:
+            mixed_contract = MIXED_STEP_CONTRACTS.get((route, entry.get("source_step")))
+            if mixed_contract:
+                if tuple(entry.get("semantic_substeps", [])) != mixed_contract["semantic_substeps"]:
+                    fail(errors, path, f"{route}/{entry.get('source_step')}: fixed mixed-step semantic substeps/order changed")
+                actual_sequence = tuple((target.get("module"), tuple(target.get("checkpoints", []))) for target in entry.get("targets", []))
+                if actual_sequence != mixed_contract["target_sequence"]:
+                    fail(errors, path, f"{route}/{entry.get('source_step')}: fixed mixed-step checkpoint call order/targets changed")
+                if entry.get("branch_or_return") != mixed_contract["branch_or_return"]:
+                    fail(errors, path, f"{route}/{entry.get('source_step')}: fixed branch/return distinction changed")
+            verification_contract = VERIFICATION_STEP_CONTRACTS.get((route, entry.get("source_step")))
+            if verification_contract:
+                actual_checkpoints = tuple(cp for target in entry.get("targets", []) for cp in target.get("checkpoints", []))
+                if actual_checkpoints != verification_contract["checkpoints"]:
+                    fail(errors, path, f"{route}/{entry.get('source_step')}: current passing Verification must pass through VR06")
+                if entry.get("branch_or_return") != verification_contract["return"]:
+                    fail(errors, path, f"{route}/{entry.get('source_step')}: current Verification return result is missing or altered")
+            if not entry.get("semantic_substeps") or not entry.get("targets"):
+                fail(errors, path, f"{route}/{entry.get('source_step')}: semantic substeps/targets required")
+            if not entry.get("branch_or_return"):
+                fail(errors, path, f"{route}/{entry.get('source_step')}: branch/return description required")
+            orders = [target.get("call_order") for target in entry.get("targets", [])]
+            if orders != list(range(1, len(orders) + 1)):
+                fail(errors, path, f"{route}/{entry.get('source_step')}: target call_order must be contiguous")
+            for target in entry.get("targets", []):
+                module = target.get("module")
+                if module not in allowed_modules:
+                    fail(errors, path, f"{route}/{entry.get('source_step')}: unauthorized target module {module}")
+                    continue
+                if target.get("consumption") not in {"direct", "transitive"}:
+                    fail(errors, path, f"{route}/{entry.get('source_step')}: consumption must be direct/transitive")
+                checkpoints = target.get("checkpoints", [])
+                refs = target.get("owner_refs", [])
+                expected_refs = sorted({owner for checkpoint in checkpoints
+                                        for owner in MODULE_CHECKPOINT_L3_OWNERS.get(module, {}).get(checkpoint, set())})
+                if sorted(refs) != expected_refs:
+                    fail(errors, path, f"{route}/{entry.get('source_step')}: owner_refs must match owners consumed at the designated checkpoints: {expected_refs}")
+                for lang, suffix in (("en", ""), ("zh", "_zh_cn")):
+                    module_path = root / MODULES_DIR / f"{module}{suffix}.md"
+                    if not module_path.is_file():
+                        fail(errors, path, f"missing same-language target module: {module_path}")
+                        continue
+                    module_text = module_path.read_text(encoding="utf-8")
+                    module_section = get_section(module_text, LIST_HEADERS[lang]) or ""
+                    step_matches = list(STEP.finditer(module_section))
+                    module_steps = {
+                        match.group(2): module_section[match.start():step_matches[i + 1].start() if i + 1 < len(step_matches) else len(module_section)]
+                        for i, match in enumerate(step_matches)
+                    }
+                    if not checkpoints or any(checkpoint not in module_steps for checkpoint in checkpoints):
+                        fail(errors, path, f"{route}/{entry.get('source_step')}: target checkpoint missing from {module}{suffix} numbered checklist")
+                        continue
+                    fixed_direct_links = []
+                    for checkpoint in checkpoints:
+                        required_layer12 = MODULE_CHECKPOINT_LAYER12_TARGETS.get(module, {}).get(checkpoint)
+                        if required_layer12 is not None:
+                            if suffix:
+                                required_layer12 = re.sub(r"\.md$", "_zh_cn.md", required_layer12)
+                            fixed_direct_links.append(required_layer12)
+                            if required_layer12 not in linked_paths(module_steps[checkpoint]):
+                                fail(errors, path, f"{route}/{entry.get('source_step')}: {lang} {module}/{checkpoint} lacks exact direct owner link {required_layer12}")
+                    if not refs and (not fixed_direct_links or not any(link in linked_paths(body) for link in fixed_direct_links for body in (module_steps[checkpoint] for checkpoint in checkpoints))):
+                        fail(errors, path, f"{route}/{entry.get('source_step')}: owner_refs is empty and no fixed direct L1/L2 target is actually linked from the designated checkpoint set")
+                    for owner in refs:
+                        owner_path = root / "references/coding/layer-03-workflow-checkpoints" / f"{owner}{suffix}.md"
+                        if not owner_path.is_file():
+                            fail(errors, path, f"{route}/{entry.get('source_step')}: missing {lang} owner reference {owner}")
+                            continue
+                        expected_link = f"../../layer-03-workflow-checkpoints/{owner}{suffix}.md"
+                        owner_checkpoints = [checkpoint for checkpoint in checkpoints
+                                             if owner in MODULE_CHECKPOINT_L3_OWNERS.get(module, {}).get(checkpoint, set())]
+                        if not owner_checkpoints or not any(expected_link in linked_paths(module_steps[checkpoint]) for checkpoint in owner_checkpoints):
+                            fail(errors, path, f"{route}/{entry.get('source_step')}: {lang} owner {owner} is not linked from its designated numbered checkpoint")
+                        if target.get("consumption") == "transitive":
+                            required_owner_link = L3_REQUIRED_LAYER12_LINK.get(owner)
+                            if required_owner_link is None:
+                                fail(errors, path, f"{route}/{entry.get('source_step')}: no fixed Layer-01/02 target contract for transitive owner {owner}")
+                            else:
+                                required_owner_link = re.sub(r"\.md$", "_zh_cn.md", required_owner_link) if suffix else required_owner_link
+                                owner_text = owner_path.read_text(encoding="utf-8")
+                                operational = owner_text.split("\n## Related concepts", 1)[0].split("\n## 相关概念", 1)[0]
+                                if required_owner_link not in linked_paths(operational):
+                                    fail(errors, path, f"{route}/{entry.get('source_step')}: transitive {lang} owner {owner} lacks its fixed owner call {required_owner_link}")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--root", type=Path, default=ROOT)
     args = parser.parse_args()
     errors = check_repository(args.root.resolve())
     if errors:
-        print('Layer-04 workflow map validation failed:', file=sys.stderr)
+        print("Layer-04 workflow map validation failed:", file=sys.stderr)
         for error in errors:
-            print(f'- {error}', file=sys.stderr)
+            print(f"- {error}", file=sys.stderr)
         return 1
-    print('Layer-04 workflow map validation passed (2 routes x 2 languages; map/checklist/CI aligned).')
+    print("Layer-04 workflow map validation passed (seven-checkpoint routes and eight bilingual module maps).")
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     raise SystemExit(main())

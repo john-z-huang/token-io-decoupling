@@ -11,3 +11,4 @@
 - [output-token-routing](output-token-routing_zh_cn.md)
 - [planning-intent-plan-memory-lifecycle](planning-intent-plan-memory-lifecycle_zh_cn.md)
 - [task-assignment](task-assignment_zh_cn.md)
+- [workflow-module-contract](workflow-module-contract_zh_cn.md)

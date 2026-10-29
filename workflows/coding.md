@@ -9,7 +9,7 @@ Use this workflow when repository text, developer-tool output, implementation, t
 1. Complete the Contract checkpoint before route selection.
 2. Identify the actual runtime environment, complete the Environment checkpoint, and establish or load the [Environment capability inventory](../references/coding/layer-02-workflow-concepts/entry-and-context/environment-capability-inventory.md) for capability checks.
 3. Pass the Mode checkpoint, which consumes the already established Environment capability inventory and composes the delegation references needed for the root-directive mode gate.
-4. Call [Route Entry](../references/coding/layer-03-workflow-checkpoints/route-entry.md) with current evidence that Contract, Environment, capability inventory, and Mode passed. Select exactly its authorized complete route, then pass the released mode/count evidence to that route’s S03/M03.
+4. Call [Route Entry](../references/coding/layer-03-workflow-checkpoints/route-entry.md) with current evidence that Contract, Environment, capability inventory, and Mode passed. Select exactly its authorized complete route, then pass released mode/count evidence to its first module checkpoint SM01/MM01. Each route composes [Entry Readiness](../references/coding/layer-04-workflows/modules/entry-readiness.md), [Session Readiness](../references/coding/layer-04-workflows/modules/session-readiness.md), [Work Definition](../references/coding/layer-04-workflows/modules/work-definition.md), its mode-specific execution module, [Verification and Repair](../references/coding/layer-04-workflows/modules/verification-repair.md), [Documentation](../references/coding/layer-04-workflows/modules/documentation.md), and [Delivery and Acceptance](../references/coding/layer-04-workflows/modules/delivery-acceptance.md) in order. Load only the selected route and modules as reached.
 
 ## Routes
 
@@ -27,7 +27,7 @@ These layers define composition direction, not policy ownership. Each document m
 | [`layer-01-fundamental-concepts`](../references/coding/layer-01-fundamental-concepts/) | Foundational atomic concepts | Same-language layer-01 concepts and its language mirror |
 | [`layer-02-workflow-concepts`](../references/coding/layer-02-workflow-concepts/) | Generic workflow checkpoint actions and evidence | `layer-01-fundamental-concepts`; never layer-03/04 |
 | [`layer-03-workflow-checkpoints`](../references/coding/layer-03-workflow-checkpoints/) | Task-specific applicability, branches, and composition decisions | layer-01 and layer-02; never layer-04 |
-| [`layer-04-workflows`](../references/coding/layer-04-workflows/) | Complete executable routes | shared protocols, layer-01, layer-02, and layer-03 |
+| [`layer-04-workflows`](../references/coding/layer-04-workflows/) | Complete executable routes | shared protocols, layer-01, layer-02, and layer-03; routes may also call only their exact approved same-language Layer-04 modules, while modules depend only on shared protocols and Layers 01–03 and never call sibling modules |
 | `workflows/coding.md` | Route selector and four-layer index | All four layers; owns navigation, not policy |
 
 If a lower layer needs a concept owned by a higher layer, treat that upward dependency as an atomicity failure: split the lower document and move the composition to the higher layer. Root entry documents such as `SKILL.md`, `README.md`, and `docs/` may link downward to entry points. Validate the boundaries with `python3 scripts/check-doc-layer-links.py`; language-switch links are the only intentional cross-language links.
