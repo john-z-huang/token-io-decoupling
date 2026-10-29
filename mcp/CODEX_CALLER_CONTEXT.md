@@ -36,5 +36,5 @@ Synthetic providers and peer-authentication overrides are test evidence only. Th
 ## Related concepts
 
 - [MCP development guide](DEVELOPMENT.md)
-- [Enhanced Host Binding](../references/coding/layer-01-fundamental-concepts/enhanced-host-binding.md)
-- [Enhanced State Store](../references/coding/layer-01-fundamental-concepts/enhanced-state-store.md)
+- [Enhanced Host Binding](../references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md)
+- [Enhanced State Store](../references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store.md)

@@ -6,17 +6,17 @@
 
 | 来源 | URL | 对应文档 | 开发用途与边界 |
 | --- | --- | --- | --- |
-| Codex 桌面应用 | https://developers.openai.com/codex/app/ | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md) | 仅作一般 composer 背景资料；不是 `request_user_input_async` 能力来源。 |
-| Codex CLI | https://developers.openai.com/codex/cli/ | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md) | 交互式终端使用的背景资料。 |
-| Codex Prompting Guide | https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md) | 将多个建议呈现为编号选项的背景资料。 |
-| Claude Code 工具参考 | https://code.claude.com/docs/en/tools#askuserquestion | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md) | `AskUserQuestion` 界面及其回复行为的背景资料。 |
+| Codex 桌面应用 | https://developers.openai.com/codex/app/ | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) | 仅作一般 composer 背景资料；不是 `request_user_input_async` 能力来源。 |
+| Codex CLI | https://developers.openai.com/codex/cli/ | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) | 交互式终端使用的背景资料。 |
+| Codex Prompting Guide | https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) | 将多个建议呈现为编号选项的背景资料。 |
+| Claude Code 工具参考 | https://code.claude.com/docs/en/tools#askuserquestion | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) | `AskUserQuestion` 界面及其回复行为的背景资料。 |
 | MCP Python SDK v2 | https://py.sdk.modelcontextprotocol.io/whats-new/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验 v2 服务端/客户端 API，并区分协议修订与包版本。 |
 | MCP SDK 测试 | https://py.sdk.modelcontextprotocol.io/get-started/testing/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 设计内存行为测试；它们不能证明任一宿主客户端的兼容性或线上传输交换。 |
 | MCP 协议版本 | https://py.sdk.modelcontextprotocol.io/protocol-versions/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 独立核验现代协议发现与版本证据，不依赖 SDK 主版本标签。 |
 | MCP 客户端传输 | https://py.sdk.modelcontextprotocol.io/client/transports/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验子进程 stdio 测试，不使用 GUI 交互或额外 Agent Session。 |
 | MCP 传输授权 | https://py.sdk.modelcontextprotocol.io/run/authorization/ | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验 HTTP 令牌校验不能认证 stdio 或进程内客户端；要求独立的可信启动边界。 |
 | OpenAI Decisions | https://developers.openai.com/api/docs/guides/decisions | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 核验可选语义判断的类型化选项请求及拒绝响应；此引用不授权真实请求。 |
-| OpenAI Python Decisions 参考 | https://developers.openai.com/api/reference/python/resources/decisions/methods/create | [Decisions 建议](references/coding/layer-01-fundamental-concepts/decisions-advisory_zh_cn.md) | 核验可选建议的 SDK 请求、固定选项响应及拒绝契约；本地配置、授权和最终判断仍为独立要求。 |
+| OpenAI Python Decisions 参考 | https://developers.openai.com/api/reference/python/resources/decisions/methods/create | [Decisions 建议](references/coding/layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md) | 核验可选建议的 SDK 请求、固定选项响应及拒绝契约；本地配置、授权和最终判断仍为独立要求。 |
 | SQLite 备份 API | https://docs.python.org/3/library/sqlite3.html#sqlite3.Connection.backup | [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md) | 在已授权的 schema 升级前使用数据库备份 API。 |
 | uv GitHub Actions 集成 | https://docs.astral.sh/uv/guides/integration/github/ | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验 CI 中固定版本的 uv 配置、托管 Python 矩阵与锁定依赖安装；工作流实际运行与本地检查属于不同证据。 |
 | Linux Unix domain socket 凭据 | https://man7.org/linux/man-pages/man7/unix.7.html | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验继承的特权宿主通道所使用的内核对端凭据；不据此证明运行时 Session 映射或操作守卫。 |
@@ -31,6 +31,6 @@
 | uv tool 环境 | https://docs.astral.sh/uv/concepts/tools/ | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核验已安装可执行程序的环境、本地工具安装，以及统一入口的依赖/可执行程序边界。 |
 | uv tool 命令参考 | https://docs.astral.sh/uv/reference/cli/#uv-tool-install | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md#uv-tool-安装与-codex-setup) | 核验单次调用安装入口使用 `--force` 安装工具、选择托管 Python，并通过 `uv tool dir --bin` 定位入口，无须将其目录加入 PATH。 |
 | uv 本地依赖缓存 | https://docs.astral.sh/uv/concepts/cache/ | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md#uv-tool-安装与-codex-setup) | 核验安装入口为何同时使用 `--reinstall`，确保只修改源码或规则资源后也会更新本地 workspace 依赖。 |
-| OpenAI Decisions 创建接口 | https://developers.openai.com/api/reference/resources/decisions/methods/create | [运行环境与模型支持](references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md) | 核验子代理强度选择的 choice 请求、answers 中的 choice/refusal、固定 API 模型及输出边界；不授权创建 Agent。 |
-| Codex 子代理配置 | https://learn.chatgpt.com/docs/agent-configuration/subagents | [运行环境与模型支持](references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)、[子代理创建](references/coding/layer-01-fundamental-concepts/delegation-child-creation_zh_cn.md) | 核验创建时模型与推理强度控制，以及自定义配置的优先级；实际调用仍以当前 Session 暴露的控制为准。 |
-| Claude 原生子代理 effort | https://code.claude.com/docs/en/sub-agents#choose-an-effort-level | [运行环境与模型支持](references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md)、[子代理创建](references/coding/layer-01-fundamental-concepts/delegation-child-creation_zh_cn.md) | 仅为 MCP 目录外的原生 Skill 指令核验 effort 调用、版本边界、恢复与环境优先级；MCP Server 不支持该客户端。 |
+| OpenAI Decisions 创建接口 | https://developers.openai.com/api/reference/resources/decisions/methods/create | [运行环境与模型支持](references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md) | 核验子代理强度选择的 choice 请求、answers 中的 choice/refusal、固定 API 模型及输出边界；不授权创建 Agent。 |
+| Codex 子代理配置 | https://learn.chatgpt.com/docs/agent-configuration/subagents | [运行环境与模型支持](references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)、[子代理创建](references/coding/layer-01-fundamental-concepts/delegation/delegation-child-creation_zh_cn.md) | 核验创建时模型与推理强度控制，以及自定义配置的优先级；实际调用仍以当前 Session 暴露的控制为准。 |
+| Claude 原生子代理 effort | https://code.claude.com/docs/en/sub-agents#choose-an-effort-level | [运行环境与模型支持](references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)、[子代理创建](references/coding/layer-01-fundamental-concepts/delegation/delegation-child-creation_zh_cn.md) | 仅为 MCP 目录外的原生 Skill 指令核验 effort 调用、版本边界、恢复与环境优先级；MCP Server 不支持该客户端。 |

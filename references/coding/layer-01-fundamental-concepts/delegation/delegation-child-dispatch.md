@@ -1,0 +1,46 @@
+# Coding Child Dispatch
+
+[English](delegation-child-dispatch.md) | [简体中文](delegation-child-dispatch_zh_cn.md)
+
+This module owns material Dispatch Preview and the Worker boundary. It consumes an already authorized child and slice; it does not define child creation, role allocation, reuse or replacement, lifecycle, or Interaction Slice fields.
+
+## General rules
+
+### Dispatch Preview and return boundary
+
+Model and reasoning-effort settings are established during child creation. Do not check them during dispatch, task work, or follow-up, or ask the child to inspect or report them. Apply the remaining task authorization, scope, and context checks below independently.
+
+Before assigning or materially dispatching to a child, verify that Input-side Reasoning has completed its prerequisite instruction, environment, and task-defining code-fact confirmations with source pointers, and that a concrete Interaction Slice was released. The parent shows a concise Dispatch Preview of the authorized objective, mutations, and return conditions only when the configured audit preset selects preview; when it selects full display, show the complete safe message body. A missing prerequisite keeps the slice with the parent. Apply the configured [session audit visibility](../session-runtime/session-audit-visibility.md) preset to Root and Worker message bodies. Worker keeps complete safe task-prompt visibility when available and complete safe outbound visibility; its complete final result is the outbound copy and must not be duplicated. A missing Worker-side body is reported as a specific audit limitation, not silently treated as verified or used to expand scope. A Worker returns only to its direct parent and cannot create, fork, hand off to, message, replace, or coordinate another Agent or Session, or contact arbitrary threads. Contradictory findings return to the parent for a new decision, not a new mode or count.
+
+### Named paths and slice release
+
+Check the released task's authorized Memory names and logical ownership under [context workspace boundary](../context-exchange/context-exchange-workspace-boundary.md); source and code path access remains subject to its separately approved boundary. Consume the released Interaction Slice under [execution control](../execution-control/execution-control.md). Dispatch one slice at a time unless independent, non-conflicting parallel work is explicitly allowed. Do not redefine Memory names or slice fields here.
+
+## Codex CLI / ChatGPT Desktop optimizations
+
+Codex custom agents can hold role-specific `developer_instructions`; the parent still sends the released objective, named sources, scope, and return conditions through the actual child-task invocation. An `AGENTS.md` file may contribute repository instructions but does not replace this task-specific bundle. If Codex hooks are configured, `SubagentStart` can add small context, but cannot prevent child creation and must not silently expand the authorized slice. [OpenAI: subagent profiles](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: SubagentStart](https://learn.chatgpt.com/docs/hooks).
+
+### Observable dispatch and pre-spawn guard
+
+In interactive Codex CLI, `/agent` can report the selected Agent thread. In ChatGPT Desktop, retrieve a subagent's work and returned summary only through a thread/result tool directly exposed to the active Session; if none is exposed, record that capability as unavailable. Before the real spawn, keep the brief task instruction in the parent turn and put objective, authorized source/document paths, authorized Memory names, source pointers, explicit `write_content_memo` and return conditions in the child's actual task prompt. If a reviewed `PreToolUse` hook matches `spawn_agent`/`Agent`, it can deny a tool invocation missing a released slice; `SubagentStart` is too late to veto creation. Check installed hook trust and coverage rather than claiming this guard exists by default. [OpenAI: subagent tools and threads](https://learn.chatgpt.com/docs/agent-configuration/subagents), [OpenAI: hook tool coverage](https://learn.chatgpt.com/docs/hooks).
+
+## Claude Code CLI / Claude Desktop optimizations
+
+### Pre-dispatch tool guard
+
+For a locally configured Claude Code host, an authorized `PreToolUse` Hook matching `Agent` may inspect the proposed invocation before it executes and deny a spawn when the parent record does not show the reserved slot, released slice, and approved return path. Use an explicit deny result rather than relying on a `SubagentStart` event, which occurs after spawn and cannot veto it. Keep the human-readable Dispatch Preview in the parent conversation **before** the `Agent` tool call; a Hook alone is not evidence that the parent reviewed or exposed the preview. Guard scripts must read the actual record and fail closed on missing authorization without logging secrets or full prompts. If no reviewed Hook is installed, the semantic pre-dispatch checks remain mandatory.
+
+Official reference: [PreToolUse and SubagentStart semantics](https://code.claude.com/docs/en/hooks).
+
+A Claude Code custom subagent starts with its own context and does not automatically inherit the parent's full conversation history or previously invoked Skills. Put the released objective, limited source pointers and return conditions in the actual `Agent` task prompt. The `skills` frontmatter preloads the **entire named Skill** into that child, so configure it only if the role needs it rather than treating it as a selective concept-loading mechanism. Keep any exposed `SendMessage`/peer control out of Worker tools, preserving authorized parent-to-child follow-up. [Anthropic: subagent context and skills](https://code.claude.com/docs/en/sub-agents).
+
+## Related concepts
+
+- [Coding Child Creation](delegation-child-creation.md) — locate child creation capability.
+- [Coding Child Role Allocation](delegation-child-role-allocation.md) — locate slot and role allocation.
+- [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child state and recovery ownership.
+- [Coding Child Message Visibility](delegation-child-message-visibility.md) — locate parent-conversation message visibility requirements.
+- [Coding Session Audit Visibility](../session-runtime/session-audit-visibility.md) — locate Root and Worker visibility presets.
+- [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.md) — locate authorized reuse and replacement.
+- [Coding Context Exchange](../context-exchange/context-exchange.md) — locate context-record Memory naming and authorization.
+- [Coding Execution Control](../execution-control/execution-control.md) — locate Interaction Slice boundary controls.

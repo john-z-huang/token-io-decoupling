@@ -1,0 +1,485 @@
+{
+  "schema_version": 1,
+  "document_moves": [
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/LSP-MCP-Tools.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/LSP-MCP-Tools.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/LSP-MCP-Tools_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/LSP-MCP-Tools_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/child-role-selection.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/child-role-selection.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/child-role-selection_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/child-role-selection_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/content-memo-dispatch.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-dispatch.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/content-memo-dispatch_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-dispatch_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/content-memo-lifecycle.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/content-memo-lifecycle_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/content-memo.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/content-memo.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/content-memo_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/content-memo_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/context-exchange-handoff.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange-handoff.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/context-exchange-handoff_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange-handoff_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/context-exchange-workspace-boundary.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange-workspace-boundary.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/context-exchange-workspace-boundary_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange-workspace-boundary_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/context-exchange.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/context-exchange_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/decision-context-generation.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/decision-context-generation_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/decisions-advisory.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/decisions-advisory.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/decisions-advisory_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-creation.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-creation.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-creation_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-creation_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-dispatch.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-dispatch.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-dispatch_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-dispatch_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-lifecycle.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-lifecycle.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-lifecycle_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-lifecycle_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-message-visibility.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-message-visibility.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-message-visibility_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-message-visibility_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-reuse-replacement.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-reuse-replacement.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-reuse-replacement_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-reuse-replacement_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-role-allocation.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-role-allocation.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-child-role-allocation_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-child-role-allocation_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-mode-count-gate.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-mode-count-gate_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-mode-reentry.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-reentry.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-mode-reentry_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-reentry_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-state-record.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-state-record_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-worker-boundary.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-worker-boundary.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/delegation-worker-boundary_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/delegation/delegation-worker-boundary_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/enhanced-host-binding.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/enhanced-host-binding_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/enhanced-rule-context.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-rule-context.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/enhanced-rule-context_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-rule-context_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/enhanced-schema-migrations.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-schema-migrations.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/enhanced-schema-migrations_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-schema-migrations_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/enhanced-state-store.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/enhanced-workflow-availability.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/enhanced-workflow-availability_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/execution-control.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-control/execution-control.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/execution-control_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-control/execution-control_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/execution-decision-gate.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/execution-decision-gate.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/execution-decision-gate_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/execution-decision-gate_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/execution-planning.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/execution-planning.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/execution-planning_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/execution-planning_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/execution-stage-feedback.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-control/execution-stage-feedback.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/execution-stage-feedback_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-control/execution-stage-feedback_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/native-authority-transfer.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/native-authority-transfer_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/native-reconciliation.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/native-reconciliation_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/output-token-routing.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/output-token-routing_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/planning-intent-plan-memory-lifecycle.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/planning-intent-plan-memory-lifecycle_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/reasoning-summary-visibility.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/reasoning-summary-visibility.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/reasoning-summary-visibility_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/reasoning-summary-visibility_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/runtime-provider-support.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/runtime-provider-support_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/session-audit-visibility.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/session-audit-visibility.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/session-audit-visibility_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/session-audit-visibility_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/session-context-firewall.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/session-context-firewall.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/session-context-firewall_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/session-context-firewall_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/session-model.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/session-model.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/session-model_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/session-model_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/session-role-ownership.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/session-role-ownership.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/session-role-ownership_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/session-runtime/session-role-ownership_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/task-assignment.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment.md"
+    },
+    {
+      "from": "references/coding/layer-01-fundamental-concepts/task-assignment_zh_cn.md",
+      "to": "references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/acceptance.md",
+      "to": "references/coding/layer-02-workflow-concepts/completion-and-effects/acceptance.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/acceptance_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/completion-and-effects/acceptance_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/context.md",
+      "to": "references/coding/layer-02-workflow-concepts/entry-and-context/context.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/context_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/entry-and-context/context_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/contract.md",
+      "to": "references/coding/layer-02-workflow-concepts/entry-and-context/contract.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/contract_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/entry-and-context/contract_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/control.md",
+      "to": "references/coding/layer-02-workflow-concepts/decision-and-execution/control.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/control_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/decision-and-execution/control_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/decision.md",
+      "to": "references/coding/layer-02-workflow-concepts/decision-and-execution/decision.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/decision_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/decision-and-execution/decision_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/documentation.md",
+      "to": "references/coding/layer-02-workflow-concepts/completion-and-effects/documentation.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/documentation_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/completion-and-effects/documentation_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/environment-capability-inventory.md",
+      "to": "references/coding/layer-02-workflow-concepts/entry-and-context/environment-capability-inventory.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/environment-capability-inventory_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/entry-and-context/environment-capability-inventory_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/environment.md",
+      "to": "references/coding/layer-02-workflow-concepts/entry-and-context/environment.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/environment_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/entry-and-context/environment_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/git.md",
+      "to": "references/coding/layer-02-workflow-concepts/completion-and-effects/git.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/git_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/completion-and-effects/git_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/implementation.md",
+      "to": "references/coding/layer-02-workflow-concepts/decision-and-execution/implementation.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/implementation_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/decision-and-execution/implementation_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/mode.md",
+      "to": "references/coding/layer-02-workflow-concepts/entry-and-context/mode.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/mode_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/entry-and-context/mode_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/repair-execution.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/repair-execution.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/repair-execution_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/repair-execution_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/repair-scope-gate.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/repair-scope-gate.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/repair-scope-gate_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/repair-scope-gate_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/repair-verification-handoff.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/repair-verification-handoff.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/repair-verification-handoff_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/repair-verification-handoff_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/repair.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/repair.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/repair_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/repair_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/verification-epoch.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/verification-epoch_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/verification-independence.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification-independence.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/verification-independence_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification-independence_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/verification-reporting.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification-reporting.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/verification-reporting_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification-reporting_zh_cn.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/verification.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification.md"
+    },
+    {
+      "from": "references/coding/layer-02-workflow-concepts/verification_zh_cn.md",
+      "to": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification_zh_cn.md"
+    }
+  ]
+}

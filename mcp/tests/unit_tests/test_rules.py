@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
+from token_io_decoupling_core.owner_paths import OWNER_PATHS
 from token_io_decoupling_core.rules import (
     IncompatibleRuleContractError,
     RuleLoader,
@@ -110,3 +111,12 @@ def test_loader_rejects_traversal_and_symlink_escape(tmp_path: Path) -> None:
     (root / "owners" / "link.md").symlink_to(outside)
     with pytest.raises(UnsafeRulePathError):
         RuleLoader(repository_root=root).load_context("contract")
+
+
+def test_delegation_policy_uses_shared_owner_path_map(tmp_path: Path) -> None:
+    root, _ = _repo(tmp_path)
+    owner_path = root / Path(OWNER_PATHS["child-role-selection"])
+    owner_path.parent.mkdir(parents=True)
+    owner_path.write_text("# Owner\n\n## General rules\nMapped policy.\n", encoding="utf-8")
+    loaded, _ = RuleLoader(repository_root=root).load_delegation_policy("child-role-selection")
+    assert "Mapped policy." in loaded

@@ -2,21 +2,21 @@
 
 [English](coding.md) | [简体中文](coding_zh_cn.md)
 
-Use this workflow when repository text, developer-tool output, implementation, tests, documentation, or Git state is the main work state. This file is only the Coding route selector and completion index. The selected layer-03 workflow template composes the layer-01 concepts and layer-02 workflow concepts needed for execution. Root-directive mode and delegation rules are owned by the atomic delegation references composed by the Mode checkpoint; the parent-controlled record stores the conversation-wide mode/count decision and current task state.
+Use this workflow when repository text, developer-tool output, implementation, tests, documentation, or Git state is the main work state. This file is only the Coding route selector and completion index. Layer-03 decision checkpoints determine task-specific applicability and branches; the selected Layer-04 route orders those decisions and composes the Layer-01 concepts and Layer-02 checkpoint actions needed for execution. Root-directive mode and delegation rules are owned by the atomic delegation references composed by the Mode checkpoint; the parent-controlled record stores the conversation-wide mode/count decision and current task state.
 
 ## Entry
 
 1. Complete the Contract checkpoint before route selection.
-2. Identify the actual runtime environment, complete the Environment checkpoint, and establish or load the [Environment capability inventory](../references/coding/layer-02-workflow-concepts/environment-capability-inventory.md) for capability checks.
+2. Identify the actual runtime environment, complete the Environment checkpoint, and establish or load the [Environment capability inventory](../references/coding/layer-02-workflow-concepts/entry-and-context/environment-capability-inventory.md) for capability checks.
 3. Pass the Mode checkpoint, which consumes the already established Environment capability inventory and composes the delegation references needed for the root-directive mode gate.
-4. Select exactly one complete route after the Contract, Environment, and Mode checkpoints. That route loads its own references and checkpoints.
+4. Call [Route Entry](../references/coding/layer-03-workflow-checkpoints/route-entry.md) with current evidence that Contract, Environment, capability inventory, and Mode passed. Select exactly its authorized complete route, then pass the released mode/count evidence to that route’s S03/M03.
 
 ## Routes
 
-- [Single-Agent Coding](../references/coding/layer-03-workflows/coding-single-agent.md): use when the user explicitly selects `mode: Single-Agent Coding`; directive-related work stays in the current Session.
-- [Multi-Agent Coding](../references/coding/layer-03-workflows/coding-multi-agent.md): use when explicitly selected or by default for the first Coding directive. If no valid selection is present, the Mode checkpoint presents its four-option menu. It defaults to `child_count: 1` only when the Mode gate must be released without a valid user choice; invalid custom input keeps the gate unreleased. Locking this budget does not initialize a child; creation is gated by the released output type and slice.
+- [Single-Agent Coding](../references/coding/layer-04-workflows/coding-single-agent.md): use when the released Mode selects `mode: Single-Agent Coding`; directive-related work stays in the current Session.
+- [Multi-Agent Coding](../references/coding/layer-04-workflows/coding-multi-agent.md): use when the released Mode selects Multi-Agent Coding with a locked positive `child_count`. The Mode checkpoint owns the four-option menu, default, and invalid-input handling; locking the budget does not initialize a child.
 
-Do not load both routes. If a later material fact invalidates the selected route, stop the current slice, amend the Contract as needed, and return to route selection.
+Do not load both routes. If a later material fact invalidates the selected route, stop the current slice, amend the Contract as needed, and return to Route Entry.
 
 ## Document layers
 
@@ -25,15 +25,16 @@ These layers define composition direction, not policy ownership. Each document m
 | Layer | Role | Allowed dependency targets |
 | --- | --- | --- |
 | [`layer-01-fundamental-concepts`](../references/coding/layer-01-fundamental-concepts/) | Foundational atomic concepts | Same-language layer-01 concepts and its language mirror |
-| [`layer-02-workflow-concepts`](../references/coding/layer-02-workflow-concepts/) | Workflow checkpoints | `layer-01-fundamental-concepts`; never layer-03 |
-| [`layer-03-workflows`](../references/coding/layer-03-workflows/) | Ready-to-use workflow templates | layer-01, layer-02, and shared protocols; never this selector |
-| `workflows/coding.md` | Route selector and three-layer index | All three layers; owns navigation, not policy |
+| [`layer-02-workflow-concepts`](../references/coding/layer-02-workflow-concepts/) | Generic workflow checkpoint actions and evidence | `layer-01-fundamental-concepts`; never layer-03/04 |
+| [`layer-03-workflow-checkpoints`](../references/coding/layer-03-workflow-checkpoints/) | Task-specific applicability, branches, and composition decisions | layer-01 and layer-02; never layer-04 |
+| [`layer-04-workflows`](../references/coding/layer-04-workflows/) | Complete executable routes | shared protocols, layer-01, layer-02, and layer-03 |
+| `workflows/coding.md` | Route selector and four-layer index | All four layers; owns navigation, not policy |
 
 If a lower layer needs a concept owned by a higher layer, treat that upward dependency as an atomicity failure: split the lower document and move the composition to the higher layer. Root entry documents such as `SKILL.md`, `README.md`, and `docs/` may link downward to entry points. Validate the boundaries with `python3 scripts/check-doc-layer-links.py`; language-switch links are the only intentional cross-language links.
 
 ## Checkpoint catalog
 
-The route may compose these independent action boundaries from [layer-02 workflow concepts](../references/coding/layer-02-workflow-concepts/) as conditions require:
+The selected layer-04 route orders the [layer-02 checkpoint actions](../references/coding/layer-02-workflow-concepts/) and [layer-03 task-specific decisions](../references/coding/layer-03-workflow-checkpoints/) that apply:
 
 `contract` → `environment` (+ capability inventory) → `mode` → `context` → `decision` → `implementation` → `control` → `verification` → `repair` → `documentation` → `git` → `acceptance`
 

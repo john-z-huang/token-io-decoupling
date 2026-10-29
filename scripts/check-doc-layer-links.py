@@ -21,8 +21,10 @@ def layer(path: PurePosixPath) -> str:
         return "layer-01"
     if parts[:3] == ("references", "coding", "layer-02-workflow-concepts"):
         return "layer-02"
-    if parts[:3] == ("references", "coding", "layer-03-workflows"):
+    if parts[:3] == ("references", "coding", "layer-03-workflow-checkpoints"):
         return "layer-03"
+    if parts[:3] == ("references", "coding", "layer-04-workflows"):
+        return "layer-04"
     if parts[:2] == ("references", "share"):
         return "shared-protocols"
     if parts and parts[0] == "references":
@@ -49,6 +51,10 @@ def is_language_switch(label: str) -> bool:
     return label.strip().casefold() in LANGUAGE_SWITCH_LABELS
 
 
+def is_navigation_document(path: PurePosixPath) -> bool:
+    return path.name in {"README.md", "README_zh_cn.md", "INDEX.md", "INDEX_zh_cn.md"}
+
+
 def counterpart(path: PurePosixPath) -> PurePosixPath:
     if path.parts[:2] == ("docs", "zh-cn"):
         return PurePosixPath("docs", path.name)
@@ -60,18 +66,22 @@ def counterpart(path: PurePosixPath) -> PurePosixPath:
 
 
 def allowed(source: str, target: str, is_navigation: bool) -> bool:
+    same_layer_navigation = is_navigation and source == target
     if source in {"references", "layer-01"}:
-        return is_navigation or target == "layer-01"
+        return same_layer_navigation or target == "layer-01"
     if source in {"checkpoint", "layer-02"}:
-        return is_navigation or target in {"references", "layer-01"}
+        return same_layer_navigation or target in {"references", "layer-01"}
     if source in {"exist-workflow", "layer-03"}:
-        return is_navigation or target in {"shared-protocols", "layer-01", "layer-02"}
+        return same_layer_navigation or target in {"shared-protocols", "layer-01", "layer-02"}
+    if source == "layer-04":
+        return same_layer_navigation or target in {"shared-protocols", "layer-01", "layer-02", "layer-03"}
     if source == "coding-selector":
         return is_navigation or target in {
             "exist-workflow",
             "layer-01",
             "layer-02",
             "layer-03",
+            "layer-04",
         }
     return True
 
@@ -133,7 +143,11 @@ def main(root: Path | None = None) -> int:
                         f"cross-language dependency: {source}:{line_number} -> {target_text}"
                     )
                     continue
-                navigation = mirror or (target == source and is_language_switch(label))
+                navigation = (
+                    mirror
+                    or (target == source and is_language_switch(label))
+                    or is_navigation_document(source)
+                )
                 target_layer = layer(target)
                 if not allowed(source_layer, target_layer, navigation):
                     errors.append(

@@ -11,6 +11,7 @@ from pathlib import Path, PurePosixPath
 from pydantic import ValidationError
 
 from token_io_decoupling_core.models import Language, RuleContext, RuleNode, RuleRegistry
+from token_io_decoupling_core.owner_paths import OWNER_PATHS
 from token_io_decoupling_core.registry_contract import (
     UnsupportedRegistryShapeError,
     validate_supported_registry_shape,
@@ -105,7 +106,9 @@ class RuleLoader:
         }
         if owner not in allowed:
             raise RuleLoadError("unknown delegation policy")
-        path = f"references/coding/layer-01-fundamental-concepts/{owner}.md"
+        path = OWNER_PATHS.get(owner)
+        if not isinstance(path, str):
+            raise RuleLoadError("missing mapped delegation policy")
         if self._repository_root is not None:
             text = self._read_repository_owner(path, "General rules")
         else:
