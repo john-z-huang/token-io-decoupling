@@ -6,7 +6,7 @@
 
 ## 触发与输入
 
-在 S04/M04 消费前序路线动作返回的已核实规范 Root 记录和当前 Session 审计事实。应用[Session Audit Visibility](../layer-01-fundamental-concepts/session-runtime/session-audit-visibility_zh_cn.md)了解审计字段值和显示语义，并应用[委派状态记录](../layer-01-fundamental-concepts/delegation/delegation-state-record_zh_cn.md)了解审计记录支持的状态和 resolution 值。
+已获得经过核实的规范 Root 记录后，消费该记录及当前 Session 审计事实。应用[Session Audit Visibility](../layer-01-fundamental-concepts/session-runtime/session-audit-visibility_zh_cn.md)了解审计字段值和显示语义，并应用[委派状态记录](../layer-01-fundamental-concepts/delegation/delegation-state-record_zh_cn.md)了解审计记录支持的状态和 resolution 值。
 
 ## 决策与结果
 

@@ -6,7 +6,7 @@ This checkpoint owns the independent assessment of whether each requested direct
 
 ## Trigger and inputs
 
-At S06/M07, assess each requested direct Root output by its shape, expected output volume, explicit user direction, locked mode, and current verified facts. Check explicit direction before advice. Do not use unrelated input/transcript size or an arbitrary numeric threshold.
+Once the current task scope and mode are established, assess each requested direct Root output by its shape, expected output volume, explicit user direction, locked mode, and current verified facts. Check explicit direction before advice. Do not use unrelated input/transcript size or an arbitrary numeric threshold.
 
 ## Decision and result
 

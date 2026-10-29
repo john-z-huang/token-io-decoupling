@@ -6,7 +6,7 @@
 
 ## 触发与输入
 
-在 S02/M02，使用当前[环境](../layer-02-workflow-concepts/entry-and-context/environment_zh_cn.md)和[能力清单](../layer-02-workflow-concepts/entry-and-context/environment-capability-inventory_zh_cn.md)结果判断当前任务是否需要可选 Enhanced 操作。Enhanced 分支需要时，应用[Enhanced 工作流可用性](../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability_zh_cn.md)和[Enhanced Host 绑定](../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md)。
+使用当前[环境](../layer-02-workflow-concepts/entry-and-context/environment_zh_cn.md)和[能力清单](../layer-02-workflow-concepts/entry-and-context/environment-capability-inventory_zh_cn.md)结果判断任务是否需要可选 Enhanced 操作。Enhanced 分支需要时，应用[Enhanced 工作流可用性](../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability_zh_cn.md)和[Enhanced Host 绑定](../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md)。
 
 ## 决策与结果
 

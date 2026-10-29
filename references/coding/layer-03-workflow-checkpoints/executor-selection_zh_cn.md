@@ -2,7 +2,7 @@
 
 [English](executor-selection.md) | [简体中文](executor-selection_zh_cn.md)
 
-本检查点负责 S06/M07 的执行者路由。[Task Assignment](../layer-01-fundamental-concepts/execution-planning/task-assignment_zh_cn.md)仍是执行者及候选选择政策的权威 owner。
+本检查点负责当前任务范围和模式建立后的执行者路由。[Task Assignment](../layer-01-fundamental-concepts/execution-planning/task-assignment_zh_cn.md)仍是执行者及候选选择政策的权威 owner。
 
 ## 触发与输入
 

@@ -12,6 +12,7 @@ from markdown_discovery import discover_markdown
 
 ROOT = Path(__file__).resolve().parents[1]
 LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
+ROUTE_COORDINATE_RE = re.compile(r"(?<![A-Za-z0-9_])[SM][0-9]{2}(?![A-Za-z0-9_])")
 LANGUAGE_SWITCH_LABELS = {"english", "简体中文"}
 
 
@@ -100,6 +101,13 @@ def from_line(line: str):
     return LINK_RE.findall(line)
 
 
+def iter_route_coordinates(path: Path):
+    """Yield every concrete route coordinate in a Layer-03 Markdown file."""
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        for match in ROUTE_COORDINATE_RE.finditer(line):
+            yield line_number, match.group(0)
+
+
 def main(root: Path | None = None) -> int:
     root = Path(root or ROOT).absolute()
     errors: list[str] = []
@@ -111,6 +119,11 @@ def main(root: Path | None = None) -> int:
         source_path = root / source
         source_layer = layer(source)
         source_language = language(source)
+        if source_layer == "layer-03":
+            for line_number, coordinate in iter_route_coordinates(source_path):
+                errors.append(
+                    f"Layer-03 route coordinate dependency: {source}:{line_number} -> {coordinate}"
+                )
         for line_number, links in iter_links(source_path):
             for label, raw_target in links:
                 target_text = raw_target.split("#", 1)[0].split("?", 1)[0]

@@ -7,7 +7,7 @@
 
 ## 触发与输入
 
-Mode 和 Session 通过且存在获授权 Root 上下文前，建议记为 `Not applicable`；任务意图/输出分类使用直接权威来源。建议不能选择或改变路线选择结果，不能重开 Mode gate 或改变已锁定 mode/count。Root 上下文存在后，仅由 S06/M07 消费相关 Decision 建议，由 S09/M11 消费相关 Control 建议，由 S10/M12 消费相关 Verification/Epoch 建议。应用[Decisions Advisory](../layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md)和当前直接检查点 owner；将每条建议返回指定阶段进行基于证据的审阅。
+Mode 和 Session 通过且存在获授权 Root 上下文前，建议记为 `Not applicable`；任务意图/输出分类使用直接权威来源。建议不能选择或改变路线选择结果，不能重开 Mode gate 或改变已锁定 mode/count。存在获授权 Root 上下文后，Decision、Control 和 Verification/Epoch 阶段分别只消费与自身相关的建议。应用[Decisions Advisory](../layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md)和当前直接检查点 owner；将每条建议返回指定阶段进行基于证据的审阅。
 
 ## 决策与结果
 

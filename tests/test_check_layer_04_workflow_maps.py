@@ -175,6 +175,42 @@ class WorkflowMapTests(unittest.TestCase):
                     '[executor-selection](../layer-03-workflow-checkpoints/missing.md)')
         self.reject('Decision step must link the same-language executor-selection checkpoint')
 
+    def test_role_reservation_requires_later_slice_and_creation_gates_in_both_languages(self) -> None:
+        cases = (
+            (
+                'en',
+                'Child Role Selection Count Gate State Record unique reservation exactly `+1` '
+                'all four roles. Slice release and child creation remain later, separate gates.',
+                'Slice release and child creation remain later, separate gates.',
+            ),
+            (
+                'zh',
+                'Child Role Selection Count Gate State Record 唯一预留 恰好 `+1` 四种角色。'
+                'Slice 放行和子代理创建仍是后续独立门禁。',
+                'Slice 放行和子代理创建仍是后续独立门禁。',
+            ),
+        )
+        owners = {}
+        for lang, content, gate_requirement in cases:
+            suffix = '_zh_cn' if lang == 'zh' else ''
+            owner = self.root / (
+                'references/coding/layer-03-workflow-checkpoints/'
+                f'role-reservation{suffix}.md'
+            )
+            owner.write_text(content, encoding='utf-8')
+            owners[lang] = (owner, content, gate_requirement)
+        self.assertEqual(validator.check_repository(self.root), [])
+
+        for lang, (owner, content, gate_requirement) in owners.items():
+            with self.subTest(lang=lang):
+                owner.write_text(content.replace(gate_requirement, ''), encoding='utf-8')
+                errors = validator.check_repository(self.root)
+                self.assertTrue(
+                    any(gate_requirement.casefold() in error.casefold() for error in errors),
+                    errors,
+                )
+                owner.write_text(content, encoding='utf-8')
+
     def test_missing_map(self) -> None:
         self.mutate(self.route(), '\x60\x60\x60mermaid', '\x60\x60\x60text')
         self.reject('exactly one mermaid')

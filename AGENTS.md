@@ -88,6 +88,7 @@ For each such change, complete this sequence in both language mirrors:
 - English documents link to English targets; Simplified Chinese documents link to `_zh_cn.md` targets. Cross-language links are reserved for the visible language switch.
 - Follow the current `scripts/check-doc-layer-links.py` direction rules: ordinary Layer-01 references target Layer-01; ordinary Layer-02 references target `references/` or Layer-01; ordinary Layer-03 references target shared protocols, Layer-01, or Layer-02; ordinary Layer-04 references may additionally target Layer-03. Do not use link formatting to bypass these rules.
 - Every local Markdown target must exist, and links must point to the current owner filename rather than an obsolete pre-split name.
+- Layer-03 checkpoint owners describe semantic prerequisites, inputs, results, and failure boundaries without depending on concrete Layer-04 route coordinates. Keep the numbered mapping in Layer-04 callers; enforce this in all Layer-03 Markdown content, including prose, inline code, fenced blocks, and navigation documents.
 
 ## Worktree and delegated documentation workflow
 

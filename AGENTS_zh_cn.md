@@ -88,6 +88,7 @@
 - 英文文档链接英文目标；简体中文文档链接 `_zh_cn.md` 目标。跨语言链接只用于可见的语言切换。
 - 遵循当前 `scripts/check-doc-layer-links.py` 的方向规则：普通 Layer-01 引用指向 Layer-01；普通 Layer-02 引用指向 `references/` 或 Layer-01；普通 Layer-03 引用指向共享协议、Layer-01 或 Layer-02；普通 Layer-04 可额外引用 Layer-03。不得用链接格式绕过这些规则。
 - 每个本地 Markdown 目标都必须存在，且链接必须指向当前 owner 文件名，不能继续使用拆分前的旧文件名。
+- Layer-03 检查点 owner 只描述语义前置条件、输入、结果和失败边界，不依赖具体 Layer-04 路线坐标。编号映射由 Layer-04 调用方维护；所有 Layer-03 Markdown 内容均须遵守此规则，包括正文、行内代码、围栏代码块和导航文档。
 
 ## Worktree 与子代理文档工作流
 

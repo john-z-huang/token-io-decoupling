@@ -7,7 +7,7 @@ This checkpoint owns stage-level applicability routing for optional advice.
 
 ## Trigger and inputs
 
-Before Mode and Session pass and authorized Root context exists, record advice as `Not applicable`; use direct authoritative sources for task-intent/output classification. Advice cannot select or change the route selection result, reopen the Mode gate, or change locked mode/count. After Root context exists, S06/M07 consumes only relevant Decision advice, S09/M11 consumes only relevant Control advice, and S10/M12 consumes only relevant Verification/Epoch advice. Apply [Decisions Advisory](../layer-01-fundamental-concepts/execution-planning/decisions-advisory.md) and the current direct checkpoint owner; return each suggestion to its named stage for evidence-based review.
+Before Mode and Session pass and authorized Root context exists, record advice as `Not applicable`; use direct authoritative sources for task-intent/output classification. Advice cannot select or change the route selection result, reopen the Mode gate, or change locked mode/count. After authorized Root context exists, the Decision, Control, and Verification/Epoch stages consume only their relevant advice, respectively. Apply [Decisions Advisory](../layer-01-fundamental-concepts/execution-planning/decisions-advisory.md) and the current direct checkpoint owner; return each suggestion to its named stage for evidence-based review.
 
 ## Decision and result
 

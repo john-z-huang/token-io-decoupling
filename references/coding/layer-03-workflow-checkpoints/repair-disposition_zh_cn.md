@@ -14,7 +14,7 @@
 1. 必须提供具体失败证据、受影响路径和最小修复候选。没有具体失败的语义变更不能算作 Repair；应作为重大决策变化路由。
 2. 用当前 Contract 和 Decision 应用 Repair 范围门禁。只释放获授权的窄范围修复及其定向检查。
 3. 记录修复交接、新指纹和受影响 epoch；将当前证据交给 Verification，并在依赖工作前重跑所有变更 epoch 所需检查。
-4. 重大决策变化返回 S01/S06 或 M01/M07 进行路线调度。无具体失败时，返回 Repair `Not applicable` 及证据依据。
+4. 重大决策变化应向调用方返回变更后的 Contract/Decision 事实和证据，以便重新审查 Contract 与 Decision 并调度路线。无具体失败时，返回 Repair `Not applicable` 及证据依据。若已验收的 epoch 发生变化，依赖工作继续前必须取得当前 Verification 证据。
 
 ## 失败边界
 

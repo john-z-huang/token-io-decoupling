@@ -14,7 +14,7 @@ After a failed current Verification or a material decision change, use this chec
 1. Require concrete failing evidence, affected paths, and the smallest repair candidate. A semantic change without a concrete failure is not a Repair; route it as a material decision change.
 2. Apply the Repair scope gate against the current Contract and Decision. Release only the authorized narrow repair and its focused checks.
 3. Capture the repair handoff, new fingerprint, and affected epochs; send current evidence to Verification and re-run every required check for changed epochs before dependent work.
-4. A material decision change returns to S01/S06 or M01/M07 for route scheduling. Without a concrete failure, return Repair `Not applicable` and the evidence basis.
+4. A material decision change returns its changed Contract/Decision facts and evidence to the caller for renewed Contract and Decision review and route scheduling. Without a concrete failure, return Repair `Not applicable` and its evidence basis. If an accepted epoch changes, require current Verification evidence before dependent work proceeds.
 
 ## Failure boundary
 

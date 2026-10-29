@@ -6,7 +6,7 @@
 
 ## 触发与输入
 
-在 S05/M06 消费当前决策问题、带来源溯源的已核实事实、用户明确指令，以及可能使用生成上下文的下游决策。应用[决策上下文生成](../layer-01-fundamental-concepts/execution-planning/decision-context-generation_zh_cn.md)。本检查点不启用建议。单独的可选五节点阶段建议门禁由路线建议选择和[Decisions 建议](../layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md)负责；它不会重开或改变 Mode。执行主体、输出路由、候选和职责决策仍由各自直接 owner 负责。
+消费当前决策问题、带来源溯源的已核实事实、用户明确指令，以及可能使用生成上下文的下游决策。应用[决策上下文生成](../layer-01-fundamental-concepts/execution-planning/decision-context-generation_zh_cn.md)。本检查点不启用建议。单独的可选五节点阶段建议门禁由路线建议选择和[Decisions 建议](../layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md)负责；它不会重开或改变 Mode。执行主体、输出路由、候选和职责决策仍由各自直接 owner 负责。
 
 ## 决策与结果
 

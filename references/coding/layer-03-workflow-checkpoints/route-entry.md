@@ -10,7 +10,7 @@ The Coding entry invokes this checkpoint after the [Contract checkpoint](../laye
 
 ## Decision and result
 
-Confirm the gates are complete, choose exactly the route authorized by Mode, and pass the route identity plus gate evidence to its entry step. Return the selected route identity and gate evidence to the Coding entry. That entry links the selected route; its S03/M03 step checks this result.
+Confirm all required gates are complete, select only the route authorized by Mode, and return the selected route identity and gate evidence to the caller for loading and validation.
 
 ## Failure boundary
 
