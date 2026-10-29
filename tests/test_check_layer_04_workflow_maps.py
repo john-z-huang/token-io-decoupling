@@ -44,6 +44,22 @@ class WorkflowMapTests(unittest.TestCase):
                              or ' '.join(validator.RULE_CONTEXT_NODE_REQUIREMENTS[lang].get(name, ()))
                              or ' '.join(validator.ENHANCED_NODE_LABEL_REQUIREMENTS[lang].get(name, ()))
                              or name)
+                    if name == 'ACT_RECOVERY_RECHECK':
+                        label = (('Within S04; recheck S01 Contract, S05 current Context, S06 Decision'
+                                  if route == 'single-agent' else
+                                  'Within M04; recheck M01 Contract, M06 current Context, M07 Decision')
+                                 if lang == 'en' else
+                                 ('在 S04 内重核 S01 Contract、S05 当前 Context 和 S06 Decision'
+                                  if route == 'single-agent' else
+                                  '在 M04 内重核 M01 Contract、M06 当前 Context 和 M07 Decision'))
+                        label += ('; without reopening Mode or repeating a completed prompt'
+                                  if lang == 'en' else '；不重开 Mode 或重复已完成提问')
+                    elif name == 'ACT_STATE_READBACK':
+                        label = ('Confirm the current canonical Session state and read it back before audit resolution'
+                                 if lang == 'en' else '在审计解析前确认并读回当前规范 Session state')
+                    elif name == 'D_REPAIR':
+                        label = ('Repair outcome: narrow repair, material Contract change, material Decision change, or blocked evidence?'
+                                 if lang == 'en' else '修复结果：窄修复、Contract 重大变化、Decision 重大变化或证据阻塞？')
                     branch_nodes.append(f'{name}["{label}"]')
                 diagram = 'flowchart TD\n    ' + '\n    '.join(nodes + branch_nodes) + '\n'
                 audit_labels = validator.AUDIT_EDGE_LABELS[lang]
@@ -96,6 +112,24 @@ class WorkflowMapTests(unittest.TestCase):
                 step_lines = []
                 for i, name in enumerate(spec['steps'], 1):
                     body = 'Content and link.'
+                    if name == 'Session':
+                        body = (f'Map the result to {prefix}04; conditional trigger is absent; all successful paths consume only verified identity, current canonical record, and readback.'
+                                if lang == 'en' else
+                                f'结果映射到 {prefix}04；条件触发器缺失；所有成功路径均须先核实身份、当前规范记录并读回。')
+                    if name == 'Context':
+                        body = (f'Map its result to {prefix}{5 if route == "single-agent" else 6:02d}; sourced current facts; Not applicable; block.'
+                                if lang == 'en' else
+                                f'结果映射到 {prefix}{5 if route == "single-agent" else 6:02d}；当前事实；Not applicable；阻塞。')
+                    if name == 'Decision':
+                        body = (f'Map to {prefix}{i:02d}; Contract-consistent decision and authorized scope.'
+                                if lang == 'en' else
+                                f'映射到 {prefix}{i:02d}；符合 Contract 的决策和授权范围。')
+                    if name == 'Repair':
+                        body = (f'Map to {prefix}{i:02d} and D_REPAIR; evidence basis; no-failure result returns to {prefix}{10 if route == "single-agent" else 12}; {prefix}01; '
+                                f'{prefix}{6 if route == "single-agent" else 7:02d}; fingerprint; blocks.'
+                                if lang == 'en' else
+                                f'映射到 {prefix}{i:02d} 和 D_REPAIR；有证据依据；无失败结果也返回 {prefix}{10 if route == "single-agent" else 12}；{prefix}01；'
+                                f'{prefix}{6 if route == "single-agent" else 7:02d}；新指纹；阻塞。')
                     if name == 'Session':
                         body += f' [Session state](../layer-03-workflow-checkpoints/session-state-resolution{suffix}.md)'
                     if name == 'Context':
@@ -159,6 +193,19 @@ class WorkflowMapTests(unittest.TestCase):
     def reject(self, needle: str) -> None:
         errors = validator.check_repository(self.root)
         self.assertTrue(any(needle in e for e in errors), errors)
+
+    def reject_edge_removal(self, route: str, lang: str, source: str, target: str,
+                            expected: str) -> None:
+        path = self.route(route, lang)
+        original = path.read_text(encoding='utf-8')
+        line = next(line for line in original.splitlines()
+                    if line.strip().startswith(source + ' --')
+                    and line.rstrip().endswith('-> ' + target))
+        try:
+            path.write_text(original.replace(line + '\n', '', 1), encoding='utf-8')
+            self.reject(expected)
+        finally:
+            path.write_text(original, encoding='utf-8')
 
     def test_fixture_is_valid(self) -> None:
         self.assertEqual(validator.check_repository(self.root), [])
@@ -236,8 +283,8 @@ class WorkflowMapTests(unittest.TestCase):
         self.reject('checklist numbering')
 
     def test_missing_required_edge(self) -> None:
-        self.mutate(self.route(), 'S11 --> S10', 'S11 --> S12')
-        self.reject('required map edge S11 -> S10')
+        self.mutate(self.route(), 'S11 --> D_REPAIR', 'S11 --> S12')
+        self.reject('required map edge S11 -> D_REPAIR')
 
     def test_multi_agent_busy_candidate_output_label_is_required(self) -> None:
         busy_labels = {
@@ -367,39 +414,28 @@ class WorkflowMapTests(unittest.TestCase):
         self.reject('advisory edge D_CONTROL -> S05 must label Evidence-on-Demand')
 
     def test_native_reentry_cannot_bypass_canonical_audit_readback(self) -> None:
-        for route, source, target in (
-            ('single-agent', 'D_NATIVE_RECON', 'D_AUDIT_CONFIG'),
-            ('multi-agent', 'D_NATIVE_RECON', 'D_AUDIT_CONFIG'),
-            ('single-agent', 'ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'),
-            ('multi-agent', 'ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'),
-        ):
-            with self.subTest(route=route, source=source):
-                path = self.route(route)
-                text = path.read_text(encoding='utf-8')
-                line = next(line for line in text.splitlines()
-                            if line.strip().startswith(source + ' --')
-                            and line.rstrip().endswith('-> ' + target))
-                path.write_text(text.replace(line + '\n', '', 1), encoding='utf-8')
-                self.reject(f'required map edge {source} -> {target} is missing')
-                path.write_text(text, encoding='utf-8')
+        for route in ('single-agent', 'multi-agent'):
+            for lang in ('en', 'zh'):
+                for source in ('D_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'):
+                    with self.subTest(route=route, lang=lang, source=source):
+                        self.reject_edge_removal(route, lang, source, 'ACT_STATE_READBACK',
+                                                 f'required map edge {source} -> ACT_STATE_READBACK is missing')
 
     def test_native_reentry_cannot_jump_past_audit_or_recovery_gate(self) -> None:
-        for route, source, target in (
-            ('single-agent', 'D_NATIVE_RECON', 'S05'),
-            ('single-agent', 'ACT_RECOVERY_RECHECK', 'S05'),
-            ('multi-agent', 'D_NATIVE_RECON', 'M05'),
-            ('multi-agent', 'ACT_RECOVERY_RECHECK', 'M05'),
-            ('single-agent', 'D_NATIVE_RECON', 'S07'),
-            ('multi-agent', 'ACT_RECOVERY_RECHECK', 'M08'),
-        ):
-            with self.subTest(route=route, source=source, target=target):
-                path = self.route(route)
-                text = path.read_text(encoding='utf-8')
-                self.assertIn('\n```\n', text)
-                path.write_text(text.replace('\n```\n',
-                                             f'\n    {source} --> {target}\n```\n', 1),
-                                 encoding='utf-8')
-                self.reject('unexpected map edge')
+        for route in ('single-agent', 'multi-agent'):
+            for lang in ('en', 'zh'):
+                for source in ('ACT_ROOT_OPEN', 'ACT_RECOVERY_RECHECK'):
+                    with self.subTest(route=route, lang=lang, source=source):
+                        path = self.route(route, lang)
+                        original = path.read_text(encoding='utf-8')
+                        try:
+                            path.write_text(original.replace('\n```\n',
+                                f'\n    {source} --> D_AUDIT_CONFIG\n```\n', 1), encoding='utf-8')
+                            self.reject('unexpected map edge')
+                        finally:
+                            path.write_text(original, encoding='utf-8')
+                self.reject_edge_removal(route, lang, 'ACT_STATE_READBACK', 'BLOCK',
+                                         'required map edge ACT_STATE_READBACK -> BLOCK is missing')
 
     def test_control_completion_is_limited_to_normal_postimplementation(self) -> None:
         for route, lang in (
@@ -495,10 +531,74 @@ class WorkflowMapTests(unittest.TestCase):
         path.write_text(text, encoding='utf-8')
         self.reject('unexpected map edge')
 
+    def test_session_state_cannot_bypass_readback_or_audit_gate(self) -> None:
+        for route, source, target in (
+            ('single-agent', 'ACT_STATE_READBACK', 'D_AUDIT_CONFIG'),
+            ('multi-agent', 'ACT_STATE_READBACK', 'D_AUDIT_CONFIG'),
+        ):
+            with self.subTest(route=route):
+                path = self.route(route)
+                text = path.read_text(encoding='utf-8')
+                line = next(line for line in text.splitlines()
+                            if line.strip().startswith(source + ' --')
+                            and line.rstrip().endswith('-> ' + target))
+                path.write_text(text.replace(line + '\n', '', 1), encoding='utf-8')
+                self.reject(f'required map edge {source} -> {target} is missing')
+                path.write_text(text, encoding='utf-8')
+
+    def test_session_checklist_requires_readback_for_all_success_paths(self) -> None:
+        for route, prefix in (('single-agent', 'S'), ('multi-agent', 'M')):
+            for lang in ('en', 'zh'):
+                path = self.route(route, lang)
+                original = path.read_text(encoding='utf-8')
+                old = ('all successful paths consume only verified identity, current canonical record, and readback.'
+                       if lang == 'en' else '所有成功路径均须先核实身份、当前规范记录并读回。')
+                try:
+                    self.mutate(path, old, 'Some paths consume a record.' if lang == 'en' else '部分路径读取记录。')
+                    self.reject(f'Session step must map its result to {prefix}04 with canonical readback and trigger-based N/A')
+                finally:
+                    path.write_text(original, encoding='utf-8')
+
+    def test_repair_checklist_maps_evidence_back_to_current_verification(self) -> None:
+        for route, prefix, verify in (('single-agent', 'S', 'S10'), ('multi-agent', 'M', 'M12')):
+            for lang in ('en', 'zh'):
+                path = self.route(route, lang)
+                original = path.read_text(encoding='utf-8')
+                old = (f'no-failure result returns to {verify}' if lang == 'en'
+                       else f'无失败结果也返回 {verify}')
+                try:
+                    self.mutate(path, old, 'This result continues.' if lang == 'en' else '继续。')
+                    self.reject(f'Repair step must include route mapping requirement')
+                finally:
+                    path.write_text(original, encoding='utf-8')
+
+    def test_repair_contract_decision_and_block_routes_are_required(self) -> None:
+        for route, contract_target, decision_target in (
+            ('single-agent', 'S01', 'S06'), ('multi-agent', 'M01', 'M07')):
+            for lang in ('en', 'zh'):
+                for target in (contract_target, decision_target, 'BLOCK'):
+                    with self.subTest(route=route, lang=lang, target=target):
+                        self.reject_edge_removal(route, lang, 'D_REPAIR', target,
+                                                 f'required map edge D_REPAIR -> {target} is missing')
+
+    def test_repair_cannot_return_directly_to_verification(self) -> None:
+        for route, prefix, repair, verify in (('single-agent', 'S', 'S11', 'S10'),
+                                              ('multi-agent', 'M', 'M13', 'M12')):
+            for lang in ('en', 'zh'):
+                with self.subTest(route=route, lang=lang):
+                    path = self.route(route, lang)
+                    original = path.read_text(encoding='utf-8')
+                    try:
+                        path.write_text(original.replace('\n```\n',
+                            f'\n    {repair} --> {verify}\n```\n', 1), encoding='utf-8')
+                        self.reject('unexpected map edge')
+                    finally:
+                        path.write_text(original, encoding='utf-8')
+
     def test_language_topology_drift(self) -> None:
         path = self.route(lang='zh')
         text = path.read_text(encoding='utf-8')
-        text = text.replace('    S11 --> S10\n', '    S11 --> S10\n    S11 --> S09\n', 1)
+        text = text.replace('    S11 --> D_REPAIR\n', '    S11 --> D_REPAIR\n    S11 --> S09\n', 1)
         path.write_text(text, encoding='utf-8')
         self.reject('English and Chinese Mermaid node IDs/edges differ')
 

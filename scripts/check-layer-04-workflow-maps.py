@@ -36,7 +36,7 @@ ROUTE_SPECS = {
             'ACT_CONTEXT_DIRECT', 'ACT_CONTEXT_GEN', 'ACT_EXECUTOR_CONFLICT', 'ACT_EXECUTOR_ROOT',
             'ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_HOLD', 'ACT_OUTPUT_NO',
             'ACT_NATIVE', 'ACT_ROOT_OPEN', 'ACT_NATIVE_TRANSFER', 'ACT_NATIVE_RECON',
-            'ACT_RECOVERY_RECHECK', 'ACT_AUDIT_CONFIRM', 'ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT',
+            'ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK', 'D_REPAIR', 'ACT_AUDIT_CONFIRM', 'ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT',
             'ACT_INITIAL_CLASSIFY', 'ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT', 'ACT_CONTROL_ADVICE',
             'ACT_CONTROL_DIRECT', 'ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT', 'ACT_PLAN', 'ACT_PLAN_SCAN',
             'ACT_PLAN_READ', 'ACT_ARCHIVE', 'ACT_RECON',
@@ -54,12 +54,12 @@ ROUTE_SPECS = {
             ('D_ENHANCED_HOST', 'ACT_NATIVE'), ('ACT_NATIVE', 'S03'), ('D_ENHANCED_HOST', 'BLOCK'),
             ('S03', 'S04'), ('S04', 'D_ROOT_STORE'),
             ('D_ROOT_STORE', 'D_NATIVE_RECON'), ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'), ('D_ROOT_STORE', 'BLOCK'),
-            ('ACT_ROOT_OPEN', 'D_AUDIT_CONFIG'), ('ACT_ROOT_OPEN', 'BLOCK'),
-            ('D_AUTHORITY_TRANSFER', 'D_AUDIT_CONFIG'), ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'), ('D_AUTHORITY_TRANSFER', 'BLOCK'),
-            ('ACT_NATIVE_TRANSFER', 'D_AUDIT_CONFIG'), ('ACT_NATIVE_TRANSFER', 'BLOCK'),
-            ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'), ('D_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'),
-            ('ACT_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'), ('ACT_NATIVE_RECON', 'BLOCK'),
-            ('ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'),
+            ('ACT_ROOT_OPEN', 'ACT_STATE_READBACK'), ('ACT_ROOT_OPEN', 'BLOCK'),
+            ('D_AUTHORITY_TRANSFER', 'ACT_STATE_READBACK'), ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'), ('D_AUTHORITY_TRANSFER', 'BLOCK'),
+            ('ACT_NATIVE_TRANSFER', 'ACT_STATE_READBACK'), ('ACT_NATIVE_TRANSFER', 'BLOCK'),
+            ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'), ('D_NATIVE_RECON', 'ACT_STATE_READBACK'), ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'),
+            ('ACT_NATIVE_RECON', 'ACT_STATE_READBACK'), ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'), ('ACT_NATIVE_RECON', 'BLOCK'),
+            ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'), ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'), ('ACT_STATE_READBACK', 'BLOCK'),
             ('D_AUDIT_CONFIG', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'),
             ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'), ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'),
             ('D_AUDIT_CONFIG', 'BLOCK'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'),
@@ -95,7 +95,7 @@ ROUTE_SPECS = {
             ('S07', 'S08'), ('S08', 'S09'), ('S09', 'D_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_ADVICE'), ('D_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_ADVICE', 'ACT_CONTROL_DIRECT'), ('ACT_CONTROL_DIRECT', 'D_CONTROL'), ('ACT_CONTROL_DIRECT', 'BLOCK'),
             ('D_CONTROL', 'S05'), ('D_CONTROL', 'S06'), ('D_CONTROL', 'S10'), ('D_CONTROL', 'BLOCK'),
             ('S10', 'D_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_DIRECT', 'D_VERIFY'), ('ACT_EPOCH_DIRECT', 'BLOCK'), ('D_VERIFY', 'S11'), ('D_VERIFY', 'S12'), ('D_VERIFY', 'BLOCK'),
-            ('S11', 'S10'), ('S12', 'D_DOC'), ('D_DOC', 'S10'), ('D_DOC', 'S06'),
+            ('S11', 'D_REPAIR'), ('D_REPAIR', 'S10'), ('D_REPAIR', 'S01'), ('D_REPAIR', 'S06'), ('D_REPAIR', 'BLOCK'), ('S12', 'D_DOC'), ('D_DOC', 'S10'), ('D_DOC', 'S06'),
             ('D_DOC', 'S13'), ('S13', 'D_GIT'), ('D_GIT', 'S14'), ('D_GIT', 'BLOCK'),
             ('S14', 'D_ARCHIVE'), ('D_ARCHIVE', 'ACT_ARCHIVE'), ('D_ARCHIVE', 'DONE'),
             ('ACT_ARCHIVE', 'D_ARCHIVED'), ('D_ARCHIVED', 'DONE'), ('D_ARCHIVED', 'BLOCK'),
@@ -116,7 +116,7 @@ ROUTE_SPECS = {
             'ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT', 'ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT', 'ACT_INITIAL_CLASSIFY', 'ACT_MEMO',
             'ACT_NATIVE', 'ACT_NATIVE_RECON', 'ACT_NATIVE_TRANSFER', 'ACT_OUTPUT_ADVICE', 'ACT_OUTPUT_CHILD', 'ACT_OUTPUT_HOLD',
             'ACT_OUTPUT_NO', 'ACT_OUTPUT_WAIT', 'ACT_PLAN', 'ACT_PLAN_READ', 'ACT_PLAN_SCAN', 'ACT_RECON_PLAN',
-            'ACT_RECOVERY_RECHECK', 'ACT_ROLE_ADVICE', 'ACT_ROLE_NA', 'ACT_ROLE_RESERVE', 'ACT_ROLE_REVIEW', 'ACT_ROOT_OPEN',
+            'ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK', 'D_REPAIR', 'ACT_ROLE_ADVICE', 'ACT_ROLE_NA', 'ACT_ROLE_RESERVE', 'ACT_ROLE_REVIEW', 'ACT_ROOT_OPEN',
             'ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT', 'ACT_TASK_ASSIGN', 'ACT_WORKER_OPEN', 'BLOCK', 'DONE',
             'D_ARCHIVE', 'D_ARCHIVED', 'D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION', 'D_AUDIT_REPLY', 'D_AUTHORITY_TRANSFER',
             'D_BOOT', 'D_CHILD_POOL', 'D_CONTEXT_GEN', 'D_CONTROL', 'D_CONTROL_ADVICE', 'D_DECISION_ADVICE',
@@ -135,19 +135,19 @@ ROUTE_SPECS = {
             ('ACT_CONTROL_DIRECT', 'D_CONTROL'), ('ACT_DECISION_ADVICE', 'ACT_DECISION_DIRECT'), ('ACT_DECISION_DIRECT', 'BLOCK'), ('ACT_DECISION_DIRECT', 'D_PLAN'),
             ('ACT_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('ACT_EPOCH_DIRECT', 'BLOCK'), ('ACT_EPOCH_DIRECT', 'D_VERIFY'), ('ACT_INITIAL_CLASSIFY', 'BLOCK'),
             ('ACT_INITIAL_CLASSIFY', 'M02'), ('ACT_MEMO', 'M10'), ('ACT_NATIVE', 'M03'), ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'),
-            ('ACT_NATIVE_RECON', 'BLOCK'), ('ACT_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('ACT_NATIVE_TRANSFER', 'BLOCK'), ('ACT_NATIVE_TRANSFER', 'D_AUDIT_CONFIG'),
+            ('ACT_NATIVE_RECON', 'BLOCK'), ('ACT_NATIVE_RECON', 'ACT_STATE_READBACK'), ('ACT_NATIVE_TRANSFER', 'BLOCK'), ('ACT_NATIVE_TRANSFER', 'ACT_STATE_READBACK'),
             ('ACT_OUTPUT_ADVICE', 'D_OUTPUT_RESULT'), ('ACT_OUTPUT_CHILD', 'ACT_ROLE_NA'), ('ACT_OUTPUT_HOLD', 'ACT_OUTPUT_WAIT'), ('ACT_OUTPUT_HOLD', 'D_INDEPENDENT_CHILD'),
             ('ACT_OUTPUT_NO', 'D_NEW_CHILD'), ('ACT_OUTPUT_WAIT', 'ACT_OUTPUT_ADVICE'), ('ACT_PLAN', 'D_PLAN_SAVED'), ('ACT_PLAN_READ', 'BLOCK'),
             ('ACT_PLAN_READ', 'D_CONTEXT_GEN'), ('ACT_PLAN_SCAN', 'BLOCK'), ('ACT_PLAN_SCAN', 'D_PLAN_MATCH'), ('ACT_RECON_PLAN', 'D_BOOT'),
-            ('ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'), ('ACT_ROLE_ADVICE', 'ACT_ROLE_REVIEW'), ('ACT_ROLE_NA', 'D_RECOVERY_GATE'), ('ACT_ROLE_RESERVE', 'BLOCK'),
+            ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'), ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'), ('ACT_STATE_READBACK', 'BLOCK'), ('ACT_ROLE_ADVICE', 'ACT_ROLE_REVIEW'), ('ACT_ROLE_NA', 'D_RECOVERY_GATE'), ('ACT_ROLE_RESERVE', 'BLOCK'),
             ('ACT_ROLE_RESERVE', 'D_RECOVERY_GATE'), ('ACT_ROLE_REVIEW', 'BLOCK'), ('ACT_ROLE_REVIEW', 'D_ROLE_CAPACITY'), ('ACT_ROOT_OPEN', 'BLOCK'),
-            ('ACT_ROOT_OPEN', 'D_AUDIT_CONFIG'), ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'), ('ACT_RULE_DIRECT', 'ACT_PLAN_SCAN'), ('ACT_RULE_DIRECT', 'BLOCK'),
+            ('ACT_ROOT_OPEN', 'ACT_STATE_READBACK'), ('ACT_RULE_CONTEXT', 'ACT_RULE_DIRECT'), ('ACT_RULE_DIRECT', 'ACT_PLAN_SCAN'), ('ACT_RULE_DIRECT', 'BLOCK'),
             ('ACT_TASK_ASSIGN', 'D_EXECUTOR'), ('ACT_WORKER_OPEN', 'BLOCK'), ('ACT_WORKER_OPEN', 'D_MEMO'), ('D_ARCHIVE', 'ACT_ARCHIVE'),
             ('D_ARCHIVE', 'DONE'), ('D_ARCHIVED', 'BLOCK'), ('D_ARCHIVED', 'DONE'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_CLARIFY'),
             ('D_AUDIT_CONFIG', 'ACT_AUDIT_CONFIRM'), ('D_AUDIT_CONFIG', 'ACT_AUDIT_PROMPT'), ('D_AUDIT_CONFIG', 'BLOCK'), ('D_AUDIT_CONFIG', 'D_AUDIT_CORRECTION'),
             ('D_AUDIT_CONFIG', 'D_AUDIT_REPLY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_DEFAULT'), ('D_AUDIT_CORRECTION', 'ACT_AUDIT_REPLY'),
             ('D_AUDIT_REPLY', 'ACT_AUDIT_CLARIFY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_REPLY'), ('D_AUDIT_REPLY', 'ACT_AUDIT_TIMEOUT'), ('D_AUDIT_REPLY', 'ACT_AUDIT_WAIT'),
-            ('D_AUDIT_REPLY', 'BLOCK'), ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'), ('D_AUTHORITY_TRANSFER', 'BLOCK'), ('D_AUTHORITY_TRANSFER', 'D_AUDIT_CONFIG'),
+            ('D_AUDIT_REPLY', 'BLOCK'), ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'), ('D_AUTHORITY_TRANSFER', 'BLOCK'), ('D_AUTHORITY_TRANSFER', 'ACT_STATE_READBACK'),
             ('D_BOOT', 'ACT_BOOT_PLAN'), ('D_BOOT', 'ACT_TASK_ASSIGN'), ('D_CHILD_POOL', 'ACT_CHILD_ADVICE'), ('D_CHILD_POOL', 'ACT_CHILD_DIRECT'),
             ('D_CHILD_POOL', 'BLOCK'), ('D_CHILD_POOL', 'D_OUTPUT_EXPLICIT'), ('D_CONTEXT_GEN', 'ACT_CONTEXT_DIRECT'), ('D_CONTEXT_GEN', 'ACT_CONTEXT_GEN'),
             ('D_CONTROL', 'BLOCK'), ('D_CONTROL', 'M06'), ('D_CONTROL', 'M07'), ('D_CONTROL', 'M12'),
@@ -157,7 +157,7 @@ ROUTE_SPECS = {
             ('D_EPOCH_ADVICE', 'ACT_EPOCH_ADVICE'), ('D_EPOCH_ADVICE', 'ACT_EPOCH_DIRECT'), ('D_EXECUTOR', 'BLOCK'), ('D_EXECUTOR', 'D_CHILD_POOL'),
             ('D_EXECUTOR', 'D_OUTPUT_EXPLICIT'), ('D_GIT', 'BLOCK'), ('D_GIT', 'M16'), ('D_INDEPENDENT_CHILD', 'ACT_OUTPUT_WAIT'),
             ('D_INDEPENDENT_CHILD', 'D_ROLE_SELECT'), ('D_MEMO', 'ACT_MEMO'), ('D_MEMO', 'M10'), ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'),
-            ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'), ('D_NATIVE_RECON', 'D_AUDIT_CONFIG'), ('D_NEW_CHILD', 'ACT_CHILD_WAIT'), ('D_NEW_CHILD', 'ACT_ROLE_NA'),
+            ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'), ('D_NATIVE_RECON', 'ACT_STATE_READBACK'), ('D_NEW_CHILD', 'ACT_CHILD_WAIT'), ('D_NEW_CHILD', 'ACT_ROLE_NA'),
             ('D_NEW_CHILD', 'D_ROLE_SELECT'), ('D_OUTPUT_EXPLICIT', 'ACT_OUTPUT_ADVICE'), ('D_OUTPUT_EXPLICIT', 'D_NEW_CHILD'), ('D_OUTPUT_RESULT', 'ACT_OUTPUT_CHILD'),
             ('D_OUTPUT_RESULT', 'ACT_OUTPUT_HOLD'), ('D_OUTPUT_RESULT', 'ACT_OUTPUT_NO'), ('D_OUTPUT_RESULT', 'BLOCK'), ('D_PLAN', 'ACT_PLAN'),
             ('D_PLAN', 'D_RECON'), ('D_PLAN_MATCH', 'ACT_PLAN_READ'), ('D_PLAN_MATCH', 'D_CONTEXT_GEN'), ('D_PLAN_SAVED', 'BLOCK'),
@@ -170,7 +170,8 @@ ROUTE_SPECS = {
             ('M04', 'D_ROOT_STORE'), ('M05', 'M06'), ('M06', 'D_RULE_ACCESS'), ('M07', 'D_DECISION_ADVICE'),
             ('M08', 'M09'), ('M09', 'BLOCK'), ('M09', 'D_MEMO'), ('M09', 'D_WORKER_STORE'),
             ('M10', 'BLOCK'), ('M10', 'M11'), ('M11', 'BLOCK'), ('M11', 'D_CONTROL_ADVICE'),
-            ('M12', 'BLOCK'), ('M12', 'D_EPOCH_ADVICE'), ('M13', 'BLOCK'), ('M13', 'M12'),
+            ('M12', 'BLOCK'), ('M12', 'D_EPOCH_ADVICE'), ('M13', 'BLOCK'), ('M13', 'D_REPAIR'),
+            ('D_REPAIR', 'M12'), ('D_REPAIR', 'M01'), ('D_REPAIR', 'M07'), ('D_REPAIR', 'BLOCK'),
             ('M14', 'BLOCK'), ('M14', 'D_DOC'), ('M15', 'BLOCK'), ('M15', 'D_GIT'),
             ('M16', 'D_ARCHIVE'),
         },
@@ -212,7 +213,9 @@ ENHANCED_NODE_LABEL_REQUIREMENTS = {
         'ACT_ROOT_OPEN': ('Open or resume Root store', 'audit as pending'),
         'D_AUTHORITY_TRANSFER': ('previously canonical Enhanced record', 'transfer back to Native'),
         'ACT_NATIVE_TRANSFER': ('Freeze Enhanced writers', 'complete canonical record', 'read back'),
-        'ACT_RECOVERY_RECHECK': ('Recheck Contract', 'current Context', 'Decision', 'current canonical audit record', 'without reopening Mode', 'repeating a completed prompt'),
+        'ACT_RECOVERY_RECHECK': ('Contract', 'Context', 'Decision', 'without reopening Mode', 'repeating a completed prompt'),
+        'ACT_STATE_READBACK': ('current canonical Session state', 'read it back before audit resolution'),
+        'D_REPAIR': ('narrow repair', 'material Contract change', 'material Decision change', 'blocked evidence'),
         'D_NATIVE_RECON': ('Native currently canonical', 'Root comparison unresolved'),
         'ACT_NATIVE_RECON': ('full set', 'exact comparison', 'supported differences'),
         'D_RECOVERY_GATE': ('post-floor Control Continue', 'current', 'Control rule', 'relevant Epochs'),
@@ -228,7 +231,9 @@ ENHANCED_NODE_LABEL_REQUIREMENTS = {
         'ACT_ROOT_OPEN': ('打开或恢复 Root store', '保持 pending'),
         'D_AUTHORITY_TRANSFER': ('既有规范 Enhanced 记录', '转回 Native'),
         'ACT_NATIVE_TRANSFER': ('冻结 Enhanced 写入者', '在途操作', '完整规范记录'),
-        'ACT_RECOVERY_RECHECK': ('重核 Contract', '当前 Context', 'Decision', '当前规范审计记录', '不重开 Mode', '重复已完成提问'),
+        'ACT_RECOVERY_RECHECK': ('Contract', 'Context', 'Decision', '不重开 Mode', '重复已完成提问'),
+        'ACT_STATE_READBACK': ('当前规范 Session state', '读回', '审计解析前'),
+        'D_REPAIR': ('窄修复', 'Contract 重大变化', 'Decision 重大变化', '证据阻塞'),
         'D_NATIVE_RECON': ('Native 当前', 'Root 对账是否未决'),
         'ACT_NATIVE_RECON': ('完整集合', '精确比较', '受支持差异'),
         'D_RECOVERY_GATE': ('floor 后', 'Control Continue', '当前 Control 规则', '相关 Epoch'),
@@ -247,19 +252,19 @@ ENHANCED_EDGE_LABELS = {
         ('D_ENHANCED_HOST', 'BLOCK'): 'required capability missing or unknown',
         ('D_ROOT_STORE', 'D_NATIVE_RECON'): 'Enhanced selected; current identity and schema verified',
         ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'): 'Native / Enhanced not selected / check existing authority',
-        ('ACT_ROOT_OPEN', 'D_AUDIT_CONFIG'): 'open or resume Root store',
-        ('D_AUTHORITY_TRANSFER', 'D_AUDIT_CONFIG'): 'no prior Enhanced authority / N/A',
+        ('ACT_ROOT_OPEN', 'ACT_STATE_READBACK'): 'open or resume Root store',
+        ('D_AUTHORITY_TRANSFER', 'ACT_STATE_READBACK'): 'no prior Enhanced authority / N/A',
         ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'): 'prior Enhanced authority; transfer authorized',
         ('D_AUTHORITY_TRANSFER', 'BLOCK'): 'history, freeze, or readback unknown / failed',
-        ('ACT_NATIVE_TRANSFER', 'D_AUDIT_CONFIG'): 'complete record frozen, copied, and read back',
+        ('ACT_NATIVE_TRANSFER', 'ACT_STATE_READBACK'): 'complete record frozen, copied, and read back',
         ('ACT_NATIVE_TRANSFER', 'BLOCK'): 'incomplete or indeterminate',
         ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'): 'no Native history / N/A',
-        ('D_NATIVE_RECON', 'D_AUDIT_CONFIG'): 'prior resolution current; no unresolved comparisons',
+        ('D_NATIVE_RECON', 'ACT_STATE_READBACK'): 'prior resolution current; no unresolved comparisons',
         ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'): 'unresolved Native history or comparison',
-        ('ACT_NATIVE_RECON', 'D_AUDIT_CONFIG'): 'exact comparison confirmed',
+        ('ACT_NATIVE_RECON', 'ACT_STATE_READBACK'): 'exact comparison confirmed',
         ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'): 'material resolution committed; recheck Contract',
         ('ACT_NATIVE_RECON', 'BLOCK'): 'unsupported difference or incomplete review',
-        ('ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'): 'Contract rechecked; confirm current canonical audit record',
+        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): 're-establish canonical state',
         ('D_ROOT_STORE', 'BLOCK'): 'required identity, guard, or schema unavailable',
         ('ACT_ROOT_OPEN', 'BLOCK'): 'open or validation failed',
         ('D_RECOVERY_GATE', 'ROUTE_SLICE'): 'no recovery floor / N/A or post-floor Continue is current for Control rule and relevant Epochs',
@@ -279,19 +284,19 @@ ENHANCED_EDGE_LABELS = {
         ('D_ENHANCED_HOST', 'BLOCK'): '必需能力缺失或未知',
         ('D_ROOT_STORE', 'D_NATIVE_RECON'): 'Enhanced 已选择；当前身份和 Schema 已核验',
         ('D_ROOT_STORE', 'D_AUTHORITY_TRANSFER'): 'Native／未选择 Enhanced／核验既有规范权威',
-        ('ACT_ROOT_OPEN', 'D_AUDIT_CONFIG'): '对账后打开或恢复',
-        ('D_AUTHORITY_TRANSFER', 'D_AUDIT_CONFIG'): '从未有 Enhanced 权威／不适用',
+        ('ACT_ROOT_OPEN', 'ACT_STATE_READBACK'): '对账后打开或恢复',
+        ('D_AUTHORITY_TRANSFER', 'ACT_STATE_READBACK'): '从未有 Enhanced 权威／不适用',
         ('D_AUTHORITY_TRANSFER', 'ACT_NATIVE_TRANSFER'): '已有 Enhanced 权威；转移获准且已核验',
         ('D_AUTHORITY_TRANSFER', 'BLOCK'): '历史、冻结或读回未知／失败',
-        ('ACT_NATIVE_TRANSFER', 'D_AUDIT_CONFIG'): '完整记录已冻结、写入并读回',
+        ('ACT_NATIVE_TRANSFER', 'ACT_STATE_READBACK'): '完整记录已冻结、写入并读回',
         ('ACT_NATIVE_TRANSFER', 'BLOCK'): '不完整或结果不确定',
         ('D_NATIVE_RECON', 'ACT_ROOT_OPEN'): '无 Native 历史／不适用',
-        ('D_NATIVE_RECON', 'D_AUDIT_CONFIG'): '先前裁决仍当前；无未决比较',
+        ('D_NATIVE_RECON', 'ACT_STATE_READBACK'): '先前裁决仍当前；无未决比较',
         ('D_NATIVE_RECON', 'ACT_NATIVE_RECON'): '存在未决 Native 历史或比较',
-        ('ACT_NATIVE_RECON', 'D_AUDIT_CONFIG'): '精确比较已确认',
+        ('ACT_NATIVE_RECON', 'ACT_STATE_READBACK'): '精确比较已确认',
         ('ACT_NATIVE_RECON', 'ACT_RECOVERY_RECHECK'): '实质差异已裁决并提交；重核 Contract',
         ('ACT_NATIVE_RECON', 'BLOCK'): '差异不受支持或审阅不完整',
-        ('ACT_RECOVERY_RECHECK', 'D_AUDIT_CONFIG'): 'Contract 已重核；确认当前规范审计记录',
+        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): '重建规范 state',
         ('D_ROOT_STORE', 'BLOCK'): '必需身份、守卫或 Schema 不可用',
         ('ACT_ROOT_OPEN', 'BLOCK'): '打开或核验失败',
         ('D_RECOVERY_GATE', 'ROUTE_SLICE'): '无恢复 floor／不适用，或 floor 后 Continue 对当前 Control 规则和相关 Epoch 仍有效',
@@ -390,6 +395,13 @@ MULTI_AGENT_EDGE_LABEL_REQUIREMENTS = {
             'explicit creation/role; skip role advice',
             'context generation failed; direct facts suffice; no downstream advice',
         ),
+        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): ('re-establish canonical state',),
+        ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'): ('confirmed and read back',),
+        ('ACT_STATE_READBACK', 'BLOCK'): ('unavailable / failed',),
+        ('D_REPAIR', 'M12'): ('new fingerprint', 'evidence-backed no-failure N/A'),
+        ('D_REPAIR', 'M01'): ('material Contract change',),
+        ('D_REPAIR', 'M07'): ('material Decision change within Contract',),
+        ('D_REPAIR', 'BLOCK'): ('required diagnosis, authorization, scope, or handoff unavailable',),
     },
     'zh': {
         ('D_CHILD_POOL', 'D_OUTPUT_EXPLICIT'): (
@@ -400,6 +412,13 @@ MULTI_AGENT_EDGE_LABEL_REQUIREMENTS = {
             '用户明确要求创建／指定职责；跳过职责建议',
             '上下文生成失败但直接事实足够；不发下游建议',
         ),
+        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): ('重建规范 state',),
+        ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'): ('已确认并读回',),
+        ('ACT_STATE_READBACK', 'BLOCK'): ('不可用／失败',),
+        ('D_REPAIR', 'M12'): ('新指纹', '有依据的无失败 N/A'),
+        ('D_REPAIR', 'M01'): ('Contract 重大变化',),
+        ('D_REPAIR', 'M07'): ('Contract 内 Decision 重大变化',),
+        ('D_REPAIR', 'BLOCK'): ('必需诊断、授权、范围或 handoff 不可用',),
     },
 }
 
@@ -424,6 +443,13 @@ SINGLE_AGENT_EDGE_LABEL_REQUIREMENTS = {
         ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_HOLD'): ('verified facts establish yes',),
         ('ACT_OUTPUT_DIRECT', 'BLOCK'): ('facts missing, conflicting, or still unresolved',),
         ('ACT_OUTPUT_HOLD', 'BLOCK'): ('hold and report topology boundary; stop before output',),
+        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): ('re-establish canonical state',),
+        ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'): ('confirmed and read back',),
+        ('ACT_STATE_READBACK', 'BLOCK'): ('unavailable / failed',),
+        ('D_REPAIR', 'S10'): ('new fingerprint', 'evidence-backed no-failure N/A'),
+        ('D_REPAIR', 'S01'): ('material Contract change',),
+        ('D_REPAIR', 'S06'): ('material Decision change within Contract',),
+        ('D_REPAIR', 'BLOCK'): ('required diagnosis, authorization, scope, or handoff unavailable',),
     },
     'zh': {
         ('D_CONTEXT_GEN', 'ACT_CONTEXT_GEN'): ('未决的下游决策需要背景',),
@@ -445,6 +471,13 @@ SINGLE_AGENT_EDGE_LABEL_REQUIREMENTS = {
         ('ACT_OUTPUT_DIRECT', 'ACT_OUTPUT_HOLD'): ('已核实事实支持 yes',),
         ('ACT_OUTPUT_DIRECT', 'BLOCK'): ('事实缺失、冲突或仍未决',),
         ('ACT_OUTPUT_HOLD', 'BLOCK'): ('挂起并报告拓扑边界；不得继续输出',),
+        ('ACT_RECOVERY_RECHECK', 'ACT_STATE_READBACK'): ('重建规范 state',),
+        ('ACT_STATE_READBACK', 'D_AUDIT_CONFIG'): ('已确认并读回',),
+        ('ACT_STATE_READBACK', 'BLOCK'): ('不可用／失败',),
+        ('D_REPAIR', 'S10'): ('新指纹', '有依据的无失败 N/A'),
+        ('D_REPAIR', 'S01'): ('Contract 重大变化',),
+        ('D_REPAIR', 'S06'): ('Contract 内 Decision 重大变化',),
+        ('D_REPAIR', 'BLOCK'): ('必需诊断、授权、范围或 handoff 不可用',),
     },
 }
 
@@ -661,6 +694,16 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
         for fragment in fragments:
             if name in nodes and fragment.casefold() not in nodes[name].casefold():
                 errors.append(f'{path}: node {name} must identify {fragment}')
+    recovery_fragments = (('Within S04', 'S01 Contract', 'S05 current Context', 'S06 Decision')
+                         if route == 'single-agent' and lang == 'en' else
+                         ('Within M04', 'M01 Contract', 'M06 current Context', 'M07 Decision')
+                         if route == 'multi-agent' and lang == 'en' else
+                         ('在 S04 内', 'S01 Contract', 'S05 当前 Context', 'S06 Decision')
+                         if route == 'single-agent' else
+                         ('在 M04 内', 'M01 Contract', 'M06 当前 Context', 'M07 Decision'))
+    for fragment in recovery_fragments:
+        if fragment.casefold() not in nodes.get('ACT_RECOVERY_RECHECK', '').casefold():
+            errors.append(f'{path}: ACT_RECOVERY_RECHECK must map the recovery review to {fragment}')
     for name, fragments in RULE_CONTEXT_NODE_REQUIREMENTS[lang].items():
         for fragment in fragments:
             if name in nodes and fragment.casefold() not in nodes[name].casefold():
@@ -800,12 +843,31 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
             for required in requirements:
                 if required.casefold() not in owner_text:
                     errors.append(f'{path}: consumed {owner_slug} checkpoint must include requirement {required}')
+        context_end = STEP_RE.search(checklist_section[0], context_match.end())
+        context_text = checklist_section[0][context_match.start():context_end.start() if context_end else None].casefold()
+        context_route_terms = ((f'map its result to {prefix}'+('05' if route == 'single-agent' else '06'),
+                                'sourced current facts', 'not applicable', 'block') if lang == 'en' else
+                               (f'映射到 {prefix}'+('05' if route == 'single-agent' else '06'),
+                                '当前事实', 'not applicable', '阻塞'))
+        for required in context_route_terms:
+            if required.casefold() not in context_text:
+                errors.append(f'{path}: Context step must map its semantic result to {prefix}'+('05' if route == 'single-agent' else '06')+' with evidence, N/A, and block outcomes')
     if session_match:
         session_owner = consumed_owner(session_match, 'session-state-resolution', 'Session')
         if session_owner is not None:
             for required in SESSION_STATE_REQUIREMENTS[lang]:
                 if required.casefold() not in session_owner:
                     errors.append(f'{path}: consumed session-state-resolution checkpoint must include requirement {required}')
+        session_end = STEP_RE.search(checklist_section[0], session_match.end())
+        session_text = checklist_section[0][session_match.start():session_end.start() if session_end else None].casefold()
+        session_route_terms = ((f'map the result to {prefix}04', 'conditional trigger is absent',
+                                'all successful paths consume only verified identity, current canonical record, and readback')
+                               if lang == 'en' else
+                               (f'映射到 {prefix}04', '条件触发器缺失',
+                                '所有成功路径均须先核实身份、当前规范记录并读回'))
+        for required in session_route_terms:
+            if required.casefold() not in session_text:
+                errors.append(f'{path}: Session step must map its result to {prefix}04 with canonical readback and trigger-based N/A')
     # Validate migrated checkpoint material only through the route's verified same-language link.
     all_route_steps = {
         'planning-output-selection': 'Decision', 'bootstrap-selection': 'Decision',
@@ -828,6 +890,30 @@ def validate_route(root: Path, route: str, lang: str, errors: list[str]) -> tupl
             for required in MIGRATED_CHECKPOINT_REQUIREMENTS[lang][slug]:
                 if required.casefold() not in owner_text:
                     errors.append(f'{path}: consumed {slug} checkpoint must include requirement {required}')
+    decision_number = steps.index('Decision') + 1
+    decision_match = next((item for item in STEP_RE.finditer(checklist_section[0])
+                           if int(item.group(1)) == decision_number), None)
+    repair_number = steps.index('Repair') + 1
+    repair_match = next((item for item in STEP_RE.finditer(checklist_section[0])
+                         if int(item.group(1)) == repair_number), None)
+    for match, name, required_terms in (
+        (decision_match, 'Decision', (f'{prefix}{decision_number:02d}', 'Contract-consistent', 'authorized')) if lang == 'en'
+        else (decision_match, 'Decision', (f'{prefix}{decision_number:02d}', '符合 Contract', '授权')),
+        (repair_match, 'Repair', ('D_REPAIR', f'{prefix}{repair_number:02d}', 'evidence basis',
+                                  f'no-failure result returns to {prefix}'+('10' if route == 'single-agent' else '12'),
+                                  f'{prefix}01', f'{prefix}'+('06' if route == 'single-agent' else '07'), 'fingerprint', 'blocks')) if lang == 'en'
+        else (repair_match, 'Repair', ('D_REPAIR', f'{prefix}{repair_number:02d}', '有证据依据',
+                                       f'无失败结果也返回 {prefix}'+('10' if route == 'single-agent' else '12'),
+                                       f'{prefix}01', f'{prefix}'+('06' if route == 'single-agent' else '07'), '新指纹', '阻塞')),
+    ):
+        if match is None:
+            errors.append(f'{path}: missing {name} checklist mapping')
+            continue
+        next_match = STEP_RE.search(checklist_section[0], match.end())
+        step_text = checklist_section[0][match.start():next_match.start() if next_match else None].casefold()
+        for required in required_terms:
+            if required.casefold() not in step_text:
+                errors.append(f'{path}: {name} step must include route mapping requirement {required}')
     for edge in sorted(spec['edges'] - edges):
         errors.append(f'{path}: required map edge {edge[0]} -> {edge[1]} is missing')
     for edge in sorted(edges - spec['edges']):
