@@ -39,6 +39,9 @@ from token_io_decoupling.server import create_server
 
 PUBLIC_TOOLS = {
     "workflow_capabilities",
+    "task_plan_update",
+    "task_plan_complete",
+    "task_plan_archive",
     "rules_get_context",
     "workflow_select_child_effort",
     "workflow_generate_decision_context",
@@ -250,9 +253,9 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
     worker_tools = _tool_names(create_server(FakeBindingProvider(SessionRole.WORKER)))
     assert root_tools == PUBLIC_TOOLS | ROOT_TOOLS
     assert worker_tools == PUBLIC_TOOLS | WORKER_TOOLS
-    assert len(root_tools) == 22
-    assert len(worker_tools) == 16
-    assert len(root_tools | worker_tools) == 29
+    assert len(root_tools) == 25
+    assert len(worker_tools) == 19
+    assert len(root_tools | worker_tools) == 32
     for tool in create_server(FakeBindingProvider())._tool_manager.list_tools():
         assert not any(
             forbidden in str(tool.parameters).casefold()
@@ -297,6 +300,47 @@ def test_default_and_embedded_discovery_metadata_matches_bound_role() -> None:
                 if role == "parent":
                     assert "No Worker operations" in (client.instructions or "")
                     descriptions = {tool.name: tool.description or "" for tool in tool_list.tools}
+                    for name in ("task_plan_update", "task_plan_complete"):
+                        description = descriptions[name]
+                        assert "Recovery class: task-plan mutation." in description
+                        for required in (
+                            "unknown completion",
+                            "read back the task plan",
+                            "stable request_id",
+                            "unchanged expected_revision",
+                            "identical records/criterion evidence",
+                            "revision conflict",
+                            "refresh the current plan and revision",
+                            "review the change",
+                            "changed content is still authorized and intended",
+                            "new request_id",
+                            "current reviewed revision as expected_revision",
+                            "receipt, and readback first",
+                            "never blindly resubmit",
+                            "no model/API request",
+                            "not stateless API retries",
+                        ):
+                            assert required in description
+                        assert "idempotency_key" not in description
+                    archive_description = descriptions["task_plan_archive"]
+                    assert "Recovery class: task-plan archive mutation." in archive_description
+                    for required in (
+                        "unknown completion",
+                        "task plan, fixed archive target, receipt, and readback first",
+                        "has no request ID",
+                        "same completed revision",
+                        "same fixed archive target",
+                        "archived bytes match the expected revision",
+                        "revision conflict",
+                        "refresh and review the completed plan",
+                        "reconcile active/archive state",
+                        "Never blindly resubmit or overwrite",
+                        "no model/API request",
+                        "not a stateless API retry",
+                    ):
+                        assert required in archive_description
+                    assert "request_id" not in archive_description
+                    assert "idempotency_key" not in archive_description
                     unreserve_description = descriptions["delegation_unreserve"]
                     for required in (
                         "literal JSON true",

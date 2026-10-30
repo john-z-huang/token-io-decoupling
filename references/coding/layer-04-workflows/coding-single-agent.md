@@ -10,11 +10,11 @@ This route composes the seven Layer-04 modules for a task whose released Mode is
 flowchart TD
     SM01["SM01 Entry readiness"]
     SM02["SM02 Session readiness"]
-    SM03["SM03 Default shared plan; Work definition"]
+    SM03["SM03 Default shared plan; repository scope; Work definition"]
     SM04["SM04 Single-Agent execution"]
     SM05["SM05 Verification and repair"]
     SM06["SM06 Documentation"]
-    SM07["SM07 Delivery and acceptance"]
+    SM07["SM07 Delivery and acceptance; preserve plan history and lossless archive"]
     NEEDS["needs_prerequisite: retain caller and exact suspended position"]
     BLOCK["blocked"]
     DONE["complete"]
@@ -33,7 +33,7 @@ flowchart TD
     SM05 -- required independent verifier cannot be obtained --> BLOCK
     SM06 -- documentation complete; no content-affecting change --> SM07
     SM06 -- content/Contract/acceptance impact --> SM05
-    SM07 -- all criteria current and passed; delivery resolved --> DONE
+    SM07 -- all criteria current and passed; delivery and plan preservation/archive resolved --> DONE
     SM01 -- missing evidence --> NEEDS
     SM02 -- missing evidence --> NEEDS
     SM03 -- missing evidence --> NEEDS
@@ -69,11 +69,11 @@ Before entering SM01, inspect evidence that the Coding workflow completed Contra
 
 1. **SM01 — Entry readiness.** Call [Entry Readiness](modules/entry-readiness.md) with the current Contract, Environment, capability inventory, released Single-Agent Mode, and authorized route evidence. Continue only when all entry evidence is current and consistent. Return missing prerequisites to their semantic owner and retain SM01; block conflicts or unsafe state.
 2. **SM02 — Session readiness.** Call [Session Readiness](modules/session-readiness.md) to confirm canonical authority/state and readback before consuming audit results. Continue only with current Session and audit evidence. If recovery changes facts, use the module's recheck/readback sequence without reopening Mode or repeating completed prompts; preserve its suspended position on `needs_prerequisite`, and block unresolved authority or readback failures.
-3. **SM03 — Work definition.** Call [Work Definition](modules/work-definition.md) to resolve current Context, Decision, planning output, and bounded authorized work. Continue only with current sourced facts, accepted decisions, and the unreleased boundary. Resolve missing facts/decisions at their owner and resume SM03; material authorization or Contract changes return to the caller for route review. Require the default shared plan identity/readback or documented persistence-restriction exception from that module before execution. Missing required plan evidence blocks; no explicit planning request is needed.
+3. **SM03 — Work definition.** Call [Work Definition](modules/work-definition.md) to resolve current Context, Decision, planning output, and bounded authorized work. Continue only with current sourced facts, accepted decisions, and the unreleased boundary. Resolve missing facts/decisions at their owner and resume SM03; material authorization or Contract changes return to the caller for route review. Require the default shared plan identity/readback or documented persistence-restriction exception from that module before execution. Missing required plan evidence blocks; no explicit planning request is needed. Verify the selected repository storage scope and paired active/archive namespaces; in shared storage, workspaces of the same repository refer to one plan while other repositories remain separate. Unknown or conflicting mappings return to the planning owner without silently falling back to another scope.
 4. **SM04 — Single-Agent execution.** Call [Single-Agent Execution](modules/single-execution.md) with SM01–SM03 evidence and continuation/effect state. Continue only with a current implementation result and provisional evidence. This module owns executor/output resolution, Slice release, implementation, stage feedback, and Control. It cannot create or dispatch a child. Preserve its Control continuation and resume position for any evidence request, amendment, or next Slice. Carry the shared plan identity and current evidence; the module checks access and updates before dependent work/reporting, including requirement amendments.
 5. **SM05 — Verification and repair.** Call [Verification and Repair](modules/verification-repair.md) against the exact current fingerprint and acceptance conditions. Complete required independent verification only when the Contract requires it and current independence evidence confirms availability. Same-Session logical checks cannot substitute. Suspend dependent effects while required verifier evidence is pending; if no authorized independent verifier can be obtained, block those effects. Continue only when all required checks pass on current epochs and no repair remains. A repair returns through the module's handoff to current Verification; a semantic Contract/Decision change returns to the caller. Do not accept stale evidence after changed implementation, documentation, or Git metadata dimensions.
 6. **SM06 — Documentation.** Call [Documentation](modules/documentation.md) with current Verification, Contract, and before fingerprints. The module determines applicable output, requires its authorization/source/path, handles requested Memory with readback, classifies impact, and runs checks. Continue only with its current documentation result. If a changed content/Contract/acceptance dimension requires re-verification, return to SM05; after the affected epoch passes, resume the suspended SM06 substep and finish its current impact classification and checks before entering SM07.
-7. **SM07 — Delivery and acceptance.** Call [Delivery and Acceptance](modules/delivery-acceptance.md) with current Contract criteria, verification evidence, epochs, and any exact authorized Git intent. Continue only when every applicable criterion maps to current passing evidence and requested delivery is resolved. The module may archive only a matching completed active plan after Acceptance evidence passes and readback confirms it. Missing criteria/evidence return to the semantic owner and recorded position; failure, conflict, or unauthorized effects block.
+7. **SM07 — Delivery and acceptance.** Call [Delivery and Acceptance](modules/delivery-acceptance.md) with current Contract criteria, verification evidence, epochs, and any exact authorized Git intent. Continue only when every applicable criterion maps to current passing evidence and requested delivery is resolved. Require the module's complete-plan preservation comparison before completion/archive and its identical-content archive readback; a final summary cannot replace accumulated history. The module may archive only a matching completed active plan after Acceptance evidence passes and preservation is confirmed. Missing criteria/evidence return to the semantic owner and recorded position; preservation mismatch, failure, conflict, or unauthorized effects block.
 
 ## Prerequisite return map
 

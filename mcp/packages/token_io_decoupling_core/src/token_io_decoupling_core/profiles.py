@@ -6,6 +6,9 @@ PROFILE_TOOLS: dict[str, frozenset[str]] = {
     "workflow": frozenset(
         {
             "workflow_capabilities",
+            "task_plan_update",
+            "task_plan_complete",
+            "task_plan_archive",
             "rules_get_context",
             "workflow_select_child_effort",
             "workflow_generate_decision_context",

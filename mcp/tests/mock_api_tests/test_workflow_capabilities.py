@@ -101,8 +101,11 @@ def test_default_report_distinguishes_support_configuration_and_unprobed_runtime
     assert details["support"]["agent_runtime"]["status"] == "available"
     assert details["support"]["agent_runtime"]["reason_code"] == "fixed_codex_cli"
     assert "runtime" not in report
-    for entry in details["configuration"].values():
-        assert entry["reason_code"] == "configured_disabled"
+    configuration = details["configuration"]
+    for name in ("caller_match", "api_decisions"):
+        assert configuration[name]["reason_code"] == "configured_disabled"
+    assert configuration["task_plan_tools"]["status"] == "unavailable"
+    assert configuration["task_plan_tools"]["reason_code"] == "task_plan_backend_not_configured"
     assert details["runtime"]["binding"]["status"] == "unverified"
     assert details["runtime"]["binding"]["reason_code"] == "provider_not_configured"
     assert details["runtime"]["server_mode"]["status"] == "public_only"

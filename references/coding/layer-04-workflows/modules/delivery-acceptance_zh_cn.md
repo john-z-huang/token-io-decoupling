@@ -25,7 +25,7 @@ flowchart TD
     DA02["DA02 核验准确 Git 目标、范围、指纹及效果状态"]
     DA03["DA03 将每项 Acceptance 标准映射到当前 epoch"]
     D_PLAN{"Acceptance 中是否有匹配的 active plan 可归档？"}
-    DA04["DA04 完成匹配计划更新/读回，再归档/读回"]
+    DA04["DA04 保留计划全文；追加最终证据；验证无损归档；同一仓库存储范围"]
     DA05["DA05 按标准返回 Acceptance"]
     DA_DONE["仅当每项标准都有当前证据才 complete"]
     DA_GIT_NA["not_applicable：未请求 Git 效果；记录原因"]
@@ -57,8 +57,8 @@ flowchart TD
     D_PLAN -- 存在匹配 active plan --> DA04
     D_PLAN -- 无活动计划且有记录的持久化限制 --> DA_PLAN_NA
     D_PLAN -- 必需计划缺失或不可访问 --> DA_NEEDS_PLAN
-    DA04 -- 计划已归档且读回；active 项已不存在 --> DA05
-    DA04 -- 计划更新、归档或读回失败 --> DA_BLOCK
+    DA04 -- 内容保留通过；归档等于最终活动内容；活动项已不存在 --> DA05
+    DA04 -- 内容保留、更新、归档或读回失败 --> DA_BLOCK
     DA_PLAN_NA --> DA05
     DA05 --> DA_DONE
 ```
@@ -69,7 +69,7 @@ flowchart TD
 2. **DA01 — 交付前核验当前 Verification。** 应用[Acceptance](../../layer-02-workflow-concepts/completion-and-effects/acceptance_zh_cn.md)、[Verification](../../layer-02-workflow-concepts/verification-and-repair/verification_zh_cn.md)、[Verification Epoch](../../layer-02-workflow-concepts/verification-and-repair/verification-epoch_zh_cn.md)及[Documentation](../../layer-02-workflow-concepts/completion-and-effects/documentation_zh_cn.md)。任何 Git 效果前，必须具备适用最新 epoch 的当前最终 implementation/content 与 documentation Verification 证据。任何一项缺失或过期时，返回相应 Verification owner；不得执行 Git。明确准确的 Contract 标准和验收范围。
 3. **DA02 — 仅执行已请求并授权的 Git 交付。** 应用[Git](../../layer-02-workflow-concepts/completion-and-effects/git_zh_cn.md)。未请求 Git 效果时，将 Git 记录为有原因的 `not_applicable` 并进入 DA03。若请求了效果但缺少针对实际操作的授权，则返回 `blocked`。获授权后，确认准确的 repository/worktree/ref/remote/operation、目标范围、当前指纹及适用的最新内容/文档 epoch；检查 status/history 并排除无关改动。暂存或提交内容须匹配已验证指纹，且不得包含未验证内容。有任何差异时，进一步 Git 操作前返回对应 Verification 维度。恢复 continuation 时不得重复已完成的 commit/push/其他效果；记录其实际结果和当前 Git metadata epoch。仅 Git metadata 变化不会使内容/文档 epoch 过期。目标不明确、缺少权限或存在不安全冲突时阻塞。
 4. **DA03 — 将每项 Acceptance 标准映射到当前 epoch。** 应用[Acceptance](../../layer-02-workflow-concepts/completion-and-effects/acceptance_zh_cn.md)和[Verification Epoch](../../layer-02-workflow-concepts/verification-and-repair/verification-epoch_zh_cn.md)。对每一项 Contract 标准，引用适用最新 implementation/content、documentation 和 Git metadata epoch 的当前证据。分别报告这三个维度，并区分通过、失败、未运行、不可用、假设、用户授权、剩余风险及必需后续事项。相关变化后不得使用旧 epoch 证据。只有每项标准均已映射且每个适用的必需项都当前并通过时，才能进入 plan 匹配/归档。标准失败或与 Contract 冲突时阻塞；必需证据缺失、不可用、未运行、假设或仍未知时，返回受影响 owner 并返回 `needs_prerequisite`。不得为未完成的 Acceptance 归档 plan。判断 Acceptance 是否存在符合归档条件的匹配 active plan；无关或不匹配计划不适用。 应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)识别匹配的已完成活动计划。仅有记录的持久化限制且无活动计划才允许归档例外。必需计划缺失或不可访问时，向该 owner 返回 `needs_prerequisite`，保留准确调用位置，仅在恢复当前计划证据后继续；无关或不匹配计划绝不符合归档条件。
-5. **DA04 — 完成最终更新并仅归档匹配的已完成计划。** 仅在 DA03 确认所有适用标准通过，且该 active plan 属于已完成任务后，应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)。先把最终 Acceptance 证据和剩余限制写入该计划并读回，再确认匹配的归档目标不存在；碰撞时保留两个条目并阻塞归档。之后才归档计划，列出活动集合并读回归档，确认预期内容和活动名称已不存在。计划更新、读回或归档失败阻塞 Acceptance；保留最后确认状态，不重放结果不明的效果。若在已记录的限制例外下不存在匹配活动计划，则附证据记录 `not_applicable`；不得归档其他或未完成计划。
+5. **DA04 — 完成最终更新并仅归档匹配的已完成计划。** 仅在 DA03 确认所有适用标准通过，且该 active plan 属于已完成任务后，应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)。要求该 owner 的计划全文基线、局部完成更新并追加最终结果/Acceptance 证据/限制，以及完整内容保留读回；最终摘要不能替换累积记录。先重新核对活动计划与归档目标属于同一已验证仓库存储范围；身份或映射改变时停止并返回规划 owner，绝不选择其他仓库或其他本地副本。再确认匹配的归档目标不存在；碰撞时保留两个条目并阻塞归档。仅移动命名空间/名称，列出活动集合并读回归档全文，确认内容与已验证最终活动基线完全相同，且活动名称已不存在。内容保留不一致、计划更新、读回或归档失败均阻塞 Acceptance；保留最后确认状态，不重放结果不明的效果，绝不编辑已有归档以修复不一致。若在已记录的限制例外下不存在匹配活动计划，则附证据记录 `not_applicable`；不得归档其他或未完成计划。
 6. **DA05 — 返回 Acceptance。** 返回按标准映射的证据、适用的当前 epoch、分别报告的内容/文档/Git 状态、准确的已授权效果及其结果、计划归档结果或有依据的 `not_applicable`、剩余风险和未解决项目。只有每项适用标准都有当前证据、无必需验证/能力/授权待解决，且所请求交付符合已验证指纹时，才返回 `complete`。模块完成不授予任何额外效果的权限。
 
 ## 相关概念

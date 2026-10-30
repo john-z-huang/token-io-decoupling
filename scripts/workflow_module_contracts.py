@@ -50,12 +50,22 @@ MODULE_REQUIRED_EDGES = {
 }
 MODULE_REQUIRED_LABEL_FRAGMENTS = {
     "delivery-acceptance": {
-        "en": {"DA04": "Finalize/read back matching plan, then archive/read back"},
-        "zh": {"DA04": "完成匹配计划更新/读回，再归档/读回"},
+        "en": {
+            "DA04": "Preserve full plan; append final evidence; verify lossless archive; same repository scope"
+        },
+        "zh": {"DA04": "保留计划全文；追加最终证据；验证无损归档；同一仓库存储范围"},
     },
     "work-definition": {
-        "en": {"D_PLAN": "Persistence explicitly prohibited?", "WD_PLAN_NA": "documented persistence restriction"},
-        "zh": {"D_PLAN": "明确禁止持久化？", "WD_PLAN_NA": "已记录的持久化限制"},
+        "en": {
+            "D_PLAN": "Persistence explicitly prohibited?",
+            "WD_PLAN": "verify repository scope",
+            "WD_PLAN_NA": "documented persistence restriction",
+        },
+        "zh": {
+            "D_PLAN": "明确禁止持久化？",
+            "WD_PLAN": "核验仓库存储范围",
+            "WD_PLAN_NA": "已记录的持久化限制",
+        },
     },
     "single-execution": {
         "en": {"D_CONTINUE_COVERS": "Does prior Continue still cover"},
@@ -88,30 +98,30 @@ MODULE_REQUIRED_EDGE_LABELS = {
         "zh": {("DOC03", "DOC04"): "写入成功且读回确认", ("DOC04", "DOC05"): "仅文档维度改变", ("DOC05", "DOC06"): "适用检查通过"},
     },
     "delivery-acceptance": {
-        "en": {("DA03", "D_PLAN"): "all criteria mapped", ("D_PLAN", "DA04"): "matching active plan exists", ("DA04", "DA05"): "archived plan read back", ("D_PLAN", "DA_PLAN_NA"): "documented persistence restriction", ("D_PLAN", "DA_NEEDS_PLAN"): "required plan missing or inaccessible"},
-        "zh": {("DA03", "D_PLAN"): "所有 criteria 已映射", ("D_PLAN", "DA04"): "存在匹配 active plan", ("DA04", "DA05"): "计划已归档且读回", ("D_PLAN", "DA_PLAN_NA"): "有记录的持久化限制", ("D_PLAN", "DA_NEEDS_PLAN"): "必需计划缺失或不可访问"},
+        "en": {("DA03", "D_PLAN"): "all criteria mapped", ("D_PLAN", "DA04"): "matching active plan exists", ("DA04", "DA05"): "preservation passed; archive equals final active content", ("D_PLAN", "DA_PLAN_NA"): "documented persistence restriction", ("D_PLAN", "DA_NEEDS_PLAN"): "required plan missing or inaccessible"},
+        "zh": {("DA03", "D_PLAN"): "所有 criteria 已映射", ("D_PLAN", "DA04"): "存在匹配 active plan", ("DA04", "DA05"): "内容保留通过；归档等于最终活动内容", ("D_PLAN", "DA_PLAN_NA"): "有记录的持久化限制", ("D_PLAN", "DA_NEEDS_PLAN"): "必需计划缺失或不可访问"},
     },
 }
 MODULE_GRAPH_SHA256 = {
     "en": {
         "delegated-execution": "a4f2251fe1ee0d2348518b57f6af35aef7452ac08fb8e5338ca2ac29287cb45a",
-        "delivery-acceptance": "6ce68b376aba42db959bac8bc438c0f3cbc3eb9de59a54bdd6912bb38d2983fe",
+        "delivery-acceptance": "114d90b56e06ce1cb9909b4d96709db532fbb01e96263412166e3ad878481145",
         "documentation": "9d5a8690dd8a436f651f08c54e4098385300fdef3ff91dd9894ffc001fce3480",
         "entry-readiness": "269dc96c4965b035ce5ad6d6ea1fb04dd0cafbe64a8ec84f58e36f9a4745c2f8",
         "session-readiness": "16f94918cc826fdf291d9102adc049acf5fca12d6778425d517845f257406252",
         "single-execution": "cc32ed177d01a5d92cc49c75a8fa328ae2e8c4f9aa1067a7491a11c358f94acd",
         "verification-repair": "9def420e7ebfb8ba6836c875960654b7038653bd36cab4d47121fb6c340decbb",
-        "work-definition": "9a5df4637843934aa016d8718dfba2db450a912ffdd81c95bd64b9e437972f75",
+        "work-definition": "ab5f690a0179c4147dfebb1272e5d78e12a1357ee5b9ada629dccd531a8356f0",
     },
     "zh": {
         "delegated-execution": "df575b169e8794b4d4d71142f36eeb0dd06bcf95829ce414ee372f810574d3a0",
-        "delivery-acceptance": "ecf51b71ed2ce33f23c2df9bbfe87cc834425c23ac55528406484c52644e2646",
+        "delivery-acceptance": "38cd9058f163cdce14984ef7076db774f5ac0d35cbe6186f4d9c41af74dfe16c",
         "documentation": "459c91325cc289b825f56c2d8ade809a1825658f9d65d2215507f8f1f702e017",
         "entry-readiness": "3c8a6bbf88b8d27126b04bde51fbe5c8b356e5cb4de13d2af0a145d642331b5e",
         "session-readiness": "a3756c195fef91d6e186c428fb1d030b0430d8dd0e677d10dd7da2af894245e1",
         "single-execution": "be759e0b0979026bc159caa5f7a924c9ffd7092e474cf63405df633ed1b46ba3",
         "verification-repair": "c02c391de233167a29141f3bfcd425eb7aa0f1ece0197eb35532ae3230e7f787",
-        "work-definition": "546b7804368371f512ead8434a8914f7781b917aa5e5bc8be5f44f396bd24d54",
+        "work-definition": "85a563da24de7dccd16646a9944a51ecdf21739a2a296e72def2f372b197d5ab",
     },
 }
 MODULE_SEMANTIC_FRAGMENTS = {
@@ -131,7 +141,13 @@ MODULE_SEMANTIC_FRAGMENTS = {
     ),
     "delivery-acceptance": (
         "DA03 -- all criteria mapped; every applicable item passes on current epochs --> D_PLAN",
-        "DA04 -- plan update, archive or readback failed --> DA_BLOCK",
+        "DA04 -- preservation, update, archive or readback failed --> DA_BLOCK",
+        "a final summary cannot replace accumulated records",
+        "content identical to the verified final active baseline",
+        "same verified repository storage scope",
+    ),
+    "work-definition": (
+        "selected storage scope, repository identity and paired active/archive namespaces",
     ),
 }
 MANIFEST_ROUTE_SHA256 = {

@@ -12,6 +12,10 @@ from token_io_decoupling_core.profiles import PROFILE_SERVER_NAMES
 
 from token_io_decoupling.cli_commands import dispatch_command
 from token_io_decoupling.server import create_server
+from token_io_decoupling.task_plan_factory import (
+    TaskPlanFactoryError,
+    load_task_plan_service,
+)
 
 
 def _trusted_state_root() -> Path:
@@ -47,11 +51,20 @@ def _run(*, prog: str, default_profile: str | None) -> int:
             print(f"{prog}: authenticated host channel unavailable", file=sys.stderr)
             return 2
     try:
+        try:
+            task_plan_service = load_task_plan_service(args.task_plan_factory)
+        except TaskPlanFactoryError as exc:
+            print(
+                f"{prog}: task-plan startup factory failed ({exc.reason})",
+                file=sys.stderr,
+            )
+            return 2
         server = create_server(
             provider,
             require_bound=provider is not None,
             require_codex_context=args.codex_context,
             state_root=_trusted_state_root() if provider is not None else None,
+            task_plan_service=task_plan_service,
             profile=profile,
             server_name=(PROFILE_SERVER_NAMES[profile] if profile is not None else None),
         )

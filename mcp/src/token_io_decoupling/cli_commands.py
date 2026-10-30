@@ -65,6 +65,9 @@ def dispatch_command(
         if args.host_fd is not None or args.codex_context:
             print(f"{prog}: host binding options cannot be used with setup", file=sys.stderr)
             return 2
+        if args.task_plan_factory is not None:
+            print(f"{prog}: --task-plan-factory is a server startup option", file=sys.stderr)
+            return 2
         if args.target == "codex-env":
             try:
                 names = tuple(args.env_var) if args.env_var else DEFAULT_ENV_VARS
@@ -116,6 +119,12 @@ def _add_runtime_options(
         "--codex-context",
         action="store_true",
         default=suppressed if subparser else False,
+    )
+    parser.add_argument(
+        "--task-plan-factory",
+        metavar="MODULE:CALLABLE",
+        default=suppressed if subparser else None,
+        help="explicitly load trusted operator code that returns a configured TaskPlanService",
     )
     if not subparser:
         parser.set_defaults(profile=default_profile)

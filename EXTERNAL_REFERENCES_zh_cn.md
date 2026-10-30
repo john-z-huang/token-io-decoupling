@@ -6,6 +6,8 @@
 
 | 来源 | URL | 对应文档 | 开发用途与边界 |
 | --- | --- | --- | --- |
+| Git canonical 共同目录 | https://git-scm.com/docs/git-rev-parse | [任务计划生命周期](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)、[任务计划工具](mcp/TASK_PLAN_TOOLS_zh_cn.md) | 核对用于带版本本机仓库 key 的绝对 checkout/共同目录解析；不得从 worktree basename、分支、remote URL 或 HEAD 派生。 |
+| Git linked-worktree 仓库布局 | https://git-scm.com/docs/gitrepository-layout | [任务计划生命周期](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)、[任务计划工具](mcp/TASK_PLAN_TOOLS_zh_cn.md) | 核对 commondir 共享及主仓库与 worktree 专属管理目录的区别，说明搬迁及独立 clone 的身份边界。 |
 | Codex 桌面应用 | https://developers.openai.com/codex/app/ | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) | 仅作一般 composer 背景资料；不是 `request_user_input_async` 能力来源。 |
 | Codex CLI | https://developers.openai.com/codex/cli/ | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) | 交互式终端使用的背景资料。 |
 | Codex Prompting Guide | https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) | 将多个建议呈现为编号选项的背景资料。 |
@@ -38,3 +40,6 @@
 | Claude Code MCP 工具可用性 | https://code.claude.com/docs/en/mcp#tool-availability | [任务计划生命周期](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md) | 核实对应可发现 MCP 服务、能力缺失和逐 Agent 权限检查；不推定相同工具前缀或共享访问。 |
 | Claude Code 安全调用重放 | https://code.claude.com/docs/en/mcp#mark-tools-that-are-safe-to-call-twice | [运行环境与模型支持](references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md) | 对比带注解的 HTTP/connector 调用传输重放与 Codex effort 选择器的显式恢复；它不会使 Claude 获得此 Codex 专用 server，也不授权应用重调或创建子代理。 |
 | Codex MCP 重放文档 | https://learn.chatgpt.com/docs/extend/mcp?surface=cli | [运行环境与模型支持](references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md) | 将已记载的 stdio/HTTP 连接配置与 Claude 的 annotation 驱动重试进行对照；该页面未说明等价重放，不应被视为 Codex 已实现或缺少未文档化行为的证明。 |
+| Serena MemoryManager 实现 | https://github.com/oraios/serena/blob/main/src/serena/memories/memory_manager.py | [任务计划生命周期](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)、[MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核实规范 Memory 路径、ignored/read-only 策略检查、原子保存和不传播引用的移动边界；适配器须自行补充版本、锁、禁止覆盖和读回检查。本机安装版 2.1.0 观察与持续变化的上游源码分别作为证据。 |
+| Serena Memory API 实现 | https://github.com/oraios/serena/blob/main/src/serena/repl/api/mem_api.py | [任务计划生命周期](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md) | 核实通用重命名会传播引用，工具写入有配置的回答大小限制；不得把这些操作当成受保护事务。 |
+| Serena 配置实现 | https://github.com/oraios/serena/blob/main/src/serena/config/serena_config.py | [MCP 开发](mcp/DEVELOPMENT_zh_cn.md) | 核实常规配置加载可能迁移、创建配置或改变其权限；要求显式 manager/factory 注入，不在能力发现时自动加载配置。 |

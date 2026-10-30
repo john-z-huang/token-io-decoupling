@@ -92,6 +92,7 @@ def main() -> None:
             require_bound=False,
             require_codex_context=False,
             state_root=None,
+            task_plan_service=None,
             profile=None,
             server_name=None,
         ):
@@ -101,6 +102,7 @@ def main() -> None:
                 require_bound=require_bound,
                 require_codex_context=require_codex_context,
                 state_root=temporary_state_root,
+                task_plan_service=task_plan_service,
                 profile=profile,
                 server_name=server_name,
             )

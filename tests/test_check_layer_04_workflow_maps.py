@@ -154,9 +154,33 @@ class WorkflowMapMigrationTests(unittest.TestCase):
 
     def test_completed_plan_cannot_skip_final_update_before_archive(self):
         self.mutate("references/coding/layer-04-workflows/modules/delivery-acceptance.md",
-                    "DA04 Finalize/read back matching plan, then archive/read back",
+                    "DA04 Preserve full plan; append final evidence; verify lossless archive",
                     "DA04 Archive matching plan and read back")
         self.assert_rejected()
+
+    def test_completion_cannot_replace_history_with_summary(self):
+        self.mutate("references/coding/layer-04-workflows/modules/delivery-acceptance.md",
+                    "a final summary cannot replace accumulated records",
+                    "a final summary may replace accumulated records")
+        self.assert_rejected()
+
+    def test_archive_requires_identical_content_not_just_final_status(self):
+        self.mutate("references/coding/layer-04-workflows/modules/delivery-acceptance.md",
+                    "content identical to the verified final active baseline",
+                    "a completed final status")
+        self.assert_rejected()
+
+    def test_bilingual_archive_map_cannot_weaken_preservation(self):
+        for suffix, old, new in (
+            ("", "preservation passed; archive equals final active content", "archive contains a summary"),
+            ("_zh_cn", "内容保留通过；归档等于最终活动内容", "归档包含摘要"),
+        ):
+            rel = f"references/coding/layer-04-workflows/modules/delivery-acceptance{suffix}.md"
+            with self.subTest(language=suffix):
+                original = self.read(rel)
+                self.mutate(rel, old, new)
+                self.assert_rejected()
+                (self.root / rel).write_text(original, encoding="utf-8")
 
     def test_missing_required_plan_cannot_take_archive_exception(self):
         self.mutate("references/coding/layer-04-workflows/modules/delivery-acceptance.md",
@@ -181,6 +205,64 @@ class WorkflowMapMigrationTests(unittest.TestCase):
                     "prior Continue still cover this bounded Slice",
                     "prior Continue may cover this bounded Slice")
         self.assert_rejected()
+
+    def test_repository_scope_map_labels_are_required_in_both_languages(self):
+        cases = (
+            (
+                "references/coding/layer-04-workflows/modules/work-definition.md",
+                "verify repository scope",
+                "verify storage scope",
+            ),
+            (
+                "references/coding/layer-04-workflows/modules/work-definition_zh_cn.md",
+                "核验仓库存储范围",
+                "核验存储范围",
+            ),
+            (
+                "references/coding/layer-04-workflows/modules/delivery-acceptance.md",
+                "same repository scope",
+                "matching scope",
+            ),
+            (
+                "references/coding/layer-04-workflows/modules/delivery-acceptance_zh_cn.md",
+                "同一仓库存储范围",
+                "对应存储范围",
+            ),
+        )
+        for rel, old, new in cases:
+            with self.subTest(path=rel):
+                original = self.read(rel)
+                self.mutate(rel, old, new)
+                errors = validator.check_repository(self.root)
+                self.assertTrue(
+                    any("is missing required safety label" in error for error in errors),
+                    errors,
+                )
+                (self.root / rel).write_text(original, encoding="utf-8")
+
+    def test_repository_scope_semantics_are_required_with_unchanged_maps(self):
+        cases = (
+            (
+                "references/coding/layer-04-workflows/modules/work-definition.md",
+                "selected storage scope, repository identity and paired active/archive namespaces",
+                "selected storage scope and paired active/archive namespaces",
+            ),
+            (
+                "references/coding/layer-04-workflows/modules/delivery-acceptance.md",
+                "same verified repository storage scope",
+                "same verified workspace storage scope",
+            ),
+        )
+        for rel, old, new in cases:
+            with self.subTest(path=rel):
+                original = self.read(rel)
+                self.mutate(rel, old, new)
+                errors = validator.check_repository(self.root)
+                self.assertTrue(
+                    any("module lost required semantic contract" in error for error in errors),
+                    errors,
+                )
+                (self.root / rel).write_text(original, encoding="utf-8")
 
     def test_auxiliary_bootstrap_must_resume_original_task_at_de01(self):
         self.mutate("references/coding/layer-04-workflows/modules/delegated-execution.md",
@@ -311,7 +393,7 @@ class WorkflowMapMigrationTests(unittest.TestCase):
                         docs.index("DOC04 -- only documentation dimension changed"))
         da = (ROUTES / "modules/delivery-acceptance.md").read_text(encoding="utf-8")
         self.assertIn("DA03 -- all criteria mapped; every applicable item passes on current epochs --> D_PLAN", da)
-        self.assertIn("DA04 -- plan update, archive or readback failed --> DA_BLOCK", da)
+        self.assertIn("DA04 -- preservation, update, archive or readback failed --> DA_BLOCK", da)
 
     def test_route_change_return_and_effect_epoch_rules_are_explicit(self):
         for name in ("coding-single-agent.md", "coding-multi-agent.md"):

@@ -13,7 +13,7 @@ Coding 的委派和 Session 拓扑规则拆分为原子 reference：状态记录
 
 本 Skill 只定义调度约定，不能绕过更高优先级的权限、用户授权、产品限制、仓库指令或安全规则，也不把价格、缓存命中、额度节省、延迟或 Runtime 质量表述为未经实测的事实。
 
-每项 Coding 任务默认按[任务计划 Memory 生命周期](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)使用共享任务计划。现有及未来路线消费同一 owner：分析当前事实，实施前持久化/读回，新事实/进度先更新再汇报，需求变化先记录再分析并修订执行方案。明确持久化限制按该 owner 处理；计划绝不授予授权。
+每项 Coding 任务默认按[任务计划 Memory 生命周期](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)使用共享任务计划。现有及未来路线消费同一 owner：确认存储 scope 与仓库隔离，分析当前事实，实施前持久化/读回，新事实/进度先更新再汇报，需求变化先记录再分析并修订执行方案。共享全局规划及归档在主工作区与 linked worktrees 之间使用同一个稳定本机仓库 key，其他仓库保持隔离。该 owner 也负责已配置的确定性生命周期工具路径、旧版本地兼容行为及核验回执；仅发现工具不证明后端可用或具备权限。明确持久化限制按该 owner 处理；计划绝不授予授权。
 
 ## MCP 支持边界
 

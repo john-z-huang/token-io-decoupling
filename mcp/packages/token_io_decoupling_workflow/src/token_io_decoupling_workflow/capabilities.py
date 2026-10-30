@@ -8,6 +8,8 @@ from typing import Any
 from token_io_decoupling_core.binding import BindingProvider, DenyingBindingProvider
 from token_io_decoupling_core.host_binding import HostChannelBindingProvider
 
+from token_io_decoupling_workflow.task_plan_core import TaskPlanService
+
 
 def _detail(status: str, code: str, message: str, source: str, next_step: str) -> dict[str, str]:
     return {
@@ -26,11 +28,30 @@ def capability_report(
     require_codex_context: bool,
     api_decisions_enabled: bool,
     diagnose_binding: Callable[[BindingProvider], dict[str, str]],
+    task_plan_service: TaskPlanService | None = None,
 ) -> dict[str, Any]:
-    """Read binding evidence once without mutating state, inspecting paths, or calling an API."""
+    """Read binding evidence and task-plan diagnostics without state mutation or API calls.
+
+    An absent task-plan service causes no Git or Memory-path probe. A configured global plan
+    service may perform a bounded local Git identity check and verify its already-bound Serena
+    root; it never creates or initializes Memory paths here.
+    """
     binding = diagnose_binding(provider)
     caller_match = "required" if require_codex_context else "disabled"
     api_decisions = "enabled" if api_decisions_enabled else "disabled"
+    task_plan_details = (
+        task_plan_service.capability()
+        if task_plan_service is not None
+        else {
+            "status": "unavailable",
+            "reason_code": "task_plan_backend_not_configured",
+            "project_root": None,
+            "storage_scope": None,
+            "repository_id": None,
+            "namespace": None,
+            "archive_namespace": None,
+        }
+    )
     # Never serialize provider attributes: even transport labels can contain secrets or raise.
     transport = (
         "authenticated_inherited_unix_socket"
@@ -79,6 +100,7 @@ def capability_report(
         "child_effort_decisions": "available_per_invocation",
         "delegation_decisions": "available_per_invocation",
         "decision_context_generation": "available_per_invocation",
+        "task_plan_tools": task_plan_details.get("status", "unavailable"),
         "protocol_target": "2026-07-28",
         "capability_details": {
             "schema_version": 2,
@@ -93,6 +115,18 @@ def capability_report(
                 )
             },
             "configuration": {
+                "task_plan_tools": _detail(
+                    task_plan_details.get("status", "unavailable"),
+                    task_plan_details.get("reason_code", "task_plan_backend_unavailable"),
+                    "Plan tools use only an explicitly injected Serena "
+                    "MemoryManager-backed service. Without a configured service, "
+                    "no Git or Memory path is probed. A configured global store "
+                    "revalidates its local Git identity and existing global root "
+                    "without creating paths.",
+                    "server.task_plan_service",
+                    "Use an explicitly configured trusted task-plan "
+                    "factory or keep plan tools unavailable.",
+                ),
                 "caller_match": _detail(
                     caller_match,
                     "configured_required" if require_codex_context else "configured_disabled",
