@@ -4,7 +4,7 @@
 
 本指南负责 Python workspace 的开发、构建产物检查、uv tool 安装与 Codex setup。[架构契约](../ENHANCED_ARCHITECTURE_zh_cn.md#实现包)负责包职责与依赖方向；[Skill 入口](../SKILL_zh_cn.md)及其链接的 owner 仍是工作流权威。
 
-MCP Server 仅支持 Codex 和 ChatGPT Desktop。遵循[目录指令](AGENTS_zh_cn.md)；`mcp/` 下的开发不维护其他 Code Agent 的兼容性。支持范围不等于已验证宿主适配器。
+MCP Server 面向本地可用的 Codex CLI，包括本地 Work 使用的本地 Codex CLI/app-server 路径。云端 ChatGPT 对话、远端 Work 和其他 Code Agent 不是直接客户端。如果其他 Agent 在自己的环境安装 Codex CLI，并按本仓库说明配置 Server，则仅支持该环境中的本地 Codex CLI 路径；不维护其他 Agent 或云端界面适配器。Server 不增加运行环境选择步骤。遵循[目录指令](AGENTS_zh_cn.md)。固定客户端范围不等于宿主集成已经验证；各操作仍按现有流程检查实际能力、可信身份、守卫和权限。
 
 ## 环境与检查
 
@@ -55,11 +55,11 @@ Canonical Python 实现使用架构契约列出的独立包名。重命名后的
 
 ## 能力报告诊断
 
-`workflow_capabilities({})` 是无参数公共工具。它保留顶层摘要，新增 `schema_version: 1` 的 `capability_details`。每个详情项包含 `status`、`reason_code`、安全的 `message`、诊断 `source` 和 `next_step`。
+`workflow_capabilities({})` 是无参数公共工具。它保留顶层摘要，新增 `agent_runtime: "codex_cli"`，并返回 `schema_version: 2` 的 `capability_details`。版本 2 将版本 1 的 `host_adapters` 字段替换为 `support.agent_runtime` 固定产品范围详情；这不证明调用方身份。每个详情项包含 `status`、`reason_code`、安全的 `message`、诊断 `source` 和 `next_step`。
 
 | 详情分组 | 含义与边界 |
 | --- | --- |
-| `support.host_adapters` | 内置 Desktop 身份/守卫的静态支持：`unavailable/adapter_not_implemented`。这不是 provider 探测；注入的可信 provider 仍可能验证成功。 |
+| `agent_runtime` / `support.agent_runtime` | 固定产品范围 `codex_cli`；详情为 `available/fixed_codex_cli`。这不是宿主身份或权限证明。 |
 | `configuration.caller_match` | 启动配置 `required/configured_required` 或 `disabled/configured_disabled`。公共发现不验证请求调用方元数据。 |
 | `configuration.api_decisions` | 持久化建议配置 `enabled/configured_enabled` 或 `disabled/configured_disabled`。disabled 是正常配置。逐调用工具独立，不测试 API 是否可用。 |
 | `runtime.binding` | 当前 Session 关系和基线守卫。成功仅含角色（`parent` 或 `worker`），不含身份值；具体操作授权另行检查。 |
@@ -70,7 +70,7 @@ Canonical Python 实现使用架构契约列出的独立包名。重命名后的
 
 | 状态 / 原因代码 | 证据与下一步 |
 | --- | --- |
-| `unverified/provider_not_configured` | 默认拒绝 provider，未尝试探测。使用 Native 或配置可信宿主集成。 |
+| `unverified/provider_not_configured` | 默认拒绝 provider，未尝试探测。受保护操作前须配置可信宿主集成。 |
 | `available/baseline_verified` | Session 关系和基线守卫通过。另行检查目标操作守卫和调用方上下文。 |
 | `unavailable/required_guards_missing` | 缺少基线守卫。修正宿主绑定，不绕过检查。 |
 | `unavailable/session_identity_mismatch` | 角色/Session 关系无效。修正宿主提供的身份。 |
@@ -97,6 +97,14 @@ CLI 默认使用 `PATH` 中的 `codex`；Desktop 默认使用 `/Applications/Cha
 每个用例启动独立的真实 app-server，通过进程内 `mcp_servers` 覆盖值，用安全占位条目禁用继承的已配置 server，并启用当前 workspace 的 workflow server。仅读取已配置 server 名称和传输类型，不复制 URL、参数、环境变量值或凭据。它断言继承的已配置 server 不暴露工具；客户端可保留内置平台服务，测试不调用这些服务。它验证目标的无参 schema 和新版描述，调用 `workflow_capabilities` 并检查结构化诊断，确认 `workflow_evaluate` 拒绝缺少可信绑定的调用。每项使用一个 ephemeral 线程，不启动模型 turn，并通过终止自己创建的进程组释放仅驻内存的线程及 MCP 子进程。不修改用户配置或已安装 MCP 包，此能力检查不需要模型 API 请求。运行环境必须允许启动和清理这些进程。
 
 普通 pytest 跳过两项，不探测已安装客户端。显式启用后，客户端缺失、权限失败、协议错误或旧能力响应都会使测试失败，不跳过，也不回退到模拟客户端。已有 SDK、Mock 和安装版 stdio 检查继续保持各自较窄的证明范围。运行时检查通过不证明既有客户端会话已经重载更新后的 MCP 安装；该会话仍需单独验证安装和重载。
+
+## API 与工具恢复提示
+
+child-effort、decision-context 和 delegation selector 每次调用只发出一个 API 请求；SDK 自动重试已关闭。其结果模型新增可空 `recovery` 提示，无提示时序列化为 `null`。`retry_eligible` 只表示候选；对于明确的瞬时传输、5xx 或已确认限流，`total_attempt_limit` 表示调用方跟踪的每个恢复过程最多三次调用（含首次调用）。服务不跟踪跨调用次数，也不自动重试。调用方在考虑重调前，须复核任务授权、请求 hash、当前 policy 以及任何结果/副作用。
+
+认证、授权、配置、配额、未知错误、拒绝、格式错误/不完整响应和证据不足都不是重试候选。应解决原因、刷新并重新计算过期事实/policy 的 hash，或停止。恢复提示不会改变现有结果 status、reason、hash、fallback 或 authority。只有成功的 `available` selector 结果才可在通常门禁通过后用于后续工作。
+
+`DecisionAdvice` 嵌在会改变状态的 evaluation 操作中。其恢复提示绝不授权重复外层 mutation 来重试 advice：相同幂等 key 的重放返回已存结果，不会再次调用 Decisions。继续执行时不使用 advice，或审阅现有结果。其他工具的 metadata 会区分只读查询、无状态 API、幂等写入和守卫/校验失败。mutation 完成情况未知时先读回；只可用原 payload 和 key 精确重放。权限、守卫和校验失败不是瞬时重试。
 
 ## uv tool 安装与 Codex setup
 
@@ -185,7 +193,7 @@ CLI 使用操作系统凭据认证对端：Linux 使用 `SO_PEERCRED`，macOS �
 
 桥接在启动时锁定项目、Root、当前 Session、parent 和角色。每次受保护调用都会重新向宿主读取当前能力与守卫证据；撤销或身份变化会使调用被拒绝。子身份验证使用宿主当前的 parent 身份。线协议只接受两种绑定操作，限制帧大小并设置有限超时；格式错误或不匹配的响应直接拒绝，不重试。失败通道不能通过后续响应重新获得信任。
 
-宿主必须先落实实际 sandbox、路径与 Worker store 边界，再报告相应守卫。内核认证只确认可信 supervisor，不会创建这些守卫，也不证明某运行时的 Session 映射正确。此包提供桥接及宿主侧服务 API，不提供特权服务安装器，也不构成已经验证的 Codex/ChatGPT Desktop 运行时集成。普通 MCP 客户端配置不能凭空建立继承的特权通道。既有测试 provider 和模拟对端凭据的测试仍属于合成证据；未修改认证逻辑的同用户通道拒绝测试覆盖真实本地凭据边界。
+宿主必须先落实实际 sandbox、路径与 Worker store 边界，再报告相应守卫。内核认证只确认可信 supervisor，不会创建这些守卫，也不证明某运行时的 Session 映射正确。此包提供桥接及宿主侧服务 API，不提供特权服务安装器，也不构成已经验证的 Codex CLI 宿主集成。普通 MCP 客户端配置不能凭空建立继承的特权通道。既有测试 provider 和模拟对端凭据的测试仍属于合成证据；未修改认证逻辑的同用户通道拒绝测试覆盖真实本地凭据边界。
 
 声明实际运行时集成前，必须通过该运行时的 MCP 连接验证 Root 初始化、证据插入、状态转换及回读；验证真实释放且绑定的 Worker 能读取任务并只写入自己的进度/证据；并在实际宿主守卫下检查撤销和跨 Worker 拒绝。现有客户端需要重启或重新连接，才能加载改变的启动参数与工具清单；编辑 checkout 不会改变已经运行的 MCP 进程。
 

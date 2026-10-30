@@ -46,6 +46,10 @@
 
 工具只提供通过本地 runtime/model 上限校验且与 `supported_efforts` 相交的 effort，以及 `insufficient_evidence`。每次调用时读取 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，并与精确 API 模型 `gpt-6-luna` 一同显式使用；调用方不能覆盖凭据、端点或 API 模型。如果配置缺失、响应拒绝或无效、证据不足或服务失败，不得替换为其他 API 模型/端点或固定 effort。仅使用 `status: available`；比较返回的 `slice_fingerprint` 与当前 Slice，并比较服务端计算的 `input_hash` 与完整提交决策事实的规范 Hash。重新核对所选 effort 仍受有效子代理模型及运行时优先级支持，否则阻止创建。Decisions 请求不发送 reasoning 参数。
 
+### 无状态 selector 的有界恢复
+
+Selector 每次调用只发送一个 API 请求；SDK 不自动重试。blocked 结果保留原 status、reason 和 hash，并可包含 `recovery`。只有 `recovery.retry_eligible: true` 才表示调用方可考虑自主再次调用；重调前须复核原任务授权仍有效、请求 hash 与 Slice fingerprint 仍匹配，并检查结果或副作用。调用方跟踪同一恢复过程最多三次总调用（含首次调用）；服务没有跨调用尝试计数器，也不会自行再次请求。`recovery: null` 表示没有重试提示。认证、授权、配置、配额、未知错误、拒绝、无效响应和证据不足均不是重试候选；应先解决前置条件或审阅/修正证据。只有成功的 `available` 结果可在当前所有门禁通过后用于考虑创建子代理。
+
 要复算 `input_hash`，先将经过验证的 request 对象转换为 JSON-mode 规范形式，只排除 `outbound_data_permitted` 和 `slice_fingerprint`，再对 UTF-8 `json.dumps(request, sort_keys=True, ensure_ascii=False, separators=(",", ":"))` 的结果计算 SHA-256。必须与同一组规范决策事实比较；`slice_fingerprint` 是独立的新鲜度令牌，不得与 `input_hash` 相互比较。
 
 暴露的 Codex `spawn_agent` 创建控制在非 fork 子代理创建（`fork_turns: "none"`）时接受 `model` 和 `reasoning_effort`。在那里设置所选值，并解析适用的自定义 Profile 优先级；自定义 Profile 可能覆盖 spawn/default/继承选择。当前控制无法接受该值或无法确认生效优先级时，阻止创建。
@@ -86,6 +90,10 @@ Codex CLI、IDE 与 ChatGPT Desktop 中的 Codex 可以共享当前宿主的 `~/
 Single-Agent Coding 保留当前 Sonnet `medium` 规则及受影响切片升级政策。仅使用 Haiku 的单代理任务必须简单、有界且可机械检查；Haiku 没有 effort 控制。使用该绑定前核验实际生效的模型和 effort，包括组织上限或继承设置。只有具体复杂性或重复失败/阻塞足以支持时，才将受影响的 Sonnet 切片提高至 `high`，随后恢复 `medium`。只有 `high` 不足且重复失败/阻塞仍持续，并且当前 Sonnet 模型暴露 `max` 时，才使用 `max`，随后恢复 `medium`。Single-Agent Profile 不选择 `xhigh` 或 `ultracode`。必需模型或受支持的 effort 绑定缺失或无法核实时，将其记录到 `unavailable_capabilities` 并阻塞依赖的切片或路线；不得切换到 Opus 或更高系列。
 
 修改 `CLAUDE.md`、本 Skill 或 Agent 定义后，若当前会话无法证实已加载新指令，则启动新的 Claude Code 会话；`/tasks` 和 `/agents` 不能作为已加载的证据。
+
+### Claude MCP 传输重放边界
+
+当工具以 `readOnlyHint` 或 `idempotentHint` 标为可安全重复时，Claude Code 可在新连接上对 HTTP Server 或 `claude.ai` connector 中一次未获响应的调用重放一次。这不适用于 stdio 或 WebSocket 客户端，也不是应用 API 重调或创建子代理的授权。[Codex CLI MCP 文档](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)说明了本地 stdio 与 HTTP 连接，但未说明等价的 annotation 驱动重放；不得假定 Codex CLI 具有此行为。Codex 专属 effort selector 在 Claude Code 中仍为 `Not applicable`。
 
 ### Claude Code Plan mode 启动与 Session 边界
 

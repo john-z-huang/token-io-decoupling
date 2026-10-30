@@ -12,6 +12,13 @@ from pydantic import ConfigDict, Field, StrictBool, StrictStr, field_validator, 
 from token_io_decoupling_core.models import StrictModel
 from token_io_decoupling_transport.payloads import payload_model
 
+from token_io_decoupling_workflow.api_recovery import (
+    RecoveryGuidance,
+    classify_provider_failure,
+    recovery_for_provider_failure,
+    recovery_for_reason,
+)
+
 DECISIONS_MODEL = "gpt-6-luna"
 DECISIONS_TIMEOUT_SECONDS = 20.0
 _ALL_EFFORTS = ("low", "medium", "high", "xhigh", "max")
@@ -144,7 +151,11 @@ class ChildEffortInput(StrictModel):
             ),
         ),
     ]
-    runtime: Literal["codex"] = Field(description="Verified Codex runtime branch.")
+    runtime: Literal["codex"] = Field(
+        description=(
+            "Fixed Codex CLI server contract; the caller does not select or classify a runtime."
+        )
+    )
     child_model: Literal["gpt-6-luna"] = Field(
         description="Verified model that the Codex child-creation control will use."
     )
@@ -219,6 +230,9 @@ class ChildEffortResult(StrictModel):
             description="Echo of the parent-computed current-slice fingerprint.",
         ),
     ]
+    recovery: RecoveryGuidance | None = Field(
+        default=None, description="Caller guidance; null means no retry guidance is present."
+    )
     model: Literal["gpt-6-luna"] | None = None
     total_tokens: int | None = None
 
@@ -299,7 +313,13 @@ class ChildEffortSelector:
             )
         except Exception as exc:
             reason = _failure_reason(exc)
-            return _blocked(reason, input_hash, payload.slice_fingerprint)
+            failure = classify_provider_failure(exc)
+            return _blocked(
+                reason,
+                input_hash,
+                payload.slice_fingerprint,
+                recovery=recovery_for_provider_failure(failure),
+            )
         finally:
             close = getattr(client, "close", None)
             if callable(close):
@@ -376,12 +396,19 @@ def _input_hash(payload: ChildEffortInput) -> str:
     ).hexdigest()
 
 
-def _blocked(reason: str, input_hash: str, slice_fingerprint: str) -> ChildEffortResult:
+def _blocked(
+    reason: str,
+    input_hash: str,
+    slice_fingerprint: str,
+    *,
+    recovery: RecoveryGuidance | None = None,
+) -> ChildEffortResult:
     return ChildEffortResult(
         status="blocked",
         reason=cast(Any, reason),
         input_hash=input_hash,
         slice_fingerprint=slice_fingerprint,
+        recovery=recovery or recovery_for_reason(reason),
     )
 
 

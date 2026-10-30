@@ -7,8 +7,8 @@ from typing import Any, Literal
 from pydantic import BaseModel, create_model
 from token_io_decoupling_core.models import NonEmptyString, StrictModel
 from token_io_decoupling_core.state_models import (
+    ActiveCheckpointNode,
     BlockerRecord,
-    CheckpointNode,
     DelegationBudgetApproval,
     DelegationUnreserveRequest,
     EvidenceSubmission,
@@ -103,7 +103,7 @@ _BLOCKER = payload_model(
 )
 _RULE_CONTEXT = payload_model(
     "RuleContextPayload",
-    node_id=(CheckpointNode, ...),
+    node_id=(ActiveCheckpointNode, ...),
     language=(Literal["en", "zh_cn"], "en"),
 )
 _TRANSITION = payload_model("TransitionPayload", request=(WorkflowTransitionRequest, ...))

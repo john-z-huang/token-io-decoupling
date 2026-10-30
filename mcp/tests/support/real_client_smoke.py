@@ -200,13 +200,9 @@ def exercise_client(executable: Path, client: str) -> dict[str, Any]:
             assert result.get("isError") is False
             report = json.loads(result["content"][0]["text"])
             details = report["capability_details"]
-            assert details["schema_version"] == 1
-            for adapter in details["support"]["host_adapters"].values():
-                for entry in adapter.values():
-                    assert (entry["status"], entry["reason_code"]) == (
-                        "unavailable",
-                        "adapter_not_implemented",
-                    )
+            assert report["agent_runtime"] == "codex_cli"
+            assert details["schema_version"] == 2
+            assert details["support"]["agent_runtime"]["reason_code"] == "fixed_codex_cli"
             for entry in details["configuration"].values():
                 assert (entry["status"], entry["reason_code"]) == (
                     "disabled",

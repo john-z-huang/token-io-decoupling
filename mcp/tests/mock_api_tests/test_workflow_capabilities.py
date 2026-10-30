@@ -73,10 +73,14 @@ def _capabilities(server: Any) -> dict[str, Any]:
 def _assert_safe_details(report: dict[str, Any]) -> None:
     assert SECRET not in json.dumps(report)
     details = report["capability_details"]
-    assert details["schema_version"] == 1
-    entries = list(details["configuration"].values()) + list(details["runtime"].values())
-    for adapter in details["support"]["host_adapters"].values():
-        entries.extend(adapter.values())
+    assert details["schema_version"] == 2
+    assert report["agent_runtime"] == "codex_cli"
+    assert set(details["support"]) == {"agent_runtime"}
+    entries = (
+        list(details["support"].values())
+        + list(details["configuration"].values())
+        + list(details["runtime"].values())
+    )
     for entry in entries:
         assert {"status", "reason_code", "message", "source", "next_step"} <= entry.keys()
         assert all(isinstance(value, str) and value for value in entry.values())
@@ -92,10 +96,11 @@ def test_default_report_distinguishes_support_configuration_and_unprobed_runtime
     assert report["caller_match"] == report["api_decisions"] == "disabled"
     assert report["mode_fallback"] == "Native"
     details = report["capability_details"]
-    for adapter in details["support"]["host_adapters"].values():
-        for entry in adapter.values():
-            assert entry["status"] == "unavailable"
-            assert entry["reason_code"] == "adapter_not_implemented"
+    assert report["agent_runtime"] == "codex_cli"
+    assert "host_adapters" not in report
+    assert details["support"]["agent_runtime"]["status"] == "available"
+    assert details["support"]["agent_runtime"]["reason_code"] == "fixed_codex_cli"
+    assert "runtime" not in report
     for entry in details["configuration"].values():
         assert entry["reason_code"] == "configured_disabled"
     assert details["runtime"]["binding"]["status"] == "unverified"
@@ -105,7 +110,7 @@ def test_default_report_distinguishes_support_configuration_and_unprobed_runtime
 
 
 @pytest.mark.parametrize("role", [SessionRole.PARENT, SessionRole.WORKER])
-def test_embedded_report_probes_once_and_does_not_claim_builtin_adapter_support(
+def test_embedded_report_probes_once_and_keeps_runtime_scope_separate_from_binding(
     role: SessionRole,
     tmp_path: Path,
 ) -> None:
@@ -121,7 +126,8 @@ def test_embedded_report_probes_once_and_does_not_claim_builtin_adapter_support(
     assert runtime["binding"]["role"] == role.value
     assert runtime["binding_transport"]["reason_code"] == "transport_not_reported"
     assert runtime["server_mode"]["status"] == "embedded"
-    assert report["host_adapters"]["Codex Desktop"]["identity_attestation"] == "unavailable"
+    assert report["agent_runtime"] == "codex_cli"
+    assert report["capability_details"]["support"]["agent_runtime"]["status"] == "available"
     _assert_safe_details(report)
     assert not (tmp_path / "untouched").exists()
 

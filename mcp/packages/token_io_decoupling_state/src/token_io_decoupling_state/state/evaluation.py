@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from token_io_decoupling_core.models import (
     DatabaseKind,
 )
+from token_io_decoupling_core.rules import UnknownRuleNodeError
 from token_io_decoupling_core.state_models import (
     CheckpointEvaluation,
     CheckpointNode,
@@ -69,6 +70,8 @@ def workflow_evaluate_with_replay(
 ) -> tuple[CheckpointEvaluation, bool]:
     node_id = CheckpointNode(node_id)
     binding = self._parent_binding({HostCapability.WORKFLOW_WRITE}, {HostGuard.PATH_BOUNDARY})
+    if node_id is CheckpointNode.ENVIRONMENT:
+        raise UnknownRuleNodeError("unknown rule node: environment")
     path, root = self._root_database(binding, create=False)
     payload = {
         "node_id": node_id.value,

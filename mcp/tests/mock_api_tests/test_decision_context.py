@@ -427,6 +427,39 @@ def test_provider_failures_are_redacted_and_close_client(
     assert private_error not in result.model_dump_json()
     assert result.description is None
     assert client.closed
+    assert result.recovery is not None
+    assert result.recovery.retry_eligible is (reason == "timeout")
+    assert result.recovery.total_attempt_limit == (3 if reason == "timeout" else None)
+
+
+def test_caller_can_explicitly_invoke_again_after_transient_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://example.invalid/v1")
+    first_client = _FakeClient(error=TimeoutError("private timeout"))
+    second_client = _FakeClient(
+        _response(
+            DecisionContextStructuredOutput(
+                description="Review the current task context.", missing_information=[]
+            )
+        )
+    )
+    clients = iter((first_client, second_client))
+    generator = _generator(client_factory=lambda *_: next(clients))
+    payload = _payload()
+
+    first = generator.generate(payload)
+    assert first.status == "blocked"
+    assert first.recovery is not None and first.recovery.retry_eligible
+    assert first.recovery.total_attempt_limit == 3
+    assert len(first_client.responses.calls) == 1
+
+    second = generator.generate(payload)
+    assert (second.status, second.reason) == ("available", "description_generated")
+    assert second.input_hash == first.input_hash
+    assert second.recovery is None
+    assert len(second_client.responses.calls) == 1
 
 
 def test_parsing_error_is_reported_as_invalid_response(

@@ -21,7 +21,7 @@ from token_io_decoupling_core.models import (
     ModeCount,
     SemanticRef,
 )
-from token_io_decoupling_core.rules import RuleLoader
+from token_io_decoupling_core.rules import RuleLoader, UnknownRuleNodeError
 from token_io_decoupling_core.state_models import (
     AllocationRole,
     BindingIdentity,
@@ -37,6 +37,7 @@ from token_io_decoupling_core.state_models import (
     DelegationUnreserveRequest,
     EnumFactValue,
     EpochDimension,
+    EpochSnapshot,
     EvidenceKind,
     EvidenceSubmission,
     FactDetermined,
@@ -75,6 +76,7 @@ from token_io_decoupling_state.service import (
     WorkflowNotOpenError,
     _slice_spec_hash,
 )
+from token_io_decoupling_state.state.common import _hash_json
 
 PARENT_CAPS = frozenset(
     {
@@ -1872,6 +1874,59 @@ def test_evaluation_cas_replay_and_idempotency_key_conflict(tmp_path: Path) -> N
             expected_revision=revision,
             idempotency_key="slice-evaluation-stale-cas",
         )
+
+
+def test_retired_environment_evaluation_cannot_replay_legacy_receipt(tmp_path: Path) -> None:
+    service, _ = setup(tmp_path)
+    baseline = service.workflow_evaluate(
+        CheckpointNode.CONTRACT,
+        expected_revision=0,
+        idempotency_key="baseline-contract-evaluation",
+    )
+    legacy_key = "legacy-environment-receipt"
+    args = {"expected_revision": baseline.result_revision, "idempotency_key": legacy_key}
+    payload = {
+        "node_id": "environment",
+        "branch": None,
+        "input_hash": None,
+        "slice_ids": None,
+        "expected_revision": baseline.result_revision,
+    }
+    payload_hash = _hash_json({"operation": "workflow_evaluate", "payload": payload})
+    legacy_result = CheckpointEvaluation(
+        evaluation_id="legacy-environment-evaluation",
+        node_id=CheckpointNode.ENVIRONMENT,
+        outcome="blocked",
+        branch=None,
+        rule_hash="a" * 64,
+        input_hash="b" * 64,
+        epochs=EpochSnapshot(implementation_content=0, documentation=0, git_metadata=0),
+        basis_revision=baseline.result_revision,
+        result_revision=baseline.result_revision + 1,
+        missing_facts=[],
+        missing_evidence=[],
+    )
+    binding = service._parent_binding({Cap.WORKFLOW_WRITE}, {Guard.PATH_BOUNDARY})
+    database, root = service._root_database(binding, create=False)
+    with service._write_transaction(
+        database,
+        DatabaseKind.WORKFLOW,
+        root,
+        logical_identity=(binding.project_id, binding.root_session_id, None),
+    ) as connection:
+        service._store_receipt(
+            connection,
+            "operation_receipts",
+            legacy_key,
+            "workflow_evaluate",
+            payload_hash,
+            legacy_result.model_dump(mode="json"),
+            legacy_result.result_revision,
+        )
+
+    with pytest.raises(UnknownRuleNodeError, match="environment"):
+        service.workflow_evaluate(CheckpointNode.ENVIRONMENT, **args)
+    assert service.workflow_get_state().revision == baseline.result_revision
 
 
 def test_control_transition_replay_precedes_revision_check(tmp_path: Path) -> None:

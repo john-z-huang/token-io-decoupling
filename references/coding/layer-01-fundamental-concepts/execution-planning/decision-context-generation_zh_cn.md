@@ -28,7 +28,7 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-当前会话暴露该工具且明确允许外发数据时，使用 `workflow_generate_decision_context`，传入有界 `request`，其中包含 `raw_content`、`decision_goal`、`output_kind`（`decision_context` 或 `decision_question`），以及 `outbound_data_permitted: true`。工具只转换调用方提供的文本，不读取文件、不核实来源，也不决定后续选择。审阅成功结果，并将 `input_hash` 与精确请求比对后再复用。端点和每次调用的模型绑定遵循 [运行环境与模型厂商支持](../session-runtime/runtime-provider-support_zh_cn.md)。
+当前会话暴露该工具且明确允许外发数据时，使用 `workflow_generate_decision_context`，传入有界 `request`，其中包含 `raw_content`、`decision_goal`、`output_kind`（`decision_context` 或 `decision_question`），以及 `outbound_data_permitted: true`。工具只转换调用方提供的文本，不读取文件、不核实来源，也不决定后续选择。审阅成功结果，并将 `input_hash` 与精确请求比对后再复用。若 blocked 结果将瞬时故障标为 retry-eligible，调用方仍须确认原授权有效且相同的 input hash 匹配；复用任何结果前检查当前事实。拒绝、无效输出或证据不足都不是瞬时重试候选。关于有界恢复及每次调用的端点和模型绑定，遵循[运行环境与模型厂商支持](../session-runtime/runtime-provider-support_zh_cn.md)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 

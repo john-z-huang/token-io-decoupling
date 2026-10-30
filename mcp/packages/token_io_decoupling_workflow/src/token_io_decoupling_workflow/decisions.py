@@ -20,6 +20,14 @@ from token_io_decoupling_core.state_models import (
 )
 from token_io_decoupling_state.service import BindingError, StateService
 
+from token_io_decoupling_workflow.api_recovery import (
+    FailureClass,
+    ProviderErrorCode,
+    RecoveryGuidance,
+    classify_provider_failure,
+    recovery_for_provider_failure,
+    recovery_for_reason,
+)
 from token_io_decoupling_workflow.decision_prompts import DecisionPrompt, reviewed_prompt
 
 DECISIONS_MODEL = "gpt-6-luna"
@@ -106,27 +114,6 @@ class DecisionsRuntimeConfig(StrictModel):
         return self
 
 
-FailureClass: TypeAlias = Literal[
-    "transport",
-    "authentication",
-    "authorization",
-    "not_found",
-    "rate_limit",
-    "quota",
-    "api",
-    "sdk_contract",
-    "configuration",
-    "unknown",
-]
-ProviderErrorCode: TypeAlias = Literal[
-    "invalid_api_key",
-    "model_not_found",
-    "insufficient_quota",
-    "rate_limit_exceeded",
-    "other",
-]
-
-
 class DecisionAdvice(StrictModel):
     status: Literal["available", "fallback", "stale"]
     reason: Literal[
@@ -146,6 +133,12 @@ class DecisionAdvice(StrictModel):
         "idempotent_replay",
     ]
     failure_class: FailureClass | None = None
+    recovery: RecoveryGuidance | None = Field(
+        default=None,
+        description=(
+            "Advisory failure guidance; never resubmit the enclosing state mutation for advice."
+        ),
+    )
     http_status: Annotated[int, Field(ge=100, le=599)] | None = None
     provider_error_code: ProviderErrorCode | None = None
     node_id: CheckpointNode
@@ -265,16 +258,17 @@ class DecisionsAdvisor:
                 ],
             )
         except Exception as exc:
-            reason, failure_class, http_status, error_code = _provider_failure(exc)
+            failure = classify_provider_failure(exc)
             return _fallback(
-                reason,
+                failure.reason,
                 node_id,
                 basis_hash,
                 rules,
                 state,
-                failure_class=failure_class,
-                http_status=http_status,
-                provider_error_code=error_code,
+                failure_class=failure.failure_class,
+                http_status=failure.http_status,
+                provider_error_code=failure.provider_error_code,
+                recovery=recovery_for_provider_failure(failure),
             )
         finally:
             close = getattr(client, "close", None)
@@ -414,58 +408,6 @@ def _is_refusal(response: object, expected_name: str) -> bool:
     )
 
 
-def _provider_failure(
-    exc: Exception,
-) -> tuple[
-    Literal["provider_error", "timeout"],
-    FailureClass,
-    int | None,
-    ProviderErrorCode | None,
-]:
-    error_name = type(exc).__name__
-    status_value = getattr(exc, "status_code", None)
-    status = status_value if type(status_value) is int and 100 <= status_value <= 599 else None
-    raw_code = getattr(exc, "code", None)
-    if not isinstance(raw_code, str):
-        body = getattr(exc, "body", None)
-        error = body.get("error") if isinstance(body, dict) else None
-        if isinstance(error, dict):
-            raw_code = error.get("code")
-            if not isinstance(raw_code, str):
-                raw_code = error.get("type")
-    allowed_codes = {
-        "invalid_api_key",
-        "model_not_found",
-        "insufficient_quota",
-        "rate_limit_exceeded",
-    }
-    code = raw_code if isinstance(raw_code, str) and raw_code in allowed_codes else None
-
-    if error_name in {"APITimeoutError", "APIConnectionError", "APIConnectionTimeoutError"}:
-        reason = "timeout" if error_name == "APITimeoutError" else "provider_error"
-        return reason, "transport", status, code
-    if isinstance(exc, (TypeError, ValueError)):
-        return "provider_error", "configuration", status, code
-    if error_name == "APIResponseValidationError":
-        return "provider_error", "sdk_contract", status, code
-    if status == 401 or code == "invalid_api_key":
-        return "provider_error", "authentication", status, "invalid_api_key" if code else None
-    if status == 403:
-        safe_code: ProviderErrorCode | None = code
-        if safe_code is None and isinstance(raw_code, str):
-            safe_code = "other"
-        return "provider_error", "authorization", status, safe_code
-    if status == 404 or code == "model_not_found":
-        return "provider_error", "not_found", status, "model_not_found" if code else None
-    if code == "insufficient_quota":
-        return "provider_error", "quota", status, code
-    if status == 429 or code == "rate_limit_exceeded":
-        return "provider_error", "rate_limit", status, "rate_limit_exceeded" if code else None
-    if status is not None:
-        return "provider_error", "api", status, "other" if isinstance(raw_code, str) else None
-    return "provider_error", "unknown", None, None
-
-
 def _fallback(
     reason: Literal[
         "missing_credentials",
@@ -487,7 +429,15 @@ def _fallback(
     failure_class: FailureClass | None = None,
     http_status: int | None = None,
     provider_error_code: ProviderErrorCode | None = None,
+    recovery: RecoveryGuidance | None = None,
 ) -> DecisionAdvice:
+    advice_recovery = recovery or recovery_for_reason(reason)
+    if reason not in {"disabled", "core_blocked", "idempotent_replay"}:
+        advice_recovery = RecoveryGuidance(
+            retry_eligible=False,
+            action="continue_without_advice_or_review",
+            failure_class=advice_recovery.failure_class,
+        )
     return DecisionAdvice(
         status="fallback" if reason != "stale_context" else "stale",
         reason=reason,
@@ -497,6 +447,7 @@ def _fallback(
         basis_revision=state.revision,
         epochs=state.epochs,
         failure_class=failure_class,
+        recovery=advice_recovery,
         http_status=http_status,
         provider_error_code=provider_error_code,
     )

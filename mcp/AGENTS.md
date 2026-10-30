@@ -6,10 +6,11 @@ This file owns the client-support boundary for the MCP Server, packages, tests, 
 
 ## Supported clients
 
-- The MCP Server supports only Codex and ChatGPT Desktop. Claude Code, Claude Desktop, and other Code Agents are unsupported.
-- When changing code under `mcp/`, consider only Codex-based Agent behavior and the supported desktop client. Do not add compatibility branches, adapters, configuration, examples, tests, or tool instructions for other Code Agents. Repository-wide cross-provider parity checks do not apply to this directory.
+- The MCP Server targets a locally available Codex CLI, including the local Codex CLI/app-server path used by local Work. Cloud ChatGPT conversations and remote Work are not direct clients, and other Code Agents are not supported as direct clients.
+- When another Agent runs in its own environment with Codex CLI installed and configures this MCP Server there by following this repository's instructions, the supported route is that environment's local Codex CLI only; this does not add an adapter or direct support for the other Agent or a cloud surface. The server does not ask callers to select or classify an environment.
+- When changing code under `mcp/`, consider Codex CLI behavior across those contexts. Do not add compatibility branches, adapters, configuration, examples, tests, or tool instructions for other Code Agents. Repository-wide cross-provider parity checks do not apply to this directory.
 - Remove obsolete unsupported-client paths and claims instead of maintaining fallback routes. Shared protocol or operating-system abstractions do not establish support for additional clients.
-- Supported scope does not prove an available or verified host integration. Continue to verify exposed capabilities, trusted identity, guards, and permissions; preserve unavailable results and fail-closed behavior.
+- The fixed client scope does not prove an available or verified host integration. Continue to verify exposed capabilities, trusted identity, guards, and permissions; preserve unavailable results and fail-closed behavior.
 
 ## Scope and authority
 

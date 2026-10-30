@@ -10,6 +10,7 @@ from token_io_decoupling_core.binding import BindingError
 from token_io_decoupling_core.models import (
     DatabaseKind,
 )
+from token_io_decoupling_core.rules import UnknownRuleNodeError
 from token_io_decoupling_core.state_models import (
     EvidenceKind,
     EvidenceRecord,
@@ -293,13 +294,18 @@ def worker_get_evidence(self: StateService, evidence_id: str) -> dict[str, objec
         )
         active = json.loads(active_row[0]) if active_row else {}
         active_epochs = active.get("epochs", {})
+        try:
+            current_rule_hash = self._rule_loader.load_context(row[1]).context_hash
+        except UnknownRuleNodeError:
+            current_rule_hash = None
         stale = (
             _epochs_cover_changed_dimensions(
                 json.loads(row[6]),
                 (row[7], row[8], row[9]),
                 active_epochs,
             )
-            or row[5] != self._rule_loader.load_context(row[1]).context_hash
+            or current_rule_hash is None
+            or row[5] != current_rule_hash
         )
         return {
             "evidence_id": row[0],

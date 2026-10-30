@@ -15,7 +15,6 @@ class UnsupportedRegistryShapeError(ValueError):
 # and the types/presence of fact/evidence collections. It does not pin owner text.
 SUPPORTED_NODE_SHAPES: dict[str, tuple[str, tuple[str, ...]]] = {
     "contract": ("direct", ("ready", "amend", "blocked")),
-    "environment": ("hybrid", ("available", "partially unavailable", "blocked")),
     "mode": ("hybrid", ("single-agent", "multi-agent", "blocked")),
     "context": ("direct", ("sufficient", "request evidence", "blocked")),
     "decision": ("hybrid", ("decided", "evidence-on-demand", "blocked")),
@@ -45,12 +44,12 @@ SUPPORTED_NODE_SHAPES: dict[str, tuple[str, tuple[str, ...]]] = {
 
 # Exact checkpoint facts and evidence are part of the executable contract. This
 # digest is reviewed with the registry and implementation when that contract moves.
-SUPPORTED_REQUIREMENTS_SHA256 = "13ec1bb451940e9f28ddbde4d3a41f7a72224b6f90d12aaf83760eea28add086"
+SUPPORTED_REQUIREMENTS_SHA256 = "73f2a96895a3d022530a6ea905c345dfe93fd3956ec043728daeb0d1c445fcbe"
 
 
 def validate_supported_registry_shape(registry: dict[str, Any]) -> None:
     """Reject structural changes until this package's contract is updated."""
-    if type(registry.get("contract_version")) is not int or registry["contract_version"] != 1:
+    if type(registry.get("contract_version")) is not int or registry["contract_version"] != 2:
         raise UnsupportedRegistryShapeError("unsupported registry contract_version")
     nodes = registry.get("nodes")
     if not isinstance(nodes, list):

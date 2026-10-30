@@ -15,6 +15,12 @@ Coding 的委派和 Session 拓扑规则拆分为原子 reference：状态记录
 
 每项 Coding 任务默认按[任务计划 Memory 生命周期](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)使用共享任务计划。现有及未来路线消费同一 owner：分析当前事实，实施前持久化/读回，新事实/进度先更新再汇报，需求变化先记录再分析并修订执行方案。明确持久化限制按该 owner 处理；计划绝不授予授权。
 
+## MCP 支持边界
+
+本项目的 MCP Server 仅通过本地 Codex CLI 使用，包括本地 ChatGPT Work 通过本地 Codex CLI 使用的情形。其他 Code Agent、云端 ChatGPT 聊天和远端 ChatGPT Work 不是直接 MCP 客户端；只有在各自环境中安装 Codex CLI，并按本项目安装说明为该 CLI 安装 Server 后，才能通过该 CLI 使用。这仍属于 Codex CLI 使用，不另行提供宿主或云端兼容。Codex CLI 工具调用不执行环境识别检查点；仍须核验各操作实际需要的能力、身份、权限和守卫。参见 [MCP 客户端边界](mcp/AGENTS_zh_cn.md)。
+
+其他 Code Agent 可以不使用此 MCP Server，通过纯文档方式遵循 Skill。MCP Server 仅面向 Codex CLI 开发，同时持续维护对这些 Agent 兼容的指令描述；通用文档工作流及其能力检查仍适用于纯文档使用。
+
 ## 从这里开始
 
 按以下顺序逐项执行。确认当前检查点的结果后才能进入下一项；条件步骤不适用时，记录原因，不得默默跳过。

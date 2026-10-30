@@ -28,7 +28,7 @@ Use `output_kind` to choose exactly one output form. For `decision_question`, as
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-When exposed and explicitly authorized for outbound data, call `workflow_generate_decision_context` with a bounded `request` containing `raw_content`, `decision_goal`, and `output_kind` (`decision_context` or `decision_question`), plus `outbound_data_permitted: true`. The tool only transforms caller-provided text; it does not read files, verify provenance, or decide the downstream choice. Review a successful result and compare its `input_hash` with the exact request before reuse. Follow [Runtime and Model Provider Support](../session-runtime/runtime-provider-support.md) for invocation-local endpoint and model bindings.
+When exposed and explicitly authorized for outbound data, call `workflow_generate_decision_context` with a bounded `request` containing `raw_content`, `decision_goal`, and `output_kind` (`decision_context` or `decision_question`), plus `outbound_data_permitted: true`. The tool only transforms caller-provided text; it does not read files, verify provenance, or decide the downstream choice. Review a successful result and compare its `input_hash` with the exact request before reuse. If a blocked result marks a transient failure as retry-eligible, an optional repeat still requires the original authorization to remain valid and the same input hash to match; check current facts before reusing any result. A refusal, invalid output, or insufficient evidence is not a transient retry candidate. Follow [Runtime and Model Provider Support](../session-runtime/runtime-provider-support.md) for bounded recovery and invocation-local endpoint and model bindings.
 
 ## Claude Code CLI / Claude Desktop optimizations
 

@@ -1,5 +1,5 @@
 {
-  "contract_version": 1,
+  "contract_version": 2,
   "nodes": [
     {
       "node_id": "contract",
@@ -23,41 +23,11 @@
       "evaluation_mode": "direct",
       "failure_action": "block route entry until the Contract is complete or report the blocking uncertainty",
       "next_checkpoint_ids": [
-        "environment"
-      ],
-      "owner_mirrors": {
-        "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/entry-and-context/contract_zh_cn.md",
-          "section": "动作"
-        }
-      }
-    },
-    {
-      "node_id": "environment",
-      "owner_path": "references/coding/layer-02-workflow-concepts/entry-and-context/environment.md",
-      "owner_section": "Actions",
-      "required_facts": [
-        "runtime identity",
-        "required capabilities",
-        "available capabilities"
-      ],
-      "required_evidence": [
-        "session metadata",
-        "exposed capability inventory"
-      ],
-      "legal_branches": [
-        "available",
-        "partially unavailable",
-        "blocked"
-      ],
-      "evaluation_mode": "hybrid",
-      "failure_action": "record unavailable capabilities and block only dependent operations",
-      "next_checkpoint_ids": [
         "mode"
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/entry-and-context/environment_zh_cn.md",
+          "path": "references/coding/layer-02-workflow-concepts/entry-and-context/contract_zh_cn.md",
           "section": "动作"
         }
       }

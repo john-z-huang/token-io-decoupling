@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 SERVER_DESCRIPTION = (
-    "Bounded Token I/O MCP tools. The active profile and verified role determine exposed "
-    "operations. Discovery reports availability, not identity or authority."
+    "MCP server for a locally available Codex CLI, including local Work when it uses the local "
+    "Codex CLI/app-server path. Cloud ChatGPT conversations, remote Work, and other Code Agents "
+    "are not direct clients. If another Agent installs and configures Codex CLI in its own "
+    "environment, only that local CLI path is supported; no other Agent or cloud adapter is "
+    "provided. No runtime-environment selection step is exposed. Bounded Token I/O tools. The "
+    "active profile and verified role determine exposed operations. Discovery reports "
+    "availability, not identity or authority."
 )
 
 
@@ -13,8 +18,11 @@ def _description(*sentences: str) -> str:
 
 
 _RETRY = (
-    "For a transport retry, resend the identical request with the same key. For changed content, "
-    "reread current state/revision and use a new key; do not loop retries."
+    "For an uncertain mutation result, read back current state/receipt first. If replay is needed, "
+    "resend the identical payload with the same idempotency key. For changed content, reread the "
+    "current revision and use a new key. Validation, permission, or guard failures need "
+    "correction; "
+    "do not retry them unchanged."
 )
 _PAYLOAD = "Input is one JSON object in the payload envelope; output is JSON text."
 _RECEIPT = (
@@ -30,6 +38,7 @@ _DECISION_RESULT = (
     "child_candidate, or output_tokens. Inspect reason, suggested_value, fallback_value, "
     "next_action, input_hash (nullable on a local branch), fact_revision, fact_fingerprint, "
     "context_input_hash, source_policy_hashes, optional model/total_tokens, and "
+    "optional recovery (retry_eligible, action, failure_class, total_attempt_limit). "
     "authority=advisory_only. Before acting, compare returned request/context/policy hashes and "
     "fact revision/fingerprint with the exact current caller facts, reviewed context, and owner "
     "text. On stale, refresh current facts and owner text, regenerate/review context if needed, "
@@ -41,22 +50,67 @@ _DECISION_RESULT = (
     "mode, permissions, budget, role uniqueness, scope, and availability before an action."
 )
 
+_READ_ONLY_TOOLS = {
+    "workflow_capabilities",
+    "rules_get_context",
+    "parent_get_worker_summary",
+    "worker_get_assignment",
+    "worker_get_evidence",
+    "worker_get_recovery_context",
+    "database_schema_status",
+    "state_get",
+    "workflow_get_state",
+    "worker_get_state",
+}
+_STATE_WRITE_TOOLS = {
+    "workflow_evaluate",
+    "evaluate_control_checkpoint",
+    "workflow_open",
+    "delegation_reserve",
+    "delegation_bind",
+    "delegation_unreserve",
+    "slice_check",
+    "slice_release",
+    "workflow_transition",
+    "workflow_reconcile",
+    "worker_record_progress",
+    "worker_report_blocker",
+    "record_evidence",
+    "workflow_record_evidence",
+    "worker_record_evidence",
+}
+_STATE_ADVICE_TOOLS = {"workflow_evaluate", "evaluate_control_checkpoint"}
+_STATELESS_API_TOOLS = {
+    "workflow_select_child_effort",
+    "workflow_generate_decision_context",
+    "workflow_select_child_role",
+    "workflow_select_executor",
+    "workflow_select_child",
+    "workflow_assess_output_tokens",
+}
+
 TOOL_DESCRIPTIONS: dict[str, str] = {
     "workflow_capabilities": _description(
-        "Read public capability summaries and capability_details (schema_version=1). No arguments;",
-        "no identity or permission prerequisite. support describes built-in Desktop adapters,",
+        "Read public capability summaries and capability_details (schema_version=2). No arguments;",
+        "no identity or permission prerequisite. agent_runtime is the fixed local Codex CLI",
+        "product scope, including local Work when it uses that local CLI/app-server path. Cloud",
+        "ChatGPT conversations, remote Work, and other Code Agents are not direct clients. When",
+        "another Agent installs/configures the CLI in its own environment, only that environment's",
+        "local CLI path is supported; no other Agent/cloud adapter or runtime-environment",
+        "selection step is provided. This static scope is not identity attestation.",
+        "support.agent_runtime describes this static contract,",
         "configuration describes caller matching and persisted API advice, and runtime describes",
         "the provider's baseline binding, transport classification, and startup server mode.",
         "Status entries contain status, reason_code, message, source, and next_step; a verified",
-        "binding includes its role. Built-in adapters are not implemented; a separately supplied",
-        "provider may still verify. Disabled is normal configuration; unknown means the underlying",
+        "binding includes its role. Disabled is normal configuration; unknown means the underlying",
         "cause cannot be determined safely. Legacy top-level fields remain summaries: non-embedded",
         "enhanced_binding stays unverified; binding_transport stays unavailable",
         "even after a valid probe.",
         "At most one provider read; no state/path inspection, mutation, or API request. Probes",
         "may use the host channel. No credentials, identity values, or raw errors are returned.",
         "On missing provider, guard failure, denial, or probe failure, inspect reason_code",
-        "and next_step; use Native until corrected. A known transport or verified",
+        "and next_step; configure a trusted host provider when required. A known transport or",
+        "verified",
         "baseline does not verify caller metadata or operation-specific guards, enable Enhanced,",
         "change startup admission, or grant authority. No revision or idempotency key is required.",
     ),
@@ -97,9 +151,13 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "with current request facts and compare the fingerprint separately before child creation.",
         "Only status=available includes selected_effort. Missing permission/configuration,",
         "unsupported facts, refusal, invalid response, insufficient evidence, timeout, or provider",
-        "failure blocks selection. Do not retry automatically or substitute a fixed effort;",
-        "correct",
-        "the evidence or configuration and make a newly authorized request. The result grants no",
+        "failure blocks selection. The SDK makes one request; do not retry automatically or",
+        "substitute a fixed effort. Correct evidence or configuration first. A transient candidate",
+        "may be invoked again by the caller while the original authorization remains valid, after",
+        "checking the same request hash, slice fingerprint, and current permissions; allow at most",
+        "three total calls including",
+        "the first.",
+        "The result grants no",
         "creation authority.",
     ),
     "workflow_generate_decision_context": _description(
@@ -135,8 +193,11 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "provenance. This hash covers generation input only and is not the downstream",
         "Decisions hash.",
         "Refusal, incomplete, malformed, wrong-model, invalid-output, or provider failures block",
-        "without returning raw source, raw provider errors, or a fallback description. After",
-        "fixing missing facts/configuration or an output error, make a newly authorized call.",
+        "without returning raw source, raw provider errors, or a fallback description. Correct",
+        "missing facts/configuration or review invalid output. A transient candidate may be",
+        "invoked again by the caller while the original authorization remains valid, after",
+        "checking",
+        "the request hash and current policy; allow at most three total calls including the first.",
         "There is no",
         "revision or idempotency key; the tool does not automatically retry or call Decisions.",
     ),
@@ -153,7 +214,10 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "The tool loads current child-role-selection and session-role-ownership owner text from",
         "the repository or packaged resources and returns policy/request hashes, a role suggestion",
         "or Primary fallback, guard reason, and next action. An API call reads both",
-        "environment values and uses fixed model gpt-6-luna with zero retries. Missing",
+        "environment values and uses fixed model gpt-6-luna with zero automatic retries. A",
+        "transient candidate may be re-invoked under still-valid task authorization after current",
+        "facts and policy are checked; the caller tracks a maximum of three total calls including",
+        "the first. Missing",
         "facts/policy/configuration, refusal, invalid/wrong-model response, or changed policy",
         "blocks or marks the result stale. A suggested role is one of Primary Output, Change",
         "Verification, Context Bootstrap/Refresh, or Documentation/Comments & Git Operations;",
@@ -185,7 +249,9 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "user approval",
         "through the Root reservation path. This does not create, dispatch,",
         "or authorize an executor. Permitted calls read both environment values and use fixed",
-        "model gpt-6-luna with zero retries. Errors are sanitized; changed policy is stale.",
+        "model gpt-6-luna with zero automatic retries. Any optional repeat is caller-decided under",
+        "still-valid authorization after current hashes are checked; maximum three total calls per",
+        "recovery process, including the first. Errors are sanitized; changed policy is stale.",
         _DECISION_RESULT,
     ),
     "workflow_select_child": _description(
@@ -236,7 +302,10 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "This judgment is independent of executor selection and does not dispatch or authorize",
         "work. Permitted calls read both environment values and use",
         "only fixed",
-        "model gpt-6-luna with zero retries; errors are sanitized and policy changes stale.",
+        "model gpt-6-luna with zero automatic retries. An optional repeat is caller-decided under",
+        "still-valid authorization after current hashes are checked, with at most three total",
+        "calls",
+        "per recovery process including the first; errors are sanitized and policy changes stale.",
         _DECISION_RESULT,
     ),
     "workflow_evaluate": _description(
@@ -263,7 +332,10 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "for control. With semantic_input the JSON result has separate core and",
         "advice objects; advice.status is available, fallback, or stale. It may",
         "use API only when enabled and outbound data is permitted; it never",
-        "selects a branch.",
+        "selects a branch. advice.recovery is informational and never authorizes resubmitting this",
+        "state mutation to retry advice. Same-key replay returns the stored evaluation and",
+        "does not",
+        "call Decisions again; continue without advice or review the existing result.",
         _RETRY,
     ),
     "evaluate_control_checkpoint": _description(
@@ -595,7 +667,43 @@ SERVER_INSTRUCTIONS: dict[str, str] = {
 def tool_description(name: str) -> str:
     """Return the required description or fail closed on an uncatalogued wire name."""
     try:
-        return TOOL_DESCRIPTIONS[name]
+        description = TOOL_DESCRIPTIONS[name]
+        if name in _READ_ONLY_TOOLS:
+            recovery = (
+                "Recovery class: read-only lookup with no state mutation. Only an observed "
+                "transient "
+                "transport failure or explicit 5xx can justify repeating the same read; "
+                "validation, permission, and guard errors are not transient."
+            )
+        elif name in _STATE_WRITE_TOOLS:
+            recovery = (
+                "Recovery class: state mutation. On unknown completion, read back state/receipt; "
+                "replay only the identical payload with the same idempotency key. Changed content "
+                "requires current state/revision and a new key. Validation, permission, and guard "
+                "errors must be resolved first."
+            )
+            if name in _STATE_ADVICE_TOOLS:
+                recovery += (
+                    " Same-key replay does not call optional Decisions advice again; never "
+                    "resubmit "
+                    "the state mutation to retry advice."
+                )
+        elif name in _STATELESS_API_TOOLS:
+            recovery = (
+                "Recovery class: stateless, one API request per invocation with no SDK retry. Read "
+                "the structured recovery object; only a transient candidate permits considering "
+                "an explicit repeat under still-valid authorization after checking current input "
+                "hash and policy. The caller tracks at most three total calls including the first. "
+                "Other failures require correction or stop; this tool does not count attempts."
+            )
+        else:
+            raise ValueError(f"missing recovery classification for MCP tool: {name}")
+        return (
+            "Codex CLI MCP tool, including Codex CLI/app-server use from Desktop and local Work. "
+            + description
+            + " "
+            + recovery
+        )
     except KeyError as exc:
         raise ValueError(f"missing Agent-facing metadata for MCP tool: {name}") from exc
 
@@ -624,6 +732,7 @@ def server_description(profile: str | None, bound_role: str | None) -> str:
         if scope is None:
             raise ValueError(f"missing Agent-facing description for MCP profile: {profile}")
     return (
+        f"Codex CLI MCP server (including Codex CLI/app-server use from Desktop and local Work). "
         f"{scope.capitalize()}. Protected calls require the appropriate verified trusted-host "
         "binding and current guards. Discovery reports availability, not identity or authority."
     )
@@ -634,6 +743,8 @@ def server_instructions(profile: str | None, bound_role: str | None) -> str:
     if profile is None:
         if bound_role == "parent":
             return (
+                "This MCP server serves Codex CLI, including Codex CLI/app-server use from Desktop "
+                "and local Work. "
                 "Parent-bound embedding exposes public tools and parent operations with "
                 "compatibility aliases. Start with workflow_capabilities and rules_get_context, "
                 "then use parent workflow/delegation operations. No Worker operations are exposed. "
@@ -642,6 +753,8 @@ def server_instructions(profile: str | None, bound_role: str | None) -> str:
             )
         if bound_role == "worker":
             return (
+                "This MCP server serves Codex CLI, including Codex CLI/app-server use from Desktop "
+                "and local Work. "
                 "Worker-bound embedding exposes public tools and this Worker's own assignment, "
                 "state, progress, evidence, blocker, and recovery operations. Start with "
                 "worker_get_assignment "
@@ -649,12 +762,17 @@ def server_instructions(profile: str | None, bound_role: str | None) -> str:
                 "current revision/idempotency data; discovery grants no authority."
             )
         return (
+            "This MCP server serves Codex CLI, including Codex CLI/app-server use from Desktop "
+            "and local Work. "
             "This public-only server exposes capabilities, rules, and schema diagnostics. "
             "Start with workflow_capabilities and rules_get_context. Protected "
             "operations are unavailable; a "
             "listed or public tool does not create a trusted host binding or grant authority."
         )
     try:
-        return SERVER_INSTRUCTIONS[profile]
+        return (
+            "This MCP server serves Codex CLI, including Codex CLI/app-server use from Desktop "
+            "and local Work. " + SERVER_INSTRUCTIONS[profile]
+        )
     except KeyError as exc:
         raise ValueError(f"missing Agent-facing instructions for MCP profile: {profile}") from exc

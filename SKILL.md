@@ -15,6 +15,12 @@ The Skill defines orchestration conventions only. It cannot bypass higher-priori
 
 Every Coding task uses a shared task plan by default under [Task Plan Memory Lifecycle](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md). Existing and future routes consume the same owner: analyze current facts, persist/read back before implementation, update before reporting new facts/progress, and record requirement changes before analysis and revised execution. Explicit persistence restrictions follow that owner; a plan never grants authority.
 
+## MCP support boundary
+
+Use this project's MCP Server only from local Codex CLI, including local ChatGPT Work through local Codex CLI. Other Code Agents, cloud ChatGPT chats, and remote ChatGPT Work are not direct MCP clients. They may use the server only after installing Codex CLI in their own environment and following this project's installation instructions for that CLI. This remains Codex CLI use, without separate host or cloud compatibility. Codex CLI tool calls do not run an environment-identification checkpoint; verify the actual capabilities, identity, permissions, and guards required by each operation. See the [MCP client boundary](mcp/AGENTS.md).
+
+Other Code Agents may follow the Skill as documents without this MCP Server. Continue maintaining compatible instruction descriptions for those Agents while developing the MCP Server exclusively for Codex CLI. The general document workflow and its capability checks remain available for document-only use.
+
 ## Start here
 
 Follow these steps in order. Confirm each checkpoint's outcome before advancing; if a conditional step does not apply, record why instead of silently skipping it.

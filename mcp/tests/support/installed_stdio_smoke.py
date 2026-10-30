@@ -228,17 +228,59 @@ async def _exercise(cli_path: Path, profile: str, repo_root: Path) -> None:
                         raise AssertionError(
                             f"installed {tool_name} did not return loaded owner policy hashes"
                         )
-                for language, expected_text in (
-                    ("en", "Before Mode and Session pass"),
-                    ("zh_cn", "Mode 和 Session 通过前"),
-                ):
+                contract_actions = {
+                    "en": (
+                        "1. State the requested outcome in one sentence.",
+                        "2. Record hard limits: user prohibitions, allowed runtime environments, "
+                        "repository and worktree scope, permitted tools and paths, safety limits, "
+                        "and explicitly authorized external effects.",
+                        "3. Record material decisions already made, unresolved questions, and "
+                        "acceptance conditions.",
+                        "4. Separate facts observed from assumptions. Keep unresolved material "
+                        "questions out of the implementation release.",
+                        "5. Establish task intent and eligible output classification from direct "
+                        "authoritative sources. Keep any advisory output separate from the "
+                        "Contract; it cannot authorize scope. Apply [Decisions Advisory]("
+                        "../../layer-01-fundamental-concepts/execution-planning/"
+                        "decisions-advisory.md) "
+                        "for advisory policy.",
+                    ),
+                    "zh_cn": (
+                        "1. 用一句话说明用户要求的结果。",
+                        "2. 记录硬性限制：用户禁止事项、允许的运行环境、仓库和 worktree 范围、"
+                        "允许使用的工具和路径、安全限制，以及明确授权的外部影响。",
+                        "3. 记录已经确定的实质性决策、未解决问题和验收条件。",
+                        "4. 区分已观察到的事实与假设。未解决的实质性问题不得进入实现发布。",
+                        "5. 从直接权威来源确定任务意图和符合条件的输出分类。任何建议输出都与 "
+                        "Contract 分开；它不能授权范围。建议政策遵循[Decisions 建议]("
+                        "../../layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md)。",
+                    ),
+                }
+                for language, expected_actions in contract_actions.items():
+                    expected_owner_section = {"en": "Actions", "zh_cn": "动作"}[language]
                     result = await client.call_tool(
                         "rules_get_context",
                         {"payload": {"node_id": "contract", "language": language}},
                     )
-                    if result.is_error or expected_text not in _text(result):
+                    if result.is_error:
                         raise AssertionError(
                             f"installed wheel did not return the {language} Contract rule"
+                        )
+                    contract_context = json.loads(_text(result))
+                    if (
+                        contract_context.get("node_id") != "contract"
+                        or contract_context.get("owner_section") != expected_owner_section
+                        or contract_context.get("next_checkpoint_ids") != ["mode"]
+                    ):
+                        raise AssertionError(
+                            f"installed wheel returned an unexpected {language} Contract route"
+                        )
+                    owner_text = contract_context.get("owner_text")
+                    if not isinstance(owner_text, str) or any(
+                        action not in owner_text for action in expected_actions
+                    ):
+                        raise AssertionError(
+                            f"installed wheel returned incomplete {language} Contract Actions"
                         )
                 denied = await client.call_tool(
                     "workflow_evaluate",

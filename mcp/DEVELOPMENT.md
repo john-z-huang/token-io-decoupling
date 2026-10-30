@@ -4,7 +4,7 @@
 
 This guide owns development, artifact checks, uv tool installation, and Codex setup for the Python workspace. The [architecture contract](../ENHANCED_ARCHITECTURE.md#implementation-packages) owns package responsibilities and dependency direction; the [Skill entry](../SKILL.md) and its linked owners remain the workflow authority.
 
-The MCP Server supports only Codex and ChatGPT Desktop. Follow the [directory instructions](AGENTS.md); development under `mcp/` does not maintain compatibility with other Code Agents. Supported scope does not establish a verified host adapter.
+The MCP Server targets a locally available Codex CLI, including the local Codex CLI/app-server path used by local Work. Cloud ChatGPT conversations, remote Work, and other Code Agents are not direct clients. If another Agent runs in its own environment with Codex CLI installed and configures the server by following this repository's instructions, only that environment's local Codex CLI path is supported; no other Agent or cloud-surface adapter is maintained. The server does not add a runtime-environment selection step. Follow the [directory instructions](AGENTS.md). This fixed client scope does not establish a verified host integration; actual capabilities, trusted identity, guards, and permissions remain checked by the existing operations.
 
 ## Environment and checks
 
@@ -55,11 +55,11 @@ Canonical Python implementations use the independent package names shown in the 
 
 ## Capability report diagnostics
 
-`workflow_capabilities({})` is public and takes no arguments. It preserves top-level summaries and adds `capability_details` with `schema_version: 1`. Each detail contains `status`, `reason_code`, a safe `message`, diagnostic `source`, and `next_step`.
+`workflow_capabilities({})` is public and takes no arguments. It preserves top-level summaries, adds `agent_runtime: "codex_cli"`, and returns `capability_details` with `schema_version: 2`. Version 2 replaces the version 1 `host_adapters` fields with `support.agent_runtime`, a static product-scope detail; it does not attest caller identity. Each detail contains `status`, `reason_code`, a safe `message`, diagnostic `source`, and `next_step`.
 
 | Detail group | Meaning and boundary |
 | --- | --- |
-| `support.host_adapters` | Static built-in Desktop identity/guard support: `unavailable/adapter_not_implemented`. This is not a provider probe; an injected trusted provider may still verify. |
+| `agent_runtime` / `support.agent_runtime` | Fixed product scope `codex_cli`; detail is `available/fixed_codex_cli`. This is not a host identity or permission attestation. |
 | `configuration.caller_match` | Startup `required/configured_required` or `disabled/configured_disabled`. Public discovery does not verify request caller metadata. |
 | `configuration.api_decisions` | Persisted advice `enabled/configured_enabled` or `disabled/configured_disabled`. Disabled is normal configuration. Per-invocation tools remain separate; no API readiness is tested. |
 | `runtime.binding` | Current session relationship and baseline guards. Success includes only role (`parent` or `worker`), never identity values; operation-specific authorization remains separate. |
@@ -70,7 +70,7 @@ Binding diagnostic outcomes:
 
 | Status / reason code | Evidence and next action |
 | --- | --- |
-| `unverified/provider_not_configured` | Default denying provider; no probe attempted. Use Native or configure a trusted host integration. |
+| `unverified/provider_not_configured` | Default denying provider; no probe attempted. Configure a trusted host integration before protected operations. |
 | `available/baseline_verified` | Session relationship and baseline guards passed. Check intended-operation guards and caller context separately. |
 | `unavailable/required_guards_missing` | Baseline guards are absent. Correct the host binding without bypassing checks. |
 | `unavailable/session_identity_mismatch` | Role/session relationship is invalid. Correct host-supplied identity. |
@@ -97,6 +97,14 @@ The CLI defaults to `codex` on `PATH`; Desktop defaults to `/Applications/ChatGP
 Each case starts a separate real app-server with a process-local `mcp_servers` override that disables inherited configured servers using safe placeholders and enables the current workspace's workflow server. Only configured server names and transport types are read; URLs, arguments, environment values, and credentials are not copied. It asserts that inherited configured servers expose no tools; clients may retain built-in platform services, which the test never invokes. It verifies the target's no-argument schema and new description, calls `workflow_capabilities` and checks structured diagnostics, and confirms that `workflow_evaluate` rejects the missing trusted binding. It uses one ephemeral thread, starts no model turn, and terminates its owned process group to release the memory-only thread and MCP subprocess. No user configuration or installed MCP package is changed, and no model API request is needed for this capability check. The operating environment must permit launching and cleaning up these processes.
 
 Ordinary pytest skips both cases without probing installed clients. Explicit opt-in makes missing clients, permission failures, protocol errors, or old capability responses fail rather than skip or fall back to a fake. Existing SDK, Mock, and installed-stdio checks retain their narrower scope. A passing runtime check does not prove an existing client session has reloaded an updated MCP installation; that session still needs its own installation/reload verification.
+
+## API and tool recovery guidance
+
+The child-effort, decision-context, and delegation selectors make one API request per invocation; the SDK has automatic retries disabled. Their result models add nullable `recovery` guidance, serialized as `null` when no guidance is present. `retry_eligible` is only a candidate signal; for explicit transient transport, 5xx, or confirmed rate-limit failures, `total_attempt_limit` is 3 calls per caller-tracked recovery process, including the first call. The server does not track attempts or retry automatically. Callers recheck task authorization, request hashes, current policy, and any result/effect before optionally invoking again.
+
+Authentication, authorization, configuration, quota, unknown errors, refusal, malformed/incomplete responses, and insufficient evidence are not retry candidates. Resolve the cause, refresh and re-hash stale facts/policy, or stop. Recovery guidance never changes the existing result status, reason, hash, fallback, or authority. Only a successful `available` selector result can be considered for later work after the usual gates pass.
+
+`DecisionAdvice` is returned inside state-changing evaluation operations. Its recovery guidance never authorizes repeating the enclosing mutation to retry advice: an identical idempotency-key replay returns the stored result and does not call Decisions again. Continue without advice or review the existing result. For other tools, metadata distinguishes read-only lookups, stateless API calls, idempotent writes, and guard/validation failures. Unknown mutation completion requires readback; replay only the exact payload and key. Permission, guard, and validation failures are not transient retries.
 
 ## uv tool installation and Codex setup
 
@@ -185,7 +193,7 @@ For a bound CLI launch, the state root is `.local/state/token-io-decoupling` ben
 
 The bridge pins project, Root, current Session, parent, and role at startup. Every protected call rereads current capability and guard evidence from the host; revocation or an identity change rejects the call. Child verification uses the host's current parent identity. The wire format accepts only the two binding operations, uses bounded frames and a finite timeout, and rejects malformed or mismatched responses without retry. A failed channel cannot regain trust through later responses.
 
-The host must enforce the actual sandbox, path, and Worker-store boundaries before reporting the corresponding guards. Kernel authentication identifies the trusted supervisor; it does not create those guards or prove that a runtime's Session mapping is correct. This package supplies the bridge and host-side serving API, not a privileged service installer or a verified Codex/ChatGPT Desktop runtime integration. A normal MCP client configuration cannot manufacture the inherited privileged channel. Existing test providers and tests that mock peer credentials remain synthetic evidence; the unmodified same-user channel rejection test exercises the real local credential boundary.
+The host must enforce the actual sandbox, path, and Worker-store boundaries before reporting the corresponding guards. Kernel authentication identifies the trusted supervisor; it does not create those guards or prove that a runtime's Session mapping is correct. This package supplies the bridge and host-side serving API, not a privileged service installer or a verified Codex CLI host integration. A normal MCP client configuration cannot manufacture the inherited privileged channel. Existing test providers and tests that mock peer credentials remain synthetic evidence; the unmodified same-user channel rejection test exercises the real local credential boundary.
 
 Before claiming an actual runtime integration, verify Root initialization, evidence insertion, transition and readback through that runtime's MCP connection; verify a real released and bound Worker can read its assignment and write only its own progress/evidence; and test revocation and cross-Worker rejection with the actual host guards. Restart or reconnect an existing client to load changed startup arguments and tool inventory; editing this checkout does not change an already running MCP process.
 

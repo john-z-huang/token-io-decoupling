@@ -48,13 +48,24 @@ def test_loader_reads_bilingual_owner_sections_and_recomputes_hash(tmp_path: Pat
     assert after != before
 
 
-def test_loader_rejects_unknown_nodes_and_incompatible_contract(tmp_path: Path) -> None:
+def test_environment_checkpoint_is_not_registered_and_contract_leads_to_mode() -> None:
+    loader = RuleLoader(repository_root=Path(__file__).parents[3])
+    contract = loader.load_context("contract")
+    assert contract.next_checkpoint_ids == ["mode"]
+    with pytest.raises(UnknownRuleNodeError, match="environment"):
+        loader.load_context("environment")
+
+
+@pytest.mark.parametrize("contract_version", [1, 3])
+def test_loader_rejects_unknown_nodes_and_incompatible_contract(
+    tmp_path: Path, contract_version: int
+) -> None:
     root, registry_path = _repo(tmp_path)
     loader = RuleLoader(repository_root=root)
     with pytest.raises(UnknownRuleNodeError):
         loader.load_context("missing")
     registry = json.loads(registry_path.read_text())
-    registry["contract_version"] = 2
+    registry["contract_version"] = contract_version
     registry_path.write_text(json.dumps(registry), encoding="utf-8")
     with pytest.raises(IncompatibleRuleContractError):
         loader.load_context("contract")

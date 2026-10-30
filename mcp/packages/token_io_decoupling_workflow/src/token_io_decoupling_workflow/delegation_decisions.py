@@ -14,6 +14,13 @@ from token_io_decoupling_core.models import CodingMode, StrictModel
 from token_io_decoupling_core.rules import RuleLoader, RuleLoadError
 from token_io_decoupling_core.state_models import AllocationRole
 
+from token_io_decoupling_workflow.api_recovery import (
+    RecoveryGuidance,
+    classify_provider_failure,
+    recovery_for_provider_failure,
+    recovery_for_reason,
+)
+
 DECISIONS_MODEL = "gpt-6-luna"
 DECISIONS_TIMEOUT_SECONDS = 20.0
 MAX_REQUEST_CHARS = 42_000
@@ -192,6 +199,9 @@ class DelegationDecisionResult(StrictModel):
     fact_fingerprint: Sha256
     context_input_hash: Sha256
     source_policy_hashes: dict[str, Sha256] = Field(default_factory=dict)
+    recovery: RecoveryGuidance | None = Field(
+        default=None, description="Caller guidance; null means no retry guidance is present."
+    )
     model: Literal["gpt-6-luna"] | None = None
     total_tokens: Annotated[StrictInt, Field(ge=0)] | None = None
     authority: Literal["advisory_only"] = "advisory_only"
@@ -610,7 +620,7 @@ class DelegationDecisionSelector:
 
         client: object | None = None
         response: object | None = None
-        request_failed = False
+        request_failure = None
         try:
             client = self._make_client(api_key, base_url)
             response = cast(Any, client).decisions.create(
@@ -625,8 +635,8 @@ class DelegationDecisionSelector:
                     }
                 ],
             )
-        except Exception:
-            request_failed = True
+        except Exception as exc:
+            request_failure = classify_provider_failure(exc)
         finally:
             close = getattr(client, "close", None)
             if callable(close):
@@ -640,12 +650,29 @@ class DelegationDecisionSelector:
             current_policies[name][1] != policies[name][1] for name in policy_names
         ):
             return result_base.model_copy(
-                update={"status": "stale", "reason": "source_policy_changed_during_request"}
+                update={
+                    "status": "stale",
+                    "reason": "source_policy_changed_during_request",
+                    "recovery": recovery_for_reason("source_policy_changed_during_request"),
+                }
             )
-        if request_failed or response is None:
-            return result_base.model_copy(update={"status": "blocked", "reason": "api_failure"})
+        if request_failure is not None or response is None:
+            guidance = (
+                recovery_for_provider_failure(request_failure)
+                if request_failure is not None
+                else recovery_for_reason("api_failure")
+            )
+            return result_base.model_copy(
+                update={"status": "blocked", "reason": "api_failure", "recovery": guidance}
+            )
         if _is_refusal(response, kind):
-            return result_base.model_copy(update={"status": "blocked", "reason": "refusal"})
+            return result_base.model_copy(
+                update={
+                    "status": "blocked",
+                    "reason": "refusal",
+                    "recovery": recovery_for_reason("refusal"),
+                }
+            )
         response_status = getattr(response, "status", None)
         if (
             (response_status is not None and response_status != "completed")
@@ -653,7 +680,11 @@ class DelegationDecisionSelector:
             or getattr(response, "incomplete_details", None) is not None
         ):
             return result_base.model_copy(
-                update={"status": "blocked", "reason": "incomplete_response"}
+                update={
+                    "status": "blocked",
+                    "reason": "incomplete_response",
+                    "recovery": recovery_for_reason("incomplete_response"),
+                }
             )
         answer = _validated_choice(response, accepted)
         if answer is None:
@@ -661,19 +692,34 @@ class DelegationDecisionSelector:
                 update={
                     "status": "blocked",
                     "reason": "refusal" if _is_refusal(response, kind) else "invalid_response",
+                    "recovery": recovery_for_reason(
+                        "refusal" if _is_refusal(response, kind) else "invalid_response"
+                    ),
                 }
             )
         if getattr(response, "model", None) != DECISIONS_MODEL:
             return result_base.model_copy(
-                update={"status": "blocked", "reason": "invalid_response"}
+                update={
+                    "status": "blocked",
+                    "reason": "invalid_response",
+                    "recovery": recovery_for_reason("invalid_response"),
+                }
             )
         if answer == "insufficient_evidence":
             return result_base.model_copy(
-                update={"status": "blocked", "reason": "insufficient_evidence"}
+                update={
+                    "status": "blocked",
+                    "reason": "insufficient_evidence",
+                    "recovery": recovery_for_reason("insufficient_evidence"),
+                }
             )
         if eligible_ids is not None and answer not in eligible_ids:
             return result_base.model_copy(
-                update={"status": "blocked", "reason": "invalid_response"}
+                update={
+                    "status": "blocked",
+                    "reason": "invalid_response",
+                    "recovery": recovery_for_reason("invalid_response"),
+                }
             )
 
         usage = getattr(response, "usage", None)
@@ -687,6 +733,7 @@ class DelegationDecisionSelector:
                 "suggested_value": answer,
                 "model": DECISIONS_MODEL,
                 "total_tokens": total_tokens,
+                "recovery": None,
             }
         )
 

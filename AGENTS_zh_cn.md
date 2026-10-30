@@ -4,6 +4,12 @@
 
 任何在本仓库中创建、修改、重命名、移动或删除文档的 Agent 和贡献者，都必须在进行文档变更前加载并遵守该文件。
 
+## MCP 支持范围与文档兼容
+
+本仓库的 MCP Server 仅面向本地 Codex CLI 开发；本地 ChatGPT Work 通过本地 Codex CLI 使用它。不得为其他 Code Agent、云端 ChatGPT 聊天或远端 ChatGPT Work 添加环境探测、适配器或兼容路线。这些环境只有自行安装 Codex CLI，并按本项目指示为该 CLI 安装 Server，才能通过该 CLI 使用；它们不会因此成为受支持的直接 MCP 客户端。Codex CLI 调用不得包含运行环境判断步骤。保留实际能力、身份、权限和守卫检查。实现边界由 [MCP 目录指令](mcp/AGENTS_zh_cn.md)负责。
+
+其他 Code Agent 可以不使用本项目的 MCP Server，通过纯文档方式使用 Skill。持续更新文档，在支持 Codex CLI 的同时维护对其他 Code Agent 兼容的指令描述；文档兼容不扩大 MCP Server 的开发范围或客户端支持。
+
 ## 禁止的操作与绝对禁止 Computer Use 的规则
 
 本节是**整个仓库强制执行的约束**，适用于本 Skill 的每次执行、所有运行环境、父 Agent、子 Agent、已委派任务、恢复分支及工具适配层。

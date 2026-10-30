@@ -6,6 +6,12 @@
 
 It maintains the **Coding** workflow for repository and development work. Multimodal material is retained only as standalone reference content, not as an executable workflow. Start with [Skill entry](SKILL.md); it routes each task to the references required for its current stage.
 
+## MCP support and document-only use
+
+This project's MCP Server is developed only for local Codex CLI. Local ChatGPT Work uses it through local Codex CLI. Other Code Agents, cloud ChatGPT chats, and remote ChatGPT Work do not directly support this server. They can use it only by installing Codex CLI in their own environment and following this project's instructions to install the server for that CLI; this does not add support for those hosts or Agents. Codex CLI calls these tools without a runtime-environment judgment step; actual capability, identity, permission, and guard checks still apply. See the [MCP client boundary](mcp/AGENTS.md).
+
+Other Code Agents may use the Skill through its documents without this MCP Server. The project will continue maintaining instructions compatible with other Code Agents alongside Codex CLI support; MCP Server development remains focused on Codex CLI.
+
 ## Install the MCP servers in Codex
 
 With `uv`, Bash 3.2 or later, and the Codex CLI available, run one command from any working directory:
@@ -24,6 +30,6 @@ The [installer](scripts/install-codex-mcp.sh) installs or updates this checkout'
 - [Enhanced architecture](ENHANCED_ARCHITECTURE.md): optional MCP state, rule context, semantic advice, and verified host boundaries; Native remains the default.
 - [MCP development guide](mcp/DEVELOPMENT.md): local Python checks and package builds.
 
-The optional Decisions integration is disabled by default. Every real request, including test requests, must read both local `OPENAI_API_KEY` and `OPENAI_BASE_URL`; missing either prevents a request. Follow the development guide for explicit enablement and testing. The current production entry has no verified Codex or ChatGPT Desktop host binding and therefore exposes only public diagnostics and rule context.
+The optional Decisions integration is disabled by default. Every real request, including test requests, must read both local `OPENAI_API_KEY` and `OPENAI_BASE_URL`; missing either prevents a request. Follow the development guide for explicit enablement and testing. The current production entry has no verified Codex CLI host binding and therefore exposes only public diagnostics and rule context.
 
 `token-io-decoupling setup codex` registers the selected profiles and automatically merges `OPENAI_API_KEY` and `OPENAI_BASE_URL` into each server's `env_vars`, including existing matching registrations. Reload the servers afterward. For a registered server with any name, use `setup codex-env --server NAME` or the [standalone repair script](scripts/configure-codex-mcp-env.py); both support `--dry-run`. See the [environment forwarding instructions](mcp/DEVELOPMENT.md#codex-stdio-environment-forwarding). Forwarding makes configuration available to the process; it does not enable Decisions or establish a host binding.
