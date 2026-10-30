@@ -14,6 +14,11 @@
 
 ## 范围与权限
 
+### Codex SDK 仅限测试
+
+遵守仓库的 [Codex SDK 最终测试边界](../AGENTS_zh_cn.md#codex-sdk-最终测试边界)。`openai-codex` 只能放在 `codex-test` 中，禁止加入运行依赖或由生产代码导入。`tests/support/codex_sdk.py` 是唯一的 SDK 导入／启动适配器；仅允许 `tests/support/final_codex_check.py` 在其他所有检查及本次构建的 `uv tool` 安装成功后调用真实最终查看。普通单测可使用 fake 验证这些边界，但不得启动 SDK。全新 CLI 仅执行版本、发现、能力和规则查看，模型回合数必须为零。保留根目录指令强制要求的环境变量复用、固定模型／推理强度、配置隔离及失败边界。
+
+
 此限制适用于 MCP Server，不删除 `mcp/` 之外的原生运行时指令，也不增加文件系统、网络、凭据、Agent 创建或 Git 授权。
 
 ## 相关文档

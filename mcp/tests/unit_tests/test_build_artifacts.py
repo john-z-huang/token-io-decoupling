@@ -7,6 +7,9 @@ import tarfile
 import zipfile
 from pathlib import Path
 
+from token_io_decoupling_core.owner_paths import OWNER_PATHS
+from token_io_decoupling_core.rules import RuleLoader
+
 
 def test_detached_core_sdist_builds_bilingual_rule_resources(tmp_path: Path) -> None:
     workspace = Path(__file__).parents[2]
@@ -40,6 +43,19 @@ def test_detached_core_sdist_builds_bilingual_rule_resources(tmp_path: Path) -> 
         (detached_project / "rule_sources" / "mcp" / "rule-registry.json").read_text()
     )
     assert registry["nodes"]
+    source_loader = RuleLoader(repository_root=workspace.parent)
+    baseline = {
+        "contexts": {
+            f"{node['node_id']}:{language}": source_loader.load_context(
+                node["node_id"], language=language
+            ).model_dump(mode="json")
+            for node in registry["nodes"]
+            for language in ("en", "zh_cn")
+        },
+        "policies": {owner: source_loader.load_delegation_policy(owner) for owner in OWNER_PATHS},
+    }
+    baseline_path = tmp_path / "source-rules.json"
+    baseline_path.write_text(json.dumps(baseline, ensure_ascii=False))
     wheel_output = tmp_path / "wheel-output"
     subprocess.run(
         [
@@ -85,8 +101,10 @@ def test_detached_core_sdist_builds_bilingual_rule_resources(tmp_path: Path) -> 
 
     packaged_owner_check = r"""
 import hashlib
+import json
 import sys
 from importlib.resources import files
+from pathlib import Path
 
 sys.path.insert(0, sys.argv[1])
 
@@ -104,6 +122,10 @@ markers = {
 }
 resources = files("token_io_decoupling_core").joinpath("_resources", "rules")
 loader = RuleLoader()
+baseline = json.loads(Path(sys.argv[2]).read_text())
+for key, expected in baseline["contexts"].items():
+    node, language = key.split(":")
+    assert loader.load_context(node, language=language).model_dump(mode="json") == expected
 assert loader.load_context("contract").next_checkpoint_ids == ["mode"]
 try:
     loader.load_context("environment")
@@ -117,11 +139,12 @@ for owner, (english_marker, chinese_marker) in markers.items():
     assert english_marker in english
     assert chinese_marker in chinese
     loaded, digest = loader.load_delegation_policy(owner)
-    assert loaded == english
-    assert digest == hashlib.sha256(english.encode("utf-8")).hexdigest()
+    assert loaded == english.strip()
+    assert digest == hashlib.sha256(loaded.encode("utf-8")).hexdigest()
+    assert [loaded, digest] == baseline["policies"][owner]
 """
     subprocess.run(
-        [sys.executable, "-I", "-c", packaged_owner_check, str(wheel_path)],
+        [sys.executable, "-I", "-c", packaged_owner_check, str(wheel_path), str(baseline_path)],
         cwd=tmp_path,
         check=True,
         capture_output=True,
@@ -145,7 +168,15 @@ def test_workspace_builds_eight_wheels_with_disjoint_files(tmp_path: Path) -> No
     for wheel_path in wheels:
         with zipfile.ZipFile(wheel_path) as wheel:
             for name in wheel.namelist():
+                if name.endswith(".dist-info/METADATA"):
+                    metadata = wheel.read(name).decode()
+                    assert not any(
+                        "openai-codex" in line.lower()
+                        for line in metadata.splitlines()
+                        if line.startswith("Requires-Dist:")
+                    )
                 if name.endswith(".py") and ".dist-info/" not in name:
+                    assert "/tests/" not in name
                     assert name not in owners, (
                         f"{name} is duplicated in {owners.get(name)} and {wheel_path}"
                     )

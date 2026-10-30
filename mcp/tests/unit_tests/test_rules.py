@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from token_io_decoupling_core.owner_paths import OWNER_PATHS
 from token_io_decoupling_core.rules import (
     IncompatibleRuleContractError,
     RuleLoader,
+    RuleLoadError,
     UnknownRuleNodeError,
     UnsafeRulePathError,
 )
@@ -54,6 +56,60 @@ def test_environment_checkpoint_is_not_registered_and_contract_leads_to_mode() -
     assert contract.next_checkpoint_ids == ["mode"]
     with pytest.raises(UnknownRuleNodeError, match="environment"):
         loader.load_context("environment")
+
+
+@pytest.mark.parametrize("padding", ["\n", " \t\n\n"])
+def test_packaged_context_hash_uses_the_returned_normalized_text(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, padding: str
+) -> None:
+    root, registry_path = _repo(tmp_path)
+    (root / "owners/en.md").write_text("## Scope\nEnglish  rules.\n\n  indented text\n")
+    source = RuleLoader(repository_root=root).load_context("contract")
+    packaged = RuleLoader()
+    monkeypatch.setattr(packaged, "_load_registry", RuleLoader(repository_root=root)._load_registry)
+    monkeypatch.setattr(
+        packaged, "_read_packaged_owner", lambda *_: padding + source.owner_text + padding
+    )
+    loaded = packaged.load_context("contract")
+    assert loaded == source
+    node = next(
+        n for n in json.loads(registry_path.read_text())["nodes"] if n["node_id"] == "contract"
+    )
+    node.pop("resource_paths", None)
+    canonical = json.dumps(
+        {"node": node, "language": "en", "owner_text": loaded.owner_text},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    assert loaded.context_hash == hashlib.sha256(canonical).hexdigest()
+
+
+def test_empty_packaged_context_is_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    root, _ = _repo(tmp_path)
+    packaged = RuleLoader()
+    monkeypatch.setattr(packaged, "_load_registry", RuleLoader(repository_root=root)._load_registry)
+    monkeypatch.setattr(packaged, "_read_packaged_owner", lambda *_: " \n\t")
+    with pytest.raises(RuleLoadError, match="empty"):
+        packaged.load_context("contract")
+
+
+@pytest.mark.parametrize("padding", ["\n", " \t\n\n"])
+def test_packaged_policy_matches_source_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, padding: str
+):
+    root, _ = _repo(tmp_path)
+    owner = "child-role-selection"
+    path = root / OWNER_PATHS[owner]
+    path.parent.mkdir(parents=True)
+    path.write_text("## General rules\nPolicy  with\n\n  indentation.\n")
+    source = RuleLoader(repository_root=root).load_delegation_policy(owner)
+    package = tmp_path / "package"
+    resource = package / "_resources/rules" / f"{owner}.en.md"
+    resource.parent.mkdir(parents=True)
+    resource.write_text(padding + source[0] + padding)
+    monkeypatch.setattr("token_io_decoupling_core.rules.resources.files", lambda _: package)
+    assert RuleLoader().load_delegation_policy(owner) == source
 
 
 @pytest.mark.parametrize("contract_version", [1, 3])

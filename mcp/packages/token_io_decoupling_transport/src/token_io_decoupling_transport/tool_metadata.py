@@ -198,6 +198,9 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "Payload: node_id (checkpoint enum) and language (en by default; en or zh_cn).",
         "Returns rule text and references; unknown node or language fails",
         "validation, so use a listed checkpoint id.",
+        "owner_path is repository-relative source provenance under docs/skill, not an",
+        "installed Skill file path. Installed servers read their own packaged rules,",
+        "independently of user Skill directories. Text is trimmed before hashing and returning.",
     ),
     "workflow_select_child_effort": _description(
         "Select a task-specific child reasoning effort using one bounded Decisions API choice.",

@@ -22,6 +22,9 @@ dependencies = [
 token-io-decoupling = "token_io_decoupling.cli:main"
 
 [dependency-groups]
+codex-test = [
+    "openai-codex==0.163.0",
+]
 dev = ["hatchling>=1.27,<2", "pytest>=8,<9", "ruff>=0.14,<1", "ty>=0.0.1a0"]
 
 [tool.hatch.build.targets.wheel]

@@ -100,6 +100,22 @@ Each case starts a separate real app-server with a process-local `mcp_servers` o
 
 Ordinary pytest skips both cases without probing installed clients. Explicit opt-in makes missing clients, permission failures, protocol errors, or old capability responses fail rather than skip or fall back to a fake. Existing SDK, Mock, and installed-stdio checks retain their narrower scope. A passing runtime check does not prove an existing client session has reloaded an updated MCP installation; that session still needs its own installation/reload verification.
 
+### Codex SDK final inspection
+
+The official Python Codex SDK (`openai-codex`) is pinned in the separate `codex-test` dependency group and excluded from production dependencies and wheels. Follow the repository's [final-test boundary](../AGENTS.md#codex-sdk-final-test-boundary). From `mcp/`, install the test environment and run the ordered final check:
+
+```sh
+uv sync --locked --managed-python --group dev --group codex-test
+uv run --no-sync python tests/support/final_codex_check.py
+```
+
+The coordinator first runs the complete default MCP test suite, lint, formatting, type checks, documentation regressions, all documentation validators, and whitespace checks. Any failure stops the sequence. It then builds the current wheels and installs them with `uv tool` in temporary tool/bin directories before launching a new Codex CLI via SDK. This tests the current installed build without replacing the user's installation. Ordinary pytest runs only fake-based SDK policy tests; it cannot start the final inspection. Optional real-API/client tests retain their explicit opt-ins; enable any applicable opt-ins before running the coordinator, and report remaining skips.
+
+Every SDK launch requires and explicitly reuses nonblank process `OPENAI_API_KEY` and `OPENAI_BASE_URL`, fixes model `gpt-6-luna` and reasoning effort `medium`, and verifies effective configuration and thread settings. Missing or conflicting settings fail, with no saved-login, credential, endpoint, model, or effort fallback. The key travels only through the child environment; credential values and raw SDK diagnostics are never printed or persisted in auth files.
+
+The adapter selects the installed `codex` on `PATH`, or the absolute executable specified by `TOKEN_IO_CODEX_CLI_PATH`, instead of the SDK's bundled CLI. Temporary `HOME`/`CODEX_HOME` isolates configuration. The fresh instance loads only the newly installed MCP command, runs its `--version` through read-only `command/exec`, discovers tools, and calls `workflow_capabilities` plus bilingual `rules_get_context`. It performs no model turn, mutation, arbitrary shell command, or complex task. This compensates for the current session's inability to dynamically reload the updated MCP Server; it does not prove that an existing session has reloaded it. CI installs the test dependency group for policy, static, and type checks without launching this final SDK inspection.
+
+
 ## API and tool recovery guidance
 
 The child-effort, decision-context, and delegation selectors make one API request per invocation; the SDK has automatic retries disabled. Their result models add nullable `recovery` guidance, serialized as `null` when no guidance is present. `retry_eligible` is only a candidate signal; for explicit transient transport, 5xx, or confirmed rate-limit failures, `total_attempt_limit` is 3 calls per caller-tracked recovery process, including the first call. The server does not track attempts or retry automatically. Callers recheck task authorization, request hashes, current policy, and any result/effect before optionally invoking again.
@@ -110,10 +126,64 @@ Authentication, authorization, configuration, quota, unknown errors, refusal, ma
 
 ## uv tool installation and Codex setup
 
-Use the [installation script](../scripts/install-codex-mcp.sh) to install or update the package and configure Codex in one invocation, from any working directory:
+### Install the executable with uv tool
+
+Keep the source checkout in a normal development directory, outside `~/.agents/skills/`. With `uv` available, install the root package from its `mcp/` workspace directory; the absolute source path allows this command to run from any working directory:
 
 ```sh
-bash /absolute/path/to/skill/scripts/install-codex-mcp.sh
+uv tool install --force --reinstall --managed-python --python 3.14 /absolute/path/to/token-io-decoupling/mcp
+```
+
+uv builds and installs the executable and its declared local workspace dependencies in an isolated tool environment. `--reinstall` refreshes dependencies and bundled document snapshots as well as the launcher. This step installs the program; it does not register MCP servers or install Skill instructions. To install a built wheel instead, supply the root wheel and the directory containing the other workspace wheels (see [artifact checks](#build-rule-resources-and-installed-checks)):
+
+```sh
+uv tool install --force --reinstall --managed-python --python 3.14 --find-links /absolute/path/to/wheels /absolute/path/to/wheels/token_io_decoupling-0.1.0-py3-none-any.whl
+```
+
+Use the actual artifact version in the filename. Subsequent examples assume uv's tool bin directory is on `PATH`. If it is not, locate it with `uv tool dir --bin` and invoke the executable by its absolute path; no virtual-environment activation is needed. For example:
+
+```sh
+"$(uv tool dir --bin)/token-io-decoupling" --version
+```
+
+With the Codex CLI available on `PATH`, register the MCP profiles separately:
+
+```sh
+token-io-decoupling setup codex
+```
+
+Reload the affected MCP servers after registration or tool updates. Registration forwards the required environment-variable names but does not supply their values or establish a trusted host binding.
+
+### Install and update local Skill instructions
+
+After the `uv tool` installation succeeds, run the installed program from any directory:
+
+```sh
+token-io-decoupling skills install
+```
+
+This installs the packaged bilingual Skill snapshot to `~/.agents/skills/token-io-decoupling-skill`, including `SKILL.md`, workflows, references, and supporting resources. It reads the installed package, without reading or cloning the source checkout. The Skill's name is `token-io-decoupling-skill`; use that name when requesting it. If the command is not on `PATH`, use the absolute executable path here too:
+
+```sh
+"$(uv tool dir --bin)/token-io-decoupling" skills install
+```
+
+For another name, use `skills install --name my-coding-skill`, then use the same `--name my-coding-skill` with updates. Names must use lower-case letters/numbers separated by hyphens. The old name and directory `~/.agents/skills/token-io-decoupling` are protected: installation refuses that name, symlink installation paths, and existing unknown destinations. It never overwrites or deletes the old project. `skills install` also refuses an existing managed installation; update it explicitly instead.
+
+After changing source instructions, repeat the `uv tool install --force --reinstall ...` command above (or install the rebuilt wheel set), then update the installed Skill snapshot:
+
+```sh
+token-io-decoupling skills update
+```
+
+Updating only the executable leaves the previously installed Skill unchanged. `skills update` requires an existing managed installation and refuses locally modified files; preserve your edits separately before updating. If no Skill is installed yet, use `skills install`. Tool installation, MCP registration, and Skill installation are separate operations; neither `setup codex` nor the helper script below installs the Skill automatically. Start a fresh Agent session after installing or updating Skill instructions. If an old checkout is still discovered as a Skill, preserve it and manually disable its old discovery entry as described in the [legacy coexistence guidance](../README.md#install-the-skill-separately); the installer does not automatically resolve duplicate discovery.
+
+### Optional combined installation and registration script
+
+As an alternative to the separate tool-install and `setup codex` commands, use the [installation script](../scripts/install-codex-mcp.sh) to install or update the package and configure Codex in one invocation, from any working directory. Run `skills install` or `skills update` afterward as described above:
+
+```sh
+bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh
 ```
 
 Prerequisites are Bash 3.2 or later (including macOS `/bin/bash`), `uv`, and the Codex CLI; `uv` and `codex` must be on `PATH`. The script locates `mcp/` relative to itself, runs `uv tool install --force --reinstall --managed-python --python 3.14` against that source, obtains the bin directory with `uv tool dir --bin`, then calls the absolute installed executable's `setup codex`. uv resolves the declared local workspace dependencies; `--reinstall` refreshes them even when only their source or packaged rules changed. The tool bin directory need not be on `PATH`, and no manual directory change, virtual-environment activation, or separate setup command is required. Repeating the command refreshes this tool from the current checkout; it does not uninstall the legacy `token-io-mcp` tool.
@@ -280,6 +350,10 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 ```
 
 The core package owns rule resources and its custom build hook. The canonical registry remains `mcp/rule-registry.json`; build output contains bounded excerpts from its English/Chinese owner headings. Core sdists carry their own `rule_sources`, so a detached build does not borrow a neighboring checkout. The default `token_io_decoupling_core.rules.RuleLoader` reads packaged snapshots; source development must explicitly supply the repository root. Editing Markdown does not update an installed wheel: rebuild and reinstall it.
+
+Rule loading trims leading/trailing whitespace before returning text and calculating context or policy hashes; internal whitespace is preserved. Source and packaged loaders therefore agree for the same registry and rule content even when a text resource has a final newline. This corrects older package hashes that included packaging whitespace. After upgrading, read current rule contexts and policy hashes again and re-evaluate affected stale results; do not rewrite historical records or reuse cached pre-upgrade hashes.
+
+The local Skill directory and the MCP tool environment are separate snapshots. `skills install/update` writes only the selected `~/.agents/skills/` installation; it does not change the MCP executable, packaged rules, or Codex registrations. The MCP does not import the installed Skill or its `_project/` supporting attachments. `rules_get_context.owner_path` identifies the canonical repository source under `docs/skill/`, not a path to resolve against the local Skill directory. `_project/` manifests and CI files are reference copies, not live server configuration. To keep instructions and server rules aligned, reinstall the same tool build, run `skills update`, reload the MCP servers, and start a fresh Agent session; separate updates can otherwise leave different snapshots active.
 
 The build also packages General rules in both languages for `child-role-selection`, `task-assignment`, `output-token-routing`, `session-role-ownership`, and `decision-context-generation`. These are fixed allowlisted policy resources, not additional Core checkpoint IDs. `tests/unit_tests/test_build_artifacts.py` verifies a detached sdist-to-wheel build and loads these policies through the packaged `RuleLoader`, including their content hashes.
 

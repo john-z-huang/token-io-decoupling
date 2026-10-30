@@ -41,23 +41,23 @@ jobs:
 
       - name: Sync locked development environment
         working-directory: mcp
-        run: uv sync --locked --managed-python --python "${{ matrix.python-version }}" --group dev
+        run: uv sync --locked --managed-python --python "${{ matrix.python-version }}" --group dev --group codex-test
 
       - name: Run complete MCP tests
         working-directory: mcp
-        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" pytest -q tests/unit_tests tests/mock_api_tests tests/real_api_tests
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test pytest -q tests/unit_tests tests/mock_api_tests tests/real_api_tests
 
       - name: Check Ruff lint
         working-directory: mcp
-        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" ruff check
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test ruff check
 
       - name: Check Ruff formatting
         working-directory: mcp
-        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" ruff format --check
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test ruff format --check
 
       - name: Check types
         working-directory: mcp
-        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" ty check
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test ty check
 
   installed-wheel-stdio:
     runs-on: ubuntu-latest

@@ -10,6 +10,14 @@ Develop this repository's MCP Server exclusively for local Codex CLI. Local Chat
 
 Other Code Agents may use this Skill through its documents without its MCP Server. Continue updating the documentation to maintain compatible instruction descriptions for other Code Agents alongside Codex CLI support. This document compatibility does not expand MCP Server development or client support.
 
+## Codex SDK final-test boundary
+
+- Codex SDK is permitted only in testing. Keep `openai-codex` in the separate test dependency group; never use it in production code, MCP tools, implementation, or general Agent orchestration.
+- Complete all other applicable tests and required checks first. Only after they pass, build the current changes and install or update the tool with `uv tool`; then use Codex SDK to launch a **new Codex CLI instance** configured to load that installed MCP Server. Do not reuse an existing instance or assume it dynamically reloads MCP updates.
+- This instance exists only to compensate for the current session's inability to dynamically load the updated MCP Server. Limit it to simple, read-only inspection: executable version, MCP tool discovery, capability inspection, and bounded rule lookups. Prohibit complex tasks, code or documentation changes, debugging or planning assignments, delegation, mutations, arbitrary shell commands, and model turns.
+- Explicitly reuse nonblank process `OPENAI_API_KEY` and `OPENAI_BASE_URL`, fix model `gpt-6-luna` and reasoning effort `medium`, and verify effective settings. Do not substitute credentials, endpoints, saved login, models, or effort; never print or persist credential values. Isolate the test configuration and do not modify the user's existing Codex configuration.
+- Use the ordered final-check entry point in the [MCP development guide](mcp/DEVELOPMENT.md). If a prerequisite, installation, or inspection fails, stop that sequence and report the failed stage; do not bypass it or expand the new instance's task.
+
 ## Forbidden Skill operations and absolute Computer Use stop rule
 
 This is a mandatory repository-wide constraint for **every execution of this Skill**, across all runtime providers, parent Agents, child Agents, delegated tasks, recovery paths, and tool adapters.

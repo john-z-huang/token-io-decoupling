@@ -7,6 +7,7 @@ import re
 import tempfile
 import zipfile
 from pathlib import Path
+from urllib.parse import unquote
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
@@ -29,6 +30,40 @@ class SkillBuildHook(BuildHookInterface):
             files.extend(repo.glob("*.md"))
             files.extend((repo / "scripts").glob("*.py"))
             files.extend((repo / "scripts").glob("*.sh"))
+            files = {
+                path
+                for path in files
+                if path.is_file()
+                and not path.is_symlink()
+                and not any(
+                    part.startswith(".") or part in ("__pycache__", "dist", "build")
+                    for part in path.relative_to(repo).parts
+                )
+            }
+            # Include linked attachments as well as Markdown: manifests, package
+            # metadata and CI files are readable supporting snapshots, never imports.
+            pending = list(files)
+            while pending:
+                document = pending.pop()
+                if document.suffix != ".md":
+                    continue
+                prose = re.sub(r"```.*?```", "", document.read_text(), flags=re.S)
+                prose = re.sub(r"(`+).*?\1", "", prose)
+                for raw in re.findall(r"\]\(([^)]+)\)", prose):
+                    if "://" in raw or raw.startswith(("#", "mailto:", "{{")):
+                        continue
+                    base = re.split("[#?]", raw)[0]
+                    target = document.parent / unquote(base)
+                    if target.is_symlink():
+                        raise RuntimeError(f"symlinked Skill attachment: {base}")
+                    target = target.resolve()
+                    if not target.is_relative_to(repo) or ".git" in target.relative_to(repo).parts:
+                        raise RuntimeError(f"Skill attachment escapes authored sources: {base}")
+                    if not target.exists():
+                        raise RuntimeError(f"missing Skill attachment: {base}")
+                    if target.is_file() and target not in files:
+                        files.add(target)
+                        pending.append(target)
 
             def destination(path):
                 if path.is_relative_to(source):
@@ -36,14 +71,7 @@ class SkillBuildHook(BuildHookInterface):
                 return Path("_project") / path.relative_to(repo)
 
             with zipfile.ZipFile(bundled, "w", zipfile.ZIP_DEFLATED) as archive:
-                for path in sorted(set(files)):
-                    if not path.is_file() or path.is_symlink():
-                        continue
-                    if any(
-                        part.startswith(".") or part in ("__pycache__", "dist", "build")
-                        for part in path.relative_to(repo).parts
-                    ):
-                        continue
+                for path in sorted(files):
                     data = path.read_bytes()
                     if path.suffix == ".md":
 
@@ -52,7 +80,7 @@ class SkillBuildHook(BuildHookInterface):
                             if "://" in raw or raw.startswith(("#", "mailto:", "{{")):
                                 return match[0]
                             base = re.split("[#?]", raw)[0]
-                            target = (path.parent / base).resolve()
+                            target = (path.parent / unquote(base)).resolve()
                             if not target.is_relative_to(repo) or not target.exists():
                                 return match[0]
                             relative = os.path.relpath(
