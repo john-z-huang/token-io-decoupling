@@ -36,5 +36,5 @@
 ## 相关概念
 
 - [MCP 开发指南](DEVELOPMENT_zh_cn.md)
-- [增强宿主绑定](../references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md)
-- [增强状态存储](../references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store_zh_cn.md)
+- [增强宿主绑定](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md)
+- [增强状态存储](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store_zh_cn.md)

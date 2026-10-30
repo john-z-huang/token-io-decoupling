@@ -32,11 +32,11 @@ class MarkdownDiscoveryTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.root = Path(self.tempdir.name)
-        self._write("agents/openai.yaml", 'short_description: "English | 中文"\n')
+        self._write("docs/skill/agents/openai.yaml", 'short_description: "English | 中文"\n')
         self._write("AGENTS.md", "Read MULTI_LINGUAL.md.\n")
         self._write("AGENTS_zh_cn.md", "Read MULTI_LINGUAL_zh_cn.md.\n")
-        self._write("SKILL.md", "---\ntitle: fixture\n---\n\n[English](SKILL.md)\n")
-        self._write("SKILL_zh_cn.md", "[简体中文](SKILL_zh_cn.md)\n")
+        self._write("docs/skill/SKILL.md", "---\ntitle: fixture\n---\n\n[English](SKILL.md)\n")
+        self._write("docs/skill/SKILL_zh_cn.md", "[简体中文](SKILL_zh_cn.md)\n")
         self._write("docs/index.md", "[English](index.md)\n")
         self._write("docs/zh-cn/index.md", "[简体中文](index.md)\n")
 
@@ -56,7 +56,7 @@ class MarkdownDiscoveryTests(unittest.TestCase):
 
         self._write("AGENTS.md", "Read MULTI_LINGUAL.md.\n")
         self._write("AGENTS_zh_cn.md", "Read MULTI_LINGUAL_zh_cn.md.\n")
-        self._write("SKILL.md", "---\ntitle: fixture\n---\n\n[English](SKILL.md)\n")
+        self._write("docs/skill/SKILL.md", "---\ntitle: fixture\n---\n\n[English](SKILL.md)\n")
 
         self._write("mcp/custom-env/pyvenv.cfg", "home = /usr/bin\n")
         self._write("mcp/custom-env/Lib/noise.md", "generated\n")
@@ -92,8 +92,8 @@ class MarkdownDiscoveryTests(unittest.TestCase):
 
     def test_cross_language_dependency_fails(self) -> None:
         self._write(
-            "ENHANCED_ARCHITECTURE.md",
-            "[English](ENHANCED_ARCHITECTURE.md) | [简体中文](mcp/DEVELOPMENT_zh_cn.md)\n",
+            "docs/skill/ENHANCED_ARCHITECTURE.md",
+            "[English](ENHANCED_ARCHITECTURE.md) | [简体中文](../../mcp/DEVELOPMENT_zh_cn.md)\n",
         )
         result, output = self._run(multilingual)
         self.assertEqual(result, 1)

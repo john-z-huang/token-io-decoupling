@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ROUTES_DIR = Path("references/coding/layer-04-workflows")
+ROUTES_DIR = Path("docs/skill/references/coding/layer-04-workflows")
 MODULES_DIR = ROUTES_DIR / "modules"
 MODULES = (
     "entry-readiness", "session-readiness", "work-definition", "single-execution",

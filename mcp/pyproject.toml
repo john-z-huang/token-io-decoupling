@@ -28,7 +28,10 @@ dev = ["hatchling>=1.27,<2", "pytest>=8,<9", "ruff>=0.14,<1", "ty>=0.0.1a0"]
 packages = ["src/token_io_decoupling", "src/token_io_decoupling_mcp"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/pyproject.toml", "/src/**", "/tests/**"]
+include = ["/pyproject.toml", "/src/**", "/tests/**", "/hatch_build.py"]
+
+[tool.hatch.build.hooks.custom]
+path = "hatch_build.py"
 
 [tool.pytest.ini_options]
 testpaths = ["tests/unit_tests", "tests/mock_api_tests", "tests/real_api_tests"]

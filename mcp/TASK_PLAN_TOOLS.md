@@ -2,7 +2,7 @@
 
 [English](TASK_PLAN_TOOLS.md) | [简体中文](TASK_PLAN_TOOLS_zh_cn.md)
 
-This document owns configuration and use of the three deterministic task-plan MCP tools. The [task-plan lifecycle owner](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md) remains authoritative for workflow semantics; this page describes the implementation boundary, not task authorization.
+This document owns configuration and use of the three deterministic task-plan MCP tools. The [task-plan lifecycle owner](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md) remains authoritative for workflow semantics; this page describes the implementation boundary, not task authorization.
 
 ## Configuration and discovery
 
@@ -103,6 +103,6 @@ The development integration was checked against installed `serena-agent 2.1.0`. 
 
 ## Related documents
 
-- [Task-plan lifecycle](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md)
+- [Task-plan lifecycle](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md)
 - [MCP development](DEVELOPMENT.md)
 - [MCP directory instructions](AGENTS.md)

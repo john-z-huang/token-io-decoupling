@@ -23,6 +23,8 @@ NAVIGATION_MODULES = set(MODULES)
 
 def layer(path: PurePosixPath) -> str:
     parts = path.parts
+    if parts[:2] == ("docs", "skill"):
+        parts = parts[2:]
     if parts[:3] == ("references", "coding", "layer-01-fundamental-concepts"):
         return "layer-01"
     if parts[:3] == ("references", "coding", "layer-02-workflow-concepts"):
@@ -40,8 +42,8 @@ def layer(path: PurePosixPath) -> str:
     if parts[:2] == ("workflows", "exist-workflow"):
         return "exist-workflow"
     if path in {
-        PurePosixPath("workflows/coding.md"),
-        PurePosixPath("workflows/coding_zh_cn.md"),
+        PurePosixPath("docs/skill/workflows/coding.md"),
+        PurePosixPath("docs/skill/workflows/coding_zh_cn.md"),
     }:
         return "coding-selector"
     return "entry"
@@ -81,7 +83,7 @@ def allowed(source: str, target: str, is_navigation: bool, source_path: PurePosi
     if source in {"exist-workflow", "layer-03"}:
         return same_layer_navigation or target in {"shared-protocols", "layer-01", "layer-02"}
     if source == "layer-04-route":
-        module_root = PurePosixPath("references/coding/layer-04-workflows/modules")
+        module_root = PurePosixPath("docs/skill/references/coding/layer-04-workflows/modules")
         canonical_modules = {
             module_root / f"{module}{suffix}.md" for module in MODULES for suffix in ("", "_zh_cn")
         }
@@ -91,7 +93,7 @@ def allowed(source: str, target: str, is_navigation: bool, source_path: PurePosi
             return True
         if target != "layer-04-module" or source_path is None or target_path is None:
             return False
-        canonical_route_root = PurePosixPath("references/coding/layer-04-workflows")
+        canonical_route_root = PurePosixPath("docs/skill/references/coding/layer-04-workflows")
         route_name = source_path.stem.removesuffix("_zh_cn")
         canonical_route = canonical_route_root / f"{route_name}.md"
         if source_path not in {canonical_route, canonical_route_root / f"{route_name}_zh_cn.md"}:

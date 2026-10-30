@@ -26,17 +26,17 @@ These layers define composition direction, not policy ownership. Each document m
 
 | Layer | Role | Allowed dependency targets |
 | --- | --- | --- |
-| [`layer-01-fundamental-concepts`](../references/coding/layer-01-fundamental-concepts/) | Foundational atomic concepts | Same-language layer-01 concepts and its language mirror |
-| [`layer-02-workflow-concepts`](../references/coding/layer-02-workflow-concepts/) | Generic workflow checkpoint actions and evidence | `layer-01-fundamental-concepts`; never layer-03/04 |
-| [`layer-03-workflow-checkpoints`](../references/coding/layer-03-workflow-checkpoints/) | Task-specific applicability, branches, and composition decisions | layer-01 and layer-02; never layer-04 |
-| [`layer-04-workflows`](../references/coding/layer-04-workflows/) | Complete executable routes | shared protocols, layer-01, layer-02, and layer-03; routes may also call only their exact approved same-language Layer-04 modules, while modules depend only on shared protocols and Layers 01–03 and never call sibling modules |
+| [`layer-01-fundamental-concepts`](../references/coding/layer-01-fundamental-concepts) | Foundational atomic concepts | Same-language layer-01 concepts and its language mirror |
+| [`layer-02-workflow-concepts`](../references/coding/layer-02-workflow-concepts) | Generic workflow checkpoint actions and evidence | `layer-01-fundamental-concepts`; never layer-03/04 |
+| [`layer-03-workflow-checkpoints`](../references/coding/layer-03-workflow-checkpoints) | Task-specific applicability, branches, and composition decisions | layer-01 and layer-02; never layer-04 |
+| [`layer-04-workflows`](../references/coding/layer-04-workflows) | Complete executable routes | shared protocols, layer-01, layer-02, and layer-03; routes may also call only their exact approved same-language Layer-04 modules, while modules depend only on shared protocols and Layers 01–03 and never call sibling modules |
 | `workflows/coding.md` | Route selector and four-layer index | All four layers; owns navigation, not policy |
 
 If a lower layer needs a concept owned by a higher layer, treat that upward dependency as an atomicity failure: split the lower document and move the composition to the higher layer. Root entry documents such as `SKILL.md`, `README.md`, and `docs/` may link downward to entry points. Validate the boundaries with `python3 scripts/check-doc-layer-links.py`; language-switch links are the only intentional cross-language links.
 
 ## Checkpoint catalog
 
-The selected layer-04 route orders the [layer-02 checkpoint actions](../references/coding/layer-02-workflow-concepts/) and [layer-03 task-specific decisions](../references/coding/layer-03-workflow-checkpoints/) that apply:
+The selected layer-04 route orders the [layer-02 checkpoint actions](../references/coding/layer-02-workflow-concepts) and [layer-03 task-specific decisions](../references/coding/layer-03-workflow-checkpoints) that apply:
 
 `contract` → `environment` (+ capability inventory) → `mode` → `context` → `decision` → `implementation` → `control` → `verification` → `repair` → `documentation` → `git` → `acceptance`
 

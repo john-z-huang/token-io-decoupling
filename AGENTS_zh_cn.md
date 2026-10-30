@@ -78,7 +78,7 @@
 
 ## Codex 与 Claude Code 工具双向对应
 
-每个概念的厂商特调和工具对应关系放在该 Layer-01 owner 的对应厂商章节。跨概念的运行环境识别和模型/effort 绑定统一维护在[运行环境与模型厂商支持](references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)及其英文镜像中；其他 owner 引用这些绑定，不重复其控制规则。每次依据 Codex 源码中的工具或指令调整本 Skill，必须检查 Claude Code 当前官方文档或实际暴露的运行时控制中是否有对应能力。每次针对 Claude Code 特调，也必须反向检查 Codex 的对应能力。完成双向核对前，不得把任一运行环境的行为当作共用能力。
+每个概念的厂商特调和工具对应关系放在该 Layer-01 owner 的对应厂商章节。跨概念的运行环境识别和模型/effort 绑定统一维护在[运行环境与模型厂商支持](docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)及其英文镜像中；其他 owner 引用这些绑定，不重复其控制规则。每次依据 Codex 源码中的工具或指令调整本 Skill，必须检查 Claude Code 当前官方文档或实际暴露的运行时控制中是否有对应能力。每次针对 Claude Code 特调，也必须反向检查 Codex 的对应能力。完成双向核对前，不得把任一运行环境的行为当作共用能力。
 
 每次此类改动都按以下顺序在双语镜像中完成：
 

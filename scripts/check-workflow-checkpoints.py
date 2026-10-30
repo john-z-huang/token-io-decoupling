@@ -9,8 +9,8 @@ from urllib.parse import unquote
 from workflow_module_contracts import MODULE_CHECKPOINT_L3_OWNERS, MODULE_L3_OWNERS, MODULE_PREFIXES
 
 ROOT = Path(__file__).resolve().parents[1]
-L3 = ROOT / "references/coding/layer-03-workflow-checkpoints"
-MODULES = ROOT / "references/coding/layer-04-workflows/modules"
+L3 = ROOT / "docs/skill/references/coding/layer-03-workflow-checkpoints"
+MODULES = ROOT / "docs/skill/references/coding/layer-04-workflows/modules"
 SLUGS = (
     "route-entry", "enhanced-path-selection", "session-audit-resolution",
     "session-state-resolution", "context-source-selection", "decision-context-selection",
@@ -210,7 +210,7 @@ def main() -> int:
                     errors.append(f"{path.relative_to(ROOT)}: missing direct numbered-step consumption for {slug}")
 
     for lang, suffix in (("en", ""), ("zh", "_zh_cn")):
-        selector = ROOT / f"workflows/coding{suffix}.md"
+        selector = ROOT / f"docs/skill/workflows/coding{suffix}.md"
         text = selector.read_text(encoding="utf-8")
         section = "## Entry" if lang == "en" else "## 入口"
         body = text.split(section, 1)[-1].split("\n## ", 1)[0]

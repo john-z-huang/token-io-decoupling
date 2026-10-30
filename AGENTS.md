@@ -78,7 +78,7 @@ Keep concept subtopics under these sections as level-three headings. For ChatGPT
 
 ## Codex and Claude Code tool parity
 
-Keep each concept's provider-specific optimization and tool correspondence in that Layer-01 owner's provider section. Keep only cross-cutting runtime identification and model/effort bindings in the single [Runtime and Model Provider Support](references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.md) owner and its Chinese mirror; other owners link to those bindings instead of repeating them. Whenever a change tunes this Skill for a tool or instruction found in Codex source, inspect the corresponding Claude Code capability in its current official documentation or exposed runtime controls. Whenever a change tunes this Skill for Claude Code, perform the same check for Codex. Do this before treating either runtime's behavior as shared.
+Keep each concept's provider-specific optimization and tool correspondence in that Layer-01 owner's provider section. Keep only cross-cutting runtime identification and model/effort bindings in the single [Runtime and Model Provider Support](docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.md) owner and its Chinese mirror; other owners link to those bindings instead of repeating them. Whenever a change tunes this Skill for a tool or instruction found in Codex source, inspect the corresponding Claude Code capability in its current official documentation or exposed runtime controls. Whenever a change tunes this Skill for Claude Code, perform the same check for Codex. Do this before treating either runtime's behavior as shared.
 
 For each such change, complete this sequence in both language mirrors:
 

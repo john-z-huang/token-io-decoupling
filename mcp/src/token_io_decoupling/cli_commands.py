@@ -57,10 +57,28 @@ def dispatch_command(
     codex_env.add_argument("--server", action="append", required=True, metavar="NAME")
     codex_env.add_argument("--env-var", action="append", metavar="NAME")
     codex_env.add_argument("--dry-run", action="store_true")
+    skills = commands.add_parser("skills", help="install or update the bundled Skill")
+    actions = skills.add_subparsers(dest="skill_action", required=True)
+    for action in ("install", "update"):
+        command = actions.add_parser(action)
+        command.add_argument("--name", default="token-io-decoupling-skill")
     try:
         args = parser.parse_args(argv)
     except SystemExit as exc:
         return exc.code if isinstance(exc.code, int) else 2
+    if args.command == "skills":
+        from token_io_decoupling.skills import install_skill
+
+        if args.host_fd is not None or args.codex_context or args.task_plan_factory is not None:
+            print(f"{prog}: server options cannot be used with skills", file=sys.stderr)
+            return 2
+        try:
+            target = install_skill(name=args.name, update=args.skill_action == "update")
+        except (OSError, ValueError) as exc:
+            print(f"{prog}: {exc}", file=sys.stderr)
+            return 2
+        print(f"Skill {args.skill_action}: {target}")
+        return 0
     if args.command == "setup":
         if args.host_fd is not None or args.codex_context:
             print(f"{prog}: host binding options cannot be used with setup", file=sys.stderr)

@@ -4,7 +4,22 @@
 
 `token-io-decoupling` 是一个 Agent 调度 Skill，用于把高价值语义决策与高体量状态消费、输出物化分离。
 
-它维护面向仓库和开发工作的 **Coding** 工作流。Multimodal 内容仅作为独立 reference 保留，不作为可执行工作流维护。请从 [Skill 入口](SKILL_zh_cn.md) 开始；它会按任务当前阶段路由到所需的 reference。
+它维护面向仓库和开发工作的 **Coding** 工作流。Multimodal 内容仅作为独立 reference 保留，不作为可执行工作流维护。请从 [Skill 入口](docs/skill/SKILL_zh_cn.md) 开始；它会按任务当前阶段路由到所需的 reference。
+
+## 独立安装 Skill
+
+将开发仓库放在用户 Skill 目录之外。安装构建后的 CLI（参见 MCP 安装指南）后运行：
+
+```bash
+token-io-decoupling skills install
+token-io-decoupling skills update
+```
+
+默认安装到 `~/.agents/skills/token-io-decoupling-skill`；可用 `--name NEW-NAME` 指定另一个小写、连字符分隔的名称。旧名称 `token-io-decoupling` 始终被拒绝。安装器不会修改或删除旧项目，会拒绝符号链接路径及已有未知目录，只更新内容未经修改且由本工具管理的安装。更新前请将本地修改另行保存。发布失败时会恢复旧安装；进程中断可能遗留锁或暂存目录，应先检查再人工恢复。
+
+Skill 指令源位于 [docs/skill](docs/skill/SKILL_zh_cn.md)。wheel 和源码分发包携带独立快照，包含双语工作流、引用以及支持文档和脚本。安装只读取该快照，不读取或克隆源码仓库；开发改动必须重新构建、安装 CLI 并显式更新 Skill 后才生效。安装后的 `_project/` 是生成的支持资料快照，不是新的源文档 owner。MCP 注册仍通过独立的 `setup codex` 操作完成。
+
+兼容旧安装时，请在请求中使用新 Skill 名称。已有会话可能保留旧指令：保留并迁移旧开发仓库后，使用现有配置人工停用其旧 Skill 发现入口，再启动使用新名称的新会话。安装器不删除旧项目，也不自动处理重复发现。不要再次将开发仓库本身放进 Skill 目录。
 
 ## MCP 支持范围与纯文档使用
 
@@ -24,10 +39,10 @@ bash /absolute/path/to/skill/scripts/install-codex-mcp.sh
 
 ## 文档入口
 
-- [Skill 入口](SKILL_zh_cn.md)：主要路由入口。
-- [Coding reference](references/)：由工作流组合使用的独立 Coding 模块和共享协议模块。
+- [Skill 入口](docs/skill/SKILL_zh_cn.md)：主要路由入口。
+- [Coding reference](docs/skill/references)：由工作流组合使用的独立 Coding 模块和共享协议模块。
 - [多语言规则](MULTI_LINGUAL_zh_cn.md)：双语文档规则。
-- [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md)：可选 MCP 状态、规则上下文、语义建议及经核验的宿主边界；Native 仍为默认路径。
+- [增强架构](docs/skill/ENHANCED_ARCHITECTURE_zh_cn.md)：可选 MCP 状态、规则上下文、语义建议及经核验的宿主边界；Native 仍为默认路径。
 - [MCP 开发指南](mcp/DEVELOPMENT_zh_cn.md)：本地 Python 检查与包构建。
 
 可选 Decisions 集成默认关闭。每次真实请求（包括测试请求）必须读取本地 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，缺少任一项就不得请求。显式启用与测试方法见开发指南。当前生产入口没有经核验的 Codex CLI 宿主绑定，因此只暴露公共诊断与规则上下文。

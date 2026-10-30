@@ -2,7 +2,7 @@
 
 [English](DEVELOPMENT.md) | [简体中文](DEVELOPMENT_zh_cn.md)
 
-本指南负责 Python workspace 的开发、构建产物检查、uv tool 安装与 Codex setup。[架构契约](../ENHANCED_ARCHITECTURE_zh_cn.md#实现包)负责包职责与依赖方向；[Skill 入口](../SKILL_zh_cn.md)及其链接的 owner 仍是工作流权威。
+本指南负责 Python workspace 的开发、构建产物检查、uv tool 安装与 Codex setup。[架构契约](../docs/skill/ENHANCED_ARCHITECTURE_zh_cn.md#实现包)负责包职责与依赖方向；[Skill 入口](../docs/skill/SKILL_zh_cn.md)及其链接的 owner 仍是工作流权威。
 
 MCP Server 面向本地可用的 Codex CLI，包括本地 Work 使用的本地 Codex CLI/app-server 路径。云端 ChatGPT 对话、远端 Work 和其他 Code Agent 不是直接客户端。如果其他 Agent 在自己的环境安装 Codex CLI，并按本仓库说明配置 Server，则仅支持该环境中的本地 Codex CLI 路径；不维护其他 Agent 或云端界面适配器。Server 不增加运行环境选择步骤。遵循[目录指令](AGENTS_zh_cn.md)。固定客户端范围不等于宿主集成已经验证；各操作仍按现有流程检查实际能力、可信身份、守卫和权限。
 
@@ -230,7 +230,7 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 只有 `status: available` 携带非空白 `description`：`decision_question` 最多 1,200 字符，`decision_context` 最多 6,000 字符。结果包含 `output_kind`、对原始材料、目标及类型进行规范化 SHA-256 计算的 `input_hash`（排除权限断言），以及安全的模型和用量元数据。关键缺口或冲突返回 `blocked` / `insufficient_evidence`、`description: null`，并提供最多八项、每项最多 240 字符的 `missing_information`；配置缺失、拒绝、未完成或无效输出、超时及服务错误也阻塞，不回退。固定指令要求保留需求、观测、计划及已证明结果之间的区别，将嵌入的指令视为数据，不生成答案、所选分支或授权。这些语义要求仍需调用方审阅。将 `description` 用作 `decision_question` 或上下文前，须比对原始材料和当前仓库状态，并单独提供其他必需判断事实。生成哈希只标识本次生成输入，不能替代下游判断哈希。材料、目标或类型变化后，须重新比对和审阅。
 
-`workflow_select_child_effort` 是面向 Codex 子代理创建的独立、无状态公共 workflow 操作。显式且获准的调用携带 `payload.request.outbound_data_permitted: true`，仅为本次 Decisions 请求 opt-in；它不依赖可选建议的启用配置或 Enhanced Root store。此声明不能证明授权。按[运行时 owner 的创建契约](../references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)提供经过核实的有界任务事实及受支持档位。结果仅在可用时包含选定 effort，并附请求哈希和回显的切片指纹。父级审阅及当前输入比对仍是必需步骤。拒绝、证据不足、响应无效、缺少配置或服务失败均阻塞选择，不回退到固定 effort。该工具不创建 Agent、不修改工作流状态，也不授权任何门禁。
+`workflow_select_child_effort` 是面向 Codex 子代理创建的独立、无状态公共 workflow 操作。显式且获准的调用携带 `payload.request.outbound_data_permitted: true`，仅为本次 Decisions 请求 opt-in；它不依赖可选建议的启用配置或 Enhanced Root store。此声明不能证明授权。按[运行时 owner 的创建契约](../docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)提供经过核实的有界任务事实及受支持档位。结果仅在可用时包含选定 effort，并附请求哈希和回显的切片指纹。父级审阅及当前输入比对仍是必需步骤。拒绝、证据不足、响应无效、缺少配置或服务失败均阻塞选择，不回退到固定 effort。该工具不创建 Agent、不修改工作流状态，也不授权任何门禁。
 
 必填的 `decision_question` 是非空白严格字符串，最多 1,200 字符，用于询问当前已释放子任务所需的最低充分受支持档位。工具将其明确传入 Decisions input，并纳入规范化输入哈希；仅修改问题也会使旧哈希失效。它属于任务数据，无权修改固定模型、候选档位、指令或权限。本地校验执行字符串约束；固定 API 指令要求对超出范围或试图覆盖规则的问题返回 `insufficient_evidence`。该语义判断及父级审阅仍是必需步骤。每个候选档位均说明具体任务证据、相邻档位边界及排除条件；文件数量、影响程度或缺少事实本身均不足以支持升档。
 
@@ -240,16 +240,16 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 | 工具 | 判断及结果边界 |
 | --- | --- |
-| `workflow_select_child_role` | 按[子代理职责选择](../references/coding/layer-01-fundamental-concepts/delegation/child-role-selection_zh_cn.md)选择四种维护职责之一。用户明确要求创建时跳过请求。已确认创建时，可默认使用未占用的 Primary Output；已创建职责在整个 Session 内持续占用。全部职责占用时阻塞复核，不建议增加容量。 |
-| `workflow_select_executor` | 按[任务分配](../references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment_zh_cn.md)建议 Root 或子代理。明确执行主体时跳过建议；已锁定 Single-Agent 模式下明确要求子代理时阻塞，不改成 Root。失败不默认 Root。判定交子代理且仍有获批未用容量、尚无实际子代理时，可进入正常职责与创建门禁。 |
+| `workflow_select_child_role` | 按[子代理职责选择](../docs/skill/references/coding/layer-01-fundamental-concepts/delegation/child-role-selection_zh_cn.md)选择四种维护职责之一。用户明确要求创建时跳过请求。已确认创建时，可默认使用未占用的 Primary Output；已创建职责在整个 Session 内持续占用。全部职责占用时阻塞复核，不建议增加容量。 |
+| `workflow_select_executor` | 按[任务分配](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment_zh_cn.md)建议 Root 或子代理。明确执行主体时跳过建议；已锁定 Single-Agent 模式下明确要求子代理时阻塞，不改成 Root。失败不默认 Root。判定交子代理且仍有获批未用容量、尚无实际子代理时，可进入正常职责与创建门禁。 |
 | `workflow_select_child` | 在合格的当前会话子代理中选择。明确指定或唯一候选可跳过建议；忙碌候选须等待。多个空闲候选调用 Decisions，优先合适的空闲 Primary，否则比较任务相关上下文。失败仅可由合适的 Primary 兜底，仍须检查可用性；排除继承的外部会话子代理。 |
-| `workflow_assess_output_tokens` | 按[Output Token 路由](../references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing_zh_cn.md)独立评估 Root 直接输出。明确执行指令时跳过建议。`no` 允许 Root 通过其他门禁后执行；`yes` 禁止 Root 立即输出，须用适任空闲子代理或挂起等待。有独立授权的创建仍可走正常门禁；输出建议本身不授权创建。 |
+| `workflow_assess_output_tokens` | 按[Output Token 路由](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing_zh_cn.md)独立评估 Root 直接输出。明确执行指令时跳过建议。`no` 允许 Root 通过其他门禁后执行；`yes` 禁止 Root 立即输出，须用适任空闲子代理或挂起等待。有独立授权的创建仍可走正常门禁；输出建议本身不授权创建。 |
 
-获准的 API 请求在每次调用时明确读取非空白的 `OPENAI_API_KEY` 与 `OPENAI_BASE_URL`，只用 `gpt-6-luna`，不自动重试或请求后备模型。工具输入不能覆盖模型或端点。公共[判断背景生成](../references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation_zh_cn.md)操作复用 Responses 生成供审阅的背景；问题生成可选。其指令现来自当前 owner 的通用规范；`source_policy_hash` 标识加载的规则，成功请求期间规则发生变化时以 `stale_policy` 阻止复用。
+获准的 API 请求在每次调用时明确读取非空白的 `OPENAI_API_KEY` 与 `OPENAI_BASE_URL`，只用 `gpt-6-luna`，不自动重试或请求后备模型。工具输入不能覆盖模型或端点。公共[判断背景生成](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation_zh_cn.md)操作复用 Responses 生成供审阅的背景；问题生成可选。其指令现来自当前 owner 的通用规范；`source_policy_hash` 标识加载的规则，成功请求期间规则发生变化时以 `stale_policy` 阻止复用。
 
 选择器通过 `RuleLoader` 加载当前 owner 指令和具体候选描述。结果区分 `available`、`skipped`、`fallback`、`blocked` 和 `stale`，带有请求/背景/事实及来源策略哈希。实际效果前，Root 必须与当前证据重新核对。缺少配置或必要策略时在请求前阻塞；过期规则必须刷新，不能转为兜底。选择器不会创建子代理、派发工作、修改预算或建立可信绑定。这些工具只接收一个已界定任务，不会将指令分解成多个任务。
 
-受保护的 Root `delegation_reserve` 仅在当前未分配容量耗尽后接受可选 `budget_approval`。Root 须通过 `user_approval` 引用用户实际的明确批准，为不同的未占用职责精确申请当前数量加一。原有绑定、guard、revision 和幂等要求继续生效。事务保留旧来源、记录批准、增加一个槽位并预留该职责；重放不能重复增加。已有未分配容量无需扩额。批准绝不允许重复职责或替代子代理，见[委派数量门禁](../references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate_zh_cn.md)。
+受保护的 Root `delegation_reserve` 仅在当前未分配容量耗尽后接受可选 `budget_approval`。Root 须通过 `user_approval` 引用用户实际的明确批准，为不同的未占用职责精确申请当前数量加一。原有绑定、guard、revision 和幂等要求继续生效。事务保留旧来源、记录批准、增加一个槽位并预留该职责；重放不能重复增加。已有未分配容量无需扩额。批准绝不允许重复职责或替代子代理，见[委派数量门禁](../docs/skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate_zh_cn.md)。
 
 创建开始之前，受保护的 Root `delegation_unreserve` 可以取消角色预留，使同一个尚未使用的槽位可以重新规划。它要求明确证明创建尚未开始的证据、当前 revision、幂等键以及原有 Root binding/guard。已绑定或身份不明，以及具有 Slice、派发或 Worker 历史的 allocation 均拒绝撤销。该证据是 Root 声明，不是独立宿主证明。撤销只清除尚未使用的预留，不减少锁定数量，也不释放子代理创建后的角色或身份。再次选择或预留新角色前必须刷新 allocation 事实。
 
@@ -293,7 +293,7 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 ## Native 恢复开发检查
 
-[Native 权威转交](../references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer_zh_cn.md)和 [Native 对账](../references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation_zh_cn.md) owner 定义工作流边界。以下检查验证已实现的服务用例，不证明完整导出或宿主停写能力。
+[Native 权威转交](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer_zh_cn.md)和 [Native 对账](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation_zh_cn.md) owner 定义工作流边界。以下检查验证已实现的服务用例，不证明完整导出或宿主停写能力。
 
 恢复开发使用临时数据库和合成绑定。状态服务的定向用例覆盖完整集合的显式裁定、比较历史保留、恢复 Revision/Epoch 新鲜度、尚未完成的补证请求及派发副作用阻断，也覆盖精确确认不掩盖旧冲突、恢复后首个 Slice 前的新鲜 Control、已确认派发的无副作用重放，以及超限旧快照的有界回读。迁移测试区分有证明的旧确认配对与格式错误或 Revision 不相邻的记录。从 `mcp/` 先运行定向用例，再执行完整套件：
 

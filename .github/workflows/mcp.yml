@@ -4,18 +4,14 @@ on:
   pull_request:
     paths:
       - "mcp/**"
-      - "references/coding/layer-01-fundamental-concepts/**.md"
-      - "references/coding/layer-02-workflow-concepts/**.md"
-      - "ENHANCED_ARCHITECTURE*.md"
+      - "docs/skill/**"
       - ".github/workflows/mcp.yml"
   push:
     branches:
       - main
     paths:
       - "mcp/**"
-      - "references/coding/layer-01-fundamental-concepts/**.md"
-      - "references/coding/layer-02-workflow-concepts/**.md"
-      - "ENHANCED_ARCHITECTURE*.md"
+      - "docs/skill/**"
       - ".github/workflows/mcp.yml"
 
 permissions:

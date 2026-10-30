@@ -4,7 +4,7 @@ title: Token I/O Decoupling
 lang: zh-CN
 ---
 
-[English]({{ '/' | relative_url }}) | [简体中文](./)
+[English]({{ '/' | relative_url }}) | [简体中文](.)
 
 # Token I/O Decoupling
 
@@ -30,7 +30,7 @@ Coding Flow 覆盖仓库和开发任务：
 - 独立验证最终变更状态；
 - 执行已批准的文档和 Git 操作。
 
-从 [`SKILL_zh_cn.md`](../../SKILL_zh_cn.md) 开始，然后按照当前阶段选择对应的 Coding reference。
+从 [`SKILL_zh_cn.md`](../skill/SKILL_zh_cn.md) 开始，然后按照当前阶段选择对应的 Coding reference。
 
 ## Multimodal reference
 
@@ -42,7 +42,7 @@ Coding Flow 覆盖仓库和开发任务：
 - 视觉状态验证；
 - 当需要修改仓库时，向 Coding 进行窄范围移交。
 
-这些 reference 不定义独立的可执行路线。请从 [Coding 入口](../../SKILL_zh_cn.md) 开始。
+这些 reference 不定义独立的可执行路线。请从 [Coding 入口](../skill/SKILL_zh_cn.md) 开始。
 
 ## 职责
 
