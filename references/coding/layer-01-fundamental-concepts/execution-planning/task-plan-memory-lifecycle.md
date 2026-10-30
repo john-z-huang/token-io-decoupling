@@ -20,7 +20,14 @@ Confirm the exact project/worktree binding and effective memory-maintenance guid
 
 ### Plan content
 
-Keep one concise shared plan with the goal and acceptance conditions; Issue or user-request source; constraints and non-goals; verified project facts and exact source pointers; chosen direction and unresolved questions; bounded steps, dependencies, and verification approach; completed/current/remaining work; actual checks, blockers, and residual risks. Distinguish facts, assumptions, proposals, and accepted decisions. Use compact deltas and useful current evidence rather than transcripts, full diffs, logs, or private reasoning. Preserve useful decisions and their evidence when superseding stale conclusions.
+Keep one concise shared plan with the goal and acceptance conditions; Issue or user-request source; constraints and non-goals; verified project facts and exact source pointers; chosen direction and unresolved questions; bounded steps, dependencies, and verification approach; completed/current/remaining work; actual checks, blockers, and residual risks. Distinguish facts, assumptions, proposals, and accepted decisions. Use compact deltas and useful current evidence rather than transcripts, full diffs, logs, or private reasoning. Concision applies to new entries; it never permits replacing accumulated content with a current-state or final summary. Preserve existing goals, constraints, requirement changes, sourced facts, decision reasons, stage progress, shared contributions, failures, and verification records. Mark a stale conclusion as superseded, retaining its original claim and evidence and adding the replacement, reason, and source; do not silently delete or rewrite its history.
+
+### Preservation checks for every update
+
+1. Immediately before writing, read the complete latest active plan, including every part if the response is paginated or truncated. Retain that readback as the comparison baseline in the authorized context. An incomplete read blocks the update; a remembered outline or earlier snapshot is insufficient.
+2. Merge only the authorized local status/step changes and append new facts, results, or evidence to that baseline. Prefer a targeted edit. If only whole-document replacement is available, submit the full merged document, not a newly drafted summary. Preserve all other entries and contributions; apply the supersession rule above to changed conclusions.
+3. Read back the complete updated plan and compare it with the baseline: each pre-existing record must remain traceable, with its provenance, reason, and evidence intact; only the authorized status/step changes and explicit supersessions may differ. Confirm new entries separately. A successful write or a spot check of final status alone does not pass preservation.
+4. Missing content, conflicting contributions, or uncertain write/readback results block affected reporting, dependent actions, and archiving. Preserve the last confirmed baseline, reread current state, and reconcile under existing authorization before rechecking. Never blindly replay a stale replacement. Keep this comparison within authorized context; do not persist transcripts or private reasoning.
 
 ### Update before reporting or dependent action
 
@@ -38,7 +45,17 @@ The plan is shared task context, not the live parent mode/count/allocation/epoch
 
 ### Completion and archive
 
-Keep the plan active while the task is incomplete or blocked. After every applicable Acceptance criterion passes, record final evidence and remaining limitations, check that the matching archive target is absent, then archive only this completed task's plan. Read back the archive and list Memories to confirm its expected content and the active name's absence. Archive/write/readback failure blocks completion. Preserve an existing archive on collision and report it. Archived plans are instruction-level immutable: never edit, delete, rename, or replace an existing archive; tool visibility does not technically enforce this rule. Never archive an unrelated or incomplete plan.
+Keep the plan active while the task is incomplete or blocked. After every applicable Acceptance criterion passes:
+
+1. Apply the preservation checks above to the complete active plan: update only completion status/steps and append final results, Acceptance evidence, and remaining limitations. Retain the accumulated document; a final summary may be appended but must never replace it. Read back and pass the full preservation comparison before archiving.
+2. Retain this verified final active content as the archive baseline and confirm the matching archive target is absent. Archive only this completed task's plan by moving its namespace/name, without changing its content. A collision blocks the move; preserve both entries and report it.
+3. Read back the complete archive and compare it with the final active baseline: content must be identical. List Memories to confirm the archive exists and the active name is absent. A missing record, content difference, or update/archive/readback failure blocks completion; preserve the last confirmed state and resolve uncertain effects before proceeding.
+
+Archived plans are instruction-level immutable: never edit, delete, rename, or replace an existing archive, including to repair a failed archive comparison; tool visibility does not technically enforce this rule. Report such a mismatch for a separate authorized recovery decision. Never archive an unrelated or incomplete plan.
+
+### Preservation acceptance scenario
+
+Use a new synthetic plan in an authorized test scope, never an existing user's plan. Include multiple stages, a goal and constraint, a sourced requirement change, a decision with its reason, another contributor's entry, a failed check and later passing check. Include small facts such as “two untracked-file manifests verified” and “no PR template found” so a short final summary cannot accidentally pass. Supersede one conclusion with a reason and source, complete through the checks above, then archive. Verify every original record remains traceable, the superseded claim and its replacement both remain, final results were appended, the archive equals the final active baseline, and the active name disappeared. Also review a summary-only candidate and an occupied archive target: neither may advance to a write/move that loses content or overwrites an archive. Report actual exercised checks separately from scenario review; this does not prove tool-enforced immutability or recover past losses.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 

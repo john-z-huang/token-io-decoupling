@@ -14,7 +14,7 @@ flowchart TD
     SM04["SM04 Single-Agent 执行"]
     SM05["SM05 验证与修复"]
     SM06["SM06 文档"]
-    SM07["SM07 交付与验收"]
+    SM07["SM07 交付与验收；保留计划历史和无损归档"]
     NEEDS["needs_prerequisite：保留调用方和准确暂停位置"]
     BLOCK["blocked"]
     DONE["complete"]
@@ -33,7 +33,7 @@ flowchart TD
     SM05 -- 无法取得必需独立验证者 --> BLOCK
     SM06 -- 文档完成且不影响内容 --> SM07
     SM06 -- 内容/Contract/验收影响 --> SM05
-    SM07 -- 所有标准均有当前证据且交付已解决 --> DONE
+    SM07 -- 所有标准均有当前证据；交付及计划保留/归档已解决 --> DONE
     SM01 -- 证据缺失 --> NEEDS
     SM02 -- 证据缺失 --> NEEDS
     SM03 -- 证据缺失 --> NEEDS
@@ -73,7 +73,7 @@ flowchart TD
 4. **SM04 — Single-Agent 执行。** 带上 SM01–SM03 证据及 continuation/effect 状态，调用[Single-Agent 执行模块](modules/single-execution_zh_cn.md)。仅在当前实施结果和初步证据齐备时继续。该模块负责执行者/输出解析、Slice 释放、实施、阶段反馈和 Control，不能创建或派发子代理。证据请求、修订或下一 Slice 时保留 Control continuation 和恢复位置。 携带共享计划身份和当前证据；模块在依赖工作/汇报前检查访问并更新，包括需求修订。
 5. **SM05 — 验证与修复。** 针对准确当前指纹和验收条件调用[验证与修复模块](modules/verification-repair_zh_cn.md)。只有 Contract 要求独立验证且当前独立性证据确认可用时，才完成所需独立验证。同 Session 逻辑检查不可替代。必需验证者证据待补时暂停依赖效果；若无法取得获授权的独立验证者，则阻塞这些效果。仅当所有必需检查在当前 epoch 通过且没有待修复项时继续。修复通过交接返回当前 Verification；语义 Contract/Decision 变化交调用方。实施、文档或 Git metadata 维度变化后不得接受过期证据。
 6. **SM06 — 文档。** 带上当前 Verification、Contract 和写前指纹，调用[文档模块](modules/documentation_zh_cn.md)。该模块判断哪些输出适用，要求相应授权/来源/路径，完成请求的 Memory 读回、影响分类和检查。仅在当前文档结果齐备时继续。内容/Contract/验收变化需要重验时返回 SM05；受影响 epoch 通过后，恢复挂起的 SM06 子步骤，完成当前影响分类和文档检查后再进入 SM07。
-7. **SM07 — 交付与验收。** 带上当前 Contract 标准、验证证据、epoch 和任何准确且获授权的 Git 意图，调用[交付与验收模块](modules/delivery-acceptance_zh_cn.md)。仅当每项适用标准都有当前通过证据且请求的交付已解决时继续。只有验收证据通过且读回确认后，该模块才可归档匹配的已完成 active plan。缺少标准/证据时返回语义 owner 和记录位置；失败、冲突或效果未授权时阻塞。
+7. **SM07 — 交付与验收。** 带上当前 Contract 标准、验证证据、epoch 和任何准确且获授权的 Git 意图，调用[交付与验收模块](modules/delivery-acceptance_zh_cn.md)。仅当每项适用标准都有当前通过证据且请求的交付已解决时继续。要求该模块在完成/归档前进行计划全文内容保留比对，并读回归档确认内容完全相同；最终摘要不能替换累积历史。只有验收证据通过且内容保留已确认后，该模块才可归档匹配的已完成 active plan。缺少标准/证据时返回语义 owner 和记录位置；内容保留不一致、失败、冲突或效果未授权时阻塞。
 
 ## 前置返回映射
 
