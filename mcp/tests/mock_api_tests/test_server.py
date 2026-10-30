@@ -38,6 +38,9 @@ from token_io_decoupling.server import create_server
 
 PUBLIC_TOOLS = {
     "workflow_capabilities",
+    "task_plan_update",
+    "task_plan_complete",
+    "task_plan_archive",
     "rules_get_context",
     "workflow_select_child_effort",
     "workflow_generate_decision_context",
@@ -224,9 +227,9 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
     worker_tools = _tool_names(create_server(FakeBindingProvider(SessionRole.WORKER)))
     assert root_tools == PUBLIC_TOOLS | ROOT_TOOLS
     assert worker_tools == PUBLIC_TOOLS | WORKER_TOOLS
-    assert len(root_tools) == 22
-    assert len(worker_tools) == 16
-    assert len(root_tools | worker_tools) == 29
+    assert len(root_tools) == 25
+    assert len(worker_tools) == 19
+    assert len(root_tools | worker_tools) == 32
     for tool in create_server(FakeBindingProvider())._tool_manager.list_tools():
         assert not any(
             forbidden in str(tool.parameters).casefold()

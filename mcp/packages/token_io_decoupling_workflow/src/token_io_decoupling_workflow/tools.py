@@ -36,6 +36,12 @@ from token_io_decoupling_workflow.delegation_decisions import (
     OutputTokenRoutingPayload,
 )
 from token_io_decoupling_workflow.payloads import _CONTROL_EVALUATE, _EVALUATE
+from token_io_decoupling_workflow.task_plan_core import TaskPlanService
+from token_io_decoupling_workflow.task_plan_payloads import (
+    TaskPlanArchivePayload,
+    TaskPlanCompletePayload,
+    TaskPlanUpdatePayload,
+)
 
 
 def _evaluate_with_advice(
@@ -72,6 +78,7 @@ def register_workflow_tools(
     registrar: ToolRegistrar,
     *,
     service: StateService,
+    task_plan_service: TaskPlanService,
     rules: RuleLoader,
     advisor: DecisionsAdvisor,
     decisions_config: DecisionsRuntimeConfig | None,
@@ -91,7 +98,26 @@ def register_workflow_tools(
             require_codex_context=require_codex_context,
             api_decisions_enabled=bool(decisions_config and decisions_config.enabled),
             diagnose_binding=binding_details,
+            task_plan_service=task_plan_service,
         ),
+    )
+    registrar.register(
+        "task_plan_update",
+        TaskPlanUpdatePayload,
+        lambda payload: task_plan_service.update(payload.request.model_dump(mode="json")),
+        enhanced=False,
+    )
+    registrar.register(
+        "task_plan_complete",
+        TaskPlanCompletePayload,
+        lambda payload: task_plan_service.complete(payload.request.model_dump(mode="json")),
+        enhanced=False,
+    )
+    registrar.register(
+        "task_plan_archive",
+        TaskPlanArchivePayload,
+        lambda payload: task_plan_service.archive(payload.request.model_dump(mode="json")),
+        enhanced=False,
     )
     registrar.register(
         "rules_get_context",

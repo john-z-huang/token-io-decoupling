@@ -14,7 +14,7 @@ flowchart TD
     MM04["MM04 Bootstrap/task authorization, executor/output/role, Slice, delegated execution"]
     MM05["MM05 Verification and repair"]
     MM06["MM06 Documentation"]
-    MM07["MM07 Delivery and acceptance"]
+    MM07["MM07 Delivery and acceptance; preserve plan history and lossless archive"]
     NEEDS["needs_prerequisite: retain caller and exact suspended position"]
     BLOCK["blocked"]
     DONE["complete"]
@@ -32,7 +32,7 @@ flowchart TD
     ROUTE_ENTRY -- route/mode conflict --> BLOCK
     MM06 -- documentation complete; no content-affecting change --> MM07
     MM06 -- content/Contract/acceptance impact --> MM05
-    MM07 -- all criteria current and passed; delivery resolved --> DONE
+    MM07 -- all criteria current and passed; delivery and plan preservation/archive resolved --> DONE
     MM01 -- missing evidence --> NEEDS
     MM02 -- missing evidence --> NEEDS
     MM03 -- missing evidence --> NEEDS
@@ -72,7 +72,7 @@ Before entering MM01, inspect evidence that the Coding workflow completed Contra
 4. **MM04 — Delegated execution.** Call [Delegated Execution](modules/delegated-execution.md) with MM01–MM03 evidence and continuation/effect state. DE01–DE04 own Bootstrap assessment, actual-task authorization, executor/output decisions, conditional role reservation, and the shared recovery/Slice gate before any creation/dispatch. Later module checkpoints own conditional child creation/dispatch, explicit Worker memo disposition, implementation/result, and Control. Continue only with current implementation/result and provisional evidence. A resumed bundle retains recorded effects and memo value; a new bundle receives its explicit memo value at DE04. Preserve pending-child, Control, and next-Slice positions; do not replay creation or dispatch. Carry the shared plan identity and current evidence; the module checks access and updates before dependent work/reporting, including requirement amendments.
 5. **MM05 — Verification and repair.** Call [Verification and Repair](modules/verification-repair.md) against the exact current fingerprint and acceptance conditions. Complete required independent verification only when the Contract requires it and current independence evidence confirms availability; a Worker result is implementation evidence only. If required independence is unavailable, suspend dependent effects at MM05; same-Session checks cannot substitute. Continue only when required checks pass on current epochs and no repair remains. A repair returns through handoff to current Verification; semantic Contract/Decision changes return to the caller. Do not accept stale evidence after changed implementation, documentation, or Git metadata dimensions.
 6. **MM06 — Documentation.** Call [Documentation](modules/documentation.md) with current Verification, Contract, and before fingerprints. The module determines applicable output, requires authorization/source/path when output applies, handles requested Memory with readback, classifies impact, and runs checks. Continue only with its current documentation result. If a changed content/Contract/acceptance dimension requires re-verification, return to MM05, then resume the suspended MM06 substep and complete its current impact/checks before entering MM07.
-7. **MM07 — Delivery and acceptance.** Call [Delivery and Acceptance](modules/delivery-acceptance.md) with current Contract criteria, verification evidence, epochs, and any exact authorized Git intent. Continue only when every applicable criterion maps to current passing evidence and requested delivery is resolved. The module may archive only a matching completed active plan after Acceptance evidence passes and readback confirms it. Missing criteria/evidence return to the semantic owner and recorded position; failure, conflict, or unauthorized effects block.
+7. **MM07 — Delivery and acceptance.** Call [Delivery and Acceptance](modules/delivery-acceptance.md) with current Contract criteria, verification evidence, epochs, and any exact authorized Git intent. Continue only when every applicable criterion maps to current passing evidence and requested delivery is resolved. Require the module's complete-plan preservation comparison before completion/archive and its identical-content archive readback; a final summary cannot replace accumulated history. The module may archive only a matching completed active plan after Acceptance evidence passes and preservation is confirmed. Missing criteria/evidence return to the semantic owner and recorded position; preservation mismatch, failure, conflict, or unauthorized effects block.
 
 ## Prerequisite return map
 
