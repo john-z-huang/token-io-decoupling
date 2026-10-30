@@ -26,8 +26,8 @@ class RuleResourcesBuildHook(BuildHookInterface):
         else:
             registry_source = checkout_root / "mcp" / "rule-registry.json"
             if (
-                not (checkout_root / "references").is_dir()
-                or not (checkout_root / "SKILL.md").is_file()
+                not (checkout_root / "docs/skill/references").is_dir()
+                or not (checkout_root / "docs/skill/SKILL.md").is_file()
                 or not registry_source.is_file()
             ):
                 raise RuntimeError("project root is not a verified Skill checkout")

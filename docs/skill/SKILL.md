@@ -1,5 +1,5 @@
 ---
-name: token-io-decoupling
+name: token-io-decoupling-skill
 description: "High-volume Agent Token I/O decoupling for Coding. Coding separates high-value input-side reasoning, implementation output, independent change verification, and the Documentation/Comments & Git Operations role for approved documentation/comments and non-trivial repository Git work, while keeping Core role and Session rules independent of any specific Code Agent product or model; runtime-environment bindings and capability checks are declared in the Coding workflow."
 ---
 
@@ -17,7 +17,7 @@ Every Coding task uses a shared task plan by default under [Task Plan Memory Lif
 
 ## MCP support boundary
 
-Use this project's MCP Server only from local Codex CLI, including local ChatGPT Work through local Codex CLI. Other Code Agents, cloud ChatGPT chats, and remote ChatGPT Work are not direct MCP clients. They may use the server only after installing Codex CLI in their own environment and following this project's installation instructions for that CLI. This remains Codex CLI use, without separate host or cloud compatibility. Codex CLI tool calls do not run an environment-identification checkpoint; verify the actual capabilities, identity, permissions, and guards required by each operation. See the [MCP client boundary](mcp/AGENTS.md).
+Use this project's MCP Server only from local Codex CLI, including local ChatGPT Work through local Codex CLI. Other Code Agents, cloud ChatGPT chats, and remote ChatGPT Work are not direct MCP clients. They may use the server only after installing Codex CLI in their own environment and following this project's installation instructions for that CLI. This remains Codex CLI use, without separate host or cloud compatibility. Codex CLI tool calls do not run an environment-identification checkpoint; verify the actual capabilities, identity, permissions, and guards required by each operation. See the [MCP client boundary](../../mcp/AGENTS.md).
 
 Other Code Agents may follow the Skill as documents without this MCP Server. Continue maintaining compatible instruction descriptions for those Agents while developing the MCP Server exclusively for Codex CLI. The general document workflow and its capability checks remain available for document-only use.
 

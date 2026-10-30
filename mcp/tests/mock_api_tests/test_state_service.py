@@ -597,7 +597,7 @@ def test_binding_requires_released_slice_and_replay_recovers_dispatch(tmp_path: 
         objective=ref("objective"),
         return_conditions=ref("return"),
         unreleased_boundary=ref("boundary"),
-        authorized_paths=["references/"],
+        authorized_paths=["docs/skill/references/"],
         change_categories=[ChangeCategory.SKILL_INSTRUCTIONS],
         write_content_memo=False,
     )

@@ -26,17 +26,17 @@
 
 | 层级 | 作用 | 允许依赖的目标 |
 | --- | --- | --- |
-| [`layer-01-fundamental-concepts`](../references/coding/layer-01-fundamental-concepts/) | 基础原子概念 | 同语言的 layer-01 概念及其语言镜像 |
-| [`layer-02-workflow-concepts`](../references/coding/layer-02-workflow-concepts/) | 通用工作流检查点动作与证据 | `layer-01-fundamental-concepts`；不得链接 layer-03/04 |
-| [`layer-03-workflow-checkpoints`](../references/coding/layer-03-workflow-checkpoints/) | 当前任务的适用性、分支与组合决策 | layer-01、layer-02；不得链接 layer-04 |
-| [`layer-04-workflows`](../references/coding/layer-04-workflows/) | 完整可执行路线 | 共享协议、layer-01、layer-02 和 layer-03；路线也可调用其精确批准的同语言 Layer-04 模块，模块仅依赖共享协议与 Layers 01–03 且不得调用同级模块 |
+| [`layer-01-fundamental-concepts`](../references/coding/layer-01-fundamental-concepts) | 基础原子概念 | 同语言的 layer-01 概念及其语言镜像 |
+| [`layer-02-workflow-concepts`](../references/coding/layer-02-workflow-concepts) | 通用工作流检查点动作与证据 | `layer-01-fundamental-concepts`；不得链接 layer-03/04 |
+| [`layer-03-workflow-checkpoints`](../references/coding/layer-03-workflow-checkpoints) | 当前任务的适用性、分支与组合决策 | layer-01、layer-02；不得链接 layer-04 |
+| [`layer-04-workflows`](../references/coding/layer-04-workflows) | 完整可执行路线 | 共享协议、layer-01、layer-02 和 layer-03；路线也可调用其精确批准的同语言 Layer-04 模块，模块仅依赖共享协议与 Layers 01–03 且不得调用同级模块 |
 | `workflows/coding_zh_cn.md` | 路线选择器和四层索引 | 四个层级；只负责导航，不拥有策略 |
 
 如果低层文档需要由高层拥有的概念，应将其视为原子化失败：拆分低层文档，并把组合关系上移到高层。`SKILL.md`、`README.md` 和 `docs/` 等根入口文档可以向下链接到入口。使用 `python3 scripts/check-doc-layer-links.py` 检查边界；语言切换链接是唯一有意保留的跨语言链接。
 
 ## 检查点目录
 
-路线按序消费 [layer-02 检查点](../references/coding/layer-02-workflow-concepts/)、[layer-03 工作流决策](../references/coding/layer-03-workflow-checkpoints/)，并由 layer-04 完整路线组合以下独立动作边界：
+路线按序消费 [layer-02 检查点](../references/coding/layer-02-workflow-concepts)、[layer-03 工作流决策](../references/coding/layer-03-workflow-checkpoints)，并由 layer-04 完整路线组合以下独立动作边界：
 
 `contract` → `environment`（+ 能力清单）→ `mode` → `context` → `decision` → `implementation` → `control` → `verification` → `repair` → `documentation` → `git` → `acceptance`
 

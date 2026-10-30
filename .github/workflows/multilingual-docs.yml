@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - "**/*.md"
-      - "agents/openai.yaml"
+      - "docs/skill/agents/openai.yaml"
       - "scripts/check-doc-layer-links.py"
       - "scripts/workflow_module_contracts.py"
       - "scripts/markdown_discovery.py"
@@ -33,7 +33,7 @@ on:
       - main
     paths:
       - "**/*.md"
-      - "agents/openai.yaml"
+      - "docs/skill/agents/openai.yaml"
       - "scripts/check-doc-layer-links.py"
       - "scripts/workflow_module_contracts.py"
       - "scripts/markdown_discovery.py"

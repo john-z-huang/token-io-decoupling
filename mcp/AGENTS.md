@@ -14,6 +14,11 @@ This file owns the client-support boundary for the MCP Server, packages, tests, 
 
 ## Scope and authority
 
+### Codex SDK is test-only
+
+Follow the repository's [Codex SDK final-test boundary](../AGENTS.md#codex-sdk-final-test-boundary). Keep `openai-codex` only in `codex-test`, outside all runtime dependencies and production imports. `tests/support/codex_sdk.py` is the sole SDK import/launch adapter; only `tests/support/final_codex_check.py` may invoke its real final inspection after all other checks and the current build's `uv tool` installation succeed. Ordinary unit tests may use fakes to verify these boundaries but must not start the SDK. The fresh CLI performs only version, discovery, capability, and rule inspection, with zero model turns. Preserve the mandatory environment reuse, fixed model/effort, isolated configuration, and failure boundaries from the root instructions.
+
+
 This restriction applies to the MCP Server and does not remove native runtime instructions outside `mcp/`. It grants no additional filesystem, network, credential, Agent-creation, or Git authorization.
 
 ## Related documents

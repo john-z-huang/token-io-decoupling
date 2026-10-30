@@ -2,7 +2,7 @@
 
 [English](TASK_PLAN_TOOLS.md) | [简体中文](TASK_PLAN_TOOLS_zh_cn.md)
 
-本文档负责任务计划三个确定性 MCP 工具的配置和使用。[任务计划生命周期 owner](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)仍负责工作流语义；本页描述实现边界，不授予任务授权。
+本文档负责任务计划三个确定性 MCP 工具的配置和使用。[任务计划生命周期 owner](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)仍负责工作流语义；本页描述实现边界，不授予任务授权。
 
 ## 配置与发现
 
@@ -103,6 +103,6 @@ Capability 和操作回执报告 `storage_scope`、全局模式的 `repository_i
 
 ## 相关文档
 
-- [任务计划生命周期](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)
+- [任务计划生命周期](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)
 - [MCP 开发](DEVELOPMENT_zh_cn.md)
 - [MCP 目录指令](AGENTS_zh_cn.md)

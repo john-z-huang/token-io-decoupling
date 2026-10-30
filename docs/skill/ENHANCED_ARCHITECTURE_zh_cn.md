@@ -6,9 +6,9 @@
 
 ## 组件与权威数据
 
-实现采用 `mcp/` 下含八个包的 uv workspace，使用 Pydantic、`sqlite3`、官方 MCP SDK v2 和 OpenAI SDK。stdio 子进程 SDK 测试通过仅用于测试的可信嵌入 harness 验证了发现和受保护调用，并协商到协议修订 `2026-07-28`。这验证的是实现和 wire 契约，不是生产桌面宿主的身份 attestation 或 OS 权限执行。统一生产入口的四个 MCP profile 即使未绑定也暴露固定且互不重复的工具清单；受保护调用仍拒绝缺失或不充分的绑定。[MCP 开发指南](mcp/DEVELOPMENT_zh_cn.md)负责可执行程序名称、工具归属、按角色分派的共享适配器及安装/注册说明。工具发现不建立身份或操作守卫。
+实现采用 `mcp/` 下含八个包的 uv workspace，使用 Pydantic、`sqlite3`、官方 MCP SDK v2 和 OpenAI SDK。stdio 子进程 SDK 测试通过仅用于测试的可信嵌入 harness 验证了发现和受保护调用，并协商到协议修订 `2026-07-28`。这验证的是实现和 wire 契约，不是生产桌面宿主的身份 attestation 或 OS 权限执行。统一生产入口的四个 MCP profile 即使未绑定也暴露固定且互不重复的工具清单；受保护调用仍拒绝缺失或不充分的绑定。[MCP 开发指南](../../mcp/DEVELOPMENT_zh_cn.md)负责可执行程序名称、工具归属、按角色分派的共享适配器及安装/注册说明。工具发现不建立身份或操作守卫。
 
-Markdown owner 文档仍是政策文本的唯一权威。JSON 注册表 [`mcp/rule-registry.json`](mcp/rule-registry.json) 将稳定节点 ID 映射到 owner 标题、事实、证据、分支、判断方式、失败处理和后续检查点，不得复制 owner 正文。实现加载时读取当前 owner 文本并计算 Hash；不维护第二份人工编写的政策正文或持久化节点 Hash。普通正文变化通过动态重读生效。节点结构、分支枚举或硬约束变化时，必须使用变化后的 `contract_version` 同步兼容实现与测试。
+Markdown owner 文档仍是政策文本的唯一权威。JSON 注册表 [`mcp/rule-registry.json`](../../mcp/rule-registry.json) 将稳定节点 ID 映射到 owner 标题、事实、证据、分支、判断方式、失败处理和后续检查点，不得复制 owner 正文。实现加载时读取当前 owner 文本并计算 Hash；不维护第二份人工编写的政策正文或持久化节点 Hash。普通正文变化通过动态重读生效。节点结构、分支枚举或硬约束变化时，必须使用变化后的 `contract_version` 同步兼容实现与测试。
 
 SQLite 保存结构化控制状态、证据引用、语义正文引用及 Hash、索引。完整 Contract、Decision Brief、Plan、Memo、Capsule、Handoff 等语义正文仍保存在 Markdown 或 Serena Memory 中，并遵守各自 owner。SQLite 索引不取代正式消息、可见性要求或共享 worktree 冲突控制。
 
@@ -20,14 +20,14 @@ uv workspace 根项目与七个成员分别是独立的 Python 分发包，各�
 
 | 分发包 | 项目 | Canonical 导入 / 职责 |
 | --- | --- | --- |
-| `token-io-decoupling` | [workspace 根项目](mcp/pyproject.toml) | `token_io_decoupling`：CLI、Codex setup、服务组装 |
-| `token-io-decoupling-core` | [core](mcp/packages/token_io_decoupling_core/pyproject.toml) | `token_io_decoupling_core`：契约、绑定、profile、规则与打包资源 |
-| `token-io-decoupling-state` | [state](mcp/packages/token_io_decoupling_state/pyproject.toml) | `token_io_decoupling_state`：状态 façade、领域操作、事务与迁移 |
-| `token-io-decoupling-transport` | [transport](mcp/packages/token_io_decoupling_transport/pyproject.toml) | `token_io_decoupling_transport`：MCP 注册、请求 scope 与共享 wire schema |
-| `token-io-decoupling-workflow` | [workflow](mcp/packages/token_io_decoupling_workflow/pyproject.toml) | `token_io_decoupling_workflow`：规则/判断工具与可选 Decisions 建议 |
-| `token-io-decoupling-root-agent-tools` | [Root 工具](mcp/packages/token_io_decoupling_root/pyproject.toml) | `token_io_decoupling_root`：Root 工具注册 |
-| `token-io-decoupling-worker-agent-tools` | [Worker 工具](mcp/packages/token_io_decoupling_worker/pyproject.toml) | `token_io_decoupling_worker`：Worker 工具注册 |
-| `token-io-decoupling-share-tools` | [共享工具](mcp/packages/token_io_decoupling_shared/pyproject.toml) | `token_io_decoupling_shared`：共享状态/证据工具注册 |
+| `token-io-decoupling` | [workspace 根项目](../../mcp/pyproject.toml) | `token_io_decoupling`：CLI、Codex setup、服务组装 |
+| `token-io-decoupling-core` | [core](../../mcp/packages/token_io_decoupling_core/pyproject.toml) | `token_io_decoupling_core`：契约、绑定、profile、规则与打包资源 |
+| `token-io-decoupling-state` | [state](../../mcp/packages/token_io_decoupling_state/pyproject.toml) | `token_io_decoupling_state`：状态 façade、领域操作、事务与迁移 |
+| `token-io-decoupling-transport` | [transport](../../mcp/packages/token_io_decoupling_transport/pyproject.toml) | `token_io_decoupling_transport`：MCP 注册、请求 scope 与共享 wire schema |
+| `token-io-decoupling-workflow` | [workflow](../../mcp/packages/token_io_decoupling_workflow/pyproject.toml) | `token_io_decoupling_workflow`：规则/判断工具与可选 Decisions 建议 |
+| `token-io-decoupling-root-agent-tools` | [Root 工具](../../mcp/packages/token_io_decoupling_root/pyproject.toml) | `token_io_decoupling_root`：Root 工具注册 |
+| `token-io-decoupling-worker-agent-tools` | [Worker 工具](../../mcp/packages/token_io_decoupling_worker/pyproject.toml) | `token_io_decoupling_worker`：Worker 工具注册 |
+| `token-io-decoupling-share-tools` | [共享工具](../../mcp/packages/token_io_decoupling_shared/pyproject.toml) | `token_io_decoupling_shared`：共享状态/证据工具注册 |
 
 主要依赖方向如下：
 
@@ -71,7 +71,7 @@ Schema 状态检查受角色绑定、只读且仅限调用者自己的 Root 或 
 
 Native 是默认运行方式：Agent 阅读权威文档，并按其 owner 维护既有结构化记录和语义正文。[增强工作流可用性](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability_zh_cn.md) owner 负责路线选择和不可用处置；[增强宿主绑定](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md) owner 负责可信身份和每次调用的守卫证据。公共规则访问不能证明 Enhanced 状态或权限访问。当前 SDK 与测试 harness 证据不能证明真实桌面宿主绑定，因此真实 Codex/ChatGPT Desktop Enhanced 可用性仍未验证。保留 Native 作为降级路径，只阻塞依赖缺失 Enhanced 能力的操作。Mode/count 和 Native 对账仍由各自既有 owner 负责。
 
-Decisions API 默认关闭，普通测试使用 Mock。真实请求必须具备显式启用及出站数据授权，架构契约本身不授予这些权限。Root 和每个受委派的 Agent 都必须在项目功能代码及真实测试/smoke 代码中执行同一前置条件：在实际调用时读取本地进程环境中的 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，要求两项都非空，并显式传给 SDK。缺少任一项时，不得创建 client 或发送真实请求。禁止硬编码或调用方提供的替代值，也禁止使用 SDK 默认端点；不得打印或持久化其值。合成值仅用于不发送网络请求的 Mock。执行限制见[开发指南](mcp/DEVELOPMENT_zh_cn.md#真实-api-请求的必需配置)。
+Decisions API 默认关闭，普通测试使用 Mock。真实请求必须具备显式启用及出站数据授权，架构契约本身不授予这些权限。Root 和每个受委派的 Agent 都必须在项目功能代码及真实测试/smoke 代码中执行同一前置条件：在实际调用时读取本地进程环境中的 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，要求两项都非空，并显式传给 SDK。缺少任一项时，不得创建 client 或发送真实请求。禁止硬编码或调用方提供的替代值，也禁止使用 SDK 默认端点；不得打印或持久化其值。合成值仅用于不发送网络请求的 Mock。执行限制见[开发指南](../../mcp/DEVELOPMENT_zh_cn.md#真实-api-请求的必需配置)。
 
 Decisions advisor 已实现为针对五个固定语义节点的可选建议。一次 325-token 合成真实 smoke 直接调用 advisor，并使用临时 Root 状态和规则加载；它没有经过 MCP handler 或真实宿主。API 建议与 Core 结果分离，绝不授权操作或释放 Slice。 [Decisions 建议](references/coding/layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md) owner 负责五节点生命周期、输入绑定、过期结果处置和显式直接 owner 降级。显式启用的 API 不可用、超时、拒绝输入或返回无效/过期结果时，语义判断切回文档路径。若 MCP 和 SQLite 仍可用，继续维护其状态。
 
@@ -83,7 +83,7 @@ Enhanced 不可用本身不会把权威转交给 Native。继续依赖状态的�
 
 ## 规则节点映射
 
-机器可读映射 [`mcp/rule-registry.json`](mcp/rule-registry.json) 只是节点映射，不是政策来源。每个节点包含稳定 ID、owner 路径和实际存在的章节标题、必需事实与证据、合法分支、判断方式（`direct`、`deterministic`、`semantic` 或 `hybrid`）、失败处理和后续检查点 ID。`contract_version` 标识映射结构。ID 保持稳定，不得重新分配给其他概念。节点 Hash 从已加载的 owner 正文计算，不在注册表中维护。
+机器可读映射 [`mcp/rule-registry.json`](../../mcp/rule-registry.json) 只是节点映射，不是政策来源。每个节点包含稳定 ID、owner 路径和实际存在的章节标题、必需事实与证据、合法分支、判断方式（`direct`、`deterministic`、`semantic` 或 `hybrid`）、失败处理和后续检查点 ID。`contract_version` 标识映射结构。ID 保持稳定，不得重新分配给其他概念。节点 Hash 从已加载的 owner 正文计算，不在注册表中维护。
 
 注册表消费者只应加载当前检查点所需节点及其直接 owner 标题；每次请求都从同一来源、同一语言重新读取映射和标题，摘录不会递归加载链接 owner。判断依赖摘录未包含的链接 owner 时，必须单独取得并核验该 owner。不得扫描整个仓库。直接引用仍是解释规则的权威；确定性检查只执行明确的结构化约束；语义分类可以辅助判断，但不能授权；混合判断将语义结果与确定性硬约束校验组合。关于有界读取、来源、语言和新鲜度要求，见[增强规则上下文](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-rule-context_zh_cn.md)。
 

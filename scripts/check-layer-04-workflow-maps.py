@@ -361,7 +361,7 @@ def validate_migration_manifest(root: Path, errors: list[str]) -> None:
                     if not refs and (not fixed_direct_links or not any(link in linked_paths(body) for link in fixed_direct_links for body in (module_steps[checkpoint] for checkpoint in checkpoints))):
                         fail(errors, path, f"{route}/{entry.get('source_step')}: owner_refs is empty and no fixed direct L1/L2 target is actually linked from the designated checkpoint set")
                     for owner in refs:
-                        owner_path = root / "references/coding/layer-03-workflow-checkpoints" / f"{owner}{suffix}.md"
+                        owner_path = root / "docs/skill/references/coding/layer-03-workflow-checkpoints" / f"{owner}{suffix}.md"
                         if not owner_path.is_file():
                             fail(errors, path, f"{route}/{entry.get('source_step')}: missing {lang} owner reference {owner}")
                             continue

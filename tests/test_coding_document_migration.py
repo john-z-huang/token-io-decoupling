@@ -24,7 +24,7 @@ class CodingDocumentMigrationTests(unittest.TestCase):
         root = Path(temp.name)
         moves = []
         for layer in MODULE.LAYERS:
-            base = root / "references/coding" / layer
+            base = root / "docs/skill/references/coding" / layer
             deep = base / "category/nested"
             deep.mkdir(parents=True)
             self.write_navigation(base, root_owner=True, category=False)
@@ -39,29 +39,29 @@ class CodingDocumentMigrationTests(unittest.TestCase):
             moves.extend(
                 [
                     {
-                        "from": f"references/coding/{layer}/deep-owner.md",
+                        "from": f"docs/skill/references/coding/{layer}/deep-owner.md",
                         "to": deep_target.relative_to(root).as_posix(),
                     },
                     {
-                        "from": f"references/coding/{layer}/deep-owner_zh_cn.md",
+                        "from": f"docs/skill/references/coding/{layer}/deep-owner_zh_cn.md",
                         "to": (deep / "deep-owner_zh_cn.md").relative_to(root).as_posix(),
                     },
                 ]
             )
-        self.write_index(root / "references/coding/layer-01-fundamental-concepts", ["root-owner.md"], ["category/INDEX.md"])
-        self.write_index(root / "references/coding/layer-01-fundamental-concepts", ["root-owner_zh_cn.md"], ["category/INDEX_zh_cn.md"], zh=True)
-        self.write_index(root / "references/coding/layer-01-fundamental-concepts/category", [], ["nested/INDEX.md"])
-        self.write_index(root / "references/coding/layer-01-fundamental-concepts/category", [], ["nested/INDEX_zh_cn.md"], zh=True)
-        self.write_index(root / "references/coding/layer-01-fundamental-concepts/category/nested", ["deep-owner.md"], [])
-        self.write_index(root / "references/coding/layer-01-fundamental-concepts/category/nested", ["deep-owner_zh_cn.md"], [], zh=True)
-        self.write_index(root / "references/coding/layer-02-workflow-concepts", ["root-owner.md"], ["category/INDEX.md"])
-        self.write_index(root / "references/coding/layer-02-workflow-concepts", ["root-owner_zh_cn.md"], ["category/INDEX_zh_cn.md"], zh=True)
-        self.write_index(root / "references/coding/layer-02-workflow-concepts/category", [], ["nested/INDEX.md"])
-        self.write_index(root / "references/coding/layer-02-workflow-concepts/category", [], ["nested/INDEX_zh_cn.md"], zh=True)
-        self.write_index(root / "references/coding/layer-02-workflow-concepts/category/nested", ["deep-owner.md"], [])
-        self.write_index(root / "references/coding/layer-02-workflow-concepts/category/nested", ["deep-owner_zh_cn.md"], [], zh=True)
+        self.write_index(root / "docs/skill/references/coding/layer-01-fundamental-concepts", ["root-owner.md"], ["category/INDEX.md"])
+        self.write_index(root / "docs/skill/references/coding/layer-01-fundamental-concepts", ["root-owner_zh_cn.md"], ["category/INDEX_zh_cn.md"], zh=True)
+        self.write_index(root / "docs/skill/references/coding/layer-01-fundamental-concepts/category", [], ["nested/INDEX.md"])
+        self.write_index(root / "docs/skill/references/coding/layer-01-fundamental-concepts/category", [], ["nested/INDEX_zh_cn.md"], zh=True)
+        self.write_index(root / "docs/skill/references/coding/layer-01-fundamental-concepts/category/nested", ["deep-owner.md"], [])
+        self.write_index(root / "docs/skill/references/coding/layer-01-fundamental-concepts/category/nested", ["deep-owner_zh_cn.md"], [], zh=True)
+        self.write_index(root / "docs/skill/references/coding/layer-02-workflow-concepts", ["root-owner.md"], ["category/INDEX.md"])
+        self.write_index(root / "docs/skill/references/coding/layer-02-workflow-concepts", ["root-owner_zh_cn.md"], ["category/INDEX_zh_cn.md"], zh=True)
+        self.write_index(root / "docs/skill/references/coding/layer-02-workflow-concepts/category", [], ["nested/INDEX.md"])
+        self.write_index(root / "docs/skill/references/coding/layer-02-workflow-concepts/category", [], ["nested/INDEX_zh_cn.md"], zh=True)
+        self.write_index(root / "docs/skill/references/coding/layer-02-workflow-concepts/category/nested", ["deep-owner.md"], [])
+        self.write_index(root / "docs/skill/references/coding/layer-02-workflow-concepts/category/nested", ["deep-owner_zh_cn.md"], [], zh=True)
         docs = root / "docs"
-        docs.mkdir()
+        docs.mkdir(exist_ok=True)
         (docs / "coding-document-migration.json").write_text(
             json.dumps({"schema_version": 1, "document_moves": moves}), encoding="utf-8"
         )
@@ -95,7 +95,7 @@ class CodingDocumentMigrationTests(unittest.TestCase):
 
     def test_layer_01_section_discovery_reaches_nested_owners(self):
         root = self.make_valid_root()
-        base = root / "references/coding/layer-01-fundamental-concepts"
+        base = root / "docs/skill/references/coding/layer-01-fundamental-concepts"
         discovered = SECTIONS.discover_owner_documents(base)
         self.assertIn(base / "root-owner.md", discovered)
         self.assertIn(base / "category/nested/deep-owner.md", discovered)
@@ -103,21 +103,21 @@ class CodingDocumentMigrationTests(unittest.TestCase):
 
     def test_missing_mirror_is_reported(self):
         root = self.make_valid_root()
-        (root / "references/coding/layer-01-fundamental-concepts/category/nested/deep-owner_zh_cn.md").unlink()
+        (root / "docs/skill/references/coding/layer-01-fundamental-concepts/category/nested/deep-owner_zh_cn.md").unlink()
         self.assertTrue(any("missing language pair" in e for e in MODULE.validate(root)))
 
     def test_missing_navigation_file_is_reported(self):
         root = self.make_valid_root()
-        (root / "references/coding/layer-02-workflow-concepts/category/nested/README_zh_cn.md").unlink()
+        (root / "docs/skill/references/coding/layer-02-workflow-concepts/category/nested/README_zh_cn.md").unlink()
         self.assertTrue(any("navigation file missing" in e for e in MODULE.validate(root)))
 
     def test_index_must_list_direct_owner_and_child_directory(self):
         root = self.make_valid_root()
-        index = root / "references/coding/layer-01-fundamental-concepts/category/nested/INDEX.md"
+        index = root / "docs/skill/references/coding/layer-01-fundamental-concepts/category/nested/INDEX.md"
         index.write_text("[English](INDEX.md) | [简体中文](INDEX_zh_cn.md)\n", encoding="utf-8")
         self.assertTrue(any("index omits direct owner" in e for e in MODULE.validate(root)))
 
-        index = root / "references/coding/layer-01-fundamental-concepts/INDEX.md"
+        index = root / "docs/skill/references/coding/layer-01-fundamental-concepts/INDEX.md"
         index.write_text(
             "[English](INDEX.md) | [简体中文](INDEX_zh_cn.md)\n"
             "- [root owner](root-owner.md)\n",
@@ -127,29 +127,29 @@ class CodingDocumentMigrationTests(unittest.TestCase):
 
     def test_incorrect_language_switch_is_reported(self):
         root = self.make_valid_root()
-        path = root / "references/coding/layer-01-fundamental-concepts/category/README.md"
+        path = root / "docs/skill/references/coding/layer-01-fundamental-concepts/category/README.md"
         path.write_text("[English](README.md) | [简体中文](INDEX_zh_cn.md)\n[INDEX](INDEX.md)\n", encoding="utf-8")
         self.assertTrue(any("incorrect or missing English language switch" in e for e in MODULE.validate(root)))
 
     def test_valid_navigation_labels_are_not_fixed(self):
         root = self.make_valid_root()
-        readme = root / "references/coding/layer-01-fundamental-concepts/README.md"
+        readme = root / "docs/skill/references/coding/layer-01-fundamental-concepts/README.md"
         readme.write_text(
             "[English](README.md) | [简体中文](README_zh_cn.md)\n\n[Browse contents](INDEX.md)\n",
             encoding="utf-8",
         )
-        index = root / "references/coding/layer-01-fundamental-concepts/INDEX.md"
+        index = root / "docs/skill/references/coding/layer-01-fundamental-concepts/INDEX.md"
         text = index.read_text(encoding="utf-8").replace("[owner](root-owner.md)", "[Root entry](root-owner.md)")
         index.write_text(text, encoding="utf-8")
         self.assertEqual(MODULE.validate(root), [])
 
     def test_pseudo_index_reference_is_rejected(self):
         root = self.make_valid_root()
-        readme = root / "references/coding/layer-01-fundamental-concepts/README.md"
+        readme = root / "docs/skill/references/coding/layer-01-fundamental-concepts/README.md"
         readme.write_text("[English](README.md) | [简体中文](README_zh_cn.md)\n\nINDEX.md\n", encoding="utf-8")
         self.assertTrue(any("same-language index" in e for e in MODULE.validate(root)))
 
-        index = root / "references/coding/layer-01-fundamental-concepts/INDEX.md"
+        index = root / "docs/skill/references/coding/layer-01-fundamental-concepts/INDEX.md"
         index.write_text(
             "[English](INDEX.md) | [简体中文](INDEX_zh_cn.md)\nroot-owner.md\n",
             encoding="utf-8",
@@ -158,7 +158,7 @@ class CodingDocumentMigrationTests(unittest.TestCase):
 
     def test_repeated_index_target_is_rejected(self):
         root = self.make_valid_root()
-        index = root / "references/coding/layer-01-fundamental-concepts/INDEX.md"
+        index = root / "docs/skill/references/coding/layer-01-fundamental-concepts/INDEX.md"
         with index.open("a", encoding="utf-8") as target:
             target.write("- [another label](root-owner.md)\n")
         self.assertTrue(any("index repeats target" in e for e in MODULE.validate(root)))
@@ -173,7 +173,7 @@ class CodingDocumentMigrationTests(unittest.TestCase):
 
     def test_declared_task_plan_owner_rename_is_valid_in_both_languages(self):
         root = self.make_valid_root()
-        layer = root / "references/coding/layer-01-fundamental-concepts"
+        layer = root / "docs/skill/references/coding/layer-01-fundamental-concepts"
         destination = layer / "execution-planning"
         destination.mkdir()
         self.write_navigation(destination, root_owner=False, category=False)
@@ -194,7 +194,7 @@ class CodingDocumentMigrationTests(unittest.TestCase):
         path = root / "docs/coding-document-migration.json"
         migration = json.loads(path.read_text(encoding="utf-8"))
         migration["document_moves"][0]["from"] = (
-            "references/coding/layer-01-fundamental-concepts/unapproved-owner.md"
+            "docs/skill/references/coding/layer-01-fundamental-concepts/unapproved-owner.md"
         )
         path.write_text(json.dumps(migration), encoding="utf-8")
         self.assertTrue(any("changed owner filename" in e for e in MODULE.validate(root)))

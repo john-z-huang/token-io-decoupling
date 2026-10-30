@@ -4,7 +4,7 @@ title: Token I/O Decoupling
 lang: en-US
 ---
 
-[English](./) | [简体中文]({{ '/zh-cn/' | relative_url }})
+[English](.) | [简体中文]({{ '/zh-cn/' | relative_url }})
 
 # Token I/O Decoupling
 
@@ -30,7 +30,7 @@ Coding Flow covers repository and development tasks:
 - independent final change verification;
 - approved documentation and Git operations.
 
-Start with [`SKILL.md`](../SKILL.md), then follow the Coding references selected for the current stage.
+Start with [`SKILL.md`](skill/SKILL.md), then follow the Coding references selected for the current stage.
 
 ## Multimodal reference material
 
@@ -42,7 +42,7 @@ The repository retains reference material for tasks that consume visual or tempo
 - visual-state verification;
 - a narrow handoff to Coding when repository changes are required.
 
-These references do not define a separately executable route. Start with the [Coding entry](../SKILL.md).
+These references do not define a separately executable route. Start with the [Coding entry](skill/SKILL.md).
 
 ## Responsibilities
 

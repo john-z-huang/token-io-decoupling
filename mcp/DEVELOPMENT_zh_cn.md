@@ -2,7 +2,7 @@
 
 [English](DEVELOPMENT.md) | [简体中文](DEVELOPMENT_zh_cn.md)
 
-本指南负责 Python workspace 的开发、构建产物检查、uv tool 安装与 Codex setup。[架构契约](../ENHANCED_ARCHITECTURE_zh_cn.md#实现包)负责包职责与依赖方向；[Skill 入口](../SKILL_zh_cn.md)及其链接的 owner 仍是工作流权威。
+本指南负责 Python workspace 的开发、构建产物检查、uv tool 安装与 Codex setup。[架构契约](../docs/skill/ENHANCED_ARCHITECTURE_zh_cn.md#实现包)负责包职责与依赖方向；[Skill 入口](../docs/skill/SKILL_zh_cn.md)及其链接的 owner 仍是工作流权威。
 
 MCP Server 面向本地可用的 Codex CLI，包括本地 Work 使用的本地 Codex CLI/app-server 路径。云端 ChatGPT 对话、远端 Work 和其他 Code Agent 不是直接客户端。如果其他 Agent 在自己的环境安装 Codex CLI，并按本仓库说明配置 Server，则仅支持该环境中的本地 Codex CLI 路径；不维护其他 Agent 或云端界面适配器。Server 不增加运行环境选择步骤。遵循[目录指令](AGENTS_zh_cn.md)。固定客户端范围不等于宿主集成已经验证；各操作仍按现有流程检查实际能力、可信身份、守卫和权限。
 
@@ -100,6 +100,22 @@ CLI 默认使用 `PATH` 中的 `codex`；Desktop 默认使用 `/Applications/Cha
 
 普通 pytest 跳过两项，不探测已安装客户端。显式启用后，客户端缺失、权限失败、协议错误或旧能力响应都会使测试失败，不跳过，也不回退到模拟客户端。已有 SDK、Mock 和安装版 stdio 检查继续保持各自较窄的证明范围。运行时检查通过不证明既有客户端会话已经重载更新后的 MCP 安装；该会话仍需单独验证安装和重载。
 
+### Codex SDK 最终查看
+
+官方 Python Codex SDK（`openai-codex`）固定版本放在独立的 `codex-test` 依赖组中，不进入生产依赖或 wheel。遵守仓库的[最终测试边界](../AGENTS_zh_cn.md#codex-sdk-最终测试边界)。在 `mcp/` 安装测试环境并运行有序最终检查：
+
+```sh
+uv sync --locked --managed-python --group dev --group codex-test
+uv run --no-sync python tests/support/final_codex_check.py
+```
+
+协调器先运行完整默认 MCP 测试集、lint、格式检查、类型检查、文档回归、全部文档校验器及空白检查。任一失败都会停止序列。随后构建本次 wheel，在临时 tool/bin 目录中通过 `uv tool` 安装，再通过 SDK 启动全新 Codex CLI，从而测试当前已安装构建，不替换用户的安装。普通 pytest 仅运行使用 fake 的 SDK 策略测试，不能启动最终查看。可选真实 API／客户端测试保留显式开关；在运行协调器前启用适用开关，并报告仍跳过的测试。
+
+每次 SDK 启动都要求并显式复用进程中非空的 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，固定模型为 `gpt-6-luna`、推理强度为 `medium`，并核验实际配置及线程设置。配置缺失或冲突时失败，不回退到已保存登录或其他凭据、端点、模型、推理强度。Key 仅通过子进程环境传递；不得输出凭据值或 SDK 原始诊断，也不得写入认证文件。
+
+适配器选择 `PATH` 中已安装的 `codex`，或 `TOKEN_IO_CODEX_CLI_PATH` 指定的绝对可执行路径，不使用 SDK 自带 CLI。临时 `HOME`／`CODEX_HOME` 隔离配置。全新实例仅加载刚安装的 MCP 命令，通过只读 `command/exec` 执行其 `--version`，发现工具，并调用 `workflow_capabilities` 及双语 `rules_get_context`。禁止模型回合、mutation、任意 Shell 命令及复杂任务。这用于弥补当前会话无法动态重载更新后 MCP Server 的问题，不证明既有会话已重载。CI 安装测试依赖组以执行策略、静态和类型检查，不启动该 SDK 最终查看。
+
+
 ## API 与工具恢复提示
 
 child-effort、decision-context 和 delegation selector 每次调用只发出一个 API 请求；SDK 自动重试已关闭。其结果模型新增可空 `recovery` 提示，无提示时序列化为 `null`。`retry_eligible` 只表示候选；对于明确的瞬时传输、5xx 或已确认限流，`total_attempt_limit` 表示调用方跟踪的每个恢复过程最多三次调用（含首次调用）。服务不跟踪跨调用次数，也不自动重试。调用方在考虑重调前，须复核任务授权、请求 hash、当前 policy 以及任何结果/副作用。
@@ -110,10 +126,64 @@ child-effort、decision-context 和 delegation selector 每次调用只发出一
 
 ## uv tool 安装与 Codex setup
 
-使用[安装脚本](../scripts/install-codex-mcp.sh)，从任意工作目录一次完成包安装或更新及 Codex 配置：
+### 使用 uv tool 安装可执行程序
+
+将源码仓库放在普通开发目录中，不要放进 `~/.agents/skills/`。准备好 `uv` 后，从仓库的 `mcp/` workspace 目录安装根包；使用源码绝对路径即可在任意工作目录执行：
 
 ```sh
-bash /absolute/path/to/skill/scripts/install-codex-mcp.sh
+uv tool install --force --reinstall --managed-python --python 3.14 /absolute/path/to/token-io-decoupling/mcp
+```
+
+uv 会在隔离的工具环境中构建并安装可执行程序及声明的本地 workspace 依赖。`--reinstall` 同时更新依赖、打包的文档快照及入口程序。这一步只安装程序，不注册 MCP Server，也不安装 Skill 指令。若安装已构建的 wheel，请提供根 wheel 以及其余 workspace wheel 所在目录（参见[构建产物检查](#构建规则资源与安装检查)）：
+
+```sh
+uv tool install --force --reinstall --managed-python --python 3.14 --find-links /absolute/path/to/wheels /absolute/path/to/wheels/token_io_decoupling-0.1.0-py3-none-any.whl
+```
+
+文件名中的版本请使用实际构建版本。以下示例假定 uv 工具的 bin 目录已位于 `PATH`。若未加入，可通过 `uv tool dir --bin` 定位并以可执行文件绝对路径调用，无须激活虚拟环境。例如：
+
+```sh
+"$(uv tool dir --bin)/token-io-decoupling" --version
+```
+
+确保 Codex CLI 位于 `PATH` 后，单独注册 MCP profiles：
+
+```sh
+token-io-decoupling setup codex
+```
+
+注册或更新工具后重新加载受影响的 MCP Server。注册会转发必需环境变量的名称，但不提供变量值，也不建立可信宿主绑定。
+
+### 安装与更新本地 Skill 指令
+
+`uv tool` 安装成功后，在任意目录调用已安装的程序：
+
+```sh
+token-io-decoupling skills install
+```
+
+该命令将包内双语 Skill 快照安装到 `~/.agents/skills/token-io-decoupling-skill`，包含 `SKILL.md`、工作流、引用及支持资源。它读取已安装的包，不读取或克隆源码仓库。Skill 名称为 `token-io-decoupling-skill`，请求使用时请采用该名称。若命令不在 `PATH`，此处同样使用可执行文件绝对路径：
+
+```sh
+"$(uv tool dir --bin)/token-io-decoupling" skills install
+```
+
+需要其他名称时，可运行 `skills install --name my-coding-skill`，更新时也传入相同的 `--name my-coding-skill`。名称仅允许小写字母、数字以及分隔它们的连字符。旧名称及目录 `~/.agents/skills/token-io-decoupling` 受到保护：安装会拒绝该名称、安装路径中的符号链接和已有未知目标，绝不覆盖或删除旧项目。`skills install` 也会拒绝已有的受管理安装，应显式更新。
+
+修改源码指令后，先重新执行上面的 `uv tool install --force --reinstall ...`（或安装重新构建的 wheel 集），再更新已安装的 Skill 快照：
+
+```sh
+token-io-decoupling skills update
+```
+
+仅更新可执行程序不会改变此前安装的 Skill。`skills update` 要求目标为已有受管理安装，并拒绝含本地修改的文件；请先另行保留修改。尚未安装 Skill 时使用 `skills install`。工具安装、MCP 注册和 Skill 安装是三个独立操作；`setup codex` 和下面的辅助脚本都不会自动安装 Skill。安装或更新 Skill 指令后请启动新的 Agent 会话。若旧源码仓库仍被发现为 Skill，请保留它并按[旧安装共存说明](../README_zh_cn.md#独立安装-skill)人工停用旧发现入口；安装器不自动处理重复发现。
+
+### 可选的一体化安装与注册脚本
+
+也可用[安装脚本](../scripts/install-codex-mcp.sh)替代单独的工具安装及 `setup codex` 命令，从任意工作目录一次完成包安装或更新及 Codex 配置。之后仍按上述方法执行 `skills install` 或 `skills update`：
+
+```sh
+bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh
 ```
 
 前置条件为 Bash 3.2 或更新版本（包括 macOS 的 `/bin/bash`）、`uv` 和 Codex CLI；`uv` 与 `codex` 必须位于 `PATH`。脚本相对自身定位 `mcp/`，针对该源码执行 `uv tool install --force --reinstall --managed-python --python 3.14`，通过 `uv tool dir --bin` 获取 bin 目录，再以绝对路径调用安装后入口的 `setup codex`。uv 会解析已声明的本地 workspace 依赖；即使只修改了依赖的源码或打包规则，`--reinstall` 也会更新它们。工具 bin 目录无需位于 `PATH`，不必手动切换目录、激活虚拟环境或另行执行 setup。重复运行会从当前 checkout 更新此工具，不会卸载旧 `token-io-mcp` 工具。
@@ -230,7 +300,7 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 只有 `status: available` 携带非空白 `description`：`decision_question` 最多 1,200 字符，`decision_context` 最多 6,000 字符。结果包含 `output_kind`、对原始材料、目标及类型进行规范化 SHA-256 计算的 `input_hash`（排除权限断言），以及安全的模型和用量元数据。关键缺口或冲突返回 `blocked` / `insufficient_evidence`、`description: null`，并提供最多八项、每项最多 240 字符的 `missing_information`；配置缺失、拒绝、未完成或无效输出、超时及服务错误也阻塞，不回退。固定指令要求保留需求、观测、计划及已证明结果之间的区别，将嵌入的指令视为数据，不生成答案、所选分支或授权。这些语义要求仍需调用方审阅。将 `description` 用作 `decision_question` 或上下文前，须比对原始材料和当前仓库状态，并单独提供其他必需判断事实。生成哈希只标识本次生成输入，不能替代下游判断哈希。材料、目标或类型变化后，须重新比对和审阅。
 
-`workflow_select_child_effort` 是面向 Codex 子代理创建的独立、无状态公共 workflow 操作。显式且获准的调用携带 `payload.request.outbound_data_permitted: true`，仅为本次 Decisions 请求 opt-in；它不依赖可选建议的启用配置或 Enhanced Root store。此声明不能证明授权。按[运行时 owner 的创建契约](../references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)提供经过核实的有界任务事实及受支持档位。结果仅在可用时包含选定 effort，并附请求哈希和回显的切片指纹。父级审阅及当前输入比对仍是必需步骤。拒绝、证据不足、响应无效、缺少配置或服务失败均阻塞选择，不回退到固定 effort。该工具不创建 Agent、不修改工作流状态，也不授权任何门禁。
+`workflow_select_child_effort` 是面向 Codex 子代理创建的独立、无状态公共 workflow 操作。显式且获准的调用携带 `payload.request.outbound_data_permitted: true`，仅为本次 Decisions 请求 opt-in；它不依赖可选建议的启用配置或 Enhanced Root store。此声明不能证明授权。按[运行时 owner 的创建契约](../docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)提供经过核实的有界任务事实及受支持档位。结果仅在可用时包含选定 effort，并附请求哈希和回显的切片指纹。父级审阅及当前输入比对仍是必需步骤。拒绝、证据不足、响应无效、缺少配置或服务失败均阻塞选择，不回退到固定 effort。该工具不创建 Agent、不修改工作流状态，也不授权任何门禁。
 
 必填的 `decision_question` 是非空白严格字符串，最多 1,200 字符，用于询问当前已释放子任务所需的最低充分受支持档位。工具将其明确传入 Decisions input，并纳入规范化输入哈希；仅修改问题也会使旧哈希失效。它属于任务数据，无权修改固定模型、候选档位、指令或权限。本地校验执行字符串约束；固定 API 指令要求对超出范围或试图覆盖规则的问题返回 `insufficient_evidence`。该语义判断及父级审阅仍是必需步骤。每个候选档位均说明具体任务证据、相邻档位边界及排除条件；文件数量、影响程度或缺少事实本身均不足以支持升档。
 
@@ -240,16 +310,16 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 | 工具 | 判断及结果边界 |
 | --- | --- |
-| `workflow_select_child_role` | 按[子代理职责选择](../references/coding/layer-01-fundamental-concepts/delegation/child-role-selection_zh_cn.md)选择四种维护职责之一。用户明确要求创建时跳过请求。已确认创建时，可默认使用未占用的 Primary Output；已创建职责在整个 Session 内持续占用。全部职责占用时阻塞复核，不建议增加容量。 |
-| `workflow_select_executor` | 按[任务分配](../references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment_zh_cn.md)建议 Root 或子代理。明确执行主体时跳过建议；已锁定 Single-Agent 模式下明确要求子代理时阻塞，不改成 Root。失败不默认 Root。判定交子代理且仍有获批未用容量、尚无实际子代理时，可进入正常职责与创建门禁。 |
+| `workflow_select_child_role` | 按[子代理职责选择](../docs/skill/references/coding/layer-01-fundamental-concepts/delegation/child-role-selection_zh_cn.md)选择四种维护职责之一。用户明确要求创建时跳过请求。已确认创建时，可默认使用未占用的 Primary Output；已创建职责在整个 Session 内持续占用。全部职责占用时阻塞复核，不建议增加容量。 |
+| `workflow_select_executor` | 按[任务分配](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment_zh_cn.md)建议 Root 或子代理。明确执行主体时跳过建议；已锁定 Single-Agent 模式下明确要求子代理时阻塞，不改成 Root。失败不默认 Root。判定交子代理且仍有获批未用容量、尚无实际子代理时，可进入正常职责与创建门禁。 |
 | `workflow_select_child` | 在合格的当前会话子代理中选择。明确指定或唯一候选可跳过建议；忙碌候选须等待。多个空闲候选调用 Decisions，优先合适的空闲 Primary，否则比较任务相关上下文。失败仅可由合适的 Primary 兜底，仍须检查可用性；排除继承的外部会话子代理。 |
-| `workflow_assess_output_tokens` | 按[Output Token 路由](../references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing_zh_cn.md)独立评估 Root 直接输出。明确执行指令时跳过建议。`no` 允许 Root 通过其他门禁后执行；`yes` 禁止 Root 立即输出，须用适任空闲子代理或挂起等待。有独立授权的创建仍可走正常门禁；输出建议本身不授权创建。 |
+| `workflow_assess_output_tokens` | 按[Output Token 路由](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing_zh_cn.md)独立评估 Root 直接输出。明确执行指令时跳过建议。`no` 允许 Root 通过其他门禁后执行；`yes` 禁止 Root 立即输出，须用适任空闲子代理或挂起等待。有独立授权的创建仍可走正常门禁；输出建议本身不授权创建。 |
 
-获准的 API 请求在每次调用时明确读取非空白的 `OPENAI_API_KEY` 与 `OPENAI_BASE_URL`，只用 `gpt-6-luna`，不自动重试或请求后备模型。工具输入不能覆盖模型或端点。公共[判断背景生成](../references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation_zh_cn.md)操作复用 Responses 生成供审阅的背景；问题生成可选。其指令现来自当前 owner 的通用规范；`source_policy_hash` 标识加载的规则，成功请求期间规则发生变化时以 `stale_policy` 阻止复用。
+获准的 API 请求在每次调用时明确读取非空白的 `OPENAI_API_KEY` 与 `OPENAI_BASE_URL`，只用 `gpt-6-luna`，不自动重试或请求后备模型。工具输入不能覆盖模型或端点。公共[判断背景生成](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation_zh_cn.md)操作复用 Responses 生成供审阅的背景；问题生成可选。其指令现来自当前 owner 的通用规范；`source_policy_hash` 标识加载的规则，成功请求期间规则发生变化时以 `stale_policy` 阻止复用。
 
 选择器通过 `RuleLoader` 加载当前 owner 指令和具体候选描述。结果区分 `available`、`skipped`、`fallback`、`blocked` 和 `stale`，带有请求/背景/事实及来源策略哈希。实际效果前，Root 必须与当前证据重新核对。缺少配置或必要策略时在请求前阻塞；过期规则必须刷新，不能转为兜底。选择器不会创建子代理、派发工作、修改预算或建立可信绑定。这些工具只接收一个已界定任务，不会将指令分解成多个任务。
 
-受保护的 Root `delegation_reserve` 仅在当前未分配容量耗尽后接受可选 `budget_approval`。Root 须通过 `user_approval` 引用用户实际的明确批准，为不同的未占用职责精确申请当前数量加一。原有绑定、guard、revision 和幂等要求继续生效。事务保留旧来源、记录批准、增加一个槽位并预留该职责；重放不能重复增加。已有未分配容量无需扩额。批准绝不允许重复职责或替代子代理，见[委派数量门禁](../references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate_zh_cn.md)。
+受保护的 Root `delegation_reserve` 仅在当前未分配容量耗尽后接受可选 `budget_approval`。Root 须通过 `user_approval` 引用用户实际的明确批准，为不同的未占用职责精确申请当前数量加一。原有绑定、guard、revision 和幂等要求继续生效。事务保留旧来源、记录批准、增加一个槽位并预留该职责；重放不能重复增加。已有未分配容量无需扩额。批准绝不允许重复职责或替代子代理，见[委派数量门禁](../docs/skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate_zh_cn.md)。
 
 创建开始之前，受保护的 Root `delegation_unreserve` 可以取消角色预留，使同一个尚未使用的槽位可以重新规划。它要求明确证明创建尚未开始的证据、当前 revision、幂等键以及原有 Root binding/guard。已绑定或身份不明，以及具有 Slice、派发或 Worker 历史的 allocation 均拒绝撤销。该证据是 Root 声明，不是独立宿主证明。撤销只清除尚未使用的预留，不减少锁定数量，也不释放子代理创建后的角色或身份。再次选择或预留新角色前必须刷新 allocation 事实。
 
@@ -281,6 +351,10 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 规则资源及自定义构建 Hook 由 core 包负责。Canonical 注册表仍为 `mcp/rule-registry.json`；构建产物包含其英文/中文 owner 标题的有界摘录。Core sdist 携带自己的 `rule_sources`，脱离仓库构建时不借用相邻 checkout。默认 `token_io_decoupling_core.rules.RuleLoader` 读取打包快照；源码开发必须明确提供仓库根目录。修改 Markdown 不会更新已安装的 wheel，需要重新构建和安装。
 
+规则加载会在返回文本及计算上下文或策略哈希之前去除首尾空白，保留正文内部空白。因此，当注册表和规则内容相同时，即使资源文件带有末尾换行，源码与打包加载器的结果仍一致。这修正了旧安装包将打包空白计入哈希的行为。升级后应重新读取当前规则上下文和策略哈希，重新评估受影响的过期结果；不要改写历史记录或复用升级前缓存的哈希。
+
+本地 Skill 目录与 MCP 工具环境是独立快照。`skills install/update` 仅写入选定的 `~/.agents/skills/` 安装，不修改 MCP 可执行程序、打包规则或 Codex 注册项。MCP 不导入已安装 Skill 或其 `_project/` 支持附件。`rules_get_context.owner_path` 标识 `docs/skill/` 下的 canonical 仓库源文件，不应拼接到本地 Skill 目录来定位文件。`_project/` 中的清单及 CI 文件仅为参考副本，不是 Server 的实际配置。要让指令与 Server 规则同步，应重新安装同一构建版本的工具、执行 `skills update`、重新加载 MCP Server 并启动新的 Agent 会话；分别更新可能使不同快照同时生效。
+
 构建还打包 `child-role-selection`、`task-assignment`、`output-token-routing`、`session-role-ownership` 和 `decision-context-generation` 的英中通用规范。这些是固定允许列表中的策略资源，不新增 Core 检查点 ID。`tests/unit_tests/test_build_artifacts.py` 验证脱离仓库的 sdist 到 wheel 构建，并通过打包的 `RuleLoader` 加载这些策略及核对内容哈希。
 
 已发布迁移文件属于 state 包，保持原始字节不变，因为数据库历史记录了源码校验和。state loader 为两个 v1 文件所需的历史导入 `token_io_mcp.models.DatabaseKind` 临时提供模块别名，并在导入后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 adapter migration 路径。命名空间迁移不授权改写历史、校验规则或 schema 版本。测试同时覆盖旧历史与升级，以及新建数据库。
@@ -293,7 +367,7 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 ## Native 恢复开发检查
 
-[Native 权威转交](../references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer_zh_cn.md)和 [Native 对账](../references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation_zh_cn.md) owner 定义工作流边界。以下检查验证已实现的服务用例，不证明完整导出或宿主停写能力。
+[Native 权威转交](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer_zh_cn.md)和 [Native 对账](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation_zh_cn.md) owner 定义工作流边界。以下检查验证已实现的服务用例，不证明完整导出或宿主停写能力。
 
 恢复开发使用临时数据库和合成绑定。状态服务的定向用例覆盖完整集合的显式裁定、比较历史保留、恢复 Revision/Epoch 新鲜度、尚未完成的补证请求及派发副作用阻断，也覆盖精确确认不掩盖旧冲突、恢复后首个 Slice 前的新鲜 Control、已确认派发的无副作用重放，以及超限旧快照的有界回读。迁移测试区分有证明的旧确认配对与格式错误或 Revision 不相邻的记录。从 `mcp/` 先运行定向用例，再执行完整套件：
 

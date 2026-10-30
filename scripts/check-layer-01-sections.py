@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 
 
-LAYER_01 = Path("references/coding/layer-01-fundamental-concepts")
+LAYER_01 = Path("docs/skill/references/coding/layer-01-fundamental-concepts")
 HEADINGS = {
     "en": (
         "General rules",

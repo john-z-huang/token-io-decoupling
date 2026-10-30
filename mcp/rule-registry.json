@@ -3,7 +3,7 @@
   "nodes": [
     {
       "node_id": "contract",
-      "owner_path": "references/coding/layer-02-workflow-concepts/entry-and-context/contract.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/entry-and-context/contract.md",
       "owner_section": "Actions",
       "required_facts": [
         "task objective",
@@ -27,14 +27,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/entry-and-context/contract_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/entry-and-context/contract_zh_cn.md",
           "section": "动作"
         }
       }
     },
     {
       "node_id": "mode",
-      "owner_path": "references/coding/layer-02-workflow-concepts/entry-and-context/mode.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/entry-and-context/mode.md",
       "owner_section": "Actions",
       "required_facts": [
         "valid mode decision",
@@ -56,14 +56,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/entry-and-context/mode_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/entry-and-context/mode_zh_cn.md",
           "section": "动作"
         }
       }
     },
     {
       "node_id": "context",
-      "owner_path": "references/coding/layer-02-workflow-concepts/entry-and-context/context.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/entry-and-context/context.md",
       "owner_section": "Actions",
       "required_facts": [
         "needed project context",
@@ -86,14 +86,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/entry-and-context/context_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/entry-and-context/context_zh_cn.md",
           "section": "动作"
         }
       }
     },
     {
       "node_id": "decision",
-      "owner_path": "references/coding/layer-02-workflow-concepts/decision-and-execution/decision.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/decision-and-execution/decision.md",
       "owner_section": "Actions",
       "required_facts": [
         "decision question",
@@ -115,14 +115,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/decision-and-execution/decision_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/decision-and-execution/decision_zh_cn.md",
           "section": "动作"
         }
       }
     },
     {
       "node_id": "slice",
-      "owner_path": "references/coding/layer-01-fundamental-concepts/execution-control/execution-control.md",
+      "owner_path": "docs/skill/references/coding/layer-01-fundamental-concepts/execution-control/execution-control.md",
       "owner_section": "Interaction Slice",
       "required_facts": [
         "objective",
@@ -146,14 +146,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-01-fundamental-concepts/execution-control/execution-control_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-01-fundamental-concepts/execution-control/execution-control_zh_cn.md",
           "section": "Interaction Slice"
         }
       }
     },
     {
       "node_id": "delegation",
-      "owner_path": "references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record.md",
+      "owner_path": "docs/skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record.md",
       "owner_section": "Record shape",
       "required_facts": [
         "locked mode/count",
@@ -178,14 +178,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record_zh_cn.md",
           "section": "记录结构"
         }
       }
     },
     {
       "node_id": "implementation",
-      "owner_path": "references/coding/layer-02-workflow-concepts/decision-and-execution/implementation.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/decision-and-execution/implementation.md",
       "owner_section": "Actions",
       "required_facts": [
         "released objective",
@@ -208,14 +208,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/decision-and-execution/implementation_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/decision-and-execution/implementation_zh_cn.md",
           "section": "动作"
         }
       }
     },
     {
       "node_id": "control",
-      "owner_path": "references/coding/layer-01-fundamental-concepts/execution-control/execution-control.md",
+      "owner_path": "docs/skill/references/coding/layer-01-fundamental-concepts/execution-control/execution-control.md",
       "owner_section": "Control Checkpoint",
       "required_facts": [
         "Progress Signal",
@@ -241,14 +241,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-01-fundamental-concepts/execution-control/execution-control_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-01-fundamental-concepts/execution-control/execution-control_zh_cn.md",
           "section": "Control Checkpoint"
         }
       }
     },
     {
       "node_id": "verification",
-      "owner_path": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification.md",
       "owner_section": "Actions",
       "required_facts": [
         "current implementation/content epoch",
@@ -273,14 +273,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification_zh_cn.md",
           "section": "动作"
         }
       }
     },
     {
       "node_id": "repair",
-      "owner_path": "references/coding/layer-02-workflow-concepts/verification-and-repair/repair.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/repair.md",
       "owner_section": "Actions",
       "required_facts": [
         "classified failure",
@@ -304,14 +304,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/verification-and-repair/repair_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/repair_zh_cn.md",
           "section": "动作"
         }
       }
     },
     {
       "node_id": "documentation",
-      "owner_path": "references/coding/layer-02-workflow-concepts/completion-and-effects/documentation.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/completion-and-effects/documentation.md",
       "owner_section": "Actions",
       "required_facts": [
         "documentation scope",
@@ -334,14 +334,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/completion-and-effects/documentation_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/completion-and-effects/documentation_zh_cn.md",
           "section": "动作"
         }
       }
     },
     {
       "node_id": "git",
-      "owner_path": "references/coding/layer-02-workflow-concepts/completion-and-effects/git.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/completion-and-effects/git.md",
       "owner_section": "Actions",
       "required_facts": [
         "authorized Git effects",
@@ -364,14 +364,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/completion-and-effects/git_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/completion-and-effects/git_zh_cn.md",
           "section": "动作"
         }
       }
     },
     {
       "node_id": "acceptance",
-      "owner_path": "references/coding/layer-02-workflow-concepts/completion-and-effects/acceptance.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/completion-and-effects/acceptance.md",
       "owner_section": "Actions",
       "required_facts": [
         "all applicable checkpoint outcomes",
@@ -391,14 +391,14 @@
       "next_checkpoint_ids": [],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/completion-and-effects/acceptance_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/completion-and-effects/acceptance_zh_cn.md",
           "section": "动作"
         }
       }
     },
     {
       "node_id": "task_intent",
-      "owner_path": "SKILL.md",
+      "owner_path": "docs/skill/SKILL.md",
       "owner_section": "Scope",
       "required_facts": [
         "user-requested outcome",
@@ -419,14 +419,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "SKILL_zh_cn.md",
+          "path": "docs/skill/SKILL_zh_cn.md",
           "section": "适用范围"
         }
       }
     },
     {
       "node_id": "output_class",
-      "owner_path": "references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation.md",
+      "owner_path": "docs/skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation.md",
       "owner_section": "Session mode selection",
       "required_facts": [
         "requested output class",
@@ -451,14 +451,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md",
           "section": "会话模式选择"
         }
       }
     },
     {
       "node_id": "contract_change",
-      "owner_path": "references/coding/layer-02-workflow-concepts/entry-and-context/contract.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/entry-and-context/contract.md",
       "owner_section": "Actions",
       "required_facts": [
         "proposed change to objective, scope, constraints, or acceptance"
@@ -480,14 +480,14 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/entry-and-context/contract_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/entry-and-context/contract_zh_cn.md",
           "section": "动作"
         }
       }
     },
     {
       "node_id": "verification_impact",
-      "owner_path": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.md",
+      "owner_path": "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.md",
       "owner_section": "Actions",
       "required_facts": [
         "changed state dimensions",
@@ -513,7 +513,7 @@
       ],
       "owner_mirrors": {
         "zh_cn": {
-          "path": "references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch_zh_cn.md",
+          "path": "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch_zh_cn.md",
           "section": "动作"
         }
       }

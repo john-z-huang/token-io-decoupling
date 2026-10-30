@@ -16,20 +16,20 @@ FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
 
 PAIR_ROOTS = [
     Path("README.md"),
-    Path("SKILL.md"),
+    Path("docs/skill/SKILL.md"),
     Path("AGENTS.md"),
     Path("MULTI_LINGUAL.md"),
-    Path("workflows/coding.md"),
-    Path("ENHANCED_ARCHITECTURE.md"),
+    Path("docs/skill/workflows/coding.md"),
+    Path("docs/skill/ENHANCED_ARCHITECTURE.md"),
     Path("EXTERNAL_REFERENCES.md"),
     Path("mcp/DEVELOPMENT.md"),
 ]
 
 CORE_DOCS = [
-    PurePosixPath("references/share/shared-protocols.md"),
-    PurePosixPath("references/coding/layer-01-fundamental-concepts/session-runtime/session-model.md"),
-    PurePosixPath("references/coding/layer-01-fundamental-concepts/execution-control/execution-control.md"),
-    PurePosixPath("references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange.md"),
+    PurePosixPath("docs/skill/references/share/shared-protocols.md"),
+    PurePosixPath("docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/session-model.md"),
+    PurePosixPath("docs/skill/references/coding/layer-01-fundamental-concepts/execution-control/execution-control.md"),
+    PurePosixPath("docs/skill/references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange.md"),
 ]
 
 LOCALE_DIRECTORY_PAIRS = [
@@ -76,15 +76,15 @@ def main(root: Path | None = None) -> int:
         if "sed: --: No such file or directory" in text:
             errors.append(f"stray shell-error text: {markdown.relative_to(root)}")
 
-    skill_text = (root / "SKILL.md").read_text(encoding="utf-8")
+    skill_text = (root / "docs/skill/SKILL.md").read_text(encoding="utf-8")
     if not skill_text.startswith("---\n"):
-        errors.append("SKILL.md must start with YAML front matter")
+        errors.append("docs/skill/SKILL.md must start with YAML front matter")
 
     english_docs = [PurePosixPath(p.as_posix()) for p in PAIR_ROOTS]
     english_docs += [
         PurePosixPath(p.relative_to(root).as_posix())
         for p in markdown_files
-        if p.is_relative_to(root / "references")
+        if p.is_relative_to(root / "docs/skill/references")
         if not p.name.endswith(ZH_SUFFIX)
     ]
 
@@ -100,7 +100,7 @@ def main(root: Path | None = None) -> int:
     for chinese_path in [p for p in markdown_files if p.name.endswith(ZH_SUFFIX)]:
         chinese = PurePosixPath(chinese_path.relative_to(root).as_posix())
         english = en_peer(chinese)
-        is_reference = bool(chinese.parts) and chinese.parts[0] == "references"
+        is_reference = bool(chinese.parts) and chinese.parts[:3] == ("docs", "skill", "references")
         if (is_reference or chinese.name in paired_root_zh) and not (root / english).exists():
             errors.append(f"missing English canonical file: {english} for {chinese}")
 
@@ -150,23 +150,23 @@ def main(root: Path | None = None) -> int:
     if "MULTI_LINGUAL_zh_cn.md" not in agents_zh:
         errors.append("AGENTS_zh_cn.md must reference MULTI_LINGUAL_zh_cn.md")
 
-    skill = (root / "SKILL.md").read_text(encoding="utf-8")
+    skill = (root / "docs/skill/SKILL.md").read_text(encoding="utf-8")
     if "references/" in skill and re.search(r"references/[^)\s`]*_zh_cn\.md", skill):
-        errors.append("SKILL.md must not reference _zh_cn references")
+        errors.append("docs/skill/SKILL.md must not reference _zh_cn references")
 
-    skill_zh = (root / "SKILL_zh_cn.md").read_text(encoding="utf-8")
+    skill_zh = (root / "docs/skill/SKILL_zh_cn.md").read_text(encoding="utf-8")
     for match in re.findall(r"references/[^)\s`]+\.md", skill_zh):
         if not match.endswith(ZH_SUFFIX):
-            errors.append(f"SKILL_zh_cn.md references an English file: {match}")
+            errors.append(f"docs/skill/SKILL_zh_cn.md references an English file: {match}")
 
-    openai_yaml = (root / "agents/openai.yaml").read_text(encoding="utf-8")
+    openai_yaml = (root / "docs/skill/agents/openai.yaml").read_text(encoding="utf-8")
     short_description = re.search(
         r'^\s*short_description:\s*["\'](.+)["\']\s*$', openai_yaml, re.MULTILINE
     )
     if not short_description:
-        errors.append("agents/openai.yaml is missing short_description")
+        errors.append("docs/skill/agents/openai.yaml is missing short_description")
     elif " | " not in short_description.group(1):
-        errors.append("agents/openai.yaml short_description must use 'English | 中文' format")
+        errors.append("docs/skill/agents/openai.yaml short_description must use 'English | 中文' format")
 
     if errors:
         print("Multilingual documentation validation failed:", file=sys.stderr)

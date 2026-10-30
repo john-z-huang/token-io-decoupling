@@ -21,13 +21,13 @@ class WorkflowCheckpointConsumptionTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
-        for rel in ("references/coding/layer-03-workflow-checkpoints",
-                    "references/coding/layer-04-workflows/modules", "workflows"):
+        for rel in ("docs/skill/references/coding/layer-03-workflow-checkpoints",
+                    "docs/skill/references/coding/layer-04-workflows/modules", "docs/skill/workflows"):
             shutil.copytree(ROOT / rel, self.root / rel)
         self.original = (MODULE.ROOT, MODULE.L3, MODULE.MODULES)
         MODULE.ROOT = self.root
-        MODULE.L3 = self.root / "references/coding/layer-03-workflow-checkpoints"
-        MODULE.MODULES = self.root / "references/coding/layer-04-workflows/modules"
+        MODULE.L3 = self.root / "docs/skill/references/coding/layer-03-workflow-checkpoints"
+        MODULE.MODULES = self.root / "docs/skill/references/coding/layer-04-workflows/modules"
 
     def tearDown(self):
         MODULE.ROOT, MODULE.L3, MODULE.MODULES = self.original
@@ -87,7 +87,7 @@ class WorkflowCheckpointConsumptionTests(unittest.TestCase):
         self.assertEqual(MODULE.main(), 1)
 
     def test_route_entry_requires_real_selector_link_in_entry_step(self):
-        path = self.root / "workflows/coding.md"
+        path = self.root / "docs/skill/workflows/coding.md"
         text = path.read_text(encoding="utf-8").replace(
             "[Route Entry](../references/coding/layer-03-workflow-checkpoints/route-entry.md)",
             "Route Entry", 1)
@@ -104,7 +104,7 @@ class WorkflowCheckpointConsumptionTests(unittest.TestCase):
         self.assertEqual(MODULE.main(), 1)
 
     def test_inline_code_route_entry_link_does_not_count(self):
-        path = self.root / "workflows/coding.md"
+        path = self.root / "docs/skill/workflows/coding.md"
         text = path.read_text(encoding="utf-8")
         link = "[Route Entry](../references/coding/layer-03-workflow-checkpoints/route-entry.md)"
         self.assertIn(link, text)

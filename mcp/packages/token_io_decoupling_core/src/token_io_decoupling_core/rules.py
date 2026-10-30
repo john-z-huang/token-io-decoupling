@@ -71,6 +71,10 @@ class RuleLoader:
         else:
             owner_text = self._read_repository_owner(owner_path, owner_section)
 
+        # Hash the same canonical text returned by RuleContext, for either source.
+        owner_text = owner_text.strip()
+        if not owner_text:
+            raise RuleLoadError("owner text is empty")
         node_shape = node.model_dump(exclude={"resource_paths"}, mode="json")
         bound_context = json.dumps(
             {"node": node_shape, "language": selected_language, "owner_text": owner_text},
@@ -120,7 +124,8 @@ class RuleLoader:
                 )
             except OSError as exc:
                 raise RuleLoadError("missing packaged delegation policy") from exc
-        if not text.strip() or len(text) > 18000:
+        text = text.strip()
+        if not text or len(text) > 18000:
             raise RuleLoadError("delegation policy is empty or exceeds its budget")
         return text, hashlib.sha256(text.encode("utf-8")).hexdigest()
 

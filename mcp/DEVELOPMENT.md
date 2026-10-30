@@ -2,7 +2,7 @@
 
 [English](DEVELOPMENT.md) | [简体中文](DEVELOPMENT_zh_cn.md)
 
-This guide owns development, artifact checks, uv tool installation, and Codex setup for the Python workspace. The [architecture contract](../ENHANCED_ARCHITECTURE.md#implementation-packages) owns package responsibilities and dependency direction; the [Skill entry](../SKILL.md) and its linked owners remain the workflow authority.
+This guide owns development, artifact checks, uv tool installation, and Codex setup for the Python workspace. The [architecture contract](../docs/skill/ENHANCED_ARCHITECTURE.md#implementation-packages) owns package responsibilities and dependency direction; the [Skill entry](../docs/skill/SKILL.md) and its linked owners remain the workflow authority.
 
 The MCP Server targets a locally available Codex CLI, including the local Codex CLI/app-server path used by local Work. Cloud ChatGPT conversations, remote Work, and other Code Agents are not direct clients. If another Agent runs in its own environment with Codex CLI installed and configures the server by following this repository's instructions, only that environment's local Codex CLI path is supported; no other Agent or cloud-surface adapter is maintained. The server does not add a runtime-environment selection step. Follow the [directory instructions](AGENTS.md). This fixed client scope does not establish a verified host integration; actual capabilities, trusted identity, guards, and permissions remain checked by the existing operations.
 
@@ -100,6 +100,22 @@ Each case starts a separate real app-server with a process-local `mcp_servers` o
 
 Ordinary pytest skips both cases without probing installed clients. Explicit opt-in makes missing clients, permission failures, protocol errors, or old capability responses fail rather than skip or fall back to a fake. Existing SDK, Mock, and installed-stdio checks retain their narrower scope. A passing runtime check does not prove an existing client session has reloaded an updated MCP installation; that session still needs its own installation/reload verification.
 
+### Codex SDK final inspection
+
+The official Python Codex SDK (`openai-codex`) is pinned in the separate `codex-test` dependency group and excluded from production dependencies and wheels. Follow the repository's [final-test boundary](../AGENTS.md#codex-sdk-final-test-boundary). From `mcp/`, install the test environment and run the ordered final check:
+
+```sh
+uv sync --locked --managed-python --group dev --group codex-test
+uv run --no-sync python tests/support/final_codex_check.py
+```
+
+The coordinator first runs the complete default MCP test suite, lint, formatting, type checks, documentation regressions, all documentation validators, and whitespace checks. Any failure stops the sequence. It then builds the current wheels and installs them with `uv tool` in temporary tool/bin directories before launching a new Codex CLI via SDK. This tests the current installed build without replacing the user's installation. Ordinary pytest runs only fake-based SDK policy tests; it cannot start the final inspection. Optional real-API/client tests retain their explicit opt-ins; enable any applicable opt-ins before running the coordinator, and report remaining skips.
+
+Every SDK launch requires and explicitly reuses nonblank process `OPENAI_API_KEY` and `OPENAI_BASE_URL`, fixes model `gpt-6-luna` and reasoning effort `medium`, and verifies effective configuration and thread settings. Missing or conflicting settings fail, with no saved-login, credential, endpoint, model, or effort fallback. The key travels only through the child environment; credential values and raw SDK diagnostics are never printed or persisted in auth files.
+
+The adapter selects the installed `codex` on `PATH`, or the absolute executable specified by `TOKEN_IO_CODEX_CLI_PATH`, instead of the SDK's bundled CLI. Temporary `HOME`/`CODEX_HOME` isolates configuration. The fresh instance loads only the newly installed MCP command, runs its `--version` through read-only `command/exec`, discovers tools, and calls `workflow_capabilities` plus bilingual `rules_get_context`. It performs no model turn, mutation, arbitrary shell command, or complex task. This compensates for the current session's inability to dynamically reload the updated MCP Server; it does not prove that an existing session has reloaded it. CI installs the test dependency group for policy, static, and type checks without launching this final SDK inspection.
+
+
 ## API and tool recovery guidance
 
 The child-effort, decision-context, and delegation selectors make one API request per invocation; the SDK has automatic retries disabled. Their result models add nullable `recovery` guidance, serialized as `null` when no guidance is present. `retry_eligible` is only a candidate signal; for explicit transient transport, 5xx, or confirmed rate-limit failures, `total_attempt_limit` is 3 calls per caller-tracked recovery process, including the first call. The server does not track attempts or retry automatically. Callers recheck task authorization, request hashes, current policy, and any result/effect before optionally invoking again.
@@ -110,10 +126,64 @@ Authentication, authorization, configuration, quota, unknown errors, refusal, ma
 
 ## uv tool installation and Codex setup
 
-Use the [installation script](../scripts/install-codex-mcp.sh) to install or update the package and configure Codex in one invocation, from any working directory:
+### Install the executable with uv tool
+
+Keep the source checkout in a normal development directory, outside `~/.agents/skills/`. With `uv` available, install the root package from its `mcp/` workspace directory; the absolute source path allows this command to run from any working directory:
 
 ```sh
-bash /absolute/path/to/skill/scripts/install-codex-mcp.sh
+uv tool install --force --reinstall --managed-python --python 3.14 /absolute/path/to/token-io-decoupling/mcp
+```
+
+uv builds and installs the executable and its declared local workspace dependencies in an isolated tool environment. `--reinstall` refreshes dependencies and bundled document snapshots as well as the launcher. This step installs the program; it does not register MCP servers or install Skill instructions. To install a built wheel instead, supply the root wheel and the directory containing the other workspace wheels (see [artifact checks](#build-rule-resources-and-installed-checks)):
+
+```sh
+uv tool install --force --reinstall --managed-python --python 3.14 --find-links /absolute/path/to/wheels /absolute/path/to/wheels/token_io_decoupling-0.1.0-py3-none-any.whl
+```
+
+Use the actual artifact version in the filename. Subsequent examples assume uv's tool bin directory is on `PATH`. If it is not, locate it with `uv tool dir --bin` and invoke the executable by its absolute path; no virtual-environment activation is needed. For example:
+
+```sh
+"$(uv tool dir --bin)/token-io-decoupling" --version
+```
+
+With the Codex CLI available on `PATH`, register the MCP profiles separately:
+
+```sh
+token-io-decoupling setup codex
+```
+
+Reload the affected MCP servers after registration or tool updates. Registration forwards the required environment-variable names but does not supply their values or establish a trusted host binding.
+
+### Install and update local Skill instructions
+
+After the `uv tool` installation succeeds, run the installed program from any directory:
+
+```sh
+token-io-decoupling skills install
+```
+
+This installs the packaged bilingual Skill snapshot to `~/.agents/skills/token-io-decoupling-skill`, including `SKILL.md`, workflows, references, and supporting resources. It reads the installed package, without reading or cloning the source checkout. The Skill's name is `token-io-decoupling-skill`; use that name when requesting it. If the command is not on `PATH`, use the absolute executable path here too:
+
+```sh
+"$(uv tool dir --bin)/token-io-decoupling" skills install
+```
+
+For another name, use `skills install --name my-coding-skill`, then use the same `--name my-coding-skill` with updates. Names must use lower-case letters/numbers separated by hyphens. The old name and directory `~/.agents/skills/token-io-decoupling` are protected: installation refuses that name, symlink installation paths, and existing unknown destinations. It never overwrites or deletes the old project. `skills install` also refuses an existing managed installation; update it explicitly instead.
+
+After changing source instructions, repeat the `uv tool install --force --reinstall ...` command above (or install the rebuilt wheel set), then update the installed Skill snapshot:
+
+```sh
+token-io-decoupling skills update
+```
+
+Updating only the executable leaves the previously installed Skill unchanged. `skills update` requires an existing managed installation and refuses locally modified files; preserve your edits separately before updating. If no Skill is installed yet, use `skills install`. Tool installation, MCP registration, and Skill installation are separate operations; neither `setup codex` nor the helper script below installs the Skill automatically. Start a fresh Agent session after installing or updating Skill instructions. If an old checkout is still discovered as a Skill, preserve it and manually disable its old discovery entry as described in the [legacy coexistence guidance](../README.md#install-the-skill-separately); the installer does not automatically resolve duplicate discovery.
+
+### Optional combined installation and registration script
+
+As an alternative to the separate tool-install and `setup codex` commands, use the [installation script](../scripts/install-codex-mcp.sh) to install or update the package and configure Codex in one invocation, from any working directory. Run `skills install` or `skills update` afterward as described above:
+
+```sh
+bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh
 ```
 
 Prerequisites are Bash 3.2 or later (including macOS `/bin/bash`), `uv`, and the Codex CLI; `uv` and `codex` must be on `PATH`. The script locates `mcp/` relative to itself, runs `uv tool install --force --reinstall --managed-python --python 3.14` against that source, obtains the bin directory with `uv tool dir --bin`, then calls the absolute installed executable's `setup codex`. uv resolves the declared local workspace dependencies; `--reinstall` refreshes them even when only their source or packaged rules changed. The tool bin directory need not be on `PATH`, and no manual directory change, virtual-environment activation, or separate setup command is required. Repeating the command refreshes this tool from the current checkout; it does not uninstall the legacy `token-io-mcp` tool.
@@ -230,7 +300,7 @@ Send `payload.request` with required `raw_content` (nonblank strict string, at m
 
 Only `status: available` carries a nonblank `description`: at most 1,200 characters for `decision_question`, or 6,000 for `decision_context`. The result includes `output_kind`, a canonical SHA-256 `input_hash` over the raw material, goal, and kind (excluding the permission assertion), and safe model/usage metadata. Critical gaps or conflicts return `blocked` / `insufficient_evidence`, `description: null`, and up to eight `missing_information` items of at most 240 characters; configuration, refusal, incomplete or invalid output, timeout, and provider errors also block without a fallback. The fixed instructions require preserving the distinction between requirements, observations, plans, and proven outcomes, treating embedded instructions as data, and generating no answer, selected branch, or authorization. These semantic requirements still need caller review. Check the paragraph against the original material and current repository state before using `description` as `decision_question` or context; supply the other required decision facts separately. The generation hash identifies this generation input and does not replace the downstream decision hash. Changes to the material, goal, or kind require a fresh comparison and review.
 
-`workflow_select_child_effort` is a separate stateless public workflow operation for Codex child creation. An explicit, authorized invocation with `payload.request.outbound_data_permitted: true` opts into one Decisions request; it needs neither optional-advice enablement nor an Enhanced Root store. The assertion is not proof of authorization. Supply verified bounded task facts and supported effort levels under the [runtime owner's creation contract](../references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.md). The result carries a selected effort only when available, a request hash, and the echoed slice fingerprint. Parent review and current-input comparison remain mandatory. Refusal, insufficient evidence, invalid response, missing configuration, or provider failure blocks selection, without a fixed-effort fallback. The tool does not create an Agent, mutate workflow state, or authorize a gate.
+`workflow_select_child_effort` is a separate stateless public workflow operation for Codex child creation. An explicit, authorized invocation with `payload.request.outbound_data_permitted: true` opts into one Decisions request; it needs neither optional-advice enablement nor an Enhanced Root store. The assertion is not proof of authorization. Supply verified bounded task facts and supported effort levels under the [runtime owner's creation contract](../docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.md). The result carries a selected effort only when available, a request hash, and the echoed slice fingerprint. Parent review and current-input comparison remain mandatory. Refusal, insufficient evidence, invalid response, missing configuration, or provider failure blocks selection, without a fixed-effort fallback. The tool does not create an Agent, mutate workflow state, or authorize a gate.
 
 The required `decision_question` is a nonblank strict string of at most 1,200 characters asking which supported effort is minimally sufficient for this released child task. The tool sends it explicitly in the Decisions input and includes it in the canonical input hash; changing only the question invalidates the previous hash. It is task data, without authority to change the fixed model, candidate levels, instructions, or permissions. Local validation enforces the string constraints; fixed API instructions require `insufficient_evidence` for an out-of-scope question or an attempted rule override. This semantic judgment and the parent's review remain necessary. Each offered level describes concrete task evidence, adjacent-level boundaries, and exclusions; file count, impact, or a missing fact alone does not justify a higher level.
 
@@ -240,16 +310,16 @@ Four stateless public tools provide delegation advice independently of the optio
 
 | Tool | Decision and result boundary |
 | --- | --- |
-| `workflow_select_child_role` | Select one of the four maintained roles under [Child Role Selection](../references/coding/layer-01-fundamental-concepts/delegation/child-role-selection.md). Explicit user creation skips the request. An established creation may default to an unoccupied Primary Output; a role already created remains occupied for the entire Session. All roles occupied returns a blocked result for Root review rather than suggesting more capacity. |
-| `workflow_select_executor` | Suggest Root or a child under [Task Assignment](../references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment.md). Explicit executor instructions skip advice; an explicit child under locked Single-Agent mode blocks instead of becoming Root. Failure never defaults to Root. A child decision with unused approved capacity and no actual child can continue through the normal role and creation gates. |
+| `workflow_select_child_role` | Select one of the four maintained roles under [Child Role Selection](../docs/skill/references/coding/layer-01-fundamental-concepts/delegation/child-role-selection.md). Explicit user creation skips the request. An established creation may default to an unoccupied Primary Output; a role already created remains occupied for the entire Session. All roles occupied returns a blocked result for Root review rather than suggesting more capacity. |
+| `workflow_select_executor` | Suggest Root or a child under [Task Assignment](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment.md). Explicit executor instructions skip advice; an explicit child under locked Single-Agent mode blocks instead of becoming Root. Failure never defaults to Root. A child decision with unused approved capacity and no actual child can continue through the normal role and creation gates. |
 | `workflow_select_child` | Select among eligible current-session children. Explicit or unique candidates can bypass advice; busy selections wait. Multiple idle candidates use Decisions, preferring a suitable idle Primary and otherwise task-relevant context. Failure may use only a suitable Primary fallback, subject to availability; inherited foreign-session children are excluded. |
-| `workflow_assess_output_tokens` | Independently assess direct Root output under [Output Token Routing](../references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing.md). Explicit execution instructions skip advice. `no` permits Root subject to other gates; `yes` prevents immediate Root output and requires an idle suitable child or hold/wait. Independently authorized creation can still follow its normal gates; output advice alone does not authorize it. |
+| `workflow_assess_output_tokens` | Independently assess direct Root output under [Output Token Routing](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing.md). Explicit execution instructions skip advice. `no` permits Root subject to other gates; `yes` prevents immediate Root output and requires an idle suitable child or hold/wait. Independently authorized creation can still follow its normal gates; output advice alone does not authorize it. |
 
-Permitted API calls explicitly read both nonblank `OPENAI_API_KEY` and `OPENAI_BASE_URL` at invocation time, use exactly `gpt-6-luna`, and make no automatic retries or fallback-model requests. Tool inputs cannot override the model or endpoint. The common [Decision Context Generation](../references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation.md) operation reuses Responses for the reviewed background; generating a question is optional. Its instructions now come from that current owner's General rules. Its `source_policy_hash` identifies the loaded rules, and a change during a successful request blocks reuse with `stale_policy`.
+Permitted API calls explicitly read both nonblank `OPENAI_API_KEY` and `OPENAI_BASE_URL` at invocation time, use exactly `gpt-6-luna`, and make no automatic retries or fallback-model requests. Tool inputs cannot override the model or endpoint. The common [Decision Context Generation](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation.md) operation reuses Responses for the reviewed background; generating a question is optional. Its instructions now come from that current owner's General rules. Its `source_policy_hash` identifies the loaded rules, and a change during a successful request blocks reuse with `stale_policy`.
 
 The selectors load their current owner instructions and concrete choice descriptions through `RuleLoader`. Results distinguish `available`, `skipped`, `fallback`, `blocked`, and `stale`, with request/context/fact and source-policy hashes. Root must recheck them against current evidence before any effect. Missing configuration or required policy blocks before a request; stale rules require refresh rather than fallback. No selector creates a child, dispatches work, changes a budget, or establishes trusted binding. These tools accept one already bounded task; they do not decompose an instruction into multiple tasks.
 
-The protected Root `delegation_reserve` accepts optional `budget_approval` only after current unassigned capacity is exhausted. Root must reference actual explicit user approval through `user_approval` and request exactly the current count plus one for a different unoccupied role. Existing binding, guards, revision, and idempotency requirements still apply. The transaction retains the prior source, records the approval, adds one slot, and reserves that role atomically; replay cannot add it twice. Existing unassigned capacity needs no increase. Approval never permits a repeated role or replacement child; see [Delegation Count Gate](../references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.md).
+The protected Root `delegation_reserve` accepts optional `budget_approval` only after current unassigned capacity is exhausted. Root must reference actual explicit user approval through `user_approval` and request exactly the current count plus one for a different unoccupied role. Existing binding, guards, revision, and idempotency requirements still apply. The transaction retains the prior source, records the approval, adds one slot, and reserves that role atomically; replay cannot add it twice. Existing unassigned capacity needs no increase. Approval never permits a repeated role or replacement child; see [Delegation Count Gate](../docs/skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.md).
 
 Before creation begins, protected Root `delegation_unreserve` can cancel a role reservation so that the same unused slot can be planned again. It requires explicit evidence that creation has not started, current revision and idempotency, and the existing Root binding/guards. It rejects bound or ambiguous identities and any allocation with Slice, dispatch or Worker history. The evidence is a Root attestation, not independent host proof. Cancellation clears only the unused reservation: it neither reduces the locked count nor releases a role or identity after child creation. Refresh allocation facts before selecting or reserving a new role.
 
@@ -281,6 +351,10 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 The core package owns rule resources and its custom build hook. The canonical registry remains `mcp/rule-registry.json`; build output contains bounded excerpts from its English/Chinese owner headings. Core sdists carry their own `rule_sources`, so a detached build does not borrow a neighboring checkout. The default `token_io_decoupling_core.rules.RuleLoader` reads packaged snapshots; source development must explicitly supply the repository root. Editing Markdown does not update an installed wheel: rebuild and reinstall it.
 
+Rule loading trims leading/trailing whitespace before returning text and calculating context or policy hashes; internal whitespace is preserved. Source and packaged loaders therefore agree for the same registry and rule content even when a text resource has a final newline. This corrects older package hashes that included packaging whitespace. After upgrading, read current rule contexts and policy hashes again and re-evaluate affected stale results; do not rewrite historical records or reuse cached pre-upgrade hashes.
+
+The local Skill directory and the MCP tool environment are separate snapshots. `skills install/update` writes only the selected `~/.agents/skills/` installation; it does not change the MCP executable, packaged rules, or Codex registrations. The MCP does not import the installed Skill or its `_project/` supporting attachments. `rules_get_context.owner_path` identifies the canonical repository source under `docs/skill/`, not a path to resolve against the local Skill directory. `_project/` manifests and CI files are reference copies, not live server configuration. To keep instructions and server rules aligned, reinstall the same tool build, run `skills update`, reload the MCP servers, and start a fresh Agent session; separate updates can otherwise leave different snapshots active.
+
 The build also packages General rules in both languages for `child-role-selection`, `task-assignment`, `output-token-routing`, `session-role-ownership`, and `decision-context-generation`. These are fixed allowlisted policy resources, not additional Core checkpoint IDs. `tests/unit_tests/test_build_artifacts.py` verifies a detached sdist-to-wheel build and loads these policies through the packaged `RuleLoader`, including their content hashes.
 
 Released migration files belong to the state package and remain byte-for-byte unchanged because database history records source checksums. The state loader temporarily supplies the historical `token_io_mcp.models.DatabaseKind` import required by the two v1 files; it removes the alias after importing them. Directly importing frozen state migration modules bypasses this scoped loader and is unsupported; use the renamed adapter migration path for direct imports. Namespace relocation does not authorize rewriting history, checksum verification, or schema versions. Tests cover legacy history and upgrades as well as fresh databases.
@@ -293,7 +367,7 @@ The [documentation workflow](../.github/workflows/multilingual-docs.yml) retains
 
 ## Native recovery development checks
 
-The [Native Authority Transfer](../references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer.md) and [Native Reconciliation](../references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation.md) owners define the workflow boundaries. The checks below verify the implemented service cases; they do not establish a full export or host-stop capability.
+The [Native Authority Transfer](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer.md) and [Native Reconciliation](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation.md) owners define the workflow boundaries. The checks below verify the implemented service cases; they do not establish a full export or host-stop capability.
 
 Use temporary databases and synthetic bindings for recovery development. The focused state-service cases exercise explicit full-set adjudication, preserved comparison history, recovery Revision/Epoch freshness, outstanding evidence requests, and blocked dispatch side effects. They also cover exact confirmation without hiding older conflicts, fresh Control before the first post-recovery Slice, effect-free confirmed dispatch replay, and bounded readback of oversized legacy snapshots. Migration tests distinguish proven legacy confirmation pairs from malformed or nonadjacent records. Run them from `mcp/` before the complete suite:
 

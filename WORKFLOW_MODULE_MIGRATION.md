@@ -10,14 +10,14 @@ The machine-readable old-step, semantic substep, owner-chain, and new-checkpoint
 
 | Route checkpoint | Module | Route-owned responsibility |
 | --- | --- | --- |
-| SM01 / MM01 | [Entry Readiness](references/coding/layer-04-workflows/modules/entry-readiness.md) | Confirm released Contract, Environment/capability, and mode evidence. |
-| SM02 / MM02 | [Session Readiness](references/coding/layer-04-workflows/modules/session-readiness.md) | Complete canonical state/readback, then audit; Multi-Agent also confirms capacity. |
-| SM03 / MM03 | [Work Definition](references/coding/layer-04-workflows/modules/work-definition.md) | Current context, decision, planning; Multi-Agent Bootstrap and role/executor decisions belong to its execution module. |
-| SM04 | [Single-Agent Execution](references/coding/layer-04-workflows/modules/single-execution.md) | Single-Agent executor, bounded Slice, implementation, feedback, and Control. |
-| MM04 | [Delegated Execution](references/coding/layer-04-workflows/modules/delegated-execution.md) | Multi-Agent shared Slice gate, conditional role-bound child lifecycle, implementation/result, and Control. |
-| SM05 / MM05 | [Verification and Repair](references/coding/layer-04-workflows/modules/verification-repair.md) | Current-state verification; repair and changed-epoch loop. |
-| SM06 / MM06 | [Documentation](references/coding/layer-04-workflows/modules/documentation.md) | Applicable documentation/Memory output, readback, impact, checks, and return to Verification when required. |
-| SM07 / MM07 | [Delivery and Acceptance](references/coding/layer-04-workflows/modules/delivery-acceptance.md) | Authorized Git effect, criterion mapping, and conditional plan archive after passing Acceptance. |
+| SM01 / MM01 | [Entry Readiness](docs/skill/references/coding/layer-04-workflows/modules/entry-readiness.md) | Confirm released Contract, Environment/capability, and mode evidence. |
+| SM02 / MM02 | [Session Readiness](docs/skill/references/coding/layer-04-workflows/modules/session-readiness.md) | Complete canonical state/readback, then audit; Multi-Agent also confirms capacity. |
+| SM03 / MM03 | [Work Definition](docs/skill/references/coding/layer-04-workflows/modules/work-definition.md) | Current context, decision, planning; Multi-Agent Bootstrap and role/executor decisions belong to its execution module. |
+| SM04 | [Single-Agent Execution](docs/skill/references/coding/layer-04-workflows/modules/single-execution.md) | Single-Agent executor, bounded Slice, implementation, feedback, and Control. |
+| MM04 | [Delegated Execution](docs/skill/references/coding/layer-04-workflows/modules/delegated-execution.md) | Multi-Agent shared Slice gate, conditional role-bound child lifecycle, implementation/result, and Control. |
+| SM05 / MM05 | [Verification and Repair](docs/skill/references/coding/layer-04-workflows/modules/verification-repair.md) | Current-state verification; repair and changed-epoch loop. |
+| SM06 / MM06 | [Documentation](docs/skill/references/coding/layer-04-workflows/modules/documentation.md) | Applicable documentation/Memory output, readback, impact, checks, and return to Verification when required. |
+| SM07 / MM07 | [Delivery and Acceptance](docs/skill/references/coding/layer-04-workflows/modules/delivery-acceptance.md) | Authorized Git effect, criterion mapping, and conditional plan archive after passing Acceptance. |
 
 Modules are independently enterable when their declared work and effects are covered by existing user authorization and their entry declarations are satisfied; no separate module-name authorization is required. The complete route still requires all route prerequisites and acceptance. A suspended module returns its exact owner and continuation position; the route resumes there without replaying completed effects. State, effect, or epoch changes route only to the affected checkpoint. Modules do not invoke sibling modules.
 

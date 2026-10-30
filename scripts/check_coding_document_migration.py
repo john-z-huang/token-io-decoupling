@@ -17,8 +17,8 @@ MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 # Issue #164 broadens this owner from opt-in planning to the default task plan.
 # Keep the exact bilingual migration explicit; unrelated moves retain basename checks.
 OWNER_RENAMES = {
-    f"references/coding/layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle{suffix}.md":
-    f"references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle{suffix}.md"
+    f"docs/skill/references/coding/layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle{suffix}.md":
+    f"docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle{suffix}.md"
     for suffix in ("", "_zh_cn")
 }
 
@@ -122,10 +122,10 @@ def validate(root: Path) -> list[str]:
         if not _is_safe_relative(old) or not _is_safe_relative(new):
             errors.append(f"unsafe migration mapping: {old} -> {new}")
             continue
-        old_layer = old_path.parts[2] if len(old_path.parts) > 2 else None
-        if len(old_path.parts) != 4 or old_path.parts[:2] != ("references", "coding") or old_layer not in LAYERS:
+        old_layer = old_path.parts[4] if len(old_path.parts) > 4 else None
+        if len(old_path.parts) != 6 or old_path.parts[:4] != ("docs", "skill", "references", "coding") or old_layer not in LAYERS:
             errors.append(f"migration source is not a former Layer-01/02 root owner: {old}")
-        if new_path.parts[:3] != ("references", "coding", old_layer) or len(new_path.parts) < 5:
+        if new_path.parts[:5] != ("docs", "skill", "references", "coding", old_layer) or len(new_path.parts) < 7:
             errors.append(f"migration target is not nested under the same layer: {old} -> {new}")
         if (old_path.name != new_path.name and OWNER_RENAMES.get(old) != new) or old_path.suffix != ".md":
             errors.append(f"migration changed owner filename: {old} -> {new}")
@@ -137,7 +137,7 @@ def validate(root: Path) -> list[str]:
             errors.append(f"old owner path still exists: {old}")
 
     for layer in LAYERS:
-        base = root / "references" / "coding" / layer
+        base = root / "docs/skill/references" / "coding" / layer
         if not base.is_dir():
             errors.append(f"layer directory missing: {base.relative_to(root)}")
             continue

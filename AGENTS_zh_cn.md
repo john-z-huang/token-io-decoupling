@@ -10,6 +10,14 @@
 
 其他 Code Agent 可以不使用本项目的 MCP Server，通过纯文档方式使用 Skill。持续更新文档，在支持 Codex CLI 的同时维护对其他 Code Agent 兼容的指令描述；文档兼容不扩大 MCP Server 的开发范围或客户端支持。
 
+## Codex SDK 最终测试边界
+
+- Codex SDK 仅允许用于测试。`openai-codex` 必须放在独立测试依赖组中，禁止用于生产代码、MCP 工具、实现工作或通用 Agent 调度。
+- 必须先完成其他所有适用测试和必需检查。仅在全部通过后，构建本次改动并通过 `uv tool` 安装或更新工具，再通过 Codex SDK 启动一个配置为加载该已安装 MCP Server 的**全新 Codex CLI 实例**。禁止复用既有实例或假设它会动态重载 MCP 更新。
+- 该实例仅用于弥补当前会话无法动态加载更新后 MCP Server 的问题，只允许简单的只读查看：可执行程序版本、MCP 工具发现、能力查看及有界规则查询。禁止复杂任务、代码或文档修改、调试或规划任务、委派、mutation、任意 Shell 命令以及模型回合。
+- 必须显式复用进程中非空的 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，固定模型为 `gpt-6-luna`、推理强度为 `medium`，并核验实际生效设置。禁止替换凭据、端点、已保存登录、模型或推理强度；不得输出或持久化凭据值。隔离测试配置，不修改用户现有 Codex 配置。
+- 使用 [MCP 开发指南](mcp/DEVELOPMENT_zh_cn.md)中的有序最终检查入口。前置条件、安装或查看失败时，停止该序列并报告失败阶段；禁止绕过门禁或扩大新实例的任务范围。
+
 ## 禁止的操作与绝对禁止 Computer Use 的规则
 
 本节是**整个仓库强制执行的约束**，适用于本 Skill 的每次执行、所有运行环境、父 Agent、子 Agent、已委派任务、恢复分支及工具适配层。
@@ -78,7 +86,7 @@
 
 ## Codex 与 Claude Code 工具双向对应
 
-每个概念的厂商特调和工具对应关系放在该 Layer-01 owner 的对应厂商章节。跨概念的运行环境识别和模型/effort 绑定统一维护在[运行环境与模型厂商支持](references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)及其英文镜像中；其他 owner 引用这些绑定，不重复其控制规则。每次依据 Codex 源码中的工具或指令调整本 Skill，必须检查 Claude Code 当前官方文档或实际暴露的运行时控制中是否有对应能力。每次针对 Claude Code 特调，也必须反向检查 Codex 的对应能力。完成双向核对前，不得把任一运行环境的行为当作共用能力。
+每个概念的厂商特调和工具对应关系放在该 Layer-01 owner 的对应厂商章节。跨概念的运行环境识别和模型/effort 绑定统一维护在[运行环境与模型厂商支持](docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)及其英文镜像中；其他 owner 引用这些绑定，不重复其控制规则。每次依据 Codex 源码中的工具或指令调整本 Skill，必须检查 Claude Code 当前官方文档或实际暴露的运行时控制中是否有对应能力。每次针对 Claude Code 特调，也必须反向检查 Codex 的对应能力。完成双向核对前，不得把任一运行环境的行为当作共用能力。
 
 每次此类改动都按以下顺序在双语镜像中完成：
 
