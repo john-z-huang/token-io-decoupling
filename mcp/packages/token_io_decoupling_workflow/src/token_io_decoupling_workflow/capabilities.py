@@ -30,7 +30,12 @@ def capability_report(
     diagnose_binding: Callable[[BindingProvider], dict[str, str]],
     task_plan_service: TaskPlanService | None = None,
 ) -> dict[str, Any]:
-    """Read binding evidence once without mutating state, inspecting paths, or calling an API."""
+    """Read binding evidence and task-plan diagnostics without state mutation or API calls.
+
+    An absent task-plan service causes no Git or Memory-path probe. A configured global plan
+    service may perform a bounded local Git identity check and verify its already-bound Serena
+    root; it never creates or initializes Memory paths here.
+    """
     binding = diagnose_binding(provider)
     adapters = {
         name: {"identity_attestation": "unavailable", "guard_binding": "unavailable"}
@@ -58,7 +63,10 @@ def capability_report(
             "status": "unavailable",
             "reason_code": "task_plan_backend_not_configured",
             "project_root": None,
+            "storage_scope": None,
+            "repository_id": None,
             "namespace": None,
+            "archive_namespace": None,
         }
     )
     # Never serialize provider attributes: even transport labels can contain secrets or raise.
@@ -119,8 +127,10 @@ def capability_report(
                     task_plan_details.get("status", "unavailable"),
                     task_plan_details.get("reason_code", "task_plan_backend_unavailable"),
                     "Plan tools use only an explicitly injected Serena "
-                    "MemoryManager-backed service; no path or config is "
-                    "probed here.",
+                    "MemoryManager-backed service. Without a configured service, "
+                    "no Git or Memory path is probed. A configured global store "
+                    "revalidates its local Git identity and existing global root "
+                    "without creating paths.",
                     "server.task_plan_service",
                     "Use an explicitly configured trusted task-plan "
                     "factory or keep plan tools unavailable.",

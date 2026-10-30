@@ -23,7 +23,7 @@ flowchart TD
     WD02["WD02 在 Contract 范围内决策"]
     WD03["WD03 解决默认共享任务计划"]
     D_PLAN{"明确禁止持久化？"}
-    WD_PLAN["持久化并读回共享任务计划"]
+    WD_PLAN["持久化并读回共享任务计划；核验仓库存储范围"]
     WD_DONE["complete"]
     WD_CONTEXT_NA["not_applicable：可选 Context 来源不存在"]
     WD_ADVICE_NA["not_applicable：建议不存在或不符合条件"]
@@ -62,7 +62,7 @@ flowchart TD
 3. **WD02 — 在 Contract 范围内决策。** 应用[Decision](../../layer-02-workflow-concepts/decision-and-execution/decision_zh_cn.md)、[执行决策门禁](../../layer-01-fundamental-concepts/execution-planning/execution-decision-gate_zh_cn.md)和[执行规划](../../layer-01-fundamental-concepts/execution-planning/execution-planning_zh_cn.md)。说明实质问题、已核实事实、未知项、选项、所选方向、拒绝的替代方案、授权范围/效果、返回条件和未释放边界。对于仍开放的实质选择，准备必需的 Decision Brief，且只释放侦察；确认 Contract 允许所选方向后再进入后续释放。Session 实质恢复后，仅在调用方要求时于此重评当前 Decision/Contract 证据；不得重开 Mode 或重复已完成的审计提问。
    - 建议是可选的。仅当已有授权的当前 Root Session 存在，且 Decision 阶段符合资格、已启用并且相关时，应用[建议选择](../../layer-03-workflow-checkpoints/advisory-selection_zh_cn.md)和[Decisions Advisory](../../layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md)。否则依赖直接 owner 并将建议记录为带原因的 `not_applicable`。根据当前直接 owner 证据和 hash 审查任何建议；建议不会选择或授权工作。
    - 执行者选择和输出路由不属于本模块范围，仍由之后另行授权的执行路径处理。
-4. **WD03 — 解决默认共享任务计划。** 调用[规划输出选择](../../layer-03-workflow-checkpoints/planning-output-selection_zh_cn.md)，应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)。无论有无 Issue 或明确规划请求，均综合当前事实与拟议方案，持久化具体计划，并在实施或依赖派发前读回。返回准确项目/计划身份、允许贡献及读回证据。仅已记录的明确持久化限制允许使用 owner 的例外；与明确持久化要求冲突、必需访问缺失或写入/读回失败时阻塞。需求变化先记录，再分析并持久化修订提议，然后才处理受影响工作。只有当前事实、符合 Contract 的 Decision/未释放边界，以及已核验计划证据或有依据的限制例外齐备时，才返回 `complete`。这不释放 Slice、不选择执行者，也不授权实施；必需模块不能整体跳过为 `not_applicable`。
+4. **WD03 — 解决默认共享任务计划。** 调用[规划输出选择](../../layer-03-workflow-checkpoints/planning-output-selection_zh_cn.md)，应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)。无论有无 Issue 或明确规划请求，均综合当前事实与拟议方案，持久化具体计划，并在实施或依赖派发前读回。确认所选存储范围、仓库身份和对应活动/归档命名空间；共享存储中，同仓库各工作区复用规划，其他仓库保持隔离。按生命周期 owner 解析映射；映射未知或冲突时阻塞，不静默回退。返回准确项目/计划身份、存储映射、允许贡献及读回证据。仅已记录的明确持久化限制允许使用 owner 的例外；与明确持久化要求冲突、必需访问缺失或写入/读回失败时阻塞。需求变化先记录，再分析并持久化修订提议，然后才处理受影响工作。只有当前事实、符合 Contract 的 Decision/未释放边界，以及已核验计划证据或有依据的限制例外齐备时，才返回 `complete`。这不释放 Slice、不选择执行者，也不授权实施；必需模块不能整体跳过为 `not_applicable`。
 
 ## 相关概念
 

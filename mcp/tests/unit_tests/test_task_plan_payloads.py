@@ -53,6 +53,20 @@ def test_update_requires_revision_field_and_rejects_full_document_replacement() 
         )
 
 
+@pytest.mark.parametrize("untrusted_field", ["repository_id", "storage_scope"])
+def test_update_cannot_select_global_repository_scope(untrusted_field: str) -> None:
+    request = {
+        "project_root": "/tmp/project-one",
+        "plan_id": "plan-one",
+        "expected_revision": None,
+        "request_id": "op-1",
+        "records": [_record()],
+        untrusted_field: "git-v1-" + "a" * 64 if untrusted_field == "repository_id" else "global",
+    }
+    with pytest.raises(ValidationError):
+        TaskPlanUpdatePayload.model_validate({"request": request})
+
+
 def test_completion_schema_requires_sha_passed_evidence_and_results() -> None:
     payload = {
         "request": {

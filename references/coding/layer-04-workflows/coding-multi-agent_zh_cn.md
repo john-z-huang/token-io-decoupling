@@ -10,7 +10,7 @@
 flowchart TD
     MM01["MM01 入口就绪"]
     MM02["MM02 Session 就绪"]
-    MM03["MM03 默认共享计划；工作定义：Context、Decision、plan、advice、未释放边界"]
+    MM03["MM03 默认共享计划；仓库存储范围；工作定义：Context、Decision、plan、advice、未释放边界"]
     MM04["MM04 Bootstrap/任务授权、执行者/输出/角色、Slice、委派执行"]
     MM05["MM05 验证与修复"]
     MM06["MM06 文档"]
@@ -68,7 +68,7 @@ flowchart TD
 
 1. **MM01 — 入口就绪。** 使用当前 Contract、Environment、能力清单、已释放 Multi-Agent Mode、正数锁定数量及授权路线证据，调用[入口就绪模块](modules/entry-readiness_zh_cn.md)。仅在入口证据当前且一致时继续。缺失前置交语义 owner 并保留 MM01；冲突或状态不安全时阻塞。
 2. **MM02 — Session 就绪。** 调用[Session 就绪模块](modules/session-readiness_zh_cn.md)，确认规范 authority/state、审计及适用的容量读回。恢复改变事实时，遵循模块要求的规范读回先于审计顺序；不得重开 Mode 或重复已完成提问。仅在 Session、审计和 allocation 证据当前时继续；`needs_prerequisite` 时保留暂停位置，authority 或读回失败未解决时阻塞。
-3. **MM03 — 工作定义。** 调用[工作定义模块](modules/work-definition_zh_cn.md)，解决来源明确的 Context、Decision、规划输出、适用 advice 和未释放边界。仅在来源事实以及符合 Contract 的 Decision/plan 当前有效时继续。缺失事实/决定交语义 owner 后恢复 MM03。该模块不授权实际委派任务、不预留角色、不释放 Slice、不创建或派发子代理。 执行前要求该模块返回默认共享计划身份/读回或有记录的持久化限制例外。必需计划证据缺失时阻塞；无需额外规划请求。
+3. **MM03 — 工作定义。** 调用[工作定义模块](modules/work-definition_zh_cn.md)，解决来源明确的 Context、Decision、规划输出、适用 advice 和未释放边界。仅在来源事实以及符合 Contract 的 Decision/plan 当前有效时继续。缺失事实/决定交语义 owner 后恢复 MM03。该模块不授权实际委派任务、不预留角色、不释放 Slice、不创建或派发子代理。 执行前要求该模块返回默认共享计划身份/读回或有记录的持久化限制例外。必需计划证据缺失时阻塞；无需额外规划请求。 验证所选仓库存储范围及对应活动/归档命名空间；共享存储时，同仓库各工作区指向同一规划，其他仓库保持隔离。映射未知或冲突时返回规划 owner，不得静默回退另一存储范围。
 4. **MM04 — 委派执行。** 带上 MM01–MM03 证据及 continuation/effect 状态，调用[委派执行模块](modules/delegated-execution_zh_cn.md)。DE01–DE04 负责 Bootstrap 评估、实际任务授权、执行者/输出决策、条件角色预留以及创建/派发前共用的恢复/Slice 门禁。后续检查点负责条件子代理创建/派发、显式 Worker memo 处置、实施/结果及 Control。仅在当前实施/结果和初步证据齐备时继续。恢复既有 bundle 时保留已记录效果和 memo 值；新 bundle 在 DE04 明确 memo 值。保留等待子代理、Control 和下一 Slice 的位置；不得重放创建或派发。 携带共享计划身份和当前证据；模块在依赖工作/汇报前检查访问并更新，包括需求修订。
 5. **MM05 — 验证与修复。** 针对准确当前指纹和验收条件调用[验证与修复模块](modules/verification-repair_zh_cn.md)。只有 Contract 要求独立验证且当前独立性证据确认可用时，才完成独立验证；Worker 结果仅是实施证据。必需验证者证据待补时暂停依赖效果；若无法取得获授权的独立验证者，则阻塞这些效果。同 Session 逻辑检查不可替代。仅当必需检查在当前 epoch 通过且没有待修复项时继续。修复经交接返回当前 Verification；Contract/Decision 语义变化交调用方。实施、文档或 Git metadata 维度改变后不得使用过期证据。
 6. **MM06 — 文档。** 带上当前 Verification、Contract 和写前指纹，调用[文档模块](modules/documentation_zh_cn.md)。该模块判断适用输出，输出适用时要求授权/来源/路径，处理请求 Memory 的读回、影响分类和检查。仅在当前文档结果齐备时继续。内容/Contract/验收变化需要重验时返回 MM05；受影响 epoch 通过后，恢复挂起的 MM06 子步骤，完成当前影响分类和文档检查后再进入 MM07。

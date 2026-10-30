@@ -53,8 +53,11 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "cause cannot be determined safely. Legacy top-level fields remain summaries: non-embedded",
         "enhanced_binding stays unverified; binding_transport stays unavailable",
         "even after a valid probe.",
-        "At most one provider read; no state/path inspection, mutation, or API request. Probes",
-        "may use the host channel. No credentials, identity values, or raw errors are returned.",
+        "At most one provider read; no adapter-state inspection, mutation, or API request. Probes",
+        "may use the host channel. An absent task-plan service triggers no Git or Memory-path",
+        "probe. A configured global plan service may revalidate its local Git common-dir identity",
+        "and already-bound global root without creating paths. No credential or identity values,",
+        "or raw errors are returned.",
         "On missing provider, guard failure, denial, or probe failure, inspect reason_code",
         "and next_step; use Native until corrected. A known transport or verified",
         "baseline does not verify caller metadata or operation-specific guards, enable Enhanced,",
@@ -62,7 +65,9 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     ),
     "task_plan_update": _description(
         "Append structured records to one task plan in the configured Serena Memory namespace.",
-        "Payload: request.project_root (absolute path and exact configured project match),",
+        "The trusted task-plan factory binds storage_scope to project (default) or global; callers",
+        "cannot choose storage_scope or repository_id in a request. Payload: request.project_root",
+        "(absolute path and exact configured checkout match),",
         "plan_id (lower-case slug), expected_revision (current SHA-256, or JSON null only when",
         "creating an absent plan), request_id (stable operation ID), and records (1-100 immutable",
         "record_id/kind/text/sources entries). Kinds include goal, criterion, verification,",
@@ -76,6 +81,10 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "history,",
         "uses a POSIX advisory lock, expected SHA, atomic same-directory write,",
         "and exact readback.",
+        "Project scope retains its v1 history. Global scope maps to",
+        "global/token-io-decoupling/repos/<repository_id>/plans/PLAN-<plan_id>; repository_id is",
+        "derived locally from the verified Git common directory, and shared history uses v2.",
+        "The receipt project_root remains the current checkout.",
         "Requires trusted operator startup configuration (--task-plan-factory MODULE:CALLABLE);",
         "default is unavailable with no path/config/import side effects.",
         "Makes no model/API request.",
@@ -87,7 +96,9 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     ),
     "task_plan_complete": _description(
         "Append final results and limitations and mark one task plan completed.",
-        "Payload: request.project_root (absolute path and exact configured project match),",
+        "The trusted task-plan factory binds storage_scope to project (default) or global; callers",
+        "cannot choose storage_scope or repository_id in a request. Payload: request.project_root",
+        "(absolute path and exact configured checkout match),",
         "plan_id,",
         "expected_revision (current SHA-256), request_id (stable operation ID), criterion_evidence",
         "(exactly one mapping per active criterion to an active verification record), and 1-100",
@@ -98,6 +109,8 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "replays without another write. The receipt is compact and reports",
         "revision/readback state;",
         "it does not assert that caller-supplied evidence is semantically true or sufficient.",
+        "Global scope shares v2 history by a repository_id derived locally from the verified Git",
+        "common directory; the receipt project_root remains the current checkout.",
         "Requires the explicit trusted task-plan factory and configured Serena MemoryManager; the",
         "default is unavailable. Uses no model/API request. Raw Serena writes can bypass its lock.",
         "Conflicts, invalid evidence/history/policy/path, and uncertain writes",
@@ -105,14 +118,21 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     ),
     "task_plan_archive": _description(
         "Move one completed task plan to its fixed archive namespace without overwriting.",
-        "Payload: request.project_root (absolute path and exact configured project match),",
+        "The trusted task-plan factory binds storage_scope to project (default) or global; callers",
+        "cannot choose storage_scope or repository_id in a request. Payload: request.project_root",
+        "(absolute path and exact configured checkout match),",
         "plan_id,",
-        "and expected_revision (SHA-256 of the completed plan). The tool maps plans/PLAN-<id> to",
-        "archive-plans/PLAN-<id>; callers cannot choose source or destination. It adds no event or",
+        "and expected_revision (SHA-256 of the completed plan). In project scope, the tool maps",
+        "plans/PLAN-<id> to archive-plans/PLAN-<id>; in global scope, both names are fixed inside",
+        "the configured repository namespace. Callers cannot choose source or destination. It adds",
+        "no event or",
         "request ID. A POSIX advisory lock and atomic no-clobber hard link precede source removal;",
         "existing destinations are never modified. A source-absent replay succeeds only when the",
         "archived bytes match the expected revision and the full completed",
         "history/identity parses.",
+        "Global scope maps the archive to",
+        "global/token-io-decoupling/repos/<repository_id>/archive-plans/PLAN-<id> with the same",
+        "locally derived identity as its active plan.",
         "Returns a compact scoped receipt. Requires trusted operator startup configuration;",
         "default is unavailable and makes no model/API request.",
         "Raw Serena writers can bypass the lock.",
@@ -608,8 +628,12 @@ SERVER_INSTRUCTIONS: dict[str, str] = {
         "Task-plan writes require an explicitly injected TaskPlanService; the CLI loads trusted "
         "operator code only when --task-plan-factory MODULE:CALLABLE is supplied. No factory means "
         "task-plan tools return unavailable without probing paths, loading config, or importing "
-        "Serena. The factory is never loaded from a tool payload or capability request. Each plan "
-        "request must name the configured project_root exactly. These operations make no model/API "
+        "Serena. A configured task-plan capability diagnostic may revalidate a global store's "
+        "local Git identity and existing global root without creating paths. The factory is never "
+        "loaded from a tool payload or capability request. Each plan request must name the "
+        "configured project_root exactly. Inspect task-plan storage_scope, repository_id, and "
+        "namespace before "
+        "use. These operations make no model/API "
         "request; raw Serena write paths may bypass their cooperative lock. "
         "Start with workflow_capabilities and rules_get_context; "
         "call workflow_generate_decision_context only with caller-composed, provenance-labeled "

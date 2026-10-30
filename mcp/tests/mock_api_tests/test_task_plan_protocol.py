@@ -25,7 +25,10 @@ class _ProtocolStore(SerenaMemoryStore):
             "status": "configured",
             "reason_code": "test_protocol_store",
             "project_root": self.project_root,
+            "storage_scope": "project",
+            "repository_id": None,
             "namespace": "plans/PLAN-<plan_id>",
+            "archive_namespace": "archive-plans/PLAN-<plan_id>",
         }
 
     @contextmanager
@@ -116,6 +119,7 @@ def test_task_plan_tools_negotiate_schema_default_and_configured_protocol(tmp_pa
                 "request_id",
                 "records",
             }
+            assert set(request_schema["properties"]) == set(request_schema["required"])
             unavailable = _receipt(
                 await client.call_tool(
                     "task_plan_update",
@@ -134,6 +138,8 @@ def test_task_plan_tools_negotiate_schema_default_and_configured_protocol(tmp_pa
             )
             assert unavailable["status"] == "unavailable"
             assert unavailable["reason"] == "task_plan_backend_not_configured"
+            assert unavailable["storage_scope"] is None
+            assert unavailable["repository_id"] is None
 
         store = _ProtocolStore(project_root)
         configured_server = create_server(task_plan_service=TaskPlanService(store))
@@ -160,6 +166,8 @@ def test_task_plan_tools_negotiate_schema_default_and_configured_protocol(tmp_pa
             assert update["status"] == "updated"
             assert update["project_root"] == project_root
             assert update["memory_name"] == "plans/PLAN-protocol-plan"
+            assert update["storage_scope"] == "project"
+            assert update["repository_id"] is None
             revision = update["current_revision"]
 
             completed = _receipt(
@@ -204,6 +212,8 @@ def test_task_plan_tools_negotiate_schema_default_and_configured_protocol(tmp_pa
             )
             assert archived["status"] == "archived"
             assert archived["memory_name"] == "archive-plans/PLAN-protocol-plan"
+            assert archived["storage_scope"] == "project"
+            assert archived["repository_id"] is None
             assert store.plans == {}
             assert "protocol-plan" in store.archives
 
