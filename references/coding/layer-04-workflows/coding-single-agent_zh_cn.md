@@ -10,7 +10,7 @@
 flowchart TD
     SM01["SM01 入口就绪"]
     SM02["SM02 Session 就绪"]
-    SM03["SM03 默认共享计划；工作定义"]
+    SM03["SM03 默认共享计划；仓库存储范围；工作定义"]
     SM04["SM04 Single-Agent 执行"]
     SM05["SM05 验证与修复"]
     SM06["SM06 文档"]
@@ -69,7 +69,7 @@ flowchart TD
 
 1. **SM01 — 入口就绪。** 使用当前 Contract、Environment、能力清单、已释放的 Single-Agent Mode 和授权路线证据，调用[入口就绪模块](modules/entry-readiness_zh_cn.md)。仅在入口证据当前且一致时继续。将缺失前置送回语义对应 owner 并保留 SM01；冲突或状态不安全时阻塞。
 2. **SM02 — Session 就绪。** 调用[Session 就绪模块](modules/session-readiness_zh_cn.md)，确认规范 authority/state，并在消费审计结果前完成读回。仅在 Session 和审计证据当前时继续。恢复若改变事实，遵循模块内重核/读回顺序，不重开 Mode 或重复已完成的提问；`needs_prerequisite` 时保留暂停位置，authority 或读回问题未解决时阻塞。
-3. **SM03 — 工作定义。** 调用[工作定义模块](modules/work-definition_zh_cn.md)，解决当前 Context、Decision、规划输出及有界授权工作。仅在来源事实、已接受决定和未释放边界当前时继续。缺失事实/决定交其 owner 处理并恢复 SM03；授权或 Contract 实质变化时交调用方审查路线。 执行前要求该模块返回默认共享计划身份/读回或有记录的持久化限制例外。必需计划证据缺失时阻塞；无需额外规划请求。
+3. **SM03 — 工作定义。** 调用[工作定义模块](modules/work-definition_zh_cn.md)，解决当前 Context、Decision、规划输出及有界授权工作。仅在来源事实、已接受决定和未释放边界当前时继续。缺失事实/决定交其 owner 处理并恢复 SM03；授权或 Contract 实质变化时交调用方审查路线。 执行前要求该模块返回默认共享计划身份/读回或有记录的持久化限制例外。必需计划证据缺失时阻塞；无需额外规划请求。 验证所选仓库存储范围及对应活动/归档命名空间；共享存储时，同仓库各工作区指向同一规划，其他仓库保持隔离。映射未知或冲突时返回规划 owner，不得静默回退另一存储范围。
 4. **SM04 — Single-Agent 执行。** 带上 SM01–SM03 证据及 continuation/effect 状态，调用[Single-Agent 执行模块](modules/single-execution_zh_cn.md)。仅在当前实施结果和初步证据齐备时继续。该模块负责执行者/输出解析、Slice 释放、实施、阶段反馈和 Control，不能创建或派发子代理。证据请求、修订或下一 Slice 时保留 Control continuation 和恢复位置。 携带共享计划身份和当前证据；模块在依赖工作/汇报前检查访问并更新，包括需求修订。
 5. **SM05 — 验证与修复。** 针对准确当前指纹和验收条件调用[验证与修复模块](modules/verification-repair_zh_cn.md)。只有 Contract 要求独立验证且当前独立性证据确认可用时，才完成所需独立验证。同 Session 逻辑检查不可替代。必需验证者证据待补时暂停依赖效果；若无法取得获授权的独立验证者，则阻塞这些效果。仅当所有必需检查在当前 epoch 通过且没有待修复项时继续。修复通过交接返回当前 Verification；语义 Contract/Decision 变化交调用方。实施、文档或 Git metadata 维度变化后不得接受过期证据。
 6. **SM06 — 文档。** 带上当前 Verification、Contract 和写前指纹，调用[文档模块](modules/documentation_zh_cn.md)。该模块判断哪些输出适用，要求相应授权/来源/路径，完成请求的 Memory 读回、影响分类和检查。仅在当前文档结果齐备时继续。内容/Contract/验收变化需要重验时返回 SM05；受影响 epoch 通过后，恢复挂起的 SM06 子步骤，完成当前影响分类和文档检查后再进入 SM07。

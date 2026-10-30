@@ -6,6 +6,8 @@
 
 | 来源 | URL | 对应文档 | 开发用途与边界 |
 | --- | --- | --- | --- |
+| Git canonical 共同目录 | https://git-scm.com/docs/git-rev-parse | [任务计划生命周期](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)、[任务计划工具](mcp/TASK_PLAN_TOOLS_zh_cn.md) | 核对用于带版本本机仓库 key 的绝对 checkout/共同目录解析；不得从 worktree basename、分支、remote URL 或 HEAD 派生。 |
+| Git linked-worktree 仓库布局 | https://git-scm.com/docs/gitrepository-layout | [任务计划生命周期](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)、[任务计划工具](mcp/TASK_PLAN_TOOLS_zh_cn.md) | 核对 commondir 共享及主仓库与 worktree 专属管理目录的区别，说明搬迁及独立 clone 的身份边界。 |
 | Codex 桌面应用 | https://developers.openai.com/codex/app/ | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) | 仅作一般 composer 背景资料；不是 `request_user_input_async` 能力来源。 |
 | Codex CLI | https://developers.openai.com/codex/cli/ | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) | 交互式终端使用的背景资料。 |
 | Codex Prompting Guide | https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide | [delegation-mode-confirmation_zh_cn.md](references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) | 将多个建议呈现为编号选项的背景资料。 |

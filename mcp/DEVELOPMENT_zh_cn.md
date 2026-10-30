@@ -51,7 +51,7 @@ token-io-decoupling start-mcp-server --profile workflow
 
 Profile 控制工具发现，不授予权限。没有可信宿主通道时，公共能力/规则读取可成功，schema 状态不检查状态路径而返回 unavailable，受保护调用则拒绝缺失绑定。Workflow/Control 判断要求经过验证的 Root。共享读取与证据写入每次都解析经过验证的角色；Worker 读取拒绝非空的 Root `index_page` 游标。
 
-三个 Native 任务计划工具使用单独配置且绑定项目的 Serena 后端，不使用 Enhanced 数据库。没有显式注入或受信任启动 factory 时，保持 `unavailable`。其 payload、配置、确定性检查、测试和保护限制由[任务计划生命周期工具](TASK_PLAN_TOOLS_zh_cn.md)负责。不会自动加载 Serena 配置或发起模型请求。
+三个 Native 任务计划工具使用单独配置且绑定 checkout 的 Serena 后端，不使用 Enhanced 数据库。宿主可选择按仓库分层的全局存储，让主工作区与 linked worktrees 共享规划、独立仓库保持隔离；旧项目本地存储保持兼容。没有显式注入或受信任启动 factory 时，保持 `unavailable`。其 payload、配置、身份/路径映射、确定性检查、测试和保护限制由[任务计划生命周期工具](TASK_PLAN_TOOLS_zh_cn.md)负责。不会自动加载 Serena 配置或发起模型请求。
 
 Canonical Python 实现使用架构契约列出的独立包名。重命名后的 `token_io_decoupling_mcp` 适配命名空间承载原 façade 模块和默认 factory 的仅公共接口行为；`python -m token_io_decoupling_mcp.cli` 仍可使用。旧 `token_io_mcp` 导入命名空间不再作为通用 API 暴露。两个不可变 v1 迁移源仍保留历史字节中的 `token_io_mcp.models`；state migration loader 仅在导入期间临时提供 `DatabaseKind` 别名，随后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 adapter migration 路径。兼容文件分别由 core、state 或 launcher 负责，wheel 路径不重复。本 workspace 不导出旧四个 console script，也不导出之前的 `token-io-mcp` console script。
 
@@ -80,7 +80,7 @@ Canonical Python 实现使用架构契约列出的独立包名。重命名后的
 | `unknown/binding_unavailable` | `BindingError` 无法区分拒绝、超时或协议故障。查阅可信宿主诊断，不猜测根因。 |
 | `unknown/probe_failed` 或 `unknown/invalid_binding_response` | 意外异常或无效类型结果。修复 provider 后再进行受保护访问。 |
 
-`BindingError` 继承 `PermissionError`，因此优先分类前者。一次报告最多读取一次绑定，可能联系已配置的宿主通道，不发送 API 请求，不检查状态或路径。固定解释不回显异常、凭据、身份值、路径或任意 provider 属性。
+`BindingError` 继承 `PermissionError`，因此优先分类前者。绑定诊断最多读取一次绑定，可能联系已配置的宿主通道，不发送 API 请求，不检查状态或路径。其固定解释不回显异常、凭据、身份值、路径或任意 provider 属性。另行显式配置的任务计划后端会核对 checkout/存储映射；全局模式可能执行本地 Git 身份查询。未配置任务计划后端时，不探测 Memory 路径或 Git。这些诊断不初始化存储，也不证明调用者授权。
 
 非 embedded 的旧摘要保持 `enhanced_binding: unverified` 和 `binding_transport: unavailable`，即使后续探测成功也不改变；详情区分当前验证与启动准入。embedded 的绑定摘要仍为 `available`/`unavailable`。传输摘要仅使用 `authenticated_inherited_unix_socket` 或 `embedded_provider`，不回显自定义标签。任何结果均不自动启用 Enhanced 或授予权限。
 

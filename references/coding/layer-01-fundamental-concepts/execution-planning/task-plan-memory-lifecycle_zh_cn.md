@@ -14,9 +14,13 @@
 
 ### 名称、存储和初始证据
 
-优先复用用户为同一任务指定的 active plan；否则使用 `plans/PLAN-[short-english-summary]`，可包含已核实的 Issue 编号。名称不含 `.md`。默认对应归档名为 `archive-plans/PLAN-[short-english-summary]`；用户自定名称的归档映射须在现有任务授权内明确后才可归档。默认项目数据目录下，活动文件为 `<project-root>/.serena/memories/plans/PLAN-[short-english-summary].md`。遵从项目配置的数据目录覆盖及 Memory 工具映射，不硬编码第二套目录或创建文件替代品。
+优先复用用户为同一任务指定的 active plan。选择新名称前，确认获准后端使用共享全局存储还是旧版项目本地存储。共享全局存储中，活动与归档规划都必须带同一个已核验仓库 key：`global/token-io-decoupling/repos/<repository-id>/plans/PLAN-[short-english-summary]` 与 `global/token-io-decoupling/repos/<repository-id>/archive-plans/PLAN-[short-english-summary]`。可包含已核实的 Issue 编号；逻辑 Memory 名不含 `.md`。新全局规划不得直接放进共享的 `plans/` 或 `archive-plans/`，也不得用目录 basename、分支、remote URL 或 worktree 路径充当仓库 key。
 
-确认准确项目/worktree 绑定和有效的记忆维护说明。创建或更新前列出 Memory，并读取已存在的匹配计划。仅复用同一进行中任务的计划；保留无关计划，碰撞时选择不同名称。写入精简计划，再读回比对意图，之后才继续依赖工作。必需 Memory 能力缺失、必需内容不可访问或写入/读回失败时，阻塞依赖工作；报告准确操作并保留最后确认的计划。
+本存储映射的仓库 key 为 `git-v1-` 加上 `b"token-io-decoupling:git-common-dir:v1\0" + os.fsencode(str(canonical_git_common_dir))` 的十六进制 SHA-256，其中 `\0` 表示一个 NUL 字节。通过可信本地仓库事实解析实际 checkout 根目录和 canonical absolute Git common directory。主工作区和 linked worktrees 共享该目录及 key；独立仓库和独立 clone 使用不同 key，即使名称或 remote 相同。共同目录搬迁会改变 key：应停止并核对旧映射，不得静默丢弃或迁移其规划。缺少或无法确定仓库身份时，阻塞全局路径。这是本机仓库身份，不是跨机器可移植标识。复用旧共同目录路径会复用其 key；在该路径接受新建仓库前，须确认归属并核对已有历史。
+
+明确保留项目本地后端时，使用 `plans/PLAN-[short-english-summary]` 和 `archive-plans/PLAN-[short-english-summary]`；默认物理根为 `<project-root>/.serena/memories/`。该兼容模式不提供跨 worktree 共享。遵从实际配置的 Memory 根和映射，包括获准的数据目录覆盖；不得另建存储或虚构全局根。选定共享全局存储后，身份、根目录、映射或权限不可用时阻塞该路径，不得静默回退项目本地存储。用户自定名称的对应归档映射须在既有授权内明确。已有规划/归档保留原映射，除非另行获准的迁移确认归属、检查碰撞、保留全部字节并核验结果；不得自动收编其他项目未分层的数据或改写已有归档。
+
+确认准确项目/worktree 绑定、存储 scope、全局模式的仓库 key 和有效的记忆维护说明。创建或更新前，仅列出所选仓库的规划 topic，并读取已存在的匹配计划。全局列表可能暴露其他仓库；可见不构成读取或修改它们的授权。仅复用同一进行中任务的计划；保留无关计划，碰撞时选择不同名称。写入精简计划，再读回比对意图，之后才继续依赖工作。必需 Memory 能力缺失、必需内容不可访问或写入/读回失败时，阻塞依赖工作；报告准确操作并保留最后确认的计划。
 
 ### 计划内容
 
@@ -61,7 +65,9 @@
 
 ### 已配置的确定性生命周期工具
 
-workflow MCP profile 暴露已授权且已配置的 Serena 后端时，使用 `task_plan_update`、`task_plan_complete`、`task_plan_archive` 修改计划。仅发现工具不足以继续：须确认后端可用及准确配置项目。操作者通过显式服务注入或受信任启动 factory 提供实际绑定项目的 Serena `MemoryManager`。不得为了让调用通过而虚构 factory、从工具参数加载任意代码、安装依赖或猜测 `.serena` 目录。服务不会自动加载或迁移 Serena 配置。
+workflow MCP profile 暴露已授权且已配置的 Serena 后端时，使用 `task_plan_update`、`task_plan_complete`、`task_plan_archive` 修改计划。仅发现工具不足以继续：须确认后端可用、准确配置 checkout，以及返回的存储 scope/仓库映射。共享全局模式由操作者以实际 Serena `MemoryManager` 显式构建 `SerenaMemoryStore(memory_manager, project_root, storage_scope="global")`；兼容默认值仍为 `storage_scope="project"`。通过显式服务注入或受信任启动 factory 提供该服务。实际全局根须已存在；服务不会初始化或猜测其位置。不得为了让调用通过而虚构 factory、从工具参数加载任意代码、安装依赖或猜测 `.serena` 目录。服务不会自动加载或迁移 Serena 配置。
+
+每个请求仍提供该服务绑定 checkout 的准确绝对 `project_root`，不能选择其他仓库或切换存储 scope。主工作区及 linked worktrees 分别配置的服务派生同一全局仓库身份、history、revision 和 replay scope。检查返回的带项目层级 `memory_name`，不要重建裸名称。全局 history 使用明确仓库身份；旧项目 history 仍绑定 checkout。服务在全局 Memory 效果前重新核对仓库身份，发生改变则失败。capability/receipt 证据不认证调用者，也不授予其他仓库访问权。Git 共同目录语义见 [git-rev-parse](https://git-scm.com/docs/git-rev-parse) 和[仓库布局](https://git-scm.com/docs/gitrepository-layout)。
 
 | 操作 | Agent 输入与必需结果 |
 | --- | --- |
@@ -75,11 +81,11 @@ workflow MCP profile 暴露已授权且已配置的 Serena 后端时，使用 `t
 
 ### 原生 Memory 路径
 
-未选择已配置的生命周期服务时，仅使用实际暴露且获准的 Serena 操作，并完成上述全部通用内容保留检查：`list_memories`、`read_memory`、`write_memory` 或 `edit_memory`，以及获准的归档操作。确认项目激活及准确 schema。原生 `rename_memory` 会传播 `mem:` 引用，因此须先确认效果仍在授权范围内且最终内容比对能够通过，否则停止该归档步骤。绝不把它当成原子禁止覆盖原语。原生 `/plan`、本地回忆和聊天压缩不能持久化此共享记录。一个 Session 的成功调用不证明另一 Agent 的访问权；每个分配 Agent 均须检查。[Codex MCP](https://learn.chatgpt.com/docs/extend/mcp)。
+未选择已配置的生命周期服务时，仅使用实际暴露且获准的 Serena 操作，并完成上述全部通用内容保留与存储 scope 检查：`list_memories`、`read_memory`、`write_memory` 或 `edit_memory`，以及获准的归档操作。确认项目激活、选定全局模式的实际根映射、已核验仓库 key 和准确 schema。列表限定为 `global/token-io-decoupling/repos/<repository-id>/plans` 或其对应归档 topic。提供逻辑名称，不得以绝对文件系统路径作为 `memory_name`。当前工具无法确认必需身份或映射时，阻塞共享路径，不得新建 worktree 本地副本替代。原生 `rename_memory` 会传播 `mem:` 引用，因此须先确认效果仍在授权范围内且最终内容比对能够通过，否则停止该归档步骤。绝不把它当成原子禁止覆盖原语。原生 `/plan`、本地回忆和聊天压缩不能持久化此共享记录。一个 Session 的成功调用不证明另一 Agent 的访问权；每个分配 Agent 均须检查。[Codex MCP](https://learn.chatgpt.com/docs/extend/mcp)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-本仓库的确定性生命周期 MCP 工具不支持该运行环境；将此优化标记为 `Not applicable`，但不得据此推定其原生 MCP 能力不存在。只有连接成功且实际向该 Agent 暴露时，才使用同一个 Serena MCP Memory 服务，并保持上述通用检查和证据。按准确项目/名称及当前 schema 发现 `list_memories`/`read_memory`、`write_memory` 或 `edit_memory`，以及获准的归档操作。原生 `rename_memory` 会传播 `mem:` 引用：使用前确认效果获准且内容保留能够通过，否则阻塞该步骤。发现、审批和可用性可能与 Codex 不同，不假定相同前缀或继承连接。原生 Plan mode、todo 状态及自动记忆不能替代共享计划。缺少必需操作或权限拒绝时阻塞依赖持久化/分配。Claude Desktop 绝不通过 GUI 导航建立访问。[Claude Code MCP 工具可用性](https://code.claude.com/docs/en/mcp#tool-availability)。
+本仓库的确定性生命周期 MCP 工具不支持该运行环境；将此优化标记为 `Not applicable`，但不得据此推定其原生 MCP 能力不存在。只有连接成功且实际向该 Agent 暴露时，才使用同一个 Serena MCP Memory 服务，并保持上述通用检查和证据，包括已核验仓库身份及带项目层级的全局名称。只通过实际暴露、获授权的本地工具建立 Git 共同目录身份；不得从目录 basename 推断或选择其他仓库可见 topic。按准确项目/名称及当前 schema 发现 `list_memories`/`read_memory`、`write_memory` 或 `edit_memory`，以及获准的归档操作。全局规划列表限定为已核验仓库 topic；绝对文件系统路径不是 Memory 名。原生 `rename_memory` 会传播 `mem:` 引用：使用前确认效果获准且内容保留能够通过，否则阻塞该步骤。发现、审批和可用性可能与 Codex 不同，不假定相同前缀或继承连接。原生 Plan mode、todo 状态及自动记忆不能替代共享计划。必需身份/映射缺失或权限拒绝时阻塞依赖持久化/分配，不得回退新建本地副本。Claude Desktop 绝不通过 GUI 导航建立访问。[Claude Code MCP 工具可用性](https://code.claude.com/docs/en/mcp#tool-availability)。
 
 ## 相关概念
 

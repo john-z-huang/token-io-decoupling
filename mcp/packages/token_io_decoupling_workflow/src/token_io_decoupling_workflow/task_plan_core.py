@@ -7,11 +7,12 @@ import json
 import os
 import re
 import stat
+import subprocess
 import tempfile
 from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 try:
     import fcntl
@@ -26,9 +27,12 @@ _PLAN_ID = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
 _RECORD_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$")
 _REQUEST_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _REVISION = re.compile(r"^[a-f0-9]{64}$")
+_REPOSITORY_ID = re.compile(r"^git-v1-[a-f0-9]{64}$")
 _HEADER_PREFIX = b"~~~json task-plan-header-v1\n"
+_HEADER_V2_PREFIX = b"~~~json task-plan-header-v2\n"
 _HEADER_SUFFIX = b"\n~~~\n"
 _EVENT_PREFIX = b"~~~json task-plan-event-v1\n"
+_EVENT_V2_PREFIX = b"~~~json task-plan-event-v2\n"
 _EVENT_SUFFIX = b"\n~~~\n"
 _KINDS = {
     "goal",
@@ -45,6 +49,11 @@ _KINDS = {
     "progress",
 }
 _OUTCOMES = {"passed", "failed", "assumed", "unavailable"}
+_GLOBAL_MEMORY_PREFIX = "global/token-io-decoupling/repos"
+_GIT_IDENTITY_DOMAIN = b"token-io-decoupling:git-common-dir:v1\0"
+_GIT_IDENTITY_TIMEOUT_SECONDS = 3
+_GIT_IDENTITY_MAX_OUTPUT_BYTES = 8192
+_GIT_REDIRECT_ENVIRONMENT = ("GIT_DIR", "GIT_COMMON_DIR", "GIT_WORK_TREE")
 
 
 class TaskPlanFailure(Exception):
@@ -96,6 +105,78 @@ class _Snapshot:
 
 def _sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def _repository_id_for_checkout(project_root: str | Path) -> str:
+    """Derive a local repository identity from a verified Git common directory."""
+    checkout_path = Path(project_root)
+    if not checkout_path.is_absolute():
+        raise TaskPlanFailure("project_root_must_be_absolute", "unavailable")
+    try:
+        checkout_root = checkout_path.resolve(strict=True)
+    except OSError as exc:
+        raise TaskPlanFailure("project_root_unavailable", "unavailable") from exc
+    if not checkout_root.is_dir():
+        raise TaskPlanFailure("project_root_unavailable", "unavailable")
+
+    if any(os.environ.get(name) for name in _GIT_REDIRECT_ENVIRONMENT):
+        raise TaskPlanFailure("git_environment_redirected", "unavailable")
+
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(checkout_root),
+                "rev-parse",
+                "--path-format=absolute",
+                "--show-toplevel",
+                "--git-common-dir",
+            ],
+            check=False,
+            capture_output=True,
+            timeout=_GIT_IDENTITY_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise TaskPlanFailure("git_identity_timeout", "unavailable") from exc
+    except OSError as exc:
+        raise TaskPlanFailure("git_identity_unavailable", "unavailable") from exc
+    if (
+        result.returncode != 0
+        or len(result.stdout) > _GIT_IDENTITY_MAX_OUTPUT_BYTES
+        or len(result.stderr) > _GIT_IDENTITY_MAX_OUTPUT_BYTES
+    ):
+        raise TaskPlanFailure("git_identity_unavailable", "unavailable")
+
+    try:
+        output_lines = result.stdout.decode(errors="surrogateescape").splitlines()
+        if len(output_lines) != 2:
+            raise TaskPlanFailure("git_identity_output_invalid", "unavailable")
+        reported_root = Path(output_lines[0])
+        common_dir = Path(output_lines[1])
+        if not reported_root.is_absolute() or not common_dir.is_absolute():
+            raise TaskPlanFailure("git_identity_output_invalid", "unavailable")
+        canonical_reported_root = reported_root.resolve(strict=True)
+        canonical_common_dir = common_dir.resolve(strict=True)
+        if canonical_reported_root != checkout_root or not canonical_common_dir.is_dir():
+            raise TaskPlanFailure("git_identity_output_invalid", "unavailable")
+    except TaskPlanFailure:
+        raise
+    except (OSError, ValueError) as exc:
+        raise TaskPlanFailure("git_identity_output_invalid", "unavailable") from exc
+
+    digest = hashlib.sha256(
+        _GIT_IDENTITY_DOMAIN + os.fsencode(str(canonical_common_dir))
+    ).hexdigest()
+    return f"git-v1-{digest}"
+
+
+def _history_identity(project_root: str, repository_id: str | None) -> tuple[int, str, str]:
+    if repository_id is None:
+        return 1, "project_root", project_root
+    if not _REPOSITORY_ID.fullmatch(repository_id):
+        raise TaskPlanFailure("repository_identity_invalid", "unavailable")
+    return 2, "repository_id", repository_id
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -296,36 +377,71 @@ def _validate_evidence(
     return normalized
 
 
-def _parse_snapshot(raw: bytes, plan_id: str, project_root: str | None = None) -> _Snapshot:
+def _parse_snapshot(
+    raw: bytes,
+    plan_id: str,
+    project_root: str | None = None,
+    *,
+    repository_id: str | None = None,
+) -> _Snapshot:
     if len(raw) > MAX_PLAN_BYTES:
         raise TaskPlanFailure("plan_too_large")
-    marker_count = raw.count(_HEADER_PREFIX)
+    v1_marker_count = raw.count(_HEADER_PREFIX)
+    v2_marker_count = raw.count(_HEADER_V2_PREFIX)
+    marker_count = v1_marker_count + v2_marker_count
     if marker_count == 0:
         return _Snapshot(raw, raw, (), {}, frozenset(), frozenset(), False)
     if marker_count != 1:
         raise TaskPlanFailure("history_invalid")
-    marker = raw.index(_HEADER_PREFIX)
+    if v1_marker_count:
+        version = 1
+        header_prefix = _HEADER_PREFIX
+        event_prefix = _EVENT_PREFIX
+    else:
+        version = 2
+        header_prefix = _HEADER_V2_PREFIX
+        event_prefix = _EVENT_V2_PREFIX
+    marker = raw.index(header_prefix)
     if marker and raw[marker - 1] not in b"\r\n":
         raise TaskPlanFailure("history_invalid")
-    line_end = raw.find(_HEADER_SUFFIX, marker + len(_HEADER_PREFIX))
+    line_end = raw.find(_HEADER_SUFFIX, marker + len(header_prefix))
     if line_end < 0:
         raise TaskPlanFailure("history_invalid")
     header_end = line_end + len(_HEADER_SUFFIX)
-    header = _json_object(raw[marker + len(_HEADER_PREFIX) : line_end])
-    if set(header) != {
-        "version",
-        "plan_id",
-        "project_root",
-        "legacy_length",
-        "legacy_revision",
-    }:
+    header = _json_object(raw[marker + len(header_prefix) : line_end])
+    if version == 1:
+        expected_header_keys = {
+            "version",
+            "plan_id",
+            "project_root",
+            "legacy_length",
+            "legacy_revision",
+        }
+        identity_key = "project_root"
+        expected_identity = project_root
+    elif version == 2:
+        expected_header_keys = {
+            "version",
+            "plan_id",
+            "repository_id",
+            "legacy_length",
+            "legacy_revision",
+        }
+        identity_key = "repository_id"
+        expected_identity = repository_id
+    else:
+        raise TaskPlanFailure("history_invalid")
+    if set(header) != expected_header_keys or header["version"] != version:
         raise TaskPlanFailure("history_invalid")
     if (
-        header["version"] != 1
-        or header["plan_id"] != plan_id
-        or not isinstance(header["project_root"], str)
-        or (project_root is not None and header["project_root"] != project_root)
+        header["plan_id"] != plan_id
+        or not isinstance(header[identity_key], str)
+        or (expected_identity is not None and header[identity_key] != expected_identity)
+        or (version == 1 and repository_id is not None)
+        or (version == 2 and project_root is not None)
     ):
+        raise TaskPlanFailure("history_identity_mismatch")
+    if version == 2 and not _REPOSITORY_ID.fullmatch(header["repository_id"]):
         raise TaskPlanFailure("history_identity_mismatch")
     legacy_length = header["legacy_length"]
     if not isinstance(legacy_length, int) or legacy_length < 0 or legacy_length > marker:
@@ -347,39 +463,45 @@ def _parse_snapshot(raw: bytes, plan_id: str, project_root: str | None = None) -
     completed = False
     position = header_end
     while position < len(raw):
-        if not raw.startswith(_EVENT_PREFIX, position):
+        if not raw.startswith(event_prefix, position):
             raise TaskPlanFailure("history_invalid")
         if position and raw[position - 1] not in b"\r\n":
             raise TaskPlanFailure("history_invalid")
-        event_start = position + len(_EVENT_PREFIX)
+        event_start = position + len(event_prefix)
         event_end = raw.find(_EVENT_SUFFIX, event_start)
         if event_end < 0:
             raise TaskPlanFailure("history_invalid")
         event = _json_object(raw[event_start:event_end])
-        expected_keys = {
+        expected_event_keys = {
             "version",
             "plan_id",
-            "project_root",
+            identity_key,
             "operation_id",
             "operation",
             "request_hash",
             "previous_revision",
             "data",
         }
-        if set(event) != expected_keys or event["version"] != 1:
+        if set(event) != expected_event_keys or event["version"] != version:
             raise TaskPlanFailure("history_invalid")
         if (
             event["plan_id"] != plan_id
-            or event["project_root"] != header["project_root"]
-            or (project_root is not None and event["project_root"] != project_root)
+            or event[identity_key] != header[identity_key]
+            or (expected_identity is not None and event[identity_key] != expected_identity)
             or event["operation"] not in {"update", "complete"}
         ):
+            raise TaskPlanFailure("history_identity_mismatch")
+        if version == 2 and not _REPOSITORY_ID.fullmatch(event["repository_id"]):
             raise TaskPlanFailure("history_identity_mismatch")
         op_id = _validate_id(event["operation_id"], _REQUEST_ID, "history_invalid")
         if not isinstance(event["data"], dict):
             raise TaskPlanFailure("history_invalid")
         request_hash = _request_hash(
-            plan_id, event["project_root"], event["operation"], event["data"]
+            plan_id,
+            event["project_root"] if version == 1 else "",
+            event["operation"],
+            event["data"],
+            repository_id=event["repository_id"] if version == 2 else None,
         )
         if event["request_hash"] != request_hash:
             raise TaskPlanFailure("history_request_hash_mismatch")
@@ -442,12 +564,20 @@ def _parse_snapshot(raw: bytes, plan_id: str, project_root: str | None = None) -
     )
 
 
-def _request_hash(plan_id: str, project_root: str, operation: str, data: dict[str, Any]) -> str:
+def _request_hash(
+    plan_id: str,
+    project_root: str,
+    operation: str,
+    data: dict[str, Any],
+    *,
+    repository_id: str | None = None,
+) -> str:
+    _, identity_key, identity_value = _history_identity(project_root, repository_id)
     return _sha(
         _canonical_json(
             {
                 "plan_id": plan_id,
-                "project_root": project_root,
+                identity_key: identity_value,
                 "operation": operation,
                 "data": data,
             }
@@ -456,7 +586,14 @@ def _request_hash(plan_id: str, project_root: str, operation: str, data: dict[st
 
 
 def _event_line(event: dict[str, Any]) -> bytes:
-    return _EVENT_PREFIX + _canonical_json(event) + _EVENT_SUFFIX
+    version = event.get("version")
+    if version == 1:
+        event_prefix = _EVENT_PREFIX
+    elif version == 2:
+        event_prefix = _EVENT_V2_PREFIX
+    else:
+        raise TaskPlanFailure("history_invalid")
+    return event_prefix + _canonical_json(event) + _EVENT_SUFFIX
 
 
 def _append_event(
@@ -467,38 +604,47 @@ def _append_event(
     operation: str,
     request_hash: str,
     data: dict[str, Any],
+    *,
+    repository_id: str | None = None,
 ) -> bytes:
+    version, identity_key, identity_value = _history_identity(project_root, repository_id)
+    header_prefix = _HEADER_PREFIX if version == 1 else _HEADER_V2_PREFIX
     if raw is None:
         legacy = b""
         separator = b""
         header = {
-            "version": 1,
+            "version": version,
             "plan_id": plan_id,
-            "project_root": project_root,
+            identity_key: identity_value,
             "legacy_length": 0,
             "legacy_revision": _sha(legacy),
         }
-        prefix = separator + _HEADER_PREFIX + _canonical_json(header) + _HEADER_SUFFIX
+        prefix = separator + header_prefix + _canonical_json(header) + _HEADER_SUFFIX
         previous = _sha(legacy)
     else:
-        snapshot = _parse_snapshot(raw, plan_id, project_root)
+        snapshot = _parse_snapshot(
+            raw,
+            plan_id,
+            project_root if repository_id is None else None,
+            repository_id=repository_id,
+        )
         if snapshot.events:
             prefix = b""
         else:
             separator = b"" if not raw or raw.endswith((b"\n", b"\r")) else b"\n"
             header = {
-                "version": 1,
+                "version": version,
                 "plan_id": plan_id,
-                "project_root": project_root,
+                identity_key: identity_value,
                 "legacy_length": len(raw),
                 "legacy_revision": _sha(raw),
             }
-            prefix = separator + _HEADER_PREFIX + _canonical_json(header) + _HEADER_SUFFIX
+            prefix = separator + header_prefix + _canonical_json(header) + _HEADER_SUFFIX
         previous = _sha(raw)
     event = {
-        "version": 1,
+        "version": version,
         "plan_id": plan_id,
-        "project_root": project_root,
+        identity_key: identity_value,
         "operation_id": operation_id,
         "operation": operation,
         "request_hash": request_hash,
@@ -519,13 +665,26 @@ def _current_state(snapshot: _Snapshot | None) -> str:
     return "in_progress" if snapshot.events else "legacy"
 
 
-def _observed_state(raw: bytes | None, plan_id: str | None, project_root: str | None) -> str:
-    if plan_id is None or project_root is None:
+def _observed_state(
+    raw: bytes | None,
+    plan_id: str | None,
+    project_root: str | None,
+    *,
+    repository_id: str | None = None,
+) -> str:
+    if plan_id is None or (project_root is None and repository_id is None):
         return "unknown"
     if raw is None:
         return "absent"
     try:
-        return _current_state(_parse_snapshot(raw, plan_id, project_root))
+        return _current_state(
+            _parse_snapshot(
+                raw,
+                plan_id,
+                project_root if repository_id is None else None,
+                repository_id=repository_id,
+            )
+        )
     except TaskPlanFailure:
         return "unknown"
 
@@ -545,6 +704,8 @@ def _receipt(
     reconciliation: str = "not_required",
     project_root: str | None = None,
     memory_name: str | None = None,
+    storage_scope: str | None = None,
+    repository_id: str | None = None,
 ) -> dict[str, Any]:
     return {
         "status": status,
@@ -552,6 +713,8 @@ def _receipt(
         "plan_id": plan_id,
         "project_root": project_root,
         "memory_name": memory_name,
+        "storage_scope": storage_scope,
+        "repository_id": repository_id,
         "plan_state": state,
         "before_revision": before_revision,
         "current_revision": current_revision,
@@ -567,7 +730,15 @@ def _receipt(
 class SerenaMemoryStore:
     """Byte-preserving adapter over an actual Serena MemoryManager instance."""
 
-    def __init__(self, memory_manager: object, project_root: str | Path) -> None:
+    def __init__(
+        self,
+        memory_manager: object,
+        project_root: str | Path,
+        *,
+        storage_scope: Literal["project", "global"] = "project",
+    ) -> None:
+        if storage_scope not in {"project", "global"}:
+            raise TaskPlanFailure("storage_scope_invalid", "unavailable")
         try:
             memory_manager_module = importlib.import_module("serena.memories.memory_manager")
         except ImportError as exc:
@@ -584,9 +755,35 @@ class SerenaMemoryStore:
         ):
             if not callable(getattr(memory_manager, name, None)):
                 raise TaskPlanFailure("serena_manager_interface_unsupported", "unavailable")
-        root_value = getattr(memory_manager, "_project_memory_dir", None)
+
+        project_path = Path(project_root)
+        if not project_path.is_absolute():
+            raise TaskPlanFailure("project_root_must_be_absolute", "unavailable")
+        try:
+            self.project_root = str(project_path.resolve(strict=True))
+            if not Path(self.project_root).is_dir():
+                raise TaskPlanFailure("project_root_unavailable", "unavailable")
+        except TaskPlanFailure:
+            raise
+        except OSError as exc:
+            raise TaskPlanFailure("project_root_unavailable", "unavailable") from exc
+
+        root_attribute = (
+            "_project_memory_dir" if storage_scope == "project" else "_global_memory_dir"
+        )
+        unavailable_reason = (
+            "serena_project_memory_unavailable"
+            if storage_scope == "project"
+            else "serena_global_memory_unavailable"
+        )
+        invalid_reason = (
+            "serena_project_memory_invalid"
+            if storage_scope == "project"
+            else "serena_global_memory_invalid"
+        )
+        root_value = getattr(memory_manager, root_attribute, None)
         if not isinstance(root_value, (str, Path)):
-            raise TaskPlanFailure("serena_project_memory_unavailable", "unavailable")
+            raise TaskPlanFailure(unavailable_reason, "unavailable")
         root_path = Path(root_value)
         try:
             root_stat = root_path.lstat()
@@ -595,36 +792,96 @@ class SerenaMemoryStore:
                 or stat.S_ISLNK(root_stat.st_mode)
                 or not stat.S_ISDIR(root_stat.st_mode)
             ):
-                raise TaskPlanFailure("serena_project_memory_invalid", "unavailable")
+                raise TaskPlanFailure(invalid_reason, "unavailable")
             self.memory_root = root_path.resolve(strict=True)
-            project_path = Path(project_root)
-            if not project_path.is_absolute():
-                raise TaskPlanFailure("project_root_must_be_absolute", "unavailable")
-            self.project_root = str(project_path.resolve(strict=True))
-            if not Path(self.project_root).is_dir():
-                raise TaskPlanFailure("project_root_unavailable", "unavailable")
         except TaskPlanFailure:
             raise
         except OSError as exc:
-            raise TaskPlanFailure("serena_project_memory_unavailable", "unavailable") from exc
+            raise TaskPlanFailure(unavailable_reason, "unavailable") from exc
+
+        self.storage_scope = storage_scope
+        self.repository_id = (
+            _repository_id_for_checkout(self.project_root) if storage_scope == "global" else None
+        )
         self._manager = memory_manager
 
     def capability(self) -> dict[str, Any]:
-        return {
+        metadata = {
             "status": "configured",
             "reason_code": "explicit_serena_manager_injected",
             "project_root": self.project_root,
-            "namespace": "plans/PLAN-<plan_id>",
-            "archive_namespace": "archive-plans/PLAN-<plan_id>",
+            "storage_scope": getattr(self, "storage_scope", "project"),
+            "repository_id": getattr(self, "repository_id", None),
+            "namespace": self._namespace_pattern(False),
+            "archive_namespace": self._namespace_pattern(True),
         }
+        try:
+            self._assert_current_binding()
+        except TaskPlanFailure as exc:
+            metadata["status"] = "unavailable"
+            metadata["reason_code"] = exc.reason
+        return metadata
 
     def _memory_name(self, plan_id: str, archived: bool) -> str:
-        prefix = "archive-plans" if archived else "plans"
-        return f"{prefix}/PLAN-{plan_id}"
+        namespace = "archive-plans" if archived else "plans"
+        plan_name = f"{namespace}/PLAN-{plan_id}"
+        if getattr(self, "storage_scope", "project") == "global":
+            repository_id = getattr(self, "repository_id", None)
+            if not isinstance(repository_id, str) or not _REPOSITORY_ID.fullmatch(repository_id):
+                raise TaskPlanFailure("repository_identity_invalid", "unavailable")
+            return f"{_GLOBAL_MEMORY_PREFIX}/{repository_id}/{plan_name}"
+        return plan_name
 
     def _fixed_path(self, plan_id: str, archived: bool) -> Path:
         namespace = "archive-plans" if archived else "plans"
+        if getattr(self, "storage_scope", "project") == "global":
+            repository_id = getattr(self, "repository_id", None)
+            if not isinstance(repository_id, str) or not _REPOSITORY_ID.fullmatch(repository_id):
+                raise TaskPlanFailure("repository_identity_invalid", "unavailable")
+            return (
+                self.memory_root
+                / "token-io-decoupling"
+                / "repos"
+                / repository_id
+                / namespace
+                / f"PLAN-{plan_id}.md"
+            )
         return self.memory_root / namespace / f"PLAN-{plan_id}.md"
+
+    def _namespace_pattern(self, archived: bool) -> str:
+        namespace = "archive-plans" if archived else "plans"
+        if getattr(self, "storage_scope", "project") == "global":
+            repository_id = getattr(self, "repository_id", None)
+            if not isinstance(repository_id, str) or not _REPOSITORY_ID.fullmatch(repository_id):
+                return f"{_GLOBAL_MEMORY_PREFIX}/<unavailable>/{namespace}/PLAN-<plan_id>"
+            return f"{_GLOBAL_MEMORY_PREFIX}/{repository_id}/{namespace}/PLAN-<plan_id>"
+        return f"{namespace}/PLAN-<plan_id>"
+
+    def _assert_current_binding(self) -> None:
+        if getattr(self, "storage_scope", "project") != "global":
+            return
+        manager_root = getattr(self._manager, "_global_memory_dir", None)
+        if not isinstance(manager_root, (str, Path)):
+            raise TaskPlanFailure("serena_global_memory_unavailable", "unavailable")
+        root_path = Path(manager_root)
+        try:
+            root_stat = root_path.lstat()
+            if (
+                not root_path.is_absolute()
+                or stat.S_ISLNK(root_stat.st_mode)
+                or not stat.S_ISDIR(root_stat.st_mode)
+            ):
+                raise TaskPlanFailure("serena_global_memory_invalid", "unavailable")
+            current_root = root_path.resolve(strict=True)
+        except TaskPlanFailure:
+            raise
+        except OSError as exc:
+            raise TaskPlanFailure("serena_global_memory_unavailable", "unavailable") from exc
+        if current_root != self.memory_root:
+            raise TaskPlanFailure("serena_global_memory_mismatch", "unavailable")
+        current_repository_id = _repository_id_for_checkout(self.project_root)
+        if current_repository_id != self.repository_id:
+            raise TaskPlanFailure("repository_identity_changed", "unavailable")
 
     def _policy(self, memory_name: str, *, write: bool) -> None:
         try:
@@ -639,14 +896,48 @@ class SerenaMemoryStore:
     def _check_namespace(self, path: Path) -> None:
         if self.memory_root.is_symlink():
             raise TaskPlanFailure("memory_root_symlink_rejected", "unavailable")
-        namespace = path.parent
         try:
-            if namespace.is_symlink():
-                raise TaskPlanFailure("memory_namespace_symlink_rejected", "unavailable")
-            if namespace.exists() and not namespace.is_dir():
-                raise TaskPlanFailure("memory_namespace_invalid", "unavailable")
-            if path.is_symlink():
-                raise TaskPlanFailure("memory_file_symlink_rejected", "unavailable")
+            if not path.is_absolute():
+                raise TaskPlanFailure("serena_memory_path_mismatch", "unavailable")
+            if path.is_relative_to(self.memory_root):
+                checked_root = self.memory_root
+            else:
+                root_attribute = (
+                    "_project_memory_dir"
+                    if getattr(self, "storage_scope", "project") == "project"
+                    else "_global_memory_dir"
+                )
+                manager_root = getattr(self._manager, root_attribute, None)
+                if not isinstance(manager_root, (str, Path)):
+                    raise TaskPlanFailure("serena_memory_path_mismatch", "unavailable")
+                checked_root = Path(manager_root)
+                if not checked_root.is_absolute() or not path.is_relative_to(checked_root):
+                    raise TaskPlanFailure("serena_memory_path_mismatch", "unavailable")
+                try:
+                    if checked_root.resolve(strict=True) != self.memory_root:
+                        raise TaskPlanFailure("serena_memory_path_mismatch", "unavailable")
+                except OSError as exc:
+                    raise TaskPlanFailure("serena_memory_path_unavailable", "unavailable") from exc
+            relative_parts = path.relative_to(checked_root).parts
+            current = checked_root
+            for index, part in enumerate(relative_parts):
+                current = current / part
+                try:
+                    mode = current.lstat().st_mode
+                except FileNotFoundError:
+                    break
+                if stat.S_ISLNK(mode):
+                    if index == len(relative_parts) - 1:
+                        raise TaskPlanFailure("memory_file_symlink_rejected", "unavailable")
+                    raise TaskPlanFailure("memory_namespace_symlink_rejected", "unavailable")
+                if index < len(relative_parts) - 1 and not stat.S_ISDIR(mode):
+                    raise TaskPlanFailure("memory_namespace_invalid", "unavailable")
+                if index == len(relative_parts) - 1 and not stat.S_ISREG(mode):
+                    raise TaskPlanFailure("memory_file_invalid", "unavailable")
+            if not path.resolve(strict=False).is_relative_to(self.memory_root):
+                raise TaskPlanFailure("serena_memory_path_mismatch", "unavailable")
+        except TaskPlanFailure:
+            raise
         except OSError as exc:
             raise TaskPlanFailure("memory_path_unavailable", "unavailable") from exc
 
@@ -658,6 +949,7 @@ class SerenaMemoryStore:
         create_parent: bool,
         write: bool = True,
     ) -> Path:
+        self._assert_current_binding()
         memory_name = self._memory_name(plan_id, archived)
         self._policy(memory_name, write=write)
         expected = self._fixed_path(plan_id, archived)
@@ -689,12 +981,14 @@ class SerenaMemoryStore:
     @contextlib.contextmanager
     def locked(self, plan_id: str) -> Generator[None, None, None]:
         _validate_plan_id(plan_id)
+        self._assert_current_binding()
         if fcntl is None:
             raise TaskPlanFailure("posix_file_lock_unavailable", "unavailable")
+        self._check_namespace(self._fixed_path(plan_id, False))
+        self._check_namespace(self._fixed_path(plan_id, True))
         lock_path = self.memory_root / ".token-io-task-plan.lock"
+        self._check_namespace(lock_path)
         try:
-            if lock_path.is_symlink():
-                raise TaskPlanFailure("lock_file_symlink_rejected", "unavailable")
             flags = os.O_CREAT | os.O_RDWR
             flags |= getattr(os, "O_NOFOLLOW", 0)
             descriptor = os.open(lock_path, flags, 0o600)
@@ -702,14 +996,20 @@ class SerenaMemoryStore:
             raise
         except OSError as exc:
             raise TaskPlanFailure("plan_lock_unavailable", "unavailable") from exc
+        locked = False
         try:
             fcntl.flock(descriptor, fcntl.LOCK_EX)
+            locked = True
+            self._assert_current_binding()
             yield
+        except TaskPlanFailure:
+            raise
         except OSError as exc:
             raise TaskPlanFailure("plan_lock_unavailable", "unavailable") from exc
         finally:
             try:
-                fcntl.flock(descriptor, fcntl.LOCK_UN)
+                if locked:
+                    fcntl.flock(descriptor, fcntl.LOCK_UN)
             finally:
                 os.close(descriptor)
 
@@ -737,6 +1037,7 @@ class SerenaMemoryStore:
 
     def read(self, plan_id: str, *, archived: bool = False) -> bytes | None:
         _validate_plan_id(plan_id)
+        self._assert_current_binding()
         memory_name = self._memory_name(plan_id, archived)
         self._policy(memory_name, write=False)
         path = self._fixed_path(plan_id, archived)
@@ -813,6 +1114,7 @@ class SerenaMemoryStore:
             return "uncertain", actual
 
     def archive(self, plan_id: str, expected: bytes) -> tuple[str, bytes | None]:
+        self._assert_current_binding()
         source_name = self._memory_name(plan_id, False)
         target_name = self._memory_name(plan_id, True)
         self._policy(source_name, write=True)
@@ -968,7 +1270,10 @@ class TaskPlanService:
                 "status": "unavailable",
                 "reason_code": "task_plan_backend_not_configured",
                 "project_root": None,
+                "storage_scope": None,
+                "repository_id": None,
                 "namespace": None,
+                "archive_namespace": None,
             }
         describe = getattr(self._store, "capability", None)
         if not callable(describe):
@@ -976,7 +1281,10 @@ class TaskPlanService:
                 "status": "unavailable",
                 "reason_code": "task_plan_backend_interface_unsupported",
                 "project_root": None,
+                "storage_scope": None,
+                "repository_id": None,
                 "namespace": None,
+                "archive_namespace": None,
             }
         try:
             return describe()
@@ -985,11 +1293,14 @@ class TaskPlanService:
                 "status": "unavailable",
                 "reason_code": "task_plan_backend_unavailable",
                 "project_root": None,
+                "storage_scope": getattr(self._store, "storage_scope", None),
+                "repository_id": getattr(self._store, "repository_id", None),
                 "namespace": None,
+                "archive_namespace": None,
             }
 
     def _unavailable(self, plan_id: str | None, reason: str) -> dict[str, Any]:
-        return _receipt(
+        return self._make_receipt(
             status="unavailable",
             reason=reason,
             plan_id=plan_id,
@@ -998,11 +1309,73 @@ class TaskPlanService:
             current_revision=None,
         )
 
+    def _make_receipt(self, **fields: Any) -> dict[str, Any]:
+        store = self._store
+        fields.setdefault(
+            "storage_scope",
+            getattr(store, "storage_scope", "project") if store is not None else None,
+        )
+        fields.setdefault("repository_id", getattr(store, "repository_id", None))
+        return _receipt(**fields)
+
+    def _history_binding(self, project_root: str) -> tuple[str | None, str | None]:
+        if self._store is not None and getattr(self._store, "storage_scope", "project") == "global":
+            repository_id = getattr(self._store, "repository_id", None)
+            if not isinstance(repository_id, str) or not _REPOSITORY_ID.fullmatch(repository_id):
+                raise TaskPlanFailure("repository_identity_invalid", "unavailable")
+            return None, repository_id
+        return project_root, None
+
+    def _parse_plan(self, raw: bytes, plan_id: str, project_root: str) -> _Snapshot:
+        history_root, repository_id = self._history_binding(project_root)
+        return _parse_snapshot(raw, plan_id, history_root, repository_id=repository_id)
+
+    def _request_hash_for(
+        self, plan_id: str, project_root: str, operation: str, data: dict[str, Any]
+    ) -> str:
+        _, repository_id = self._history_binding(project_root)
+        return _request_hash(plan_id, project_root, operation, data, repository_id=repository_id)
+
+    def _append_event_for(
+        self,
+        raw: bytes | None,
+        plan_id: str,
+        project_root: str,
+        operation_id: str,
+        operation: str,
+        request_hash: str,
+        data: dict[str, Any],
+    ) -> bytes:
+        _, repository_id = self._history_binding(project_root)
+        return _append_event(
+            raw,
+            plan_id,
+            project_root,
+            operation_id,
+            operation,
+            request_hash,
+            data,
+            repository_id=repository_id,
+        )
+
+    def _observed_state_for(
+        self, raw: bytes | None, plan_id: str | None, project_root: str | None
+    ) -> str:
+        if plan_id is None or project_root is None:
+            return "unknown"
+        history_root, repository_id = self._history_binding(project_root)
+        return _observed_state(raw, plan_id, history_root, repository_id=repository_id)
+
     def _scope(self, plan_id: str, archived: bool = False) -> tuple[str | None, str | None]:
         if self._store is None:
             return None, None
         project = getattr(self._store, "project_root", None)
-        name = f"{'archive-plans' if archived else 'plans'}/PLAN-{plan_id}"
+        name_factory = getattr(self._store, "_memory_name", None)
+        if callable(name_factory):
+            name = name_factory(plan_id, archived)
+        else:
+            namespace = "archive-plans" if archived else "plans"
+            name = f"{namespace}/PLAN-{plan_id}"
         return project if isinstance(project, str) else None, name
 
     def update(self, request: dict[str, Any]) -> dict[str, Any]:
@@ -1021,22 +1394,22 @@ class TaskPlanService:
             project, memory_name = self._scope(plan_id)
             if not project or requested_project != project:
                 raise TaskPlanFailure("project_scope_mismatch", "conflict")
-            request_hash = _request_hash(plan_id, project, "update", data)
+            request_hash = self._request_hash_for(plan_id, project, "update", data)
             with self._store.locked(plan_id):
                 raw = self._store.read(plan_id)
                 current_revision = _sha(raw) if raw is not None else None
                 before_revision = current_revision
-                snapshot = _parse_snapshot(raw, plan_id, project) if raw is not None else None
+                snapshot = self._parse_plan(raw, plan_id, project) if raw is not None else None
                 state = _current_state(snapshot)
                 if snapshot is not None and snapshot.completed:
                     raise TaskPlanFailure("plan_completed", "conflict")
                 archived = self._store.read(plan_id, archived=True)
                 if archived is not None:
-                    _parse_snapshot(archived, plan_id, project)
-                    memory_name = f"archive-plans/PLAN-{plan_id}"
+                    self._parse_plan(archived, plan_id, project)
+                    _, memory_name = self._scope(plan_id, archived=True)
                     raise TaskPlanFailure("plan_already_archived", "conflict")
                 if snapshot is not None and _locate_replay(snapshot, operation_id, request_hash):
-                    return _receipt(
+                    return self._make_receipt(
                         status="replayed",
                         reason="identical_operation_replay",
                         plan_id=plan_id,
@@ -1054,26 +1427,26 @@ class TaskPlanService:
                 active_ids = set() if snapshot is None else set(snapshot.active_ids)
                 resolved = set() if snapshot is None else set(snapshot.resolved_blockers)
                 _apply_records(records, active_ids, resolved, data["records"], completion=False)
-                updated = _append_event(
+                updated = self._append_event_for(
                     raw, plan_id, project, operation_id, "update", request_hash, data
                 )
-                parsed = _parse_snapshot(updated, plan_id, project)
+                parsed = self._parse_plan(updated, plan_id, project)
                 status, actual = self._store.write(plan_id, raw, updated)
                 current_revision = _sha(actual) if actual is not None else None
                 state = _current_state(parsed)
                 if status == "conflict":
-                    return _receipt(
+                    return self._make_receipt(
                         status="conflict",
                         reason="state_changed_during_write",
                         plan_id=plan_id,
-                        state=_observed_state(actual, plan_id, project),
+                        state=self._observed_state_for(actual, plan_id, project),
                         before_revision=before_revision,
                         current_revision=current_revision,
                         project_root=project,
                         memory_name=memory_name,
                     )
                 if status == "unavailable":
-                    return _receipt(
+                    return self._make_receipt(
                         status="unavailable",
                         reason="atomic_write_unavailable",
                         plan_id=plan_id,
@@ -1085,11 +1458,11 @@ class TaskPlanService:
                         memory_name=memory_name,
                     )
                 if status != "written" or actual != updated:
-                    return _receipt(
+                    return self._make_receipt(
                         status="uncertain",
                         reason="write_readback_uncertain",
                         plan_id=plan_id,
-                        state=_observed_state(actual, plan_id, project),
+                        state=self._observed_state_for(actual, plan_id, project),
                         before_revision=before_revision,
                         current_revision=current_revision,
                         changed_ids=[record["record_id"] for record in data["records"]],
@@ -1099,7 +1472,7 @@ class TaskPlanService:
                         project_root=project,
                         memory_name=memory_name,
                     )
-                return _receipt(
+                return self._make_receipt(
                     status="updated",
                     reason="append_verified",
                     plan_id=plan_id,
@@ -1113,7 +1486,7 @@ class TaskPlanService:
                     memory_name=memory_name,
                 )
         except TaskPlanFailure as exc:
-            return _receipt(
+            return self._make_receipt(
                 status=exc.status,
                 reason=exc.reason,
                 plan_id=plan_id,
@@ -1124,7 +1497,7 @@ class TaskPlanService:
                 memory_name=memory_name,
             )
         except Exception:
-            return _receipt(
+            return self._make_receipt(
                 status="unavailable",
                 reason="task_plan_backend_unavailable",
                 plan_id=plan_id,
@@ -1151,19 +1524,19 @@ class TaskPlanService:
             project, memory_name = self._scope(plan_id)
             if not project or requested_project != project:
                 raise TaskPlanFailure("project_scope_mismatch", "conflict")
-            request_hash = _request_hash(plan_id, project, "complete", data)
+            request_hash = self._request_hash_for(plan_id, project, "complete", data)
             with self._store.locked(plan_id):
                 raw = self._store.read(plan_id)
                 if raw is None:
                     archived = self._store.read(plan_id, archived=True)
                     if archived is None:
                         raise TaskPlanFailure("plan_not_found", "conflict")
-                    snapshot = _parse_snapshot(archived, plan_id, project)
+                    snapshot = self._parse_plan(archived, plan_id, project)
                     current_revision = snapshot.revision
                     state = _current_state(snapshot)
-                    memory_name = f"archive-plans/PLAN-{plan_id}"
+                    _, memory_name = self._scope(plan_id, archived=True)
                     if _locate_replay(snapshot, operation_id, request_hash):
-                        return _receipt(
+                        return self._make_receipt(
                             status="replayed",
                             reason="identical_completion_replay_after_archive",
                             plan_id=plan_id,
@@ -1179,10 +1552,10 @@ class TaskPlanService:
                     raise TaskPlanFailure("plan_already_archived", "conflict")
                 current_revision = _sha(raw)
                 before_revision = current_revision
-                snapshot = _parse_snapshot(raw, plan_id, project)
+                snapshot = self._parse_plan(raw, plan_id, project)
                 state = _current_state(snapshot)
                 if _locate_replay(snapshot, operation_id, request_hash):
-                    return _receipt(
+                    return self._make_receipt(
                         status="replayed",
                         reason="identical_operation_replay",
                         plan_id=plan_id,
@@ -1197,7 +1570,7 @@ class TaskPlanService:
                     )
                 archived = self._store.read(plan_id, archived=True)
                 if archived is not None:
-                    _parse_snapshot(archived, plan_id, project)
+                    self._parse_plan(archived, plan_id, project)
                     raise TaskPlanFailure("archive_collision", "conflict")
                 _check_expected(expected, raw)
                 if snapshot.completed:
@@ -1219,26 +1592,26 @@ class TaskPlanService:
                     records, active_ids, unresolved, data["criterion_evidence"]
                 )
                 data["criterion_evidence"] = evidence
-                updated = _append_event(
+                updated = self._append_event_for(
                     raw, plan_id, project, operation_id, "complete", request_hash, data
                 )
-                parsed = _parse_snapshot(updated, plan_id, project)
+                parsed = self._parse_plan(updated, plan_id, project)
                 status, actual = self._store.write(plan_id, raw, updated)
                 current_revision = _sha(actual) if actual is not None else None
                 state = _current_state(parsed)
                 if status == "conflict":
-                    return _receipt(
+                    return self._make_receipt(
                         status="conflict",
                         reason="state_changed_during_write",
                         plan_id=plan_id,
-                        state=_observed_state(actual, plan_id, project),
+                        state=self._observed_state_for(actual, plan_id, project),
                         before_revision=before_revision,
                         current_revision=current_revision,
                         project_root=project,
                         memory_name=memory_name,
                     )
                 if status == "unavailable":
-                    return _receipt(
+                    return self._make_receipt(
                         status="unavailable",
                         reason="atomic_write_unavailable",
                         plan_id=plan_id,
@@ -1250,11 +1623,11 @@ class TaskPlanService:
                         memory_name=memory_name,
                     )
                 if status != "written" or actual != updated:
-                    return _receipt(
+                    return self._make_receipt(
                         status="uncertain",
                         reason="write_readback_uncertain",
                         plan_id=plan_id,
-                        state=_observed_state(actual, plan_id, project),
+                        state=self._observed_state_for(actual, plan_id, project),
                         before_revision=before_revision,
                         current_revision=current_revision,
                         changed_ids=[record["record_id"] for record in data["records"]],
@@ -1264,7 +1637,7 @@ class TaskPlanService:
                         project_root=project,
                         memory_name=memory_name,
                     )
-                return _receipt(
+                return self._make_receipt(
                     status="completed",
                     reason="completion_evidence_recorded",
                     plan_id=plan_id,
@@ -1278,7 +1651,7 @@ class TaskPlanService:
                     memory_name=memory_name,
                 )
         except TaskPlanFailure as exc:
-            return _receipt(
+            return self._make_receipt(
                 status=exc.status,
                 reason=exc.reason,
                 plan_id=plan_id,
@@ -1289,7 +1662,7 @@ class TaskPlanService:
                 memory_name=memory_name,
             )
         except Exception:
-            return _receipt(
+            return self._make_receipt(
                 status="unavailable",
                 reason="task_plan_backend_unavailable",
                 plan_id=plan_id,
@@ -1327,7 +1700,7 @@ class TaskPlanService:
             if self._store is None:
                 return self._unavailable(plan_id, "task_plan_backend_not_configured")
             project, source_name = self._scope(plan_id)
-            target_name = f"archive-plans/PLAN-{plan_id}"
+            _, target_name = self._scope(plan_id, archived=True)
             memory_name = source_name
             if not project or requested_project != project:
                 raise TaskPlanFailure("project_scope_mismatch", "conflict")
@@ -1337,7 +1710,7 @@ class TaskPlanService:
                     target = self._store.read(plan_id, archived=True)
                     if target is None:
                         raise TaskPlanFailure("plan_not_found", "conflict")
-                    snapshot = _parse_snapshot(target, plan_id, project)
+                    snapshot = self._parse_plan(target, plan_id, project)
                     current_revision = snapshot.revision
                     state = _current_state(snapshot)
                     if (
@@ -1346,7 +1719,7 @@ class TaskPlanService:
                         and snapshot.events
                         and snapshot.events[-1]["operation"] == "complete"
                     ):
-                        return _receipt(
+                        return self._make_receipt(
                             status="already_archived",
                             reason="identical_archive_replay",
                             plan_id=plan_id,
@@ -1362,7 +1735,7 @@ class TaskPlanService:
                     raise TaskPlanFailure("archive_reconciliation_mismatch", "conflict")
                 current_revision = _sha(source)
                 before_revision = current_revision
-                snapshot = _parse_snapshot(source, plan_id, project)
+                snapshot = self._parse_plan(source, plan_id, project)
                 state = _current_state(snapshot)
                 if current_revision != expected:
                     raise TaskPlanFailure("stale_revision", "conflict")
@@ -1370,12 +1743,12 @@ class TaskPlanService:
                     raise TaskPlanFailure("plan_not_completed")
                 existing_archive = self._store.read(plan_id, archived=True)
                 if existing_archive is not None:
-                    _parse_snapshot(existing_archive, plan_id, project)
+                    self._parse_plan(existing_archive, plan_id, project)
                     raise TaskPlanFailure("archive_collision", "conflict")
                 status, actual = self._store.archive(plan_id, source)
                 current_revision = _sha(actual) if actual is not None else None
                 if status == "archived" and actual == source:
-                    return _receipt(
+                    return self._make_receipt(
                         status="archived",
                         reason="completed_plan_moved_without_overwrite",
                         plan_id=plan_id,
@@ -1388,7 +1761,7 @@ class TaskPlanService:
                         memory_name=target_name,
                     )
                 if status == "unavailable":
-                    return _receipt(
+                    return self._make_receipt(
                         status="unavailable",
                         reason="archive_primitive_unavailable",
                         plan_id=plan_id,
@@ -1405,7 +1778,7 @@ class TaskPlanService:
                     "conflict": "state_changed_during_archive",
                     "unavailable": "archive_unavailable",
                 }.get(status, "archive_interrupted")
-                return _receipt(
+                return self._make_receipt(
                     status="conflict" if status in {"collision", "conflict"} else "uncertain",
                     reason=reason,
                     plan_id=plan_id,
@@ -1419,7 +1792,7 @@ class TaskPlanService:
                     memory_name=source_name,
                 )
         except TaskPlanFailure as exc:
-            return _receipt(
+            return self._make_receipt(
                 status=exc.status,
                 reason=exc.reason,
                 plan_id=plan_id,
@@ -1431,7 +1804,7 @@ class TaskPlanService:
                 reconciliation="required" if exc.status == "uncertain" else "not_required",
             )
         except Exception:
-            return _receipt(
+            return self._make_receipt(
                 status="unavailable",
                 reason="task_plan_backend_unavailable",
                 plan_id=plan_id,

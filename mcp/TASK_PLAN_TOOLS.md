@@ -17,7 +17,7 @@ from token_io_decoupling_workflow.task_plan_core import SerenaMemoryStore, TaskP
 
 def make_server(project_root, memory_manager):
     # Both arguments come from the host's already authorized Serena project.
-    store = SerenaMemoryStore(memory_manager, project_root)
+    store = SerenaMemoryStore(memory_manager, project_root, storage_scope="global")
     return create_server(profile="workflow", task_plan_service=TaskPlanService(store))
 ```
 
@@ -29,11 +29,30 @@ token-io-decoupling start-mcp-server --profile workflow --task-plan-factory trus
 
 `trusted_adapter` is an operator-provided, reviewed module, not a bundled adapter or a tool argument. Its environment must already contain the compatible Serena dependency and authorized project object. The tool package does not install Serena, load/migrate its configuration, create a project, guess a `.serena` directory, or open another Memory store. Do not execute an invented factory to obtain availability. An unconfigured service returns `unavailable` without inspecting memory paths; invalid explicit configuration fails rather than silently falling back.
 
+## Repository storage scope
+
+The host selects `storage_scope="global"` for shared global plans, as in the embedding example. The constructor's compatibility default remains `"project"`; requests cannot select a storage scope, repository ID, Memory root, or arbitrary namespace. Global mode uses the actual manager's existing canonical global Memory root. Project mode uses its existing project Memory root. No mode initializes or redirects Serena configuration.
+
+| Scope | Active logical Memory name | Corresponding physical path |
+| --- | --- | --- |
+| `global` | `global/token-io-decoupling/repos/<repository-id>/plans/PLAN-<plan_id>` | `<actual-global-memory-root>/token-io-decoupling/repos/<repository-id>/plans/PLAN-<plan_id>.md` |
+| `project` | `plans/PLAN-<plan_id>` | `<actual-project-memory-root>/plans/PLAN-<plan_id>.md` |
+
+For archive names/paths, replace only `plans` with `archive-plans` within the same repository scope. Existing native Serena list/read operations can use the returned `memory_name`; filter global listings to `global/token-io-decoupling/repos/<repository-id>/plans` or its archive topic. The lifecycle tools add no unfiltered list/read endpoint. A raw global listing is not a repository ACL.
+
+The global repository ID is `git-v1-` plus SHA-256 of `b"token-io-decoupling:git-common-dir:v1\0" + os.fsencode(str(canonical_git_common_dir))`. The service verifies the bound absolute checkout root and canonical Git common directory through bounded local Git queries. Main and linked worktrees share that directory, so separately configured services share the same plan files, lock, history, revisions and replay identity. Independent clones and same-named repositories have different IDs. Branch, remote URL, commit and checkout basename do not determine the ID. The ID is local: moving the Git common directory changes it and requires explicit reconciliation of the previous mapping. Reusing the same common-directory path reuses the key, so a newly created repository there requires an ownership/history review before use.
+
+`project_root` in each request must still exactly match that service's configured checkout. A service bound to the main checkout does not accept a worktree path as a substitute; configure that worktree's service with its own authorized manager/root. The service revalidates repository identity before global Memory effects. Missing Git/global root, redirected Git environment, identity changes, unsupported paths or policy denial fail closed; global mode never falls back to project mode. The actual global root must already exist. Intermediate namespace/file symlinks are rejected rather than followed as implicit shared mappings.
+
+Capability and operation receipts report `storage_scope`, `repository_id` when global, and the accurate scoped mapping. Global history version 2 uses an explicit `repository_id` and readable `task-plan-header-v2` / `task-plan-event-v2` JSON fences, allowing updates and exact logical-operation replay from another bound worktree without pretending its `project_root` is unchanged. Project-local version 1 remains checkout-bound with its original v1 framing. A retry from another worktree changes only the checkout binding; the operation ID and logical records/evidence must remain identical. A changed operation needs a new ID and a reviewed revision.
+
+Global mode does not search, move or rewrite old unscoped global plans, project-local plans, or archives, nor automatically convert structured version-1 history. Keep their existing backend/mapping for access. Any separate migration must establish repository ownership, preserve the full source bytes, reject collisions and verify the destination under its own authorization; do not overwrite an archive. Plain legacy Markdown at an already verified scoped name can still be adopted by explicit revision, retaining its original bytes. Project mode remains available for non-Git projects and existing local users, but does not provide worktree sharing.
+
 Source edits do not update a running MCP process. Follow the development guide's authorized build/install procedure and restart through an actually exposed host control before claiming the new tools are live. Confirm the negotiated tool inventory and configured backend status separately; package tests alone do not establish either result.
 
 ## Structured updates
 
-Every tool uses one `payload.request` envelope. Supply the exact absolute `project_root`; it must match the configured backend before any memory effects and cannot switch the service to another checkout. `plan_id` is a bounded lower-case safe slug; its names are `plans/PLAN-<plan_id>` and `archive-plans/PLAN-<plan_id>`. Callers cannot choose arbitrary memory paths or an archive destination. A revision is the SHA-256 of the complete stored UTF-8 bytes.
+Every tool uses one `payload.request` envelope. Supply the exact absolute `project_root`; it must match the configured checkout before any memory effects. `plan_id` is a bounded lower-case safe slug appended to the configured scope's active/archive namespace above. Callers cannot choose arbitrary memory paths, a repository ID, or an archive destination. A revision is the SHA-256 of the complete stored UTF-8 bytes.
 
 Create with an explicitly absent revision:
 
@@ -78,7 +97,7 @@ Raw Serena tools, direct filesystem writers and other processes that ignore the 
 
 These tools issue no OpenAI or network requests. Configuration and capability checks do not prove a real host integration; tests using temporary stores or injected managers are reported separately from actual installed-Serena checks. Use the [development guide](DEVELOPMENT.md) for locked checks and test classification. Real adapter checks must use a temporary project, never a user's existing memories or configuration.
 
-For an explicit local integration check, run `tests/unit_tests/serena_memory_smoke.py` from `mcp/` with the absolute Python executable of an already installed compatible Serena environment. It loads the stdlib-only task-plan core from this checkout, uses the actual `MemoryManager`, and creates only temporary project/data directories. It checks legacy UTF-8/CRLF preservation, readable multi-stage records, supersession, stale versions, completion/archive replay, no resurrection, two-store concurrency, native read-only policy and absence of reference propagation. It is separate from ordinary pytest collection and does not install dependencies or load user configuration.
+For an explicit local integration check, run `tests/unit_tests/serena_memory_smoke.py` from `mcp/` with the absolute Python executable of an already installed compatible Serena environment. It loads the stdlib-only task-plan core from this checkout, uses the actual `MemoryManager`, and creates only temporary project/data directories. Alongside legacy preservation, completion/archive replay, concurrency and native policy checks, the global scenario must exercise real temporary Git repositories/worktrees, repository-isolated names and shared history. It is separate from ordinary pytest collection and does not install dependencies or load user configuration. Temporary Git fixtures do not authorize operations on the user's repository history.
 
 The development integration was checked against installed `serena-agent 2.1.0`. Other versions must satisfy the adapter's actual interface and path checks; this is not a claim of compatibility with every Serena release.
 

@@ -38,7 +38,10 @@ class _TestSerenaMemoryStore(SerenaMemoryStore):
             "status": "configured",
             "reason_code": "test_collaborator",
             "project_root": self.project_root,
+            "storage_scope": "project",
+            "repository_id": None,
             "namespace": "plans/PLAN-<plan_id>",
+            "archive_namespace": "archive-plans/PLAN-<plan_id>",
         }
 
     @contextmanager

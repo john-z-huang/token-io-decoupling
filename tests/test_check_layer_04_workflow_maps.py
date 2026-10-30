@@ -206,6 +206,64 @@ class WorkflowMapMigrationTests(unittest.TestCase):
                     "prior Continue may cover this bounded Slice")
         self.assert_rejected()
 
+    def test_repository_scope_map_labels_are_required_in_both_languages(self):
+        cases = (
+            (
+                "references/coding/layer-04-workflows/modules/work-definition.md",
+                "verify repository scope",
+                "verify storage scope",
+            ),
+            (
+                "references/coding/layer-04-workflows/modules/work-definition_zh_cn.md",
+                "核验仓库存储范围",
+                "核验存储范围",
+            ),
+            (
+                "references/coding/layer-04-workflows/modules/delivery-acceptance.md",
+                "same repository scope",
+                "matching scope",
+            ),
+            (
+                "references/coding/layer-04-workflows/modules/delivery-acceptance_zh_cn.md",
+                "同一仓库存储范围",
+                "对应存储范围",
+            ),
+        )
+        for rel, old, new in cases:
+            with self.subTest(path=rel):
+                original = self.read(rel)
+                self.mutate(rel, old, new)
+                errors = validator.check_repository(self.root)
+                self.assertTrue(
+                    any("is missing required safety label" in error for error in errors),
+                    errors,
+                )
+                (self.root / rel).write_text(original, encoding="utf-8")
+
+    def test_repository_scope_semantics_are_required_with_unchanged_maps(self):
+        cases = (
+            (
+                "references/coding/layer-04-workflows/modules/work-definition.md",
+                "selected storage scope, repository identity and paired active/archive namespaces",
+                "selected storage scope and paired active/archive namespaces",
+            ),
+            (
+                "references/coding/layer-04-workflows/modules/delivery-acceptance.md",
+                "same verified repository storage scope",
+                "same verified workspace storage scope",
+            ),
+        )
+        for rel, old, new in cases:
+            with self.subTest(path=rel):
+                original = self.read(rel)
+                self.mutate(rel, old, new)
+                errors = validator.check_repository(self.root)
+                self.assertTrue(
+                    any("module lost required semantic contract" in error for error in errors),
+                    errors,
+                )
+                (self.root / rel).write_text(original, encoding="utf-8")
+
     def test_auxiliary_bootstrap_must_resume_original_task_at_de01(self):
         self.mutate("references/coding/layer-04-workflows/modules/delegated-execution.md",
                     "after the auxiliary task completes, return to DE01",
