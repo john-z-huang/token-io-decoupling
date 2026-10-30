@@ -37,23 +37,6 @@ def capability_report(
     root; it never creates or initializes Memory paths here.
     """
     binding = diagnose_binding(provider)
-    adapters = {
-        name: {"identity_attestation": "unavailable", "guard_binding": "unavailable"}
-        for name in ("Codex Desktop", "ChatGPT Desktop")
-    }
-    adapter_details = {
-        name: {
-            capability: _detail(
-                status,
-                "adapter_not_implemented",
-                "This built-in Desktop capability is not implemented; no provider was probed here.",
-                "static_support.built_in_desktop_adapters",
-                "Use Native or supply a trusted host provider; see runtime.binding.",
-            )
-            for capability, status in capabilities.items()
-        }
-        for name, capabilities in adapters.items()
-    }
     caller_match = "required" if require_codex_context else "disabled"
     api_decisions = "enabled" if api_decisions_enabled else "disabled"
     task_plan_details = (
@@ -102,7 +85,7 @@ def capability_report(
     return {
         "subsystem": "token-io-mcp",
         "supported_transports": ["stdio"],
-        "host_adapters": adapters,
+        "agent_runtime": "codex_cli",
         "enhanced_binding": (
             "unverified"
             if not embedded
@@ -120,8 +103,17 @@ def capability_report(
         "task_plan_tools": task_plan_details.get("status", "unavailable"),
         "protocol_target": "2026-07-28",
         "capability_details": {
-            "schema_version": 1,
-            "support": {"host_adapters": adapter_details},
+            "schema_version": 2,
+            "support": {
+                "agent_runtime": _detail(
+                    "available",
+                    "fixed_codex_cli",
+                    "This MCP server targets Codex CLI, including its app-server use from Desktop "
+                    "and local Work.",
+                    "static_support.agent_runtime",
+                    "Use Codex CLI; verify host identity, caller context, and guards separately.",
+                )
+            },
             "configuration": {
                 "task_plan_tools": _detail(
                     task_plan_details.get("status", "unavailable"),

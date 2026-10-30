@@ -285,6 +285,38 @@ def test_provider_failure_is_safe_and_payload_is_strict(monkeypatch: pytest.Monk
         _payload(objective="  ")
 
 
+def test_caller_can_explicitly_invoke_again_after_transient_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://example.invalid/v1")
+
+    class APITimeoutError(Exception):
+        pass
+
+    failed_client = _FakeClient(error=APITimeoutError("private timeout"))
+    successful_client = _FakeClient(
+        SimpleNamespace(
+            answers=[SimpleNamespace(type="choice", name="child_effort", choice="high")],
+            model="gpt-6-luna",
+        )
+    )
+    clients = iter((failed_client, successful_client))
+    selector = ChildEffortSelector(client_factory=lambda *_: next(clients))
+
+    first = selector.select(_payload())
+    assert first.status == "blocked"
+    assert first.recovery is not None and first.recovery.retry_eligible
+    assert first.recovery.total_attempt_limit == 3
+    assert len(failed_client.decisions.calls) == 1
+
+    second = selector.select(_payload())
+    assert (second.status, second.selected_effort) == ("available", "high")
+    assert second.input_hash == first.input_hash
+    assert second.recovery is None
+    assert len(successful_client.decisions.calls) == 1
+
+
 def test_no_adequate_supported_level_is_reported_as_insufficient_evidence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

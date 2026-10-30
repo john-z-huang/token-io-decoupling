@@ -67,7 +67,8 @@ def test_detached_core_sdist_builds_bilingual_rule_resources(tmp_path: Path) -> 
             for name in members
             if name.startswith("token_io_decoupling_core/_resources/rules/")
         }
-        assert len(rule_resources) == 46
+        assert len(rule_resources) == 44
+        assert not any("environment." in name for name in rule_resources)
         expected_delegation_owners = {
             f"token_io_decoupling_core/_resources/rules/{owner}.{language}.md"
             for owner in (
@@ -89,7 +90,7 @@ from importlib.resources import files
 
 sys.path.insert(0, sys.argv[1])
 
-from token_io_decoupling_core.rules import RuleLoader
+from token_io_decoupling_core.rules import RuleLoader, UnknownRuleNodeError
 from token_io_decoupling_core.owner_paths import OWNER_PATHS
 mapped_owner = OWNER_PATHS["child-role-selection"]
 assert mapped_owner.endswith("delegation/child-role-selection.md")
@@ -103,6 +104,13 @@ markers = {
 }
 resources = files("token_io_decoupling_core").joinpath("_resources", "rules")
 loader = RuleLoader()
+assert loader.load_context("contract").next_checkpoint_ids == ["mode"]
+try:
+    loader.load_context("environment")
+except UnknownRuleNodeError:
+    pass
+else:
+    raise AssertionError("retired environment checkpoint remains active")
 for owner, (english_marker, chinese_marker) in markers.items():
     english = resources.joinpath(f"{owner}.en.md").read_text(encoding="utf-8")
     chinese = resources.joinpath(f"{owner}.zh_cn.md").read_text(encoding="utf-8")

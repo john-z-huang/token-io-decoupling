@@ -4,6 +4,12 @@ Multilingual documentation requirements are maintained in [`MULTI_LINGUAL.md`](M
 
 Any Agent or contributor that creates, edits, renames, moves, or deletes documentation in this repository must load and follow that file before making documentation changes.
 
+## MCP support and documentation compatibility
+
+Develop this repository's MCP Server exclusively for local Codex CLI. Local ChatGPT Work uses it through local Codex CLI. Do not add environment detection, adapters, or compatibility paths for other Code Agents, cloud ChatGPT chats, or remote ChatGPT Work. Those environments may use this server only by installing Codex CLI there and following this project's instructions to install the server for that CLI; they do not become supported direct MCP clients. Codex CLI calls must not include a runtime-environment judgment step. Preserve actual capability, identity, permission, and guard checks. The [MCP directory instructions](mcp/AGENTS.md) own the implementation boundary.
+
+Other Code Agents may use this Skill through its documents without its MCP Server. Continue updating the documentation to maintain compatible instruction descriptions for other Code Agents alongside Codex CLI support. This document compatibility does not expand MCP Server development or client support.
+
 ## Forbidden Skill operations and absolute Computer Use stop rule
 
 This is a mandatory repository-wide constraint for **every execution of this Skill**, across all runtime providers, parent Agents, child Agents, delegated tasks, recovery paths, and tool adapters.

@@ -13,6 +13,13 @@ from token_io_decoupling_core.models import StrictModel
 from token_io_decoupling_core.rules import RuleLoader, RuleLoadError
 from token_io_decoupling_transport.payloads import payload_model
 
+from token_io_decoupling_workflow.api_recovery import (
+    RecoveryGuidance,
+    classify_provider_failure,
+    recovery_for_provider_failure,
+    recovery_for_reason,
+)
+
 GENERATION_MODEL = "gpt-6-luna"
 GENERATION_TIMEOUT_SECONDS = 20.0
 
@@ -89,6 +96,9 @@ class DecisionContextResult(StrictModel):
     output_kind: DecisionOutputKind
     model: Literal["gpt-6-luna"] | None = None
     source_policy_hash: Annotated[StrictStr, Field(pattern=r"^[a-f0-9]{64}$")] | None = None
+    recovery: RecoveryGuidance | None = Field(
+        default=None, description="Caller guidance; null means no retry guidance is present."
+    )
     total_tokens: int | None = None
 
 
@@ -129,6 +139,7 @@ class DecisionContextGenerator:
             ],
             *,
             missing_information: list[ShortText] | None = None,
+            recovery: RecoveryGuidance | None = None,
         ) -> DecisionContextResult:
             return _blocked(
                 reason,
@@ -136,6 +147,7 @@ class DecisionContextGenerator:
                 payload.output_kind,
                 missing_information=missing_information,
                 source_policy_hash=source_policy_hash,
+                recovery=recovery,
             )
 
         api_key = os.environ.get("OPENAI_API_KEY")
@@ -159,7 +171,8 @@ class DecisionContextGenerator:
                 tools=[],
             )
         except Exception as exc:
-            return blocked(_failure_reason(exc))
+            failure = classify_provider_failure(exc)
+            return blocked(_failure_reason(exc), recovery=recovery_for_provider_failure(failure))
         finally:
             close = getattr(client, "close", None)
             if callable(close):
@@ -297,6 +310,7 @@ def _blocked(
     *,
     missing_information: list[ShortText] | None = None,
     source_policy_hash: str | None = None,
+    recovery: RecoveryGuidance | None = None,
 ) -> DecisionContextResult:
     return DecisionContextResult(
         status="blocked",
@@ -305,4 +319,5 @@ def _blocked(
         output_kind=output_kind,
         missing_information=missing_information or [],
         source_policy_hash=source_policy_hash,
+        recovery=recovery or recovery_for_reason(reason),
     )

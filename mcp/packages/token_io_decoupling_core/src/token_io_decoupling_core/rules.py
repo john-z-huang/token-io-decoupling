@@ -17,7 +17,7 @@ from token_io_decoupling_core.registry_contract import (
     validate_supported_registry_shape,
 )
 
-SUPPORTED_CONTRACT_VERSION = 1
+SUPPORTED_CONTRACT_VERSION = 2
 
 
 class RuleLoadError(RuntimeError):

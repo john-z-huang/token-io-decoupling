@@ -444,7 +444,12 @@ def test_missing_credentials_timeout_and_invalid_outbound_permission_fall_back(
         DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True),
         client_factory=lambda *_: FakeClient(APITimeoutError("private timeout detail")),
     )
-    assert timeout_advisor.advise(_inputs()[0][0]).reason == "timeout"
+    timeout_advice = timeout_advisor.advise(_inputs()[0][0])
+    assert timeout_advice.reason == "timeout"
+    assert timeout_advice.recovery is not None
+    assert timeout_advice.recovery.retry_eligible is False
+    assert timeout_advice.recovery.action == "continue_without_advice_or_review"
+    assert timeout_advice.recovery.total_attempt_limit is None
     with pytest.raises(ValueError, match="outbound data permission"):
         DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=False)
 
@@ -651,6 +656,7 @@ def test_mcp_core_and_advice_are_separate_and_replay_does_not_call_api(
             assert not replay.is_error
             replay_value = json.loads(_text_content(replay))
             assert replay_value["advice"]["reason"] == "idempotent_replay"
+            assert replay_value["advice"]["recovery"] is None
             assert replay_value["evaluation"]["branch"] == "coding"
             assert fake.decisions.calls == []
 
@@ -717,6 +723,7 @@ def test_mcp_semantic_advice_does_not_replace_core_choice_and_replay_is_not_fres
             assert replay_value["evaluation"]["branch"] == "coding"
             assert replay_value["advice"]["reason"] == "idempotent_replay"
             assert replay_value["advice"]["suggested_choice"] is None
+            assert replay_value["advice"]["recovery"] is None
             assert len(fake.decisions.calls) == 1
 
     asyncio.run(run())

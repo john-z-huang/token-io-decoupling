@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sqlite3
 import sys
 from pathlib import Path
 from typing import Any, cast
@@ -171,6 +172,30 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
     }
     assert parameters["database_schema_status"]["properties"] == {}
     assert "path" not in str(parameters)
+    active_nodes = parameters["rules_get_context"]["properties"]["payload"]["properties"][
+        "node_id"
+    ]["enum"]
+    assert "environment" not in active_nodes
+    root_parameters = {
+        tool.name: tool.parameters
+        for tool in create_server(FakeBindingProvider())._tool_manager.list_tools()
+    }
+    assert (
+        "environment"
+        not in root_parameters["workflow_evaluate"]["properties"]["payload"]["properties"][
+            "node_id"
+        ]["enum"]
+    )
+    share_parameters = {
+        tool.name: tool.parameters
+        for tool in create_server(FakeBindingProvider(), profile="share")._tool_manager.list_tools()
+    }
+    assert (
+        "environment"
+        not in share_parameters["record_evidence"]["properties"]["payload"]["properties"][
+            "submission"
+        ]["properties"]["node_id"]["enum"]
+    )
     root_server = create_server(FakeBindingProvider())
     root_tool_specs = {tool.name: tool for tool in root_server._tool_manager.list_tools()}
     unreserve_parameters = root_tool_specs["delegation_unreserve"].parameters
@@ -193,8 +218,9 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
         {"uri", "content_hash"} <= set(variant["properties"]) for variant in proof_schema["anyOf"]
     )
     capabilities = asyncio.run(_call(unbound, "workflow_capabilities", {}))
-    assert capabilities["host_adapters"]["Codex Desktop"]["identity_attestation"] == "unavailable"
-    assert capabilities["host_adapters"]["ChatGPT Desktop"]["guard_binding"] == "unavailable"
+    assert capabilities["agent_runtime"] == "codex_cli"
+    assert capabilities["capability_details"]["schema_version"] == 2
+    assert "host_adapters" not in capabilities
     assert capabilities["mode_fallback"] == "Native"
     assert capabilities["api_decisions"] == "disabled"
     assert capabilities["child_effort_decisions"] == "available_per_invocation"
@@ -258,14 +284,63 @@ def test_default_and_embedded_discovery_metadata_matches_bound_role() -> None:
         for role, (provider, expected_tools) in scenarios.items():
             async with Client(create_server(provider), mode="auto") as client:
                 assert client.server_info is not None
+                assert "Codex CLI" in (client.server_info.description or "")
+                assert "Codex CLI" in (client.instructions or "")
                 expected_role_label = "public-only" if role == "public" else role
                 assert expected_role_label in (client.instructions or "").casefold()
                 tool_list = await client.list_tools()
                 assert {tool.name for tool in tool_list.tools} == expected_tools
                 assert all(tool.description for tool in tool_list.tools)
+                assert all(
+                    "Codex CLI MCP tool" in (tool.description or "") for tool in tool_list.tools
+                )
+                assert all(
+                    "Recovery class:" in (tool.description or "") for tool in tool_list.tools
+                )
                 if role == "parent":
                     assert "No Worker operations" in (client.instructions or "")
                     descriptions = {tool.name: tool.description or "" for tool in tool_list.tools}
+                    for name in ("task_plan_update", "task_plan_complete"):
+                        description = descriptions[name]
+                        assert "Recovery class: task-plan mutation." in description
+                        for required in (
+                            "unknown completion",
+                            "read back the task plan",
+                            "stable request_id",
+                            "unchanged expected_revision",
+                            "identical records/criterion evidence",
+                            "revision conflict",
+                            "refresh the current plan and revision",
+                            "review the change",
+                            "changed content is still authorized and intended",
+                            "new request_id",
+                            "current reviewed revision as expected_revision",
+                            "receipt, and readback first",
+                            "never blindly resubmit",
+                            "no model/API request",
+                            "not stateless API retries",
+                        ):
+                            assert required in description
+                        assert "idempotency_key" not in description
+                    archive_description = descriptions["task_plan_archive"]
+                    assert "Recovery class: task-plan archive mutation." in archive_description
+                    for required in (
+                        "unknown completion",
+                        "task plan, fixed archive target, receipt, and readback first",
+                        "has no request ID",
+                        "same completed revision",
+                        "same fixed archive target",
+                        "archived bytes match the expected revision",
+                        "revision conflict",
+                        "refresh and review the completed plan",
+                        "reconcile active/archive state",
+                        "Never blindly resubmit or overwrite",
+                        "no model/API request",
+                        "not a stateless API retry",
+                    ):
+                        assert required in archive_description
+                    assert "request_id" not in archive_description
+                    assert "idempotency_key" not in archive_description
                     unreserve_description = descriptions["delegation_unreserve"]
                     for required in (
                         "literal JSON true",
@@ -505,6 +580,26 @@ def test_bound_wire_parses_enum_json_and_revocation_is_checked_per_call(tmp_path
             )
             assert not opened.is_error
             assert '"revision": 0' in _result_text(opened)
+            retired_context = await client.call_tool(
+                "rules_get_context",
+                {"payload": {"node_id": "environment", "language": "en"}},
+            )
+            assert retired_context.is_error
+            retired_evaluation = await client.call_tool(
+                "workflow_evaluate",
+                {
+                    "payload": {
+                        "node_id": "environment",
+                        "expected_revision": 0,
+                        "idempotency_key": "retired-environment-wire",
+                    }
+                },
+            )
+            assert retired_evaluation.is_error
+            state_after_retired_evaluation = await client.call_tool(
+                "workflow_get_state", {"payload": {}}
+            )
+            assert '"revision": 0' in _result_text(state_after_retired_evaluation)
             audit = await client.call_tool(
                 "workflow_transition",
                 {
@@ -1117,6 +1212,27 @@ def test_worker_protocol_reads_and_writes_its_confirmed_assignment(tmp_path: Pat
             )
             assert not worker_evidence.is_error
             assert "evidence_id" in _result_text(worker_evidence)
+            worker_evidence_id = json.loads(_result_text(worker_evidence))["result"]["evidence_id"]
+            binding = service._worker_binding({HostCapability.WORKER_READ})
+            worker_database, _ = service._worker_database(
+                binding.current_session_id, binding, create=False
+            )
+            with sqlite3.connect(worker_database) as connection:
+                connection.execute(
+                    "UPDATE worker_checkpoint_evidence SET node_id='environment' "
+                    "WHERE evidence_id=?",
+                    (worker_evidence_id,),
+                )
+            worker = create_server(provider, profile="worker", state_root=state_root)
+            async with Client(worker, mode="auto") as worker_client:
+                historical = await worker_client.call_tool(
+                    "worker_get_evidence",
+                    {"payload": {"evidence_id": worker_evidence_id}},
+                )
+                assert not historical.is_error
+                historical_record = json.loads(_result_text(historical))
+                assert historical_record["node_id"] == "environment"
+                assert historical_record["stale"] is True
             shared_after_write = await share_client.call_tool("state_get", {"payload": {}})
             assert not shared_after_write.is_error
             assert '"revision": 2' in _result_text(shared_after_write)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 from token_io_decoupling_core.models import (
     CodingMode,
     DocumentationEpoch,
@@ -16,7 +16,13 @@ from token_io_decoupling_core.models import (
     SchemaVersion,
     SemanticRef,
 )
-from token_io_decoupling_core.state_models import DelegationUnreserveRequest
+from token_io_decoupling_core.state_models import (
+    ActiveCheckpointNode,
+    CheckpointEvaluation,
+    CheckpointNode,
+    DelegationUnreserveRequest,
+    EpochSnapshot,
+)
 from token_io_decoupling_mcp.state_models import (
     DelegationUnreserveRequest as AdapterDelegationUnreserveRequest,
 )
@@ -46,6 +52,32 @@ def test_versions_revisions_epochs_and_references_have_distinct_contracts() -> N
         Revision(value=True)
     with pytest.raises(ValidationError):
         SemanticRef(uri="memory://plan", content_hash="bad")
+
+
+def test_legacy_environment_checkpoint_evaluation_remains_readable() -> None:
+    legacy = CheckpointEvaluation(
+        evaluation_id="legacy-environment",
+        node_id=CheckpointNode.ENVIRONMENT,
+        outcome="blocked",
+        branch=None,
+        rule_hash="a" * 64,
+        input_hash="b" * 64,
+        epochs=EpochSnapshot(implementation_content=0, documentation=0, git_metadata=0),
+        basis_revision=0,
+        result_revision=1,
+        missing_facts=[],
+        missing_evidence=[],
+    )
+    restored = CheckpointEvaluation.model_validate_json(legacy.model_dump_json())
+    assert restored.node_id is CheckpointNode.ENVIRONMENT
+
+
+def test_active_checkpoint_input_rejects_environment_and_keeps_legacy_enum_values() -> None:
+    adapter = TypeAdapter(ActiveCheckpointNode)
+    assert adapter.validate_python("contract") is CheckpointNode.CONTRACT
+    assert "environment" not in adapter.json_schema()["enum"]
+    with pytest.raises(ValidationError):
+        adapter.validate_python("environment")
 
 
 def test_judgment_statuses_require_evidence_or_not_applicable_reason() -> None:

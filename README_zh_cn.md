@@ -6,6 +6,12 @@
 
 它维护面向仓库和开发工作的 **Coding** 工作流。Multimodal 内容仅作为独立 reference 保留，不作为可执行工作流维护。请从 [Skill 入口](SKILL_zh_cn.md) 开始；它会按任务当前阶段路由到所需的 reference。
 
+## MCP 支持范围与纯文档使用
+
+本项目的 MCP Server 仅面向本地 Codex CLI 开发。本地 ChatGPT Work 通过本地 Codex CLI 使用它。其他 Code Agent、云端 ChatGPT 聊天和远端 ChatGPT Work 均不直接支持此 Server；只有在各自环境中安装 Codex CLI，并按本项目指示为该 CLI 安装 Server，才能通过该 CLI 使用，这不增加对这些宿主或 Agent 的支持。Codex CLI 调用这些工具时不执行运行环境判断步骤；实际能力、身份、权限和守卫检查仍然适用。参见 [MCP 客户端边界](mcp/AGENTS_zh_cn.md)。
+
+其他 Code Agent 可以不使用此 MCP Server，通过纯文档方式使用 Skill。本项目会持续更新指令，在支持 Codex CLI 的同时维护对其他 Code Agent 的描述兼容；MCP Server 的开发始终聚焦 Codex CLI。
+
 ## 将 MCP 服务安装到 Codex
 
 准备好 `uv`、Bash 3.2 或更新版本和 Codex CLI 后，从任意工作目录执行一条命令：
@@ -24,6 +30,6 @@ bash /absolute/path/to/skill/scripts/install-codex-mcp.sh
 - [增强架构](ENHANCED_ARCHITECTURE_zh_cn.md)：可选 MCP 状态、规则上下文、语义建议及经核验的宿主边界；Native 仍为默认路径。
 - [MCP 开发指南](mcp/DEVELOPMENT_zh_cn.md)：本地 Python 检查与包构建。
 
-可选 Decisions 集成默认关闭。每次真实请求（包括测试请求）必须读取本地 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，缺少任一项就不得请求。显式启用与测试方法见开发指南。当前生产入口没有经核验的 Codex 或 ChatGPT Desktop 宿主绑定，因此只暴露公共诊断与规则上下文。
+可选 Decisions 集成默认关闭。每次真实请求（包括测试请求）必须读取本地 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，缺少任一项就不得请求。显式启用与测试方法见开发指南。当前生产入口没有经核验的 Codex CLI 宿主绑定，因此只暴露公共诊断与规则上下文。
 
 `token-io-decoupling setup codex` 会注册所选 profile，并自动将 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL` 合并到各服务的 `env_vars`，包括已匹配的注册项。随后重新加载服务。对于任意名称的已注册服务，可使用 `setup codex-env --server NAME` 或[独立修复脚本](scripts/configure-codex-mcp-env.py)，两者都支持 `--dry-run`。详见[环境转发说明](mcp/DEVELOPMENT_zh_cn.md#codex-stdio-环境变量转发)。转发只让进程获得配置，不会启用 Decisions 或建立宿主绑定。

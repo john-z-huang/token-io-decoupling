@@ -200,18 +200,21 @@ def exercise_client(executable: Path, client: str) -> dict[str, Any]:
             assert result.get("isError") is False
             report = json.loads(result["content"][0]["text"])
             details = report["capability_details"]
-            assert details["schema_version"] == 1
-            for adapter in details["support"]["host_adapters"].values():
-                for entry in adapter.values():
-                    assert (entry["status"], entry["reason_code"]) == (
-                        "unavailable",
-                        "adapter_not_implemented",
-                    )
-            for entry in details["configuration"].values():
+            assert report["agent_runtime"] == "codex_cli"
+            assert details["schema_version"] == 2
+            assert details["support"]["agent_runtime"]["reason_code"] == "fixed_codex_cli"
+            configuration = details["configuration"]
+            for name in ("caller_match", "api_decisions"):
+                entry = configuration[name]
                 assert (entry["status"], entry["reason_code"]) == (
                     "disabled",
                     "configured_disabled",
                 )
+            task_plan_tools = configuration["task_plan_tools"]
+            assert (task_plan_tools["status"], task_plan_tools["reason_code"]) == (
+                "unavailable",
+                "task_plan_backend_not_configured",
+            )
             runtime = details["runtime"]
             assert runtime["binding"]["status"] == "unverified"
             assert runtime["binding"]["reason_code"] == "provider_not_configured"

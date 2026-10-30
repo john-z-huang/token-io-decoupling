@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from token_io_decoupling_core.models import NonEmptyString
-from token_io_decoupling_core.state_models import CheckpointNode, LegalBranch
+from token_io_decoupling_core.state_models import ActiveCheckpointNode, LegalBranch
 from token_io_decoupling_transport.payloads import payload_model
 
 from token_io_decoupling_workflow.decisions import DecisionAdvisoryInput
 
 _EVALUATE = payload_model(
     "EvaluatePayload",
-    node_id=(CheckpointNode, ...),
+    node_id=(ActiveCheckpointNode, ...),
     expected_revision=(int, ...),
     idempotency_key=(NonEmptyString, ...),
     branch=(LegalBranch | None, None),

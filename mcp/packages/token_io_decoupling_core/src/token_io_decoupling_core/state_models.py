@@ -6,7 +6,14 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Annotated, Literal, TypeAlias
 
-from pydantic import Field, StrictBool, StrictInt, model_validator
+from pydantic import (
+    AfterValidator,
+    Field,
+    StrictBool,
+    StrictInt,
+    WithJsonSchema,
+    model_validator,
+)
 
 from token_io_decoupling_core.models import (
     EvidenceRef,
@@ -124,6 +131,26 @@ class CheckpointNode(StrEnum):
     OUTPUT_CLASS = "output_class"
     CONTRACT_CHANGE = "contract_change"
     VERIFICATION_IMPACT = "verification_impact"
+
+
+def _reject_retired_environment_checkpoint(node_id: CheckpointNode) -> CheckpointNode:
+    if node_id is CheckpointNode.ENVIRONMENT:
+        raise ValueError("environment is not an active checkpoint")
+    return node_id
+
+
+ActiveCheckpointNode: TypeAlias = Annotated[
+    CheckpointNode,
+    AfterValidator(_reject_retired_environment_checkpoint),
+    WithJsonSchema(
+        {
+            "type": "string",
+            "enum": [
+                node.value for node in CheckpointNode if node is not CheckpointNode.ENVIRONMENT
+            ],
+        }
+    ),
+]
 
 
 class FactKey(StrEnum):
@@ -420,7 +447,7 @@ class CheckpointFact(StrictModel):
 
 
 class EvidenceSubmission(StrictModel):
-    node_id: CheckpointNode
+    node_id: ActiveCheckpointNode
     facts: Annotated[list[CheckpointFact], Field(min_length=1)]
     evidence_refs: list[TypedEvidenceReference] = Field(default_factory=list)
     coverage_dimensions: list[EpochDimension] = Field(default_factory=list)

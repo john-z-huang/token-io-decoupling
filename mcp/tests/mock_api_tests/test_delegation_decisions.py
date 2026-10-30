@@ -431,7 +431,38 @@ def test_role_selection_api_failure_falls_back_to_available_primary(
         AllocationRole.PRIMARY_OUTPUT.value,
     )
     assert result.next_action == "root_review_then_use_primary_only_if_creation_is_established"
+    assert result.recovery is not None and result.recovery.retry_eligible
+    assert result.recovery.total_attempt_limit == 3
     assert "sensitive transport detail" not in result.model_dump_json()
+
+
+def test_caller_can_explicitly_invoke_delegation_selector_again_after_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://example.invalid/v1")
+    first_client = _FakeClient(error=TimeoutError("private timeout"))
+    second_client = _FakeClient(
+        _choice_response("child_role", AllocationRole.CHANGE_VERIFICATION.value)
+    )
+    clients = iter((first_client, second_client))
+    selector = _selector(lambda *_: next(clients))
+    payload = _role_payload()
+
+    first = selector.select_child_role(payload)
+    assert first.status == "fallback"
+    assert first.recovery is not None and first.recovery.retry_eligible
+    assert first.recovery.total_attempt_limit == 3
+    assert len(first_client.decisions.calls) == 1
+
+    second = selector.select_child_role(payload)
+    assert (second.status, second.suggested_value) == (
+        "available",
+        AllocationRole.CHANGE_VERIFICATION.value,
+    )
+    assert second.input_hash == first.input_hash
+    assert second.recovery is None
+    assert len(second_client.decisions.calls) == 1
 
 
 def test_role_selection_excludes_occupied_roles_from_request_and_fallback(
