@@ -32,6 +32,7 @@ from token_io_decoupling_transport.registration import ToolRegistrar
 from token_io_decoupling_transport.tool_metadata import server_description, server_instructions
 from token_io_decoupling_worker.tools import register_worker_tools
 from token_io_decoupling_workflow.decisions import DecisionsAdvisor, DecisionsRuntimeConfig
+from token_io_decoupling_workflow.task_plan_core import TaskPlanService
 from token_io_decoupling_workflow.tools import register_workflow_tools
 
 
@@ -43,6 +44,7 @@ def create_server(
     state_root: Path | str | None = None,
     decisions_config: DecisionsRuntimeConfig | None = None,
     decisions_client_factory: Callable[[str, str], object] | None = None,
+    task_plan_service: TaskPlanService | None = None,
     profile: str | None = None,
     server_name: str | None = None,
 ) -> MCPServer[Any]:
@@ -58,6 +60,8 @@ def create_server(
     )
     if profile is not None and profile not in PROFILE_TOOLS:
         raise ValueError(f"unknown server profile: {profile}")
+    if task_plan_service is not None and not isinstance(task_plan_service, TaskPlanService):
+        raise TypeError("task_plan_service must be a TaskPlanService")
     bound_role = _bound_role(provider) if binding_provider is not None else None
     if require_bound and bound_role is None:
         raise BindingError("authenticated host channel did not provide a usable bound identity")
@@ -77,6 +81,7 @@ def create_server(
     )
     config = decisions_config or DecisionsRuntimeConfig()
     advisor = DecisionsAdvisor(service, rules, config, client_factory=decisions_client_factory)
+    task_plans = task_plan_service if task_plan_service is not None else TaskPlanService()
     registrar = ToolRegistrar(
         server,
         provider=provider,
@@ -90,6 +95,7 @@ def create_server(
     register_workflow_tools(
         registrar,
         service=service,
+        task_plan_service=task_plans,
         rules=rules,
         advisor=advisor,
         decisions_config=decisions_config,

@@ -17,6 +17,9 @@ from token_io_decoupling.server import create_server
 
 PUBLIC_TOOLS = {
     "workflow_capabilities",
+    "task_plan_update",
+    "task_plan_complete",
+    "task_plan_archive",
     "rules_get_context",
     "workflow_select_child_effort",
     "workflow_generate_decision_context",
@@ -40,6 +43,9 @@ def test_profiles_have_fixed_disjoint_inventories_and_fail_closed() -> None:
     expected = {
         "workflow": {
             "workflow_capabilities",
+            "task_plan_update",
+            "task_plan_complete",
+            "task_plan_archive",
             "rules_get_context",
             "workflow_select_child_effort",
             "workflow_generate_decision_context",
@@ -109,6 +115,9 @@ def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
     expected = {
         "workflow": {
             "workflow_capabilities",
+            "task_plan_update",
+            "task_plan_complete",
+            "task_plan_archive",
             "rules_get_context",
             "workflow_select_child_effort",
             "workflow_generate_decision_context",

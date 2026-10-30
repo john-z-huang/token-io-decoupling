@@ -60,6 +60,65 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "baseline does not verify caller metadata or operation-specific guards, enable Enhanced,",
         "change startup admission, or grant authority. No revision or idempotency key is required.",
     ),
+    "task_plan_update": _description(
+        "Append structured records to one task plan in the configured Serena Memory namespace.",
+        "Payload: request.project_root (absolute path and exact configured project match),",
+        "plan_id (lower-case slug), expected_revision (current SHA-256, or JSON null only when",
+        "creating an absent plan), request_id (stable operation ID), and records (1-100 immutable",
+        "record_id/kind/text/sources entries). Kinds include goal, criterion, verification,",
+        "blocker,",
+        "resolution, result, limitation, constraint, requirement, fact, decision, and progress;",
+        "verification requires outcome passed/failed/assumed/unavailable. Superseding a record",
+        "requires its active ID and a reason; a resolution references an existing blocker.",
+        "Returns a compact receipt with scope, revision, state, changed IDs,",
+        "preservation, readback,",
+        "replay, and reconciliation status; never returns plan text. The service validates",
+        "history,",
+        "uses a POSIX advisory lock, expected SHA, atomic same-directory write,",
+        "and exact readback.",
+        "Requires trusted operator startup configuration (--task-plan-factory MODULE:CALLABLE);",
+        "default is unavailable with no path/config/import side effects.",
+        "Makes no model/API request.",
+        "Raw Serena writers can bypass this tool's lock and revision checks;",
+        "no global ACL is claimed.",
+        "Stale SHA, conflicting operation ID, invalid history/policy/path, unsupported lock, or",
+        "readback failure returns a bounded reason and current revision when known;",
+        "reconcile uncertain writes.",
+    ),
+    "task_plan_complete": _description(
+        "Append final results and limitations and mark one task plan completed.",
+        "Payload: request.project_root (absolute path and exact configured project match),",
+        "plan_id,",
+        "expected_revision (current SHA-256), request_id (stable operation ID), criterion_evidence",
+        "(exactly one mapping per active criterion to an active verification record), and 1-100",
+        "result/limitation records. Completion requires at least one active criterion, a passed",
+        "verification for every criterion, and no unresolved blocker; missing, failed, assumed, or",
+        "unavailable evidence is rejected. Resolve blockers with a typed resolution record first.",
+        "Completion is terminal; later updates are rejected and an identical completion operation",
+        "replays without another write. The receipt is compact and reports",
+        "revision/readback state;",
+        "it does not assert that caller-supplied evidence is semantically true or sufficient.",
+        "Requires the explicit trusted task-plan factory and configured Serena MemoryManager; the",
+        "default is unavailable. Uses no model/API request. Raw Serena writes can bypass its lock.",
+        "Conflicts, invalid evidence/history/policy/path, and uncertain writes",
+        "return bounded reasons.",
+    ),
+    "task_plan_archive": _description(
+        "Move one completed task plan to its fixed archive namespace without overwriting.",
+        "Payload: request.project_root (absolute path and exact configured project match),",
+        "plan_id,",
+        "and expected_revision (SHA-256 of the completed plan). The tool maps plans/PLAN-<id> to",
+        "archive-plans/PLAN-<id>; callers cannot choose source or destination. It adds no event or",
+        "request ID. A POSIX advisory lock and atomic no-clobber hard link precede source removal;",
+        "existing destinations are never modified. A source-absent replay succeeds only when the",
+        "archived bytes match the expected revision and the full completed",
+        "history/identity parses.",
+        "Returns a compact scoped receipt. Requires trusted operator startup configuration;",
+        "default is unavailable and makes no model/API request.",
+        "Raw Serena writers can bypass the lock.",
+        "Incomplete plans, stale revisions, collisions, symlinks, policy denial, or unsupported",
+        "filesystem primitives fail closed; interruptions return uncertain/reconciliation status.",
+    ),
     "rules_get_context": _description(
         "Load bounded checkpoint rule context.",
         "Payload: node_id (checkpoint enum) and language (en by default; en or zh_cn).",
@@ -544,7 +603,15 @@ SERVER_INSTRUCTIONS: dict[str, str] = {
     "workflow": (
         "Profile workflow exposes capabilities, rules, stateless decision-context generation, "
         "child-effort selection, and delegation decisions, plus "
-        "Root-bound persisted evaluations. Start with workflow_capabilities and rules_get_context; "
+        "Root-bound persisted evaluations and task-plan update, "
+        "completion, and archive operations. "
+        "Task-plan writes require an explicitly injected TaskPlanService; the CLI loads trusted "
+        "operator code only when --task-plan-factory MODULE:CALLABLE is supplied. No factory means "
+        "task-plan tools return unavailable without probing paths, loading config, or importing "
+        "Serena. The factory is never loaded from a tool payload or capability request. Each plan "
+        "request must name the configured project_root exactly. These operations make no model/API "
+        "request; raw Serena write paths may bypass their cooperative lock. "
+        "Start with workflow_capabilities and rules_get_context; "
         "call workflow_generate_decision_context only with caller-composed, provenance-labeled "
         "source material and explicit outbound_data_permitted=true when a question or context "
         "description is needed. It does not read files, make the downstream decision, call another "

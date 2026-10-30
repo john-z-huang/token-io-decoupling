@@ -59,11 +59,27 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-使用实际暴露且获准的 Serena MCP 操作：`list_memories`、`read_memory`、`write_memory` 或 `edit_memory`，以及完成时的 `rename_memory`。当前观察到的 Codex 工具接口中，创建接收 `{memory_name, content}`，读取接收 `{memory_name}`，重命名接收 `{old_name, new_name}`；准确参数以当前工具 schema 为准。操作前确认项目激活。这是具体的 MCP 任务计划机制；原生 `/plan`、本地回忆和聊天压缩不能持久化或更新该共享记录。当前 Session 的 Memory 调用成功只是运行时证据，不证明另一 Agent 或 Desktop Session 暴露相同工具；每个分配的 Agent 都须核实。[Codex MCP](https://learn.chatgpt.com/docs/extend/mcp)。
+### 已配置的确定性生命周期工具
+
+workflow MCP profile 暴露已授权且已配置的 Serena 后端时，使用 `task_plan_update`、`task_plan_complete`、`task_plan_archive` 修改计划。仅发现工具不足以继续：须确认后端可用及准确配置项目。操作者通过显式服务注入或受信任启动 factory 提供实际绑定项目的 Serena `MemoryManager`。不得为了让调用通过而虚构 factory、从工具参数加载任意代码、安装依赖或猜测 `.serena` 目录。服务不会自动加载或迁移 Serena 配置。
+
+| 操作 | Agent 输入与必需结果 |
+| --- | --- |
+| `task_plan_update` | 仅提交具有稳定 ID、文本和来源的类型化记录，以及预期内容版本和操作 ID。创建须明确预期名称不存在。接管已有 Markdown 时，保留其不透明原文并追加类型化记录；显式声明目标和验收标准，不自动推断。替代须引用已有记录并给出原因，旧记录仍保留。绝不提交替换全文、自由格式 patch 或 regex。 |
+| `task_plan_complete` | 提供最终结果、限制、预期版本和操作 ID，并将每项当前已声明标准映射到通过的验证记录。先通过追加记录解决 blocker。服务验证结构与内容保留，不能证明输入证据的真实性或语义充分性。 |
+| `task_plan_archive` | 提供已完成活动计划身份和预期版本。目标固定为对应归档命名空间。要求内容完全一致的回执及活动名称消失；不得请求引用传播或任意改变目标。 |
+
+准确字段和边界使用当前暴露的 payload schema。服务内部完成全文基线读取、结构化合并、内容保留检查与读回；依赖成功前，检查精简回执中的匹配项目/计划、版本、状态、重放及内容保留结果。版本冲突后，先读取并审阅当前状态，再提出新请求。完全相同的更新/完成重试复用原操作 ID 与 payload；payload 变化须使用新 ID。需要协调或效果不明时阻塞依赖工作；不得用原始 Memory 写入绕过已选服务的失败。这些确定性操作不发起模型或网络请求。
+
+适配器遵守 Serena Memory 访问策略，并操作其实际规范文件。其锁只串行协调参与生命周期工具的调用；原始 Serena 工具和外部写者不会自动参与该锁。不得声称具有针对外部写入的全局比较交换、原始工具 ACL 或归档不可变保证。更强强制边界须由宿主限制其他写入通道。宿主未提供该强制边界不证明其他能力不可用，也不阻止无关获准工作；须准确报告保护范围。
+
+### 原生 Memory 路径
+
+未选择已配置的生命周期服务时，仅使用实际暴露且获准的 Serena 操作，并完成上述全部通用内容保留检查：`list_memories`、`read_memory`、`write_memory` 或 `edit_memory`，以及获准的归档操作。确认项目激活及准确 schema。原生 `rename_memory` 会传播 `mem:` 引用，因此须先确认效果仍在授权范围内且最终内容比对能够通过，否则停止该归档步骤。绝不把它当成原子禁止覆盖原语。原生 `/plan`、本地回忆和聊天压缩不能持久化此共享记录。一个 Session 的成功调用不证明另一 Agent 的访问权；每个分配 Agent 均须检查。[Codex MCP](https://learn.chatgpt.com/docs/extend/mcp)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-对应能力是已连接且实际向该 Agent 暴露的同一个 Serena MCP Memory 服务。通过当前 MCP 工具发现机制找到工具，再按发现的 schema 和准确项目/名称调用其 `list_memories`/`read_memory`、`write_memory` 或 `edit_memory`，以及 `rename_memory`。工具发现、审批和可用性可能与 Codex 不同，不假定暴露前缀或继承连接相同。原生 Plan mode、todo 状态和自动记忆不能替代该共享任务计划。必需 Serena 操作缺失或有效权限拒绝时，阻塞依赖持久化/分配。Claude Desktop 同样遵守实际暴露规则，绝不通过 GUI 导航建立访问。[Claude Code MCP 工具可用性](https://code.claude.com/docs/en/mcp#tool-availability)。
+本仓库的确定性生命周期 MCP 工具不支持该运行环境；将此优化标记为 `Not applicable`，但不得据此推定其原生 MCP 能力不存在。只有连接成功且实际向该 Agent 暴露时，才使用同一个 Serena MCP Memory 服务，并保持上述通用检查和证据。按准确项目/名称及当前 schema 发现 `list_memories`/`read_memory`、`write_memory` 或 `edit_memory`，以及获准的归档操作。原生 `rename_memory` 会传播 `mem:` 引用：使用前确认效果获准且内容保留能够通过，否则阻塞该步骤。发现、审批和可用性可能与 Codex 不同，不假定相同前缀或继承连接。原生 Plan mode、todo 状态及自动记忆不能替代共享计划。缺少必需操作或权限拒绝时阻塞依赖持久化/分配。Claude Desktop 绝不通过 GUI 导航建立访问。[Claude Code MCP 工具可用性](https://code.claude.com/docs/en/mcp#tool-availability)。
 
 ## 相关概念
 
