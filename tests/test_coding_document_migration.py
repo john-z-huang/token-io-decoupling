@@ -1,6 +1,9 @@
 import importlib.util
 import json
+import subprocess
+import sys
 import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -18,6 +21,43 @@ SECTIONS_SPEC.loader.exec_module(SECTIONS)
 
 
 class CodingDocumentMigrationTests(unittest.TestCase):
+    def test_layer_01_checker_imports_without_scripts_path_or_cached_loader(self):
+        isolated_check = textwrap.dedent(
+            """\
+            import importlib.util
+            import sys
+            from pathlib import Path
+
+            script = Path(sys.argv[1]).resolve()
+            scripts_dir = str(script.parent)
+            assert scripts_dir not in sys.path
+            assert "compliance_core_loader" not in sys.modules
+            assert "_token_io_decoupling_compliance_core" not in sys.modules
+
+            spec = importlib.util.spec_from_file_location(
+                "isolated_layer_01_sections", script
+            )
+            assert spec and spec.loader
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            assert callable(module.check_document)
+            assert callable(module.main)
+            assert scripts_dir not in sys.path
+            assert "compliance_core_loader" not in sys.modules
+            assert "_token_io_decoupling_compliance_core" in sys.modules
+            """
+        )
+        result = subprocess.run(
+            [sys.executable, "-I", "-c", isolated_check, str(SECTIONS_SCRIPT)],
+            cwd=Path(__file__).resolve().parents[1],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+
     def make_valid_root(self) -> Path:
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)

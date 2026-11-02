@@ -5,10 +5,11 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from runpy import run_path
 
-from compliance_core_loader import load_compliance_core
-
-_COMPLIANCE_CORE = load_compliance_core()
+_COMPLIANCE_CORE = run_path(
+    str(Path(__file__).resolve().with_name("compliance_core_loader.py"))
+)["load_compliance_core"]()
 
 LAYER_01 = Path("docs/skill/references/coding/layer-01-fundamental-concepts")
 HEADINGS = _COMPLIANCE_CORE.LAYER01_HEADINGS
