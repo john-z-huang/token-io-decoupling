@@ -69,7 +69,13 @@ def dispatch_command(
     if args.command == "skills":
         from token_io_decoupling.skills import install_skill
 
-        if args.host_fd is not None or args.codex_context or args.task_plan_factory is not None:
+        if (
+            args.host_fd is not None
+            or args.codex_context
+            or args.task_plan_factory is not None
+            or args.compliance_factory is not None
+            or args.output_materializer_factory is not None
+        ):
             print(f"{prog}: server options cannot be used with skills", file=sys.stderr)
             return 2
         try:
@@ -85,6 +91,15 @@ def dispatch_command(
             return 2
         if args.task_plan_factory is not None:
             print(f"{prog}: --task-plan-factory is a server startup option", file=sys.stderr)
+            return 2
+        if args.compliance_factory is not None:
+            print(f"{prog}: --compliance-factory is a server startup option", file=sys.stderr)
+            return 2
+        if args.output_materializer_factory is not None:
+            print(
+                f"{prog}: --output-materializer-factory is a server startup option",
+                file=sys.stderr,
+            )
             return 2
         if args.target == "codex-env":
             try:
@@ -143,6 +158,20 @@ def _add_runtime_options(
         metavar="MODULE:CALLABLE",
         default=suppressed if subparser else None,
         help="explicitly load trusted operator code that returns a configured TaskPlanService",
+    )
+    parser.add_argument(
+        "--compliance-factory",
+        metavar="MODULE:CALLABLE",
+        default=suppressed if subparser else None,
+        help="explicitly load trusted operator code that returns a configured read-only "
+        "compliance service",
+    )
+    parser.add_argument(
+        "--output-materializer-factory",
+        metavar="MODULE:CALLABLE",
+        default=suppressed if subparser else None,
+        help="explicitly load trusted operator code that returns a bounded output-materializer "
+        "configuration",
     )
     if not subparser:
         parser.set_defaults(profile=default_profile)

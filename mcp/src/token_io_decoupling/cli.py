@@ -11,6 +11,14 @@ from token_io_decoupling_core.host_binding import HostChannelBindingProvider
 from token_io_decoupling_core.profiles import PROFILE_SERVER_NAMES
 
 from token_io_decoupling.cli_commands import dispatch_command
+from token_io_decoupling.compliance_factory import (
+    ComplianceFactoryError,
+    load_compliance_service,
+)
+from token_io_decoupling.output_materializer_factory import (
+    OutputMaterializerFactoryError,
+    load_output_materializer_config,
+)
 from token_io_decoupling.server import create_server
 from token_io_decoupling.task_plan_factory import (
     TaskPlanFactoryError,
@@ -44,6 +52,9 @@ def _run(*, prog: str, default_profile: str | None) -> int:
         print(f"{prog}: --codex-context requires --host-fd", file=sys.stderr)
         return 2
     provider = None
+    compliance_service = None
+    output_materializer_config = None
+    server = None
     if args.host_fd is not None:
         try:
             provider = HostChannelBindingProvider.from_fd(args.host_fd)
@@ -59,12 +70,32 @@ def _run(*, prog: str, default_profile: str | None) -> int:
                 file=sys.stderr,
             )
             return 2
+        try:
+            compliance_service = load_compliance_service(args.compliance_factory)
+        except ComplianceFactoryError as exc:
+            print(
+                f"{prog}: compliance startup factory failed ({exc.reason})",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            output_materializer_config = load_output_materializer_config(
+                args.output_materializer_factory
+            )
+        except OutputMaterializerFactoryError as exc:
+            print(
+                f"{prog}: output-materializer startup factory failed ({exc.reason})",
+                file=sys.stderr,
+            )
+            return 2
         server = create_server(
             provider,
             require_bound=provider is not None,
             require_codex_context=args.codex_context,
             state_root=_trusted_state_root() if provider is not None else None,
             task_plan_service=task_plan_service,
+            compliance_service=compliance_service,
+            output_materializer_config=output_materializer_config,
             profile=profile,
             server_name=(PROFILE_SERVER_NAMES[profile] if profile is not None else None),
         )
@@ -73,6 +104,12 @@ def _run(*, prog: str, default_profile: str | None) -> int:
         print(f"{prog}: server startup failed", file=sys.stderr)
         return 2
     finally:
+        output_materializer = getattr(server, "_output_materializer", None)
+        close_materializer = getattr(output_materializer, "close", None)
+        if callable(close_materializer):
+            close_materializer()
+        if compliance_service is not None:
+            compliance_service.close()
         if provider is not None:
             provider.close()
     return 0

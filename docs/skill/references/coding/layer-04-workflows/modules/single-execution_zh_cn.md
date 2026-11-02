@@ -23,6 +23,13 @@ flowchart TD
     SE02["SE02 恢复门禁和当前 Slice"]
     D_GATE{"恢复门禁与释放有效？"}
     SE03["SE03 实施；返回初步检查"]
+    D_OUTPUT{"是否已选择且当前有效的受控候选路径？"}
+    SE_OUTPUT_PREP["准备并检查同一有界候选及 manifest"]
+    SE_OUTPUT_PREFLIGHT["在同一固定 root 和政策下进行新鲜的 whole-batch 预检"]
+    SE_OUTPUT_APPLY["重新核验授权、artifact 和 baseline；应用准确候选"]
+    SE_OUTPUT_REVIEW["审阅收据和实际当前状态"]
+    SE_OUTPUT_NA["not_applicable：未选择可选候选路径；已记录原因"]
+    SE_OUTPUT_NEEDS["needs_prerequisite：解决已选输出守卫/预检/状态；恢复 SE03 子步骤"]
     SE04["SE04 阶段反馈"]
     SE05["SE05 当前 Control 决策"]
     D_RECOVERY{"恢复处置？"}
@@ -46,7 +53,19 @@ flowchart TD
     D_GATE -- 当前已授权 Slice --> SE03
     D_GATE -- post-floor Continue 缺失/过期 --> SE05
     D_GATE -- Slice 未授权或 Stop --> SE_BLOCK
-    SE03 --> SE04
+    SE03 --> D_OUTPUT
+    D_OUTPUT -- 已选择；执行者、class、capability、授权、root 和 baseline 当前有效 --> SE_OUTPUT_PREP
+    D_OUTPUT -- 未选择可选候选路径；记录原因 --> SE_OUTPUT_NA
+    D_OUTPUT -- 所选路径缺少当前必需能力/证据 --> SE_OUTPUT_NEEDS
+    D_OUTPUT -- 效果未授权或不安全 --> SE_BLOCK
+    SE_OUTPUT_PREP -- 同一候选及 manifest 已审阅 --> SE_OUTPUT_PREFLIGHT
+    SE_OUTPUT_PREP -- 准备、检查或完整性未解决 --> SE_OUTPUT_NEEDS
+    SE_OUTPUT_PREFLIGHT -- 在同一固定 root 和政策下新鲜 whole-batch 预检通过 --> SE_OUTPUT_APPLY
+    SE_OUTPUT_PREFLIGHT -- 已选检查失败、未知、遗漏或过期 --> SE_OUTPUT_NEEDS
+    SE_OUTPUT_APPLY -- 准确应用完成；收据和实际状态已审阅 --> SE_OUTPUT_REVIEW
+    SE_OUTPUT_APPLY -- 部分完成、冲突、不确定或状态已改变 --> SE_OUTPUT_NEEDS
+    SE_OUTPUT_NA --> SE04
+    SE_OUTPUT_REVIEW --> SE04
     SE04 -- 有阶段反馈触发条件 --> SE05
     SE04 -- 无触发条件；记录 not_applicable 原因 --> SE05
     SE05 --> D_RECOVERY
@@ -73,7 +92,7 @@ flowchart TD
 1. **SE00 — 解析入口。** 提供本声明、当前授权与路线/模式证据、完整 Session/审计和 Context/Decision 证据、先前效果、恢复状态及 continuation，调用[模块入口解析](../../layer-03-workflow-checkpoints/module-entry-resolution_zh_cn.md)。`ready` 只允许模块核验。证据缺失时连同 owner 和位置返回 `needs_prerequisite`；冲突、状态不安全或先前效果无法恢复时返回 `blocked`。
 2. **SE01 — 分别解析执行者和输出。** 应用[任务分配](../../layer-01-fundamental-concepts/execution-planning/task-assignment_zh_cn.md)和[执行者选择](../../layer-03-workflow-checkpoints/executor-selection_zh_cn.md)，再应用[输出 Token 路由](../../layer-01-fundamental-concepts/execution-planning/output-token-routing_zh_cn.md)及[输出路由选择](../../layer-03-workflow-checkpoints/output-route-selection_zh_cn.md)。在已释放 Single-Agent 模式下，明确的 `sub_agent` 结果与锁定 Mode 冲突，返回 `blocked`。Root 直接输出为 `yes` 时，报告锁定的拓扑边界并阻塞 Slice 释放；不得暗示本 Session 可以更改 Mode。必需的执行者/输出证据未知时返回 `needs_prerequisite`。仅当 Root 执行已确认且输出已处置时继续。
 3. **SE02 — 应用恢复门禁并释放当前 Slice。** 应用[执行控制](../../layer-01-fundamental-concepts/execution-control/execution-control_zh_cn.md)、[执行规划](../../layer-01-fundamental-concepts/execution-planning/execution-planning_zh_cn.md)及[Native 对账](../../layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation_zh_cn.md)。存在恢复底线时，须有 post-floor `Continue`，且其 Control 规则和相关 epoch 均为当前；若缺失或过期，则在释放/恢复实施前返回 SE05。`Stop` 阻塞。仅释放当前 Context 和 Decision 支持的有界 Slice，并说明目标、授权范围/修改、返回条件及未释放边界。Enhanced state 条件适用时，应用[Enhanced State Store](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store_zh_cn.md)及[Enhanced Schema Migrations](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-schema-migrations_zh_cn.md)：按要求使用已授权的 typed 持久化及预期 revision/idempotency，然后读回并确认返回状态；schema 不兼容时阻塞依赖写入。Native 模式按其 owner 更新规范 parent-context record，并确认当前记录。没有恢复底线时，记录该门禁 `not_applicable` 及原因。 释放前应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)：确认当前共享计划与读回，或其已记录的限制例外；必需访问/更新缺失时阻塞依赖释放。执行及需求修订期间保持先更新再汇报/依赖动作的顺序。
-4. **SE03 — 实施并返回初步检查。** 应用[实施](../../layer-02-workflow-concepts/decision-and-execution/implementation_zh_cn.md)。仅检查必要来源并作最小授权改动。只有需要代码结构证据且能力可用时才使用[LSP MCP Tools](../../layer-01-fundamental-concepts/session-runtime/LSP-MCP-Tools_zh_cn.md)。所需 LSP 语义不可用时，说明限制并回退到定向文本搜索和路径范围较小的读取；不得将这些发现称为 LSP 证据。只有不需要代码结构证据时才能记录 `not_applicable`。必需关系仍未知时阻塞。运行聚焦的初步检查，返回变更路径、效果、当前指纹、检查输出和未解决问题。这不是最终验证。
+4. **SE03 — 实施并返回初步检查。** 应用[实施](../../layer-02-workflow-concepts/decision-and-execution/implementation_zh_cn.md)。仅检查必要来源并作最小授权改动。只有当前执行者、输出 class、capability、单独授权、固定 root、准确路径和 baseline 都符合[输出物料化](../../layer-01-fundamental-concepts/execution-planning/output-materialization_zh_cn.md)时，才应用该 owner。准备并检查有界候选，保留其 manifest 身份/hash。应用前，按[候选合规预检](../../layer-01-fundamental-concepts/execution-planning/candidate-compliance_zh_cn.md)在同一固定 root 和政策下进行新鲜 whole-batch 预检；然后重新核验授权、artifact 完整性和 baseline，再应用准确候选。审阅收据和实际当前文件；准备、预检和收据不是最终 Verification。未选择可选路径时，记录有原因的 `not_applicable`，且仅在独立授权的直接路径下继续。已选路径缺少必需能力/守卫/预检，或返回失败、未知、遗漏、过期、不确定时，在依赖操作前返回 `needs_prerequisite` 或 `blocked`；不得静默回退。部分、冲突或不确定的应用须先根据实际当前状态解决；不得覆盖已改变内容进行重放。仅在需要代码结构证据且能力可用时才使用[LSP MCP Tools](../../layer-01-fundamental-concepts/session-runtime/LSP-MCP-Tools_zh_cn.md)。所需 LSP 语义不可用时，说明限制并回退到定向文本搜索和路径范围较小的读取；不得将这些发现称为 LSP 证据。只有不需要代码结构证据时才能记录 `not_applicable`。必需关系仍未知时阻塞。运行聚焦的初步检查，返回变更路径、效果、当前指纹、检查输出、适用时的收据/当前状态证据和未解决问题。这不是最终验证。
 5. **SE04 — 提供阶段反馈。** 触发时应用[执行阶段反馈](../../layer-01-fundamental-concepts/execution-control/execution-stage-feedback_zh_cn.md)，在实质阶段边界返回有界 Progress Signal。无触发条件时，记录带观察原因的 `not_applicable`。两条路径都进入 SE05；不得跳过 Control。
 6. **SE05 — 解决当前 Control。** 应用[Control](../../layer-02-workflow-concepts/decision-and-execution/control_zh_cn.md)、[执行控制](../../layer-01-fundamental-concepts/execution-control/execution-control_zh_cn.md)、[建议选择](../../layer-03-workflow-checkpoints/advisory-selection_zh_cn.md)及[Decisions Advisory](../../layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md)。消费当前 Progress Signal 的 status、findings、change scope、verification、issue、need 和当前未释放边界证据。仅在建议当前可信、符合条件、已启用且已授权时消费；否则记录带原因的建议 `not_applicable`，并根据当前直接证据决策。为各结果保留当前 continuation：
    - post-floor `Continue` 缺失/过期时，进入或恢复同一 Control 检查。新的 recovery `Continue` 返回 SE02 处理下一/恢复 Slice。

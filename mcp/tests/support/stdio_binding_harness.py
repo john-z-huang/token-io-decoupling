@@ -63,10 +63,11 @@ class TestOnlyBindingProvider:
 
 def main() -> None:
     if (
-        len(sys.argv) == 4
+        len(sys.argv) in {4, 5}
         and sys.argv[1] in {"bridge", "bridge-codex"}
         and sys.argv[2] in {"root", "worker"}
     ):
+        output_materializer_factory = sys.argv[4] if len(sys.argv) == 5 else None
         require_codex_context = sys.argv[1] == "bridge-codex"
         role = SessionRole.PARENT if sys.argv[2] == "root" else SessionRole.WORKER
         provider = TestOnlyBindingProvider(role)
@@ -93,6 +94,8 @@ def main() -> None:
             require_codex_context=False,
             state_root=None,
             task_plan_service=None,
+            compliance_service=None,
+            output_materializer_config=None,
             profile=None,
             server_name=None,
         ):
@@ -103,6 +106,8 @@ def main() -> None:
                 require_codex_context=require_codex_context,
                 state_root=temporary_state_root,
                 task_plan_service=task_plan_service,
+                compliance_service=compliance_service,
+                output_materializer_config=output_materializer_config,
                 profile=profile,
                 server_name=server_name,
             )
@@ -110,6 +115,8 @@ def main() -> None:
         cli.__dict__["create_server"] = test_only_server
         client_fd = client_socket.detach()
         sys.argv = ["token-io-mcp", "--host-fd", str(client_fd)]
+        if output_materializer_factory is not None:
+            sys.argv.extend(["--output-materializer-factory", output_materializer_factory])
         if require_codex_context:
             sys.argv.append("--codex-context")
         exit_code = cli.legacy_main()

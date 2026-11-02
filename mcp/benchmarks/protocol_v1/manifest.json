@@ -1,0 +1,26 @@
+{
+  "files": [
+    {
+      "archive_path": "benchmarks/protocol_v1/benchmark_cases.py.txt",
+      "original_path": "tests/support/benchmark_cases.py",
+      "sha256": "90305550d89dc1d6dc3bb275ab10071c640ad638424610bf04b80eeea66c10e0"
+    },
+    {
+      "archive_path": "benchmarks/protocol_v1/benchmark_metrics.py.txt",
+      "original_path": "tests/support/benchmark_metrics.py",
+      "sha256": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+    },
+    {
+      "archive_path": "benchmarks/protocol_v1/optimization_benchmark.py.txt",
+      "original_path": "tests/support/optimization_benchmark.py",
+      "sha256": "05115ce38035256b6e706e2ac8ef634a713b52730e58cf88bbe0c87e4259e9fe"
+    },
+    {
+      "archive_path": "benchmarks/protocol_v1/issue_182_cases.json",
+      "original_path": "benchmarks/issue_182_cases.json",
+      "sha256": "522522be679a79ed2eccafde6c780798c8194b15c3f0f40432c9f5a33bd33631"
+    }
+  ],
+  "purpose": "Frozen protocol-v1 provenance; source snapshots are reference data and are not execution entry points.",
+  "run": "benchmarks/issue_182_live_2026-11-02.json"
+}

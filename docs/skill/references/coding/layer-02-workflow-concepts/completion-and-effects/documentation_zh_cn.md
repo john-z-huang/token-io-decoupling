@@ -5,6 +5,7 @@
 ## 动作
 
 1. 确认获批准的文档路径、读者、目的和来源证据。
+   - 获授权路线选择写前候选反馈时，对准确候选和当前可信基线应用[候选合规预检](../../layer-01-fundamental-concepts/execution-planning/candidate-compliance_zh_cn.md)。应用候选前，解决每项已选检查返回的失败、未知、遗漏或过期结果。预检通过只表示有限候选证据，不能替代下文当前的写后检查。没有适用的预检分支时，记录有原因的 `Not applicable`。
 2. 只修改获批准的 Markdown 或注释范围。两种语言都维护时，保持英文和简体中文镜像同步。
 3. 仓库文档、代码注释或项目 Memory 笔记发生变化时，推进 documentation epoch，并对该变更运行适用检查；其中包括在相关时运行 Markdown、链接、空白、多语言和范围检查。
 4. 记录文档变更是否影响可执行内容、Contract 或验收条件。按当前 epoch 要求重新验证受影响维度；documentation epoch 变化本身不要求重跑无关的产品行为测试。
@@ -24,4 +25,5 @@
 - [Coding Content Memo](../../layer-01-fundamental-concepts/context-exchange/content-memo_zh_cn.md) — 定位可复用 memo 内容契约归属。
 - [Coding Content Memo Lifecycle](../../layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle_zh_cn.md) — 定位 memo 生命周期归属。
 - [Coding Execution Control](../../layer-01-fundamental-concepts/execution-control/execution-control_zh_cn.md) — 定位获准文档范围归属。
+- [候选合规预检](../../layer-01-fundamental-concepts/execution-planning/candidate-compliance_zh_cn.md) — 定位对拟议文档候选内容的可选只读检查。
 - [项目 Memory 与代码结构能力](../../layer-01-fundamental-concepts/session-runtime/LSP-MCP-Tools_zh_cn.md) — 定位可复用项目知识的读取和写入能力。

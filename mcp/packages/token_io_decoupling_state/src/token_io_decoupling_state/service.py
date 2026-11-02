@@ -451,6 +451,12 @@ class StateService:
     def worker_get_assignment(self) -> dict[str, object]:
         return _worker_ops.worker_get_assignment(self)
 
+    def worker_get_materialization_context(
+        self,
+    ) -> tuple[BindingIdentity, dict[str, object], str]:
+        """Read current trusted Worker identity and verified assignment for internal services."""
+        return _worker_ops.worker_get_materialization_context(self)
+
     def worker_get_dispatch(self, event_id: str) -> dict[str, object]:
         "Read this bound Worker's immutable dispatch history by event identity."
         return _worker_ops.worker_get_dispatch(self, event_id)

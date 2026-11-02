@@ -8,7 +8,7 @@
 
 实现采用 `mcp/` 下含八个包的 uv workspace，使用 Pydantic、`sqlite3`、官方 MCP SDK v2 和 OpenAI SDK。stdio 子进程 SDK 测试通过仅用于测试的可信嵌入 harness 验证了发现和受保护调用，并协商到协议修订 `2026-07-28`。这验证的是实现和 wire 契约，不是生产桌面宿主的身份 attestation 或 OS 权限执行。统一生产入口的四个 MCP profile 即使未绑定也暴露固定且互不重复的工具清单；受保护调用仍拒绝缺失或不充分的绑定。[MCP 开发指南](../../mcp/DEVELOPMENT_zh_cn.md)负责可执行程序名称、工具归属、按角色分派的共享适配器及安装/注册说明。工具发现不建立身份或操作守卫。
 
-Markdown owner 文档仍是政策文本的唯一权威。JSON 注册表 [`mcp/rule-registry.json`](../../mcp/rule-registry.json) 将稳定节点 ID 映射到 owner 标题、事实、证据、分支、判断方式、失败处理和后续检查点，不得复制 owner 正文。实现加载时读取当前 owner 文本并计算 Hash；不维护第二份人工编写的政策正文或持久化节点 Hash。普通正文变化通过动态重读生效。节点结构、分支枚举或硬约束变化时，必须使用变化后的 `contract_version` 同步兼容实现与测试。
+Markdown owner 文档仍是政策文本的唯一权威。JSON 注册表 [`mcp/rule-registry.json`](../../mcp/rule-registry.json) 将稳定节点 ID 映射到 owner 标题、事实、证据、分支、判断方式、失败处理和后续检查点，不得复制 owner 正文。独立的片段索引 v1 不修改该注册表的 v2 节点或数据库 Schema；它将有界片段 ID 和依赖映射到权威 owner 章节，不复制政策正文。旧版规则上下文调用保留现有契约；片段 bundle 必须显式选择版本 1。源码和打包资源使用相同的 fence-aware parser 与规范化，因此片段正文及其 Hash 一致。源码开发须显式选择仓库根目录；已安装运行时读取打包快照。实现加载时读取当前 owner 文本并计算 Hash；不维护第二份人工编写的政策正文或持久化节点 Hash。普通正文变化通过动态重读生效。节点结构、分支枚举或硬约束变化时，必须使用变化后的 `contract_version` 同步兼容实现与测试。
 
 SQLite 保存结构化控制状态、证据引用、语义正文引用及 Hash、索引。完整 Contract、Decision Brief、Plan、Memo、Capsule、Handoff 等语义正文仍保存在 Markdown 或 Serena Memory 中，并遵守各自 owner。SQLite 索引不取代正式消息、可见性要求或共享 worktree 冲突控制。
 

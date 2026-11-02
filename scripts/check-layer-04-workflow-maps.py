@@ -132,6 +132,17 @@ def graph_fingerprint(labels: dict[str, str], raw: str) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def required_layer12_targets(module: str, checkpoint: str, suffix: str) -> tuple[str, ...]:
+    targets = MODULE_CHECKPOINT_LAYER12_TARGETS.get(module, {}).get(checkpoint)
+    if targets is None:
+        return ()
+    if isinstance(targets, str):
+        targets = (targets,)
+    if suffix:
+        targets = tuple(re.sub(r"\.md$", "_zh_cn.md", target) for target in targets)
+    return tuple(targets)
+
+
 def check_module(root: Path, module: str, lang: str, errors: list[str]):
     suffix = "_zh_cn" if lang == "zh" else ""
     path = root / MODULES_DIR / f"{module}{suffix}.md"
@@ -351,10 +362,7 @@ def validate_migration_manifest(root: Path, errors: list[str]) -> None:
                         continue
                     fixed_direct_links = []
                     for checkpoint in checkpoints:
-                        required_layer12 = MODULE_CHECKPOINT_LAYER12_TARGETS.get(module, {}).get(checkpoint)
-                        if required_layer12 is not None:
-                            if suffix:
-                                required_layer12 = re.sub(r"\.md$", "_zh_cn.md", required_layer12)
+                        for required_layer12 in required_layer12_targets(module, checkpoint, suffix):
                             fixed_direct_links.append(required_layer12)
                             if required_layer12 not in linked_paths(module_steps[checkpoint]):
                                 fail(errors, path, f"{route}/{entry.get('source_step')}: {lang} {module}/{checkpoint} lacks exact direct owner link {required_layer12}")

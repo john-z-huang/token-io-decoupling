@@ -10,6 +10,8 @@ PROFILE_TOOLS: dict[str, frozenset[str]] = {
             "task_plan_complete",
             "task_plan_archive",
             "rules_get_context",
+            "validate_decoupling_compliance",
+            "decide_decoupling_workflow",
             "workflow_select_child_effort",
             "workflow_generate_decision_context",
             "workflow_select_child_role",
@@ -36,6 +38,7 @@ PROFILE_TOOLS: dict[str, frozenset[str]] = {
     "worker": frozenset(
         {
             "worker_get_assignment",
+            "materialize_decoupled_output",
             "worker_record_progress",
             "worker_get_evidence",
             "worker_report_blocker",

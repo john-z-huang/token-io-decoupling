@@ -43,6 +43,8 @@ PUBLIC_TOOLS = {
     "task_plan_complete",
     "task_plan_archive",
     "rules_get_context",
+    "validate_decoupling_compliance",
+    "decide_decoupling_workflow",
     "workflow_select_child_effort",
     "workflow_generate_decision_context",
     "workflow_select_child_role",
@@ -70,6 +72,7 @@ ROOT_TOOLS = {
 
 WORKER_TOOLS = {
     "worker_get_assignment",
+    "materialize_decoupled_output",
     "worker_get_state",
     "worker_record_progress",
     "worker_record_evidence",
@@ -171,7 +174,11 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
         tool.name: tool.parameters for tool in unbound._tool_manager.list_tools()
     }
     assert parameters["database_schema_status"]["properties"] == {}
-    assert "path" not in str(parameters)
+    compliance_request = parameters["validate_decoupling_compliance"]["properties"]["payload"][
+        "properties"
+    ]["request"]
+    assert set(compliance_request["properties"]) == {"policy_scope", "candidates"}
+
     active_nodes = parameters["rules_get_context"]["properties"]["payload"]["properties"][
         "node_id"
     ]["enum"]
@@ -253,9 +260,9 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
     worker_tools = _tool_names(create_server(FakeBindingProvider(SessionRole.WORKER)))
     assert root_tools == PUBLIC_TOOLS | ROOT_TOOLS
     assert worker_tools == PUBLIC_TOOLS | WORKER_TOOLS
-    assert len(root_tools) == 25
-    assert len(worker_tools) == 19
-    assert len(root_tools | worker_tools) == 32
+    assert len(root_tools) == 27
+    assert len(worker_tools) == 22
+    assert len(root_tools | worker_tools) == 35
     for tool in create_server(FakeBindingProvider())._tool_manager.list_tools():
         assert not any(
             forbidden in str(tool.parameters).casefold()

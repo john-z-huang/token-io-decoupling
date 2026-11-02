@@ -10,6 +10,8 @@ Protected operations require a trusted embedding to supply the current project, 
 
 Environment variables, client metadata, caller-supplied identity or paths, operation arguments, and fields such as `authorized=true` are not identity or permission evidence. Production defaults deny protected Enhanced access when no trusted provider is installed. Expose only the public read-only surface when unbound; expose the Root or Worker surface only for the corresponding verified binding and revalidate it per call. A Worker binding grants no access to another Worker or Root-only data.
 
+Native Coding responsibility is defined by the Skill's route and role owners; it is not a product MCP Worker binding. A Native Agent does not need to claim a Worker identity or call Worker-only tools to carry out an otherwise authorized Native task. Conversely, Native task responsibility does not satisfy this owner's trusted binding or guard requirements for a protected Enhanced operation. Keep these capability domains separate: continue Native work when independently authorized, and fail closed for an unavailable protected operation.
+
 Keep evidence claims scoped: a fake provider verifies service behavior against a test contract; an SDK or stdio subprocess verifies protocol behavior. Neither demonstrates that a real host supplies attestation or enforces an OS permission boundary. Do not claim real-host verification without direct evidence from that host.
 
 ## Codex CLI / ChatGPT Desktop optimizations

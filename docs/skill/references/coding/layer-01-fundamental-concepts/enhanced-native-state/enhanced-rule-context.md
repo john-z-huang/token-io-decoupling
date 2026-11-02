@@ -2,13 +2,13 @@
 
 [English](enhanced-rule-context.md) | [简体中文](enhanced-rule-context_zh_cn.md)
 
-This module owns bounded loading of a current registered rule node and its mapped owner heading. It does not own the underlying rule, authorize work, or establish identity or permission.
+This module owns legacy bounded loading of a current registered rule node and its mapped owner heading, plus the explicitly versioned fragment-bundle read contract. It does not own the underlying rule, authorize work, or establish identity or permission.
 
 ## General rules
 
 ### Select and qualify current rule context
 
-Use the stable node mapping only to locate the existing authoritative owner path and exact heading. Load only the node needed for the current checkpoint; do not scan the repository or treat a returned excerpt as a recursive load of linked owners. If the judgment needs another directly linked owner, read that authoritative document separately and verify its current version and language. If a required owner is unavailable, block the dependent judgment rather than infer its contents.
+Read only the authoritative rule context needed for the current judgment. Preserve the existing legacy read contract. Select bounded fragments only through an explicitly versioned index and include their declared dependency closure; do not scan the repository or treat a bundle as a recursive load of linked owners. Measure the budget in Unicode characters and never truncate content to fit. Missing required content or an insufficient budget means the result is incomplete. Completeness means only that the requested index dependency closure was assembled; it does not prove that all task rules or linked owners have been read. If the judgment needs another directly linked owner, read that authoritative document separately and verify its current version and language. If a required owner is unavailable or not covered, block the dependent judgment rather than infer its contents.
 
 Read the registry and owner heading from one source and one language for each request. Each request rereads the current mapping and heading and binds a hash to that node structure, language, and text. Ordinary prose edits become visible on the next read. A structural change to supported node IDs, facts, evidence, branches, or other program-checked shape requires a compatible implementation and tests; reject unsupported structure instead of interpreting it with an older contract.
 
@@ -20,7 +20,7 @@ When selected rule context is not needed, record `Not applicable` with the reaso
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-The public `rules_get_context` surface returns the current registered node context without opening Root or Worker state. Use it only for the selected node and verify its owner, language, and hash. A successful public read is not evidence that protected state or a real host binding is available. Source development must explicitly select the repository root; an installed runtime reads its packaged snapshot.
+The public `rules_get_context` surface returns the current registered node context without opening Root or Worker state. A call without `context_version` retains the legacy request, output, and hash. Fragment-bundle fields, including `fragment_ids` or `max_chars`, require explicit `context_version: 1`; unversioned extensions are rejected. For a bundle, verify owner/source, language, fragment coverage, completion status, `index_sha256`, context hash, and the truncation flag. `max_chars` counts Unicode characters in fragment text, not tokens; it defaults to 12,000 and accepts 256–60,000. Content is never truncated to fit. Review `remaining_owner_refs` and read any relevant uncovered owner directly. A complete bundle covers only its requested index closure. A successful public read is not evidence that protected state or a real host binding is available. Source development must explicitly select the repository root; an installed runtime reads its packaged snapshot.
 
 ## Claude Code CLI / Claude Desktop optimizations
 
@@ -28,6 +28,8 @@ There is currently no Claude-specific rule-context optimization. Follow the gene
 
 ## Related concepts
 
+- [Workflow Routing Advice](../execution-planning/workflow-routing-advice.md) — owns optional task-level stage suggestions and requires direct review of the current route.
+- [Candidate Compliance Preflight](../execution-planning/candidate-compliance.md) — owns read-only candidate structure checks.
 - [Enhanced State Store](enhanced-state-store.md) — locate the separate protected state and identity boundary.
 - [Coding Delegation Mode Confirmation](../delegation/delegation-mode-confirmation.md) — locate the mode-selection owner mapped by the output-class node.
 - [Coding Execution Control](../execution-control/execution-control.md) — locate Slice and Control node ownership.

@@ -16,4 +16,27 @@ OWNER_PATHS: dict[str, str] = {
     "decision-context-generation": (
         "docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation.md"
     ),
+    "workflow-routing-advice": (
+        "docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/workflow-routing-advice.md"
+    ),
+    "candidate-compliance": (
+        "docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/candidate-compliance.md"
+    ),
+    "output-materialization": (
+        "docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/output-materialization.md"
+    ),
+}
+
+DELEGATION_POLICY_OWNERS: tuple[str, ...] = (
+    "child-role-selection",
+    "task-assignment",
+    "output-token-routing",
+    "session-role-ownership",
+    "decision-context-generation",
+)
+
+OPTIONAL_FRAGMENT_OWNER_BINDINGS: dict[str, tuple[str, str]] = {
+    "decision.workflow_routing_advice": ("decision", "workflow-routing-advice"),
+    "implementation.candidate_compliance": ("implementation", "candidate-compliance"),
+    "implementation.output_materialization": ("implementation", "output-materialization"),
 }

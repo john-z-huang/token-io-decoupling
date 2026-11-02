@@ -8,6 +8,7 @@ from typing import Any
 from token_io_decoupling_core.binding import BindingProvider, DenyingBindingProvider
 from token_io_decoupling_core.host_binding import HostChannelBindingProvider
 
+from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
 from token_io_decoupling_workflow.task_plan_core import TaskPlanService
 
 
@@ -29,6 +30,8 @@ def capability_report(
     api_decisions_enabled: bool,
     diagnose_binding: Callable[[BindingProvider], dict[str, str]],
     task_plan_service: TaskPlanService | None = None,
+    compliance_service: CompliancePreflightService | None = None,
+    output_materialization: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Read binding evidence and task-plan diagnostics without state mutation or API calls.
 
@@ -52,6 +55,19 @@ def capability_report(
             "archive_namespace": None,
         }
     )
+    compliance_details = (
+        compliance_service.capability()
+        if compliance_service is not None
+        else {
+            "status": "unavailable",
+            "reason_code": "compliance_backend_not_configured",
+            "policy_scopes": [],
+        }
+    )
+    output_details = output_materialization or {
+        "status": "unavailable",
+        "reason_code": "output_materializer_not_configured",
+    }
     # Never serialize provider attributes: even transport labels can contain secrets or raise.
     transport = (
         "authenticated_inherited_unix_socket"
@@ -97,10 +113,14 @@ def capability_report(
         "caller_match": caller_match,
         "mode_fallback": "Native",
         "api_decisions": api_decisions,
+        "workflow_routing": "available_per_invocation",
         "child_effort_decisions": "available_per_invocation",
         "delegation_decisions": "available_per_invocation",
         "decision_context_generation": "available_per_invocation",
         "task_plan_tools": task_plan_details.get("status", "unavailable"),
+        "decoupling_compliance": compliance_details.get("status", "unavailable"),
+        "compliance_policy_scopes": compliance_details.get("policy_scopes", []),
+        "output_materialization": output_details.get("status", "unavailable"),
         "protocol_target": "2026-07-28",
         "capability_details": {
             "schema_version": 2,
@@ -127,6 +147,30 @@ def capability_report(
                     "Use an explicitly configured trusted task-plan "
                     "factory or keep plan tools unavailable.",
                 ),
+                "decoupling_compliance": _detail(
+                    compliance_details.get("status", "unavailable"),
+                    compliance_details.get("reason_code", "compliance_backend_unavailable"),
+                    "Compliance preflight is read-only and uses only an explicitly injected "
+                    "operator-configured root and policy-scope allowlist. Without a configured "
+                    "reader, it does not probe paths and reports disk evidence as unknown.",
+                    "server.compliance_service",
+                    "Configure a trusted compliance factory at startup; inspect unknown checks. "
+                    "This tool does not run candidate or target-repository scripts.",
+                ),
+                "output_materialization": _detail(
+                    output_details.get("status", "unavailable"),
+                    output_details.get("reason_code", "output_materializer_not_configured"),
+                    "Worker output materialization requires an explicit trusted factory, the same "
+                    "pinned read-only preflight root, and a fresh operator grant per action. "
+                    "A Native coding-task role or an Agent Session's Primary Output label is not "
+                    "a verified MCP Worker binding. Capability reporting does not probe paths "
+                    "or assert current Worker authority.",
+                    "server.output_materializer_config",
+                    "Use the Worker-only tool only for a confirmed Primary Output assignment "
+                    "with code_configuration or skill_instructions output and a matching "
+                    "operator grant, pinned roots, and fresh passing preflight; inspect any "
+                    "unavailable result.",
+                ),
                 "caller_match": _detail(
                     caller_match,
                     "configured_required" if require_codex_context else "configured_disabled",
@@ -140,6 +184,16 @@ def capability_report(
                     "Persisted API advice is configured separately from per-invocation tools.",
                     "server.decisions_config.enabled",
                     "No API probe; per-call tools require permission and configuration.",
+                ),
+                "workflow_routing": _detail(
+                    "available",
+                    "stateless_local_or_decisions_advice",
+                    "Explicit stages use local rule context; auto stage selection may use one "
+                    "bounded Decisions choice. The tool never verifies readiness or grants "
+                    "authority.",
+                    "workflow.decide_decoupling_workflow",
+                    "Inspect the returned route, module, facts, and rule hashes; follow the "
+                    "current route owners and capability gates.",
                 ),
             },
             "runtime": {

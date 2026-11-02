@@ -44,10 +44,16 @@ token-io-decoupling start-mcp-server --profile workflow
 
 | Profile / Codex 服务注册名 | 工具 |
 | --- | --- |
-| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`、`rules_get_context`、`workflow_generate_decision_context`、`workflow_select_child_effort`、`workflow_select_child_role`、`workflow_select_executor`、`workflow_select_child`、`workflow_assess_output_tokens`、`task_plan_update`、`task_plan_complete`、`task_plan_archive`、`workflow_evaluate`、`evaluate_control_checkpoint` |
+| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`、`rules_get_context`、`workflow_generate_decision_context`、`workflow_select_child_effort`、`decide_decoupling_workflow`、`validate_decoupling_compliance`、`workflow_select_child_role`、`workflow_select_executor`、`workflow_select_child`、`workflow_assess_output_tokens`、`task_plan_update`、`task_plan_complete`、`task_plan_archive`、`workflow_evaluate`、`evaluate_control_checkpoint` |
 | `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`、`delegation_reserve`、`delegation_unreserve`、`delegation_bind`、`slice_check`、`slice_release`、`workflow_transition`、`parent_get_worker_summary`、`workflow_reconcile` |
-| `worker` / `token-io-decoupling-worker-agent-tools` | `worker_get_assignment`、`worker_record_progress`、`worker_get_evidence`、`worker_report_blocker`、`worker_get_recovery_context` |
+| `worker` / `token-io-decoupling-worker-agent-tools` | `worker_get_assignment`、`worker_record_progress`、`worker_get_evidence`、`worker_report_blocker`、`worker_get_recovery_context`、`materialize_decoupled_output` |
 | `share` / `token-io-decoupling-share-tools` | `database_schema_status`、`state_get`、`record_evidence` |
+
+`decide_decoupling_workflow` 的有界请求、路由选择、哈希和结果契约见[Decoupling 工作流路由](WORKFLOW_ROUTING_zh_cn.md)。
+
+只读工具 `validate_decoupling_compliance` 按操作员配置的 checkout 检查有界候选覆盖层。其请求、结果、启动 factory 和明确限制见[候选内容合规预检](CANDIDATE_COMPLIANCE_zh_cn.md)。它不授权或应用写入，也不替代仓库检查或最终验收。
+
+仅供 Worker 使用的 `materialize_decoupled_output` 工具准备并检查有界输出产物，再通过独立授权的操作员服务应用产物。其请求、模板、授权与预检要求、启动选项 `--output-materializer-factory MODULE:CALLABLE`、结果和恢复边界见[Worker 输出材料化](OUTPUT_MATERIALIZATION_zh_cn.md)。可信 factory 返回 `OutputMaterializerConfig`；缺少配置时工具保持不可用，且不探测默认路径。
 
 Profile 控制工具发现，不授予权限。没有可信宿主通道时，公共能力/规则读取可成功，schema 状态不检查状态路径而返回 unavailable，受保护调用则拒绝缺失绑定。Workflow/Control 判断要求经过验证的 Root。共享读取与证据写入每次都解析经过验证的角色；Worker 读取拒绝非空的 Root `index_page` 游标。
 
@@ -323,6 +329,10 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 创建开始之前，受保护的 Root `delegation_unreserve` 可以取消角色预留，使同一个尚未使用的槽位可以重新规划。它要求明确证明创建尚未开始的证据、当前 revision、幂等键以及原有 Root binding/guard。已绑定或身份不明，以及具有 Slice、派发或 Worker 历史的 allocation 均拒绝撤销。该证据是 Root 声明，不是独立宿主证明。撤销只清除尚未使用的预留，不减少锁定数量，也不释放子代理创建后的角色或身份。再次选择或预留新角色前必须刷新 allocation 事实。
 
+### 组件优化测量
+
+[优化基准](OPTIMIZATION_BENCHMARK_zh_cn.md)负责固定案例测量协议、原始结果链接、来源证据，以及 token、调用、延迟、修复和失败的实测结果。它通过真实参考调用方 API 请求比较直接服务组件，与 MCP 传输、当前 Agent 用量及 fresh CLI 检查分开。首版协议归档和唯一一次修正补测均保留；测量边界和复现授权请查该指南。
+
 ### 真实 API 集成测试
 
 `tests/real_api_tests/` 下的 `real_api` 用例覆盖真实 Responses 背景生成、子代理 effort Decisions、经协商的进程内 MCP 生成到强度选择链路，以及四类委派判断：新子代理角色、Root/子代理执行主体、已有子代理选择和 Output Token 路由。它们使用合成的需求、diff 文本、Session 事实与 LSP 观测，不采集仓库或宿主数据。委派用例先生成并审核背景，再请求判断，随后核对预期结果、输入哈希及当前策略哈希。这些检查证明真实 API 和 MCP handler 行为，不证明可信桌面宿主绑定或稳定的语义排序。
@@ -349,13 +359,15 @@ TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/r
 uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-dist
 ```
 
-规则资源及自定义构建 Hook 由 core 包负责。Canonical 注册表仍为 `mcp/rule-registry.json`；构建产物包含其英文/中文 owner 标题的有界摘录。Core sdist 携带自己的 `rule_sources`，脱离仓库构建时不借用相邻 checkout。默认 `token_io_decoupling_core.rules.RuleLoader` 读取打包快照；源码开发必须明确提供仓库根目录。修改 Markdown 不会更新已安装的 wheel，需要重新构建和安装。
+规则资源及自定义构建 Hook 由 core 包负责。Canonical 注册表仍为 `mcp/rule-registry.json`；构建产物包含其英文/中文 owner 标题的有界摘录。独立的片段索引 v1 及其片段资源使用共享的 fence-aware parser 和规范化，从权威 owner 章节构建。因此源码与打包资源会产生相同的片段正文和 Hash；构建不会硬编码 Skill 安装路径，也不会借用相邻 checkout。Core sdist 携带自己的 `rule_sources`。默认 `token_io_decoupling_core.rules.RuleLoader` 读取打包快照；源码开发必须明确提供仓库根目录。修改 Markdown 不会更新已安装的 wheel，需要重新构建和安装。
 
-规则加载会在返回文本及计算上下文或策略哈希之前去除首尾空白，保留正文内部空白。因此，当注册表和规则内容相同时，即使资源文件带有末尾换行，源码与打包加载器的结果仍一致。这修正了旧安装包将打包空白计入哈希的行为。升级后应重新读取当前规则上下文和策略哈希，重新评估受影响的过期结果；不要改写历史记录或复用升级前缓存的哈希。
+规则加载会在返回文本及计算上下文或策略哈希之前去除首尾空白，保留正文内部空白。因此，当注册表和规则内容相同时，即使资源文件带有末尾换行，源码与打包加载器的结果仍一致。这修正了旧安装包将打包空白计入哈希的行为。未提供 `context_version` 时，现有 `rules_get_context` 调用及其输出/Hash 保持不变。`fragment_ids` 或 `max_chars` 等片段 bundle 扩展必须显式带 `context_version=1`；无版本的扩展会被拒绝。版本 1 的 `max_chars` 按片段正文的 Unicode 字符计数（不是 token），默认 12,000，范围为 256–60,000；片段不会被截断，必需内容缺失或预算不足时会返回不完整状态。bundle 完整仅覆盖请求的索引依赖闭包，不代表已读取全部任务规则或链接 owner。升级后应重新读取当前规则上下文和策略哈希，重新评估受影响的过期结果；不要改写历史记录或复用升级前缓存的哈希。
 
 本地 Skill 目录与 MCP 工具环境是独立快照。`skills install/update` 仅写入选定的 `~/.agents/skills/` 安装，不修改 MCP 可执行程序、打包规则或 Codex 注册项。MCP 不导入已安装 Skill 或其 `_project/` 支持附件。`rules_get_context.owner_path` 标识 `docs/skill/` 下的 canonical 仓库源文件，不应拼接到本地 Skill 目录来定位文件。`_project/` 中的清单及 CI 文件仅为参考副本，不是 Server 的实际配置。要让指令与 Server 规则同步，应重新安装同一构建版本的工具、执行 `skills update`、重新加载 MCP Server 并启动新的 Agent 会话；分别更新可能使不同快照同时生效。
 
-构建还打包 `child-role-selection`、`task-assignment`、`output-token-routing`、`session-role-ownership` 和 `decision-context-generation` 的英中通用规范。这些是固定允许列表中的策略资源，不新增 Core 检查点 ID。`tests/unit_tests/test_build_artifacts.py` 验证脱离仓库的 sdist 到 wheel 构建，并通过打包的 `RuleLoader` 加载这些策略及核对内容哈希。
+构建还打包八个允许列表 owner 的英中通用规范：`child-role-selection`、`task-assignment`、`output-token-routing`、`session-role-ownership`、`decision-context-generation`、`workflow-routing-advice`、`candidate-compliance` 和 `output-materialization`。原有五个仍是委派策略允许列表。新增三个 owner 提供可选的版本 1 片段：`decision.workflow_routing_advice`、`implementation.candidate_compliance` 和 `implementation.output_materialization`，最后一项依赖候选合规预检。17 个 Core 检查点 ID 及其默认片段根保持不变。`tests/unit_tests/test_build_artifacts.py` 验证脱离仓库的 sdist 到 wheel 构建，以及英中源码/打包正文与哈希一致性。
+
+Skill 源码标记与 canonical 合规 helper 均存在时，launcher 构建会重新生成 Skill 快照 zip，避免相同的旧 helper 掩盖文档变化。缺少这些源码的脱离仓库构建必须具有内含快照：条目路径安全且唯一、CRC 有效，六个必需的 Skill/元数据/helper/loader/checker 文本条目均为含有非空白内容的 UTF-8。canonical helper 可用时还核对其字节一致性。这些检查验证上述必需条目，不证明每份文档的语义或完整性。快照缺失或无效会使构建失败。回归测试覆盖当前源码重建、有效的脱离源码回退，以及 CRC 有效但必需条目为空的快照。
 
 已发布迁移文件属于 state 包，保持原始字节不变，因为数据库历史记录了源码校验和。state loader 为两个 v1 文件所需的历史导入 `token_io_mcp.models.DatabaseKind` 临时提供模块别名，并在导入后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 adapter migration 路径。命名空间迁移不授权改写历史、校验规则或 schema 版本。测试同时覆盖旧历史与升级，以及新建数据库。
 

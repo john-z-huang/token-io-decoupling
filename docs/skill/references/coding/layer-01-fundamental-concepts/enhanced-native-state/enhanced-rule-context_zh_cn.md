@@ -2,13 +2,13 @@
 
 [English](enhanced-rule-context.md) | [简体中文](enhanced-rule-context_zh_cn.md)
 
-本模块负责有界加载当前注册的规则节点及其映射的 owner 标题；不负责底层规则，也不授权工作或证明身份、权限。
+本模块负责旧版有界加载当前注册的规则节点及其映射的 owner 标题，以及显式版本化的片段 bundle 读取契约；不负责底层规则，也不授权工作或证明身份、权限。
 
 ## 通用规范
 
 ### 选择并核验当前规则上下文
 
-仅使用稳定节点映射定位既有权威 owner 路径和准确标题。每个检查点只加载当前所需节点；不得扫描仓库，也不得把返回摘录视为递归加载了所有链接 owner。判断还需要其他直接链接 owner 时，应单独读取其权威文档，并核验版本和语言均为当前值。必需 owner 不可访问时，阻塞依赖该内容的判断，不得推断其正文。
+只读取当前判断所需的权威规则上下文，并保留既有旧版读取契约。仅通过显式版本化索引选择有界片段，并包含其声明的依赖闭包；不得扫描仓库，也不得把 bundle 视为递归加载了所有链接 owner。预算按 Unicode 字符计量，绝不为满足预算而截断内容。必需内容缺失或预算不足时，结果即为不完整。完整仅表示已装配所请求索引的依赖闭包，不证明所有任务规则或链接 owner 均已读取。判断还需要其他直接链接 owner 时，应单独读取其权威文档，并核验版本和语言均为当前值。必需 owner 不可访问或未被覆盖时，阻塞依赖该内容的判断，不得推断其正文。
 
 每次请求都必须从同一来源、同一语言读取注册表和 owner 标题。每次读取当前映射及标题，并将 Hash 绑定到节点结构、语言和正文。普通文字修改会在下一次读取时生效。受支持节点 ID、事实、证据、分支或其他程序校验结构发生变化时，必须配套更新兼容实现和测试；拒绝不受支持的结构，不得用旧契约解释。
 
@@ -20,7 +20,7 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-公共 `rules_get_context` 接口可返回当前注册节点的上下文，无需打开 Root 或 Worker 状态。只请求所选节点，并核验其 owner、语言和 Hash。公共读取成功不能证明受保护状态或真实宿主绑定可用。源码开发须显式指定仓库根目录；已安装运行时读取打包快照。
+公共 `rules_get_context` 接口可返回当前注册节点的上下文，无需打开 Root 或 Worker 状态。未提供 `context_version` 时，调用保留旧版请求、输出与 Hash。`fragment_ids`、`max_chars` 等片段 bundle 字段必须显式带有 `context_version: 1`；无版本扩展会被拒绝。读取 bundle 时，核验 owner/source、语言、片段覆盖、完整状态、`index_sha256`、context hash 与截断标记。`max_chars` 按片段正文的 Unicode 字符计数（不是 token），默认值为 12,000，接受范围为 256–60,000；内容不会被截断。检查 `remaining_owner_refs` 并直接读取相关未覆盖 owner。完整 bundle 仅覆盖所请求的索引依赖闭包。公共读取成功不能证明受保护状态或真实宿主绑定可用。源码开发须显式指定仓库根目录；已安装运行时读取打包快照。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
@@ -28,6 +28,8 @@
 
 ## 相关概念
 
+- [Workflow Routing Advice](../execution-planning/workflow-routing-advice_zh_cn.md) — 拥有可选任务级阶段建议，并要求直接审阅当前路线。
+- [Candidate Compliance Preflight](../execution-planning/candidate-compliance_zh_cn.md) — 拥有只读候选结构检查。
 - [增强状态存储](enhanced-state-store_zh_cn.md) — 定位独立的受保护状态与身份边界。
 - [Coding Delegation Mode Confirmation](../delegation/delegation-mode-confirmation_zh_cn.md) — 定位 output-class 节点映射的模式选择 owner。
 - [Coding Execution Control](../execution-control/execution-control_zh_cn.md) — 定位 Slice 与 Control 节点归属。
