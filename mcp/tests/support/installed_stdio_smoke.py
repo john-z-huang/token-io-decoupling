@@ -20,6 +20,8 @@ EXPECTED_TOOLS = {
         "task_plan_complete",
         "task_plan_archive",
         "rules_get_context",
+        "validate_decoupling_compliance",
+        "decide_decoupling_workflow",
         "workflow_select_child_effort",
         "workflow_generate_decision_context",
         "workflow_select_child_role",
@@ -42,6 +44,7 @@ EXPECTED_TOOLS = {
     },
     "worker": {
         "worker_get_assignment",
+        "materialize_decoupled_output",
         "worker_record_progress",
         "worker_get_evidence",
         "worker_report_blocker",
@@ -64,7 +67,12 @@ def _text(result: object) -> str:
     return "\n".join(getattr(item, "text", "") for item in content)
 
 
-async def _exercise(cli_path: Path, profile: str, repo_root: Path) -> None:
+async def _exercise(
+    cli_path: Path,
+    profile: str,
+    repo_root: Path,
+    output_materializer_factory: str | None = None,
+) -> None:
     if not cli_path.is_absolute():
         raise AssertionError("installed CLI path must be absolute")
     cli_path = cli_path.resolve(strict=True)
@@ -75,9 +83,12 @@ async def _exercise(cli_path: Path, profile: str, repo_root: Path) -> None:
         cwd = Path(temporary).resolve()
         if cwd.is_relative_to(repo_root):
             raise AssertionError("stdio subprocess working directory must be outside the checkout")
+        args = ["start-mcp-server", "--profile", profile]
+        if output_materializer_factory is not None:
+            args.extend(["--output-materializer-factory", output_materializer_factory])
         parameters = StdioServerParameters(
             command=str(cli_path),
-            args=["start-mcp-server", "--profile", profile],
+            args=args,
             cwd=str(cwd),
             env={"PATH": os.defpath, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONPATH": ""},
         )
@@ -392,11 +403,12 @@ def _exercise_codex_dry_run(cli_path: Path, repo_root: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cli", required=True, type=Path)
+    parser.add_argument("--output-materializer-factory", metavar="MODULE:CALLABLE")
     args = parser.parse_args()
     repo_root = Path(__file__).resolve().parents[3]
     cli_path = args.cli.resolve(strict=True)
     for profile in EXPECTED_TOOLS:
-        asyncio.run(_exercise(cli_path, profile, repo_root))
+        asyncio.run(_exercise(cli_path, profile, repo_root, args.output_materializer_factory))
     _exercise_codex_dry_run(cli_path, repo_root)
     print("installed unified launcher profile discovery: ok")
 

@@ -60,6 +60,12 @@ class GitMetadataEpoch(StrictModel):
 
 Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+BoundedOwnerPath = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=512)
+]
+BoundedOwnerSection = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=256)
+]
 
 
 class SemanticRef(StrictModel):
@@ -160,6 +166,79 @@ class RuleContext(StrictModel):
     evaluation_mode: EvaluationMode
     failure_action: NonEmptyString
     next_checkpoint_ids: list[NonEmptyString]
+    context_hash: Sha256
+
+
+class RuleContextIndexFragment(StrictModel):
+    fragment_id: NonEmptyString
+    node_id: NonEmptyString
+    section_en: BoundedOwnerSection
+    section_zh_cn: BoundedOwnerSection
+    dependencies: list[NonEmptyString] = Field(default_factory=list)
+
+
+class RuleContextIndexNode(StrictModel):
+    node_id: NonEmptyString
+    default_fragment_ids: Annotated[list[NonEmptyString], Field(min_length=1)]
+
+
+class RuleContextIndex(StrictModel):
+    schema_version: Literal[1]
+    nodes: Annotated[list[RuleContextIndexNode], Field(min_length=1)]
+    fragments: Annotated[list[RuleContextIndexFragment], Field(min_length=1)]
+
+
+class RuleContextFragmentResult(StrictModel):
+    fragment_id: NonEmptyString
+    node_id: NonEmptyString
+    owner_path: BoundedOwnerPath
+    owner_section: BoundedOwnerSection
+    text: NonEmptyString
+    text_sha256: Sha256
+
+
+class RuleContextNodeMetadata(StrictModel):
+    node_id: NonEmptyString
+    language: Language
+    owner_path: BoundedOwnerPath
+    owner_section: BoundedOwnerSection
+    required_facts: list[NonEmptyString]
+    required_evidence: list[NonEmptyString]
+    legal_branches: list[NonEmptyString]
+    evaluation_mode: EvaluationMode
+    failure_action: NonEmptyString
+    next_checkpoint_ids: list[NonEmptyString]
+
+
+class RuleContextMissingFragment(StrictModel):
+    fragment_id: NonEmptyString
+    node_id: NonEmptyString
+    owner_path: BoundedOwnerPath
+    owner_section: BoundedOwnerSection
+    reason: NonEmptyString
+
+
+class RuleContextOwnerReference(StrictModel):
+    path: BoundedOwnerPath
+    section: BoundedOwnerSection | None = None
+
+
+class RuleContextBundle(StrictModel):
+    schema_version: Literal[1]
+    index_sha256: Sha256
+    node_id: NonEmptyString
+    language: Language
+    node_metadata: RuleContextNodeMetadata
+    fragments: list[RuleContextFragmentResult]
+    required_fragment_ids: list[NonEmptyString]
+    missing_fragments: list[RuleContextMissingFragment]
+    remaining_owner_refs: Annotated[list[RuleContextOwnerReference], Field(max_length=16)]
+    remaining_owner_refs_truncated: bool
+    complete: bool
+    status: Literal["complete", "incomplete_budget", "incomplete_content"]
+    text_budget: int
+    text_characters: int
+    required_text_characters: int
     context_hash: Sha256
 
 

@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "protocol_version": 2,
+  "benchmark_id": "issue-182-representative-cases",
+  "model": "gpt-6-luna",
+  "reasoning_effort": "medium",
+  "caller_max_retries": 0,
+  "cases": [
+    {
+      "case_id": "rules_current_verification",
+      "question": "Given the candidate preflight and changed-epoch facts, is current Verification still required?",
+      "outcome_choices": [
+        {"value": "verification_required", "description": "Current Verification is still required because applicable evidence for the changed epoch is missing or stale."},
+        {"value": "verification_not_required", "description": "Current Verification is not required because applicable evidence already covers the current changed epoch."}
+      ],
+      "expected": "verification_required",
+      "objective": "Determine whether current Verification is still required after a candidate preflight passes.",
+      "facts": ["The candidate passed a structural preflight.", "No current Verification evidence exists for the changed epoch."],
+      "required_rule": "verification",
+      "service": "rule_context",
+      "workflow_completed_on_correct_answer": false
+    },
+    {
+      "case_id": "multi_auto_work_definition",
+      "question": "Which Multi-Agent Coding module is the current stage, given the locked route and supplied readiness and work evidence?",
+      "outcome_choices": [
+        {"value": "MM01", "description": "Entry Readiness: establish that the task may enter the route."},
+        {"value": "MM02", "description": "Session Readiness: establish the active session, role, and capability boundaries."},
+        {"value": "MM03", "description": "Work Definition: define and release the bounded work before delegated execution."},
+        {"value": "MM04", "description": "Delegated Execution: carry out authorized work through the assigned execution roles."},
+        {"value": "MM05", "description": "Verification and Repair: verify current changes and repair only when required."},
+        {"value": "MM06", "description": "Documentation: update applicable documentation after verification."},
+        {"value": "MM07", "description": "Delivery and Acceptance: complete delivery checks and final acceptance."}
+      ],
+      "expected": "MM03",
+      "objective": "Select the current stage in a locked Multi-Agent Coding route.",
+      "facts": ["Entry Readiness passed.", "Session Readiness passed.", "Work Definition is pending.", "No Work Definition evidence is recorded."],
+      "required_rule": "work_definition",
+      "service": "workflow_routing",
+      "workflow_completed_on_correct_answer": false
+    },
+    {
+      "case_id": "generic_create_preflight_pass",
+      "question": "What structural preflight status applies to this bounded generic-project create candidate? Do not classify final Verification.",
+      "outcome_choices": [
+        {"value": "pass", "description": "The candidate satisfies the applicable structural preflight checks; this does not mean final Verification is complete."},
+        {"value": "fail", "description": "At least one applicable structural preflight check rejects the candidate."},
+        {"value": "unknown", "description": "Available evidence is insufficient to determine the structural preflight status."},
+        {"value": "not_applicable", "description": "No applicable structural preflight rule covers this candidate."}
+      ],
+      "expected": "pass",
+      "objective": "Evaluate a bounded generic-project create candidate against an absent baseline.",
+      "facts": ["The trusted temporary project root is configured.", "The target leaf is absent.", "The generic candidate is a bounded non-Markdown file."],
+      "required_rule": null,
+      "service": "candidate_compliance",
+      "workflow_completed_on_correct_answer": false
+    },
+    {
+      "case_id": "skill_cross_language_preflight_fail",
+      "question": "What structural preflight status applies to this Skill owner pair? Do not classify final Verification.",
+      "outcome_choices": [
+        {"value": "pass", "description": "The candidate satisfies the applicable structural preflight checks; this does not mean final Verification is complete."},
+        {"value": "fail", "description": "At least one applicable structural preflight check rejects the candidate."},
+        {"value": "unknown", "description": "Available evidence is insufficient to determine the structural preflight status."},
+        {"value": "not_applicable", "description": "No applicable structural preflight rule covers this candidate."}
+      ],
+      "expected": "fail",
+      "objective": "Detect a cross-language switch-link violation in a Skill owner pair.",
+      "facts": ["The English and Simplified Chinese candidates are present.", "The English owner contains a cross-language Related link to the Chinese mirror, which is not its visible language-switch link."],
+      "required_rule": null,
+      "service": "candidate_compliance",
+      "workflow_completed_on_correct_answer": false
+    },
+    {
+      "case_id": "primary_skill_fact_markdown_apply",
+      "question": "Which content-evaluation result applies to the supplied fact-Markdown candidate bytes?",
+      "outcome_choices": [
+        {"value": "exact_content", "description": "Candidate bytes are available and match the supplied facts and template exactly, whether or not a file effect has occurred yet."},
+        {"value": "content_mismatch", "description": "Candidate bytes are available but do not match the supplied facts and template exactly."},
+        {"value": "effect_blocked", "description": "No candidate bytes are available to evaluate because preparation or materialization was blocked or incomplete."}
+      ],
+      "expected": "exact_content",
+      "objective": "Produce the exact Primary Output Skill-instructions fact-Markdown candidate and apply it when the assisted service is used.",
+      "facts": ["The confirmed assignment is Primary Output with skill_instructions.", "The independent grant permits the exact create path and fact_markdown template.", "The template has one heading whose title is Facts and one source fact whose text is source fact.", "Render the supplied heading as a Markdown level-two heading, a blank line, then a hyphen-space bullet containing the fact text, followed by one final newline."],
+      "required_rule": "implementation",
+      "service": "materialization",
+      "workflow_completed_on_correct_answer": true,
+      "template_contract": {
+        "kind": "fact_markdown",
+        "ordering": "responses",
+        "headings": [{"id": "facts", "title": "Facts"}],
+        "facts": [{"id": "fact-1", "heading_id": "facts", "text": "source fact"}],
+        "format": "level-two heading, blank line, hyphen-space bullet, final newline"
+      },
+      "expected_content_utf8": "## Facts\n\n- source fact\n",
+      "expected_content_sha256": "9513eb0120cd929326ec310b5293db744d3ab062c5b75e852fbb5ed2d1947b5c"
+    }
+  ]
+}

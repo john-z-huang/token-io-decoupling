@@ -10,6 +10,8 @@
 
 环境变量、客户端元数据、调用方提供的身份或路径、操作参数，以及 `authorized=true` 等字段都不是身份或权限证据。未安装可信 Provider 时，生产默认拒绝受保护的 Enhanced 访问。未绑定时只暴露公共只读接口；只有对应绑定已验证时才暴露 Root 或 Worker 接口，并且每次调用都重新核验。Worker 绑定不授予访问其他 Worker 或 Root-only 数据的权限。
 
+Native Coding 职责由 Skill 路线和角色 owner 定义，不等同于产品 MCP Worker 绑定。执行其他方面已获授权的 Native 任务时，Native Agent 无须声明 Worker 身份或调用 Worker 专用工具。反之，承担 Native 任务也不能满足本 owner 对受保护 Enhanced 操作要求的可信绑定或守卫。应保持两类能力边界独立：在另行获授权时可继续 Native 工作；受保护操作不可用时则按失败关闭处理。
+
 证据结论必须保持边界：fake provider 只验证服务是否符合测试契约；SDK 或 stdio 子进程只验证协议行为。两者都不能证明真实宿主提供了 attestation 或执行了 OS 权限边界。没有该宿主的直接证据时，不得声称真实宿主已验证。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令

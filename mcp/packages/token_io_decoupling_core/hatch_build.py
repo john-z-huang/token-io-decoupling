@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import json
-import re
 import sys
 import tempfile
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
@@ -33,21 +32,32 @@ class RuleResourcesBuildHook(BuildHookInterface):
                 raise RuntimeError("project root is not a verified Skill checkout")
             source_root = checkout_root
         registry = json.loads(registry_source.read_text(encoding="utf-8"))
+        context_index_source = source_root / "mcp" / "rule-context-index.json"
+        if not context_index_source.is_file():
+            raise RuntimeError("missing versioned rule context index")
+        context_index_source = _safe_source(source_root, "mcp/rule-context-index.json")
+        context_index = json.loads(context_index_source.read_text(encoding="utf-8"))
         sys.path.insert(0, str(project_root / "src"))
         try:
-            from token_io_decoupling_core.owner_paths import OWNER_PATHS
+            from token_io_decoupling_core.context_index_contract import validate_context_index
+            from token_io_decoupling_core.owner_paths import (
+                OPTIONAL_FRAGMENT_OWNER_BINDINGS,
+                OWNER_PATHS,
+            )
             from token_io_decoupling_core.registry_contract import validate_supported_registry_shape
 
             validate_supported_registry_shape(registry)
-        except (ImportError, ValueError) as exc:
-            raise RuntimeError(f"unsupported or malformed rule registry contract: {exc}") from exc
+            validate_context_index(context_index, registry)
+        except (ImportError, ValueError, TypeError, KeyError) as exc:
+            raise RuntimeError(f"unsupported or malformed rule resources: {exc}") from exc
         finally:
             sys.path.pop(0)
 
         self._temporary = tempfile.TemporaryDirectory(prefix="token-io-rule-build-")
         staging_root = Path(self._temporary.name)
         force_include = build_data.setdefault("force_include", {})
-        source_files: set[Path] = {registry_source.resolve()}
+        source_files: set[Path] = {registry_source.resolve(), context_index_source.resolve()}
+        registry_nodes = {node["node_id"]: node for node in registry["nodes"]}
 
         for node in registry["nodes"]:
             node_id = node.get("node_id")
@@ -78,13 +88,49 @@ class RuleResourcesBuildHook(BuildHookInterface):
                     )
             node["resource_paths"] = packaged_paths
 
-        for owner in (
-            "child-role-selection",
-            "task-assignment",
-            "output-token-routing",
-            "session-role-ownership",
-            "decision-context-generation",
-        ):
+        for fragment in context_index["fragments"]:
+            node = registry_nodes.get(fragment["node_id"])
+            if node is None:
+                raise RuntimeError(
+                    f"context fragment {fragment['fragment_id']} refers to unknown registry node"
+                )
+            owner_pairs = {
+                "en": (node.get("owner_path"), fragment["section_en"]),
+                "zh_cn": (
+                    node.get("owner_mirrors", {}).get("zh_cn", {}).get("path"),
+                    fragment["section_zh_cn"],
+                ),
+            }
+            owner_binding = OPTIONAL_FRAGMENT_OWNER_BINDINGS.get(fragment["fragment_id"])
+            if owner_binding is not None:
+                expected_node, owner_key = owner_binding
+                if fragment["node_id"] != expected_node:
+                    raise RuntimeError(
+                        f"controlled owner fragment {fragment['fragment_id']} "
+                        f"must belong to node {expected_node}"
+                    )
+                english_path = OWNER_PATHS[owner_key]
+                chinese_path = english_path.removesuffix(".md") + "_zh_cn.md"
+                owner_pairs = {
+                    "en": (english_path, fragment["section_en"]),
+                    "zh_cn": (chinese_path, fragment["section_zh_cn"]),
+                }
+            for language, (relative_path, heading) in owner_pairs.items():
+                source = _safe_source(source_root, relative_path)
+                excerpt = _extract_heading(
+                    source.read_text(encoding="utf-8"), heading, relative_path
+                )
+                resource_name = f"fragments/{fragment['fragment_id']}.{language}.md"
+                staged = staging_root / resource_name
+                staged.parent.mkdir(parents=True, exist_ok=True)
+                staged.write_text(excerpt + "\n", encoding="utf-8")
+                source_files.add(source)
+                if self.target_name == "wheel":
+                    force_include[str(staged)] = (
+                        f"token_io_decoupling_core/_resources/{resource_name}"
+                    )
+
+        for owner in OWNER_PATHS:
             for language, _suffix, heading in (
                 ("en", "", "General rules"),
                 ("zh_cn", "_zh_cn", "通用规范"),
@@ -106,6 +152,14 @@ class RuleResourcesBuildHook(BuildHookInterface):
                     )
 
         if self.target_name == "wheel":
+            staged_context_index = staging_root / "context-index.json"
+            staged_context_index.write_text(
+                json.dumps(context_index, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            force_include[str(staged_context_index)] = (
+                "token_io_decoupling_core/_resources/context-index.json"
+            )
             staged_registry = staging_root / "registry.json"
             staged_registry.write_text(
                 json.dumps(registry, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -133,7 +187,16 @@ def _safe_source(source_root: Path, relative_path: Any) -> Path:
     if not isinstance(relative_path, str):
         raise RuntimeError("registry owner paths must be strings")
     relative = PurePosixPath(relative_path)
-    if relative.is_absolute() or ".." in relative.parts or not relative.parts:
+    windows_path = PureWindowsPath(relative_path)
+    if (
+        relative.is_absolute()
+        or windows_path.is_absolute()
+        or windows_path.drive
+        or "\\" in relative_path
+        or "\x00" in relative_path
+        or ".." in relative.parts
+        or not relative.parts
+    ):
         raise RuntimeError(f"unsafe rule source path: {relative_path}")
     root = source_root.resolve(strict=True)
     candidate = root
@@ -150,14 +213,13 @@ def _safe_source(source_root: Path, relative_path: Any) -> Path:
 def _extract_heading(source: str, title: Any, path: str) -> str:
     if not isinstance(title, str) or not title:
         raise RuntimeError(f"registry heading is missing for {path}")
-    matches = list(re.finditer(r"^(#{1,6})\s+" + re.escape(title) + r"\s*$", source, re.M))
-    if len(matches) != 1:
-        raise RuntimeError(f"expected one {title!r} heading in {path}; found {len(matches)}")
-    match = matches[0]
-    level = len(match.group(1))
-    next_heading = re.search(r"^#{1," + str(level) + r"}\s+", source[match.end() :], re.M)
-    end = match.end() + next_heading.start() if next_heading else len(source)
-    result = source[match.end() : end].strip()
-    if not result:
-        raise RuntimeError(f"owner heading {title!r} in {path} is empty")
-    return result
+    from token_io_decoupling_core.heading_parser import (
+        DuplicateHeadingError,
+        HeadingNotFoundError,
+        extract_heading,
+    )
+
+    try:
+        return extract_heading(source, title)
+    except (DuplicateHeadingError, HeadingNotFoundError) as exc:
+        raise RuntimeError(f"invalid owner heading {title!r} in {path}: {exc}") from exc

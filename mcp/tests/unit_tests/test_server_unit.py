@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import sys
 from pathlib import Path
 from typing import Any, cast
@@ -21,6 +23,8 @@ PUBLIC_TOOLS = {
     "task_plan_complete",
     "task_plan_archive",
     "rules_get_context",
+    "validate_decoupling_compliance",
+    "decide_decoupling_workflow",
     "workflow_select_child_effort",
     "workflow_generate_decision_context",
     "workflow_select_child_role",
@@ -47,6 +51,8 @@ def test_profiles_have_fixed_disjoint_inventories_and_fail_closed() -> None:
             "task_plan_complete",
             "task_plan_archive",
             "rules_get_context",
+            "validate_decoupling_compliance",
+            "decide_decoupling_workflow",
             "workflow_select_child_effort",
             "workflow_generate_decision_context",
             "workflow_select_child_role",
@@ -69,6 +75,7 @@ def test_profiles_have_fixed_disjoint_inventories_and_fail_closed() -> None:
         },
         "worker": {
             "worker_get_assignment",
+            "materialize_decoupled_output",
             "worker_record_progress",
             "worker_get_evidence",
             "worker_report_blocker",
@@ -94,6 +101,15 @@ def test_profiles_have_fixed_disjoint_inventories_and_fail_closed() -> None:
                 "rules_get_context", {"payload": {"node_id": "contract", "language": "en"}}
             )
             assert not rules.is_error
+            bundle = await client.call_tool(
+                "rules_get_context",
+                {"payload": {"node_id": "contract", "context_version": 1}},
+            )
+            assert not bundle.is_error
+            parsed_bundle = json.loads(_result_text(bundle))
+            assert parsed_bundle["schema_version"] == 1
+            assert parsed_bundle["complete"] is True
+            assert "owner_text" not in parsed_bundle["node_metadata"]
         for profile, tool, payload in (
             ("root", "workflow_transition", {"payload": {"request": {}}}),
             ("worker", "worker_get_assignment", {}),
@@ -112,6 +128,8 @@ def test_profiles_have_fixed_disjoint_inventories_and_fail_closed() -> None:
 
 
 def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
+    from token_io_decoupling_transport.tool_metadata import server_instructions
+
     expected = {
         "workflow": {
             "workflow_capabilities",
@@ -119,6 +137,8 @@ def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
             "task_plan_complete",
             "task_plan_archive",
             "rules_get_context",
+            "validate_decoupling_compliance",
+            "decide_decoupling_workflow",
             "workflow_select_child_effort",
             "workflow_generate_decision_context",
             "workflow_select_child_role",
@@ -141,6 +161,7 @@ def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
         },
         "worker": {
             "worker_get_assignment",
+            "materialize_decoupled_output",
             "worker_record_progress",
             "worker_get_evidence",
             "worker_report_blocker",
@@ -148,6 +169,10 @@ def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
         },
         "share": {"database_schema_status", "state_get", "record_evidence"},
     }
+    role_worker_instructions = server_instructions(None, "worker")
+    assert "materialize_decoupled_output" in role_worker_instructions
+    assert "Native coding-task role" in role_worker_instructions
+    assert "fresh passing preflight" in role_worker_instructions
 
     async def check_profile(profile: str, mode: str) -> None:
         server = create_server(profile=profile)
@@ -157,13 +182,41 @@ def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
             assert client.server_info.description
             assert client.instructions
             assert profile in client.instructions
+            if profile == "worker":
+                assert "materialize_decoupled_output" in client.instructions
+                assert "Native coding-task role" in client.instructions
+                assert "fresh passing preflight" in client.instructions
             listed = await client.list_tools()
             by_name = {tool.name: tool for tool in listed.tools}
             assert set(by_name) == expected[profile]
             assert all(tool.description for tool in by_name.values())
+            if "materialize_decoupled_output" in by_name:
+                description = by_name["materialize_decoupled_output"].description or ""
+                for required in (
+                    "verified MCP Worker binding",
+                    "Primary Output assignment",
+                    "separate active operator grant",
+                    "pinned roots",
+                    "project-file write permission",
+                ):
+                    assert required in description
             # Check the public wire schema itself, not the SDK's internal tool model.
             if "workflow_capabilities" in by_name:
                 assert by_name["workflow_capabilities"].input_schema["properties"] == {}
+            if "rules_get_context" in by_name:
+                schema = by_name["rules_get_context"].input_schema
+                payload_schema = schema["properties"]["payload"]
+                properties = payload_schema["properties"]
+                assert {"node_id", "language"} <= set(properties)
+                assert {"context_version", "fragment_ids", "max_chars"} <= set(properties)
+                assert properties["context_version"]["anyOf"][0]["const"] == 1
+                assert properties["max_chars"]["anyOf"][0]["minimum"] == 256
+                assert properties["max_chars"]["anyOf"][0]["maximum"] == 60_000
+                description = by_name["rules_get_context"].description or ""
+                assert "unchanged legacy" in description
+                assert "Unicode characters" in description
+                assert "remaining_owner_refs" in description
+                assert "does not mean the task's other direct owners" in description
             if "workflow_select_child_effort" in by_name:
                 schema = by_name["workflow_select_child_effort"].input_schema
                 selector_schema = schema["properties"]["payload"]["properties"]
@@ -196,6 +249,38 @@ def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
                 assert description is not None
                 assert "does not inspect repositories" in description
                 assert "automatic downstream Decisions call" in description
+            if "decide_decoupling_workflow" in by_name:
+                route_schema = by_name["decide_decoupling_workflow"].input_schema["properties"][
+                    "payload"
+                ]["properties"]["request"]
+                request_schema = route_schema["properties"]
+                assert {
+                    "task_id",
+                    "task_summary",
+                    "stage",
+                    "mode_locked",
+                    "mode_count",
+                    "capabilities",
+                    "hard_constraints",
+                    "source_facts",
+                    "source_facts_hash",
+                    "outbound_data_permitted",
+                } <= set(request_schema)
+                assert request_schema["stage"]["enum"] == [
+                    "auto",
+                    "entry_readiness",
+                    "session_readiness",
+                    "work_definition",
+                    "execution",
+                    "verification_repair",
+                    "documentation",
+                    "delivery_acceptance",
+                ]
+                assert "outbound_data_permitted" in route_schema["required"]
+                description = by_name["decide_decoupling_workflow"].description or ""
+                assert "not a second policy source" in description
+                assert "max_retries=0" in description
+                assert "Single-Agent or Multi-Agent" in description
             if "workflow_select_child_role" in by_name:
                 request_schema = by_name["workflow_select_child_role"].input_schema["properties"][
                     "payload"
@@ -272,6 +357,47 @@ def test_real_stdio_sdk_discovery_and_public_wire_calls_are_fail_closed(tmp_path
             )
             assert not context.is_error
             assert '"language": "zh_cn"' in _result_text(context)
+            route = await client.call_tool(
+                "decide_decoupling_workflow",
+                {
+                    "payload": {
+                        "request": {
+                            "task_id": "stdio-route",
+                            "task_summary": "Inspect the current execution stage.",
+                            "stage": "execution",
+                            "language": "en",
+                            "mode_locked": True,
+                            "mode_count": {"mode": "Single-Agent Coding", "child_count": 0},
+                            "capabilities": [],
+                            "hard_constraints": [],
+                            "source_facts": [],
+                            "source_facts_hash": hashlib.sha256(b"[]").hexdigest(),
+                            "outbound_data_permitted": False,
+                        }
+                    }
+                },
+            )
+            assert not route.is_error
+            route_result = json.loads(_result_text(route))
+            assert route_result["status"] == "available"
+            assert route_result["module_id"] == "SM04"
+            assert route_result["advisory_only"] is True
+            for payload in (
+                {"node_id": "contract", "context_version": True},
+                {"node_id": "contract", "context_version": 1.0},
+                {
+                    "node_id": "contract",
+                    "context_version": 1,
+                    "fragment_ids": [f"fragment-{index}" for index in range(129)],
+                },
+                {
+                    "node_id": "contract",
+                    "context_version": 1,
+                    "fragment_ids": ["x" * 129],
+                },
+            ):
+                invalid_context = await client.call_tool("rules_get_context", {"payload": payload})
+                assert invalid_context.is_error
             diagnostics = await client.call_tool("database_schema_status", {})
             assert not diagnostics.is_error
             assert '"available": false' in _result_text(diagnostics)
@@ -281,6 +407,32 @@ def test_real_stdio_sdk_discovery_and_public_wire_calls_are_fail_closed(tmp_path
                 {"payload": {"node_id": "contract", "language": "en", "path": "/tmp"}},
             )
             assert extra.is_error
+            compliance = await client.call_tool(
+                "validate_decoupling_compliance",
+                {
+                    "payload": {
+                        "request": {
+                            "policy_scope": "skill_maintenance",
+                            "candidates": [
+                                {
+                                    "path": "docs/skill/example.md",
+                                    "operation": "create",
+                                    "baseline": {"state": "absent"},
+                                    "content": "# candidate\n",
+                                }
+                            ],
+                        }
+                    }
+                },
+            )
+            assert not compliance.is_error
+            compliance_result = json.loads(_result_text(compliance))
+            assert compliance_result["status"] == "unknown"
+            assert any(
+                check["reason_code"] == "compliance_backend_unavailable"
+                for check in compliance_result["checks"]
+                if check["rule_id"] == "candidate_baseline"
+            )
 
     asyncio.run(run())
 

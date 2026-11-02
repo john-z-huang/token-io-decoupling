@@ -106,6 +106,11 @@ def test_default_report_distinguishes_support_configuration_and_unprobed_runtime
         assert configuration[name]["reason_code"] == "configured_disabled"
     assert configuration["task_plan_tools"]["status"] == "unavailable"
     assert configuration["task_plan_tools"]["reason_code"] == "task_plan_backend_not_configured"
+    materialization = configuration["output_materialization"]
+    assert materialization["status"] == "unavailable"
+    assert "Native coding-task role" in materialization["message"]
+    assert "matching operator grant" in materialization["next_step"]
+    assert "fresh passing preflight" in materialization["next_step"]
     assert details["runtime"]["binding"]["status"] == "unverified"
     assert details["runtime"]["binding"]["reason_code"] == "provider_not_configured"
     assert details["runtime"]["server_mode"]["status"] == "public_only"

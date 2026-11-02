@@ -6,7 +6,7 @@ import os
 import re
 import tempfile
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.parse import unquote
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
@@ -15,12 +15,80 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 class SkillBuildHook(BuildHookInterface):
     def initialize(self, version, build_data):
         project = Path(self.root)
+        repo = project.parent
         bundled = project / "skill_bundle.zip"
-        if not bundled.is_file():
-            repo = project.parent
-            source = repo / "docs/skill"
-            if not (source / "SKILL.md").is_file():
-                raise RuntimeError("Skill sources unavailable")
+        compliance_core = (
+            repo / "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/"
+            "compliance_core.py"
+        )
+        expected_compliance_core = (
+            compliance_core.read_bytes()
+            if compliance_core.is_file() and not compliance_core.is_symlink()
+            else None
+        )
+        source = repo / "docs/skill"
+        source_markers = (
+            source / "SKILL.md",
+            source / "SKILL_zh_cn.md",
+            source / "agents/openai.yaml",
+            repo / "scripts/compliance_core_loader.py",
+            repo / "scripts/check-multilingual-docs.py",
+        )
+        source_available = (
+            expected_compliance_core is not None
+            and source.is_dir()
+            and not source.is_symlink()
+            and all(path.is_file() and not path.is_symlink() for path in source_markers)
+        )
+        bundled_snapshot_valid = False
+        if not source_available and bundled.is_file() and not bundled.is_symlink():
+            try:
+                with zipfile.ZipFile(bundled) as archive:
+                    required_entries = {
+                        "SKILL.md",
+                        "SKILL_zh_cn.md",
+                        "agents/openai.yaml",
+                        "_project/scripts/_compliance_core.py",
+                        "_project/scripts/compliance_core_loader.py",
+                        "_project/scripts/check-multilingual-docs.py",
+                    }
+                    entry_names = [item.filename for item in archive.infolist()]
+                    entries = set(entry_names)
+                    safe_entries = len(entries) == len(entry_names) and all(
+                        name
+                        and not PurePosixPath(name).is_absolute()
+                        and ".." not in PurePosixPath(name).parts
+                        and "\\" not in name
+                        for name in entry_names
+                    )
+                    if required_entries <= entries and safe_entries and archive.testzip() is None:
+                        required_text = {
+                            name: archive.read(name).decode("utf-8") for name in required_entries
+                        }
+                        if all(text.strip() for text in required_text.values()):
+                            bundled_helper = archive.read("_project/scripts/_compliance_core.py")
+                            bundled_loader = archive.read(
+                                "_project/scripts/compliance_core_loader.py"
+                            )
+                            bundled_snapshot_valid = bool(bundled_helper and bundled_loader) and (
+                                expected_compliance_core is None
+                                or bundled_helper == expected_compliance_core
+                            )
+            except (
+                OSError,
+                KeyError,
+                RuntimeError,
+                EOFError,
+                NotImplementedError,
+                UnicodeDecodeError,
+                zipfile.BadZipFile,
+            ):
+                bundled_snapshot_valid = False
+        if not source_available and not bundled_snapshot_valid:
+            raise RuntimeError(
+                "complete Skill sources or a valid bundled Skill snapshot are unavailable"
+            )
+        if source_available:
             self._temp = tempfile.TemporaryDirectory(prefix="skill-build-")
             bundled = Path(self._temp.name) / "skill_bundle.zip"
             files = list(source.rglob("*"))
@@ -90,6 +158,7 @@ class SkillBuildHook(BuildHookInterface):
 
                         data = re.sub(r"\]\(([^)]+)\)", link, data.decode()).encode()
                     archive.writestr(destination(path).as_posix(), data)
+                archive.writestr("_project/scripts/_compliance_core.py", expected_compliance_core)
         target = (
             "token_io_decoupling/skill_bundle.zip"
             if self.target_name == "wheel"

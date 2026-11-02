@@ -5,6 +5,7 @@
 ## Actions
 
 1. Confirm the approved documentation paths, audience, purpose, and source evidence.
+   - When an authorized route selects pre-write candidate feedback, apply [Candidate Compliance Preflight](../../layer-01-fundamental-concepts/execution-planning/candidate-compliance.md) to the exact candidate and current trusted baseline. Resolve every selected failed, unknown, omitted, or stale result before applying the candidate. A passing preflight is limited candidate evidence and does not replace the current post-write checks below. If no preflight branch applies, record `Not applicable` with the reason.
 2. Change only the approved Markdown or comment scope. Keep English and Simplified Chinese mirrors synchronized when both are maintained.
 3. When repository documentation, a code comment, or a project-memory note changes, advance the documentation epoch and run the checks applicable to that changed output, including Markdown, link, whitespace, multilingual, and scope checks where relevant.
 4. Record whether changed documentation affects executable content, the Contract, or acceptance conditions. Reverify affected dimensions as required by the current epoch; do not rerun unrelated product behavior tests solely because the documentation epoch changed.
@@ -24,3 +25,4 @@ This checkpoint does not replace implementation verification, authorize product 
 - [Coding Content Memo](../../layer-01-fundamental-concepts/context-exchange/content-memo.md) — locate reusable memo content-contract ownership.
 - [Coding Content Memo Lifecycle](../../layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle.md) — locate memo lifecycle ownership.
 - [Coding Execution Control](../../layer-01-fundamental-concepts/execution-control/execution-control.md) — locate approved documentation-scope ownership.
+- [Candidate Compliance Preflight](../../layer-01-fundamental-concepts/execution-planning/candidate-compliance.md) — locate optional read-only checks on a proposed documentation candidate.

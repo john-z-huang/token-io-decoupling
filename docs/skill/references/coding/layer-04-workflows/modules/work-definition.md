@@ -21,12 +21,14 @@ flowchart TD
     D_ENTRY{"Entry result?"}
     WD01["WD01 Establish bounded current Context"]
     WD02["WD02 Decide within Contract"]
+    D_ROUTING_ADVICE{"Task-stage advice selected and eligible?"}
     WD03["WD03 Resolve default shared task plan"]
     D_PLAN{"Persistence explicitly prohibited?"}
     WD_PLAN["Persist and read back shared task plan; verify repository scope"]
     WD_DONE["complete"]
     WD_CONTEXT_NA["not_applicable: optional Context source absent"]
     WD_ADVICE_NA["not_applicable: advice absent or ineligible"]
+    WD_ROUTING_NA["not_applicable: optional task-stage advice not selected; reason recorded"]
     WD_PLAN_NA["not_applicable: documented persistence restriction"]
     WD_NEEDS["needs_prerequisite: resume at owner"]
     WD_BLOCK["blocked"]
@@ -39,9 +41,14 @@ flowchart TD
     WD_CONTEXT_NA --> WD02
     WD01 -- essential context missing --> WD_NEEDS
     WD01 -- unresolved conflict --> WD_BLOCK
-    WD02 -- decision and optional advice reviewed --> WD03
+    WD02 -- decision and optional Decision advice reviewed --> D_ROUTING_ADVICE
     WD02 -- advice absent or ineligible / N/A --> WD_ADVICE_NA
-    WD_ADVICE_NA --> WD03
+    WD_ADVICE_NA --> D_ROUTING_ADVICE
+    D_ROUTING_ADVICE -- available suggestion reviewed against current route and hashes --> WD03
+    D_ROUTING_ADVICE -- optional advice not selected or ineligible; record reason --> WD_ROUTING_NA
+    WD_ROUTING_NA --> WD03
+    D_ROUTING_ADVICE -- selected advice stale or insufficient; refresh current facts --> WD_NEEDS
+    D_ROUTING_ADVICE -- selected required capability unavailable or route conflict --> WD_BLOCK
     WD02 -- material choice needs evidence --> WD_NEEDS
     WD02 -- Contract or authority conflict --> WD_BLOCK
     WD03 --> D_PLAN
@@ -61,6 +68,7 @@ flowchart TD
    - In Multi-Agent mode only, if the Context Source Selection owner identifies a triggered persistent exchange or memo prerequisite, inspect only that trigger's [Context Exchange](../../layer-01-fundamental-concepts/context-exchange/context-exchange.md), [Workspace Boundary](../../layer-01-fundamental-concepts/context-exchange/context-exchange-workspace-boundary.md), [Handoff](../../layer-01-fundamental-concepts/context-exchange/context-exchange-handoff.md), or [Content Memo Dispatch](../../layer-01-fundamental-concepts/context-exchange/content-memo-dispatch.md) owner as applicable. Confirm required current record and Memory evidence; do not create an exchange record just for Context gathering and do not dispatch a memo here. If no trigger exists, record `not_applicable` with why. In Single-Agent mode, these child-specific exchange and memo owners are `not_applicable`; do not load them.
 3. **WD02 — Decide within the Contract.** Apply [Decision](../../layer-02-workflow-concepts/decision-and-execution/decision.md), [Execution Decision Gate](../../layer-01-fundamental-concepts/execution-planning/execution-decision-gate.md), and [Execution Planning](../../layer-01-fundamental-concepts/execution-planning/execution-planning.md). State the material question, verified facts, unknowns, options, chosen direction, rejected alternatives, authorized scope/effects, return conditions, and unreleased boundary. For material open choices, prepare the required Decision Brief and release reconnaissance only; confirm the Contract permits the selected direction before later release. After material Session recovery, re-evaluate only the current Decision/Contract evidence here when the caller requests it; do not reopen Mode or repeat a completed audit prompt.
    - Advice is optional. Apply [Advisory Selection](../../layer-03-workflow-checkpoints/advisory-selection.md) and [Decisions Advisory](../../layer-01-fundamental-concepts/execution-planning/decisions-advisory.md) only when an authorized current Root Session exists and the Decision stage is eligible, enabled, and relevant. Otherwise use direct owners and record advice as `not_applicable` with why. Review any suggestion against current direct-owner evidence and hashes; advice never chooses or authorizes the work.
+   - Task-stage advice is a separate optional input. Apply [Workflow Routing Advice](../../layer-01-fundamental-concepts/execution-planning/workflow-routing-advice.md) only after WD01 facts are current, the locked mode/count and selected route are directly confirmed, and the advice path is eligible, enabled, and authorized. It may suggest the current stage/module for resumption; review an available suggestion against the current selected route and source/policy hashes. It never changes the route or mode/count, passes a gate, chooses an executor/output, or releases work. If optional advice is not selected or is ineligible, record `not_applicable` with the reason and continue under the current route. If the selected path requires unavailable capability or stale/insufficient evidence, return for current evidence or block that dependent path; do not silently fall back. Keep this separate from the existing Decision advice above.
    - Executor selection and output routing are outside this module's scope and remain for the separately authorized execution path.
 4. **WD03 — Resolve the default shared task plan.** Call [Planning Output Selection](../../layer-03-workflow-checkpoints/planning-output-selection.md) and apply [Task Plan Memory Lifecycle](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md). With or without an Issue or explicit planning request, synthesize current facts and the proposed solution, persist the concrete plan and read it back before implementation or dependent dispatch. Confirm the selected storage scope, repository identity and paired active/archive namespaces; shared storage reuses the plan across workspaces of one repository while keeping other repositories separate. Resolve the mapping through the lifecycle owner; unknown or conflicting mappings block without silent fallback. Return the exact project/plan identity, storage mapping, permitted contributions and readback evidence. Only a documented explicit persistence restriction permits the owner's exception; a conflicting explicit persistence requirement, missing required access or failed write/readback blocks. Record requirement changes first, then analyze and persist the revised proposal before affected work. Return `complete` only with current facts, Contract-consistent Decision/unreleased boundary and verified plan evidence or the justified restriction exception. This does not release a Slice, select an executor, or authorize implementation; the required module cannot be skipped as `not_applicable`.
 

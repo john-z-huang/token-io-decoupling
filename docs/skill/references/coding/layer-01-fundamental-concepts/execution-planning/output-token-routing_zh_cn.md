@@ -46,6 +46,8 @@
 
 ## 相关概念
 
+- [Output Materialization](output-materialization_zh_cn.md) — 拥有受控候选内容准备和应用。
+- [Workflow Routing Advice](workflow-routing-advice_zh_cn.md) — 拥有可选检查点阶段建议。
 - [任务执行主体分配](task-assignment_zh_cn.md) — 负责 Root/子代理执行主体与现有子代理选择。
 - [Session 模型](../session-runtime/session-model_zh_cn.md) — 负责 Session 身份和拓扑语义。
 - [委派数量门禁](../delegation/delegation-mode-count-gate_zh_cn.md) — 负责锁定子代理容量和显式扩展。

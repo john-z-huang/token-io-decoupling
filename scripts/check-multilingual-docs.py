@@ -7,23 +7,17 @@ import re
 import sys
 from pathlib import Path, PurePosixPath
 
+from compliance_core_loader import load_compliance_core
 from markdown_discovery import discover_markdown
+
+_COMPLIANCE_CORE = load_compliance_core()
 
 ROOT = Path(__file__).resolve().parents[1]
 ZH_SUFFIX = "_zh_cn.md"
-LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
-FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
+LINK_RE = _COMPLIANCE_CORE._LINK_RE
+FENCED_CODE_RE = _COMPLIANCE_CORE._MULTILINGUAL_FENCE_RE
 
-PAIR_ROOTS = [
-    Path("README.md"),
-    Path("docs/skill/SKILL.md"),
-    Path("AGENTS.md"),
-    Path("MULTI_LINGUAL.md"),
-    Path("docs/skill/workflows/coding.md"),
-    Path("docs/skill/ENHANCED_ARCHITECTURE.md"),
-    Path("EXTERNAL_REFERENCES.md"),
-    Path("mcp/DEVELOPMENT.md"),
-]
+PAIR_ROOTS = [Path(path) for path in _COMPLIANCE_CORE.PAIR_ROOTS]
 
 CORE_DOCS = [
     PurePosixPath("docs/skill/references/share/shared-protocols.md"),
@@ -52,18 +46,15 @@ PRODUCT_SPECIFIC_PATTERNS = {
 
 
 def zh_peer(path: PurePosixPath) -> PurePosixPath:
-    return path.with_name(f"{path.stem}_zh_cn.md")
+    return PurePosixPath(_COMPLIANCE_CORE.mirror_path(path.as_posix()))
 
 
 def en_peer(path: PurePosixPath) -> PurePosixPath:
-    return path.with_name(path.name.removesuffix(ZH_SUFFIX) + ".md")
+    return PurePosixPath(_COMPLIANCE_CORE.mirror_path(path.as_posix()))
 
 
 def normalize_target(source: PurePosixPath, raw: str) -> PurePosixPath | None:
-    target = raw.split("#", 1)[0].split("?", 1)[0]
-    if not target or "://" in target or target.startswith("mailto:") or not target.endswith(".md"):
-        return None
-    return PurePosixPath(source.parent, target)
+    return _COMPLIANCE_CORE.normalize_multilingual_target(source, raw)
 
 
 def main(root: Path | None = None) -> int:
@@ -80,31 +71,26 @@ def main(root: Path | None = None) -> int:
     if not skill_text.startswith("---\n"):
         errors.append("docs/skill/SKILL.md must start with YAML front matter")
 
-    english_docs = [PurePosixPath(p.as_posix()) for p in PAIR_ROOTS]
+    english_docs = [PurePosixPath(path.as_posix()) for path in PAIR_ROOTS]
     english_docs += [
-        PurePosixPath(p.relative_to(root).as_posix())
-        for p in markdown_files
-        if p.is_relative_to(root / "docs/skill/references")
-        if not p.name.endswith(ZH_SUFFIX)
+        PurePosixPath(path.relative_to(root).as_posix())
+        for path in markdown_files
+        if path.is_relative_to(root / "docs/skill/references")
+        if not path.name.endswith(ZH_SUFFIX)
     ]
-
-    bilingual_english = [p for p in english_docs if (root / p).exists()]
-    bilingual_set = set(bilingual_english)
-
-    for english in bilingual_english:
-        chinese = zh_peer(english)
-        if not (root / chinese).exists():
-            errors.append(f"missing Chinese mirror: {chinese} for {english}")
-
-    paired_root_zh = {zh_peer(PurePosixPath(p.as_posix())).name for p in PAIR_ROOTS}
-    for chinese_path in [p for p in markdown_files if p.name.endswith(ZH_SUFFIX)]:
-        chinese = PurePosixPath(chinese_path.relative_to(root).as_posix())
-        english = en_peer(chinese)
-        is_reference = bool(chinese.parts) and chinese.parts[:3] == ("docs", "skill", "references")
-        if (is_reference or chinese.name in paired_root_zh) and not (root / english).exists():
-            errors.append(f"missing English canonical file: {english} for {chinese}")
-
-    known_pairs = bilingual_set | {zh_peer(p) for p in bilingual_set}
+    bilingual_english = [path for path in english_docs if (root / path).exists()]
+    known_pairs = set(bilingual_english)
+    known_pairs.update(zh_peer(path) for path in bilingual_english)
+    all_relative_paths = [
+        PurePosixPath(path.relative_to(root).as_posix()).as_posix()
+        for path in markdown_files
+    ]
+    errors.extend(
+        _COMPLIANCE_CORE.multilingual_mirror_issues(
+            all_relative_paths,
+            lambda path: (root / PurePosixPath(path)).exists(),
+        )
+    )
 
     for english, chinese in LOCALE_DIRECTORY_PAIRS:
         if not (root / english).exists():
@@ -112,21 +98,12 @@ def main(root: Path | None = None) -> int:
         if not (root / chinese).exists():
             errors.append(f"missing locale-directory Chinese file: {chinese}")
 
-    for rel in sorted(known_pairs, key=str):
-        file_path = root / rel
-        if not file_path.exists():
-            continue
-        text = file_path.read_text(encoding="utf-8")
-        text_without_code = FENCED_CODE_RE.sub("", text)
-        source_is_zh = rel.name.endswith(ZH_SUFFIX)
-        for raw_target in LINK_RE.findall(text_without_code):
-            target = normalize_target(rel, raw_target)
-            if target is None:
-                continue
-            target_is_zh = target.name.endswith(ZH_SUFFIX)
-            counterpart = en_peer(rel) if source_is_zh else zh_peer(rel)
-            if source_is_zh != target_is_zh and target != counterpart:
-                errors.append(f"cross-language Markdown link: {rel} -> {raw_target}")
+    known_documents = {
+        path.as_posix(): (root / path).read_text(encoding="utf-8")
+        for path in sorted(known_pairs, key=str)
+        if (root / path).exists()
+    }
+    errors.extend(_COMPLIANCE_CORE.multilingual_cross_language_issues(known_documents))
 
     for english in CORE_DOCS:
         for rel in (english, zh_peer(english)):
@@ -151,17 +128,19 @@ def main(root: Path | None = None) -> int:
         errors.append("AGENTS_zh_cn.md must reference MULTI_LINGUAL_zh_cn.md")
 
     skill = (root / "docs/skill/SKILL.md").read_text(encoding="utf-8")
-    if "references/" in skill and re.search(r"references/[^)\s`]*_zh_cn\.md", skill):
+    if "references/" in skill and re.search(r"references/[^)\s\x60]*_zh_cn\.md", skill):
         errors.append("docs/skill/SKILL.md must not reference _zh_cn references")
 
     skill_zh = (root / "docs/skill/SKILL_zh_cn.md").read_text(encoding="utf-8")
-    for match in re.findall(r"references/[^)\s`]+\.md", skill_zh):
+    for match in re.findall(r"references/[^)\s\x60]+\.md", skill_zh):
         if not match.endswith(ZH_SUFFIX):
             errors.append(f"docs/skill/SKILL_zh_cn.md references an English file: {match}")
 
     openai_yaml = (root / "docs/skill/agents/openai.yaml").read_text(encoding="utf-8")
     short_description = re.search(
-        r'^\s*short_description:\s*["\'](.+)["\']\s*$', openai_yaml, re.MULTILINE
+        r'^\s*short_description:\s*["\'](.+)["\']\s*$',
+        openai_yaml,
+        re.MULTILINE,
     )
     if not short_description:
         errors.append("docs/skill/agents/openai.yaml is missing short_description")

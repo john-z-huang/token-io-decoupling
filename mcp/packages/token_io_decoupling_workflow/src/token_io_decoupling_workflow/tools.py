@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Any
 
 from token_io_decoupling_core.binding import BindingProvider
-from token_io_decoupling_core.rules import RuleLoader
+from token_io_decoupling_core.rules import DEFAULT_CONTEXT_TEXT_BUDGET, RuleLoader
 from token_io_decoupling_core.state_models import CheckpointNode
 from token_io_decoupling_state.service import StateService
 from token_io_decoupling_transport.payloads import _RULE_CONTEXT
@@ -16,6 +16,10 @@ from token_io_decoupling_workflow.capabilities import capability_report
 from token_io_decoupling_workflow.child_effort import (
     ChildEffortPayload,
     ChildEffortSelector,
+)
+from token_io_decoupling_workflow.compliance_preflight import (
+    CompliancePreflightService,
+    validate_decoupling_compliance,
 )
 from token_io_decoupling_workflow.decision_context import (
     DecisionContextGenerator,
@@ -35,12 +39,20 @@ from token_io_decoupling_workflow.delegation_decisions import (
     ExecutorSelectionPayload,
     OutputTokenRoutingPayload,
 )
-from token_io_decoupling_workflow.payloads import _CONTROL_EVALUATE, _EVALUATE
+from token_io_decoupling_workflow.payloads import (
+    _COMPLIANCE_PREFLIGHT,
+    _CONTROL_EVALUATE,
+    _EVALUATE,
+)
 from token_io_decoupling_workflow.task_plan_core import TaskPlanService
 from token_io_decoupling_workflow.task_plan_payloads import (
     TaskPlanArchivePayload,
     TaskPlanCompletePayload,
     TaskPlanUpdatePayload,
+)
+from token_io_decoupling_workflow.workflow_routing import (
+    WorkflowRouter,
+    WorkflowRoutingPayload,
 )
 
 
@@ -79,6 +91,7 @@ def register_workflow_tools(
     *,
     service: StateService,
     task_plan_service: TaskPlanService,
+    compliance_service: CompliancePreflightService | None,
     rules: RuleLoader,
     advisor: DecisionsAdvisor,
     decisions_config: DecisionsRuntimeConfig | None,
@@ -86,10 +99,23 @@ def register_workflow_tools(
     embedded: bool,
     require_codex_context: bool,
     binding_details: Callable[[BindingProvider], dict[str, str]],
+    output_materialization_details: dict[str, str] | None = None,
 ) -> None:
     effort_selector = ChildEffortSelector()
     context_generator = DecisionContextGenerator(rules=rules)
     delegation_selector = DelegationDecisionSelector(rules)
+    workflow_router = WorkflowRouter(rules, decisions_config)
+
+    def get_rule_context(payload: Any) -> Any:
+        if payload.context_version is None:
+            return rules.load_context(payload.node_id.value, language=payload.language)
+        return rules.load_context_bundle(
+            payload.node_id.value,
+            language=payload.language,
+            fragment_ids=payload.fragment_ids,
+            max_chars=payload.max_chars or DEFAULT_CONTEXT_TEXT_BUDGET,
+        )
+
     registrar.register_no_args(
         "workflow_capabilities",
         lambda: capability_report(
@@ -99,6 +125,8 @@ def register_workflow_tools(
             api_decisions_enabled=bool(decisions_config and decisions_config.enabled),
             diagnose_binding=binding_details,
             task_plan_service=task_plan_service,
+            compliance_service=compliance_service,
+            output_materialization=output_materialization_details,
         ),
     )
     registrar.register(
@@ -122,7 +150,13 @@ def register_workflow_tools(
     registrar.register(
         "rules_get_context",
         _RULE_CONTEXT,
-        lambda payload: rules.load_context(payload.node_id.value, language=payload.language),
+        get_rule_context,
+        enhanced=False,
+    )
+    registrar.register(
+        "validate_decoupling_compliance",
+        _COMPLIANCE_PREFLIGHT,
+        lambda payload: validate_decoupling_compliance(compliance_service, payload.request),
         enhanced=False,
     )
     registrar.register(
@@ -135,6 +169,12 @@ def register_workflow_tools(
         "workflow_generate_decision_context",
         DecisionContextPayload,
         lambda payload: context_generator.generate(payload.request),
+        enhanced=False,
+    )
+    registrar.register(
+        "decide_decoupling_workflow",
+        WorkflowRoutingPayload,
+        lambda payload: workflow_router.decide(payload.request),
         enhanced=False,
     )
     registrar.register(

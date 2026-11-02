@@ -34,6 +34,7 @@ Control 节点的建议可以指出 `continue`、`amend`、`stop` 或 `evidence-
 
 ## 相关概念
 
+- [Workflow Routing Advice](workflow-routing-advice_zh_cn.md) — 拥有五个固定语义建议节点之外的任务级阶段建议。
 - [增强规则上下文](../enhanced-native-state/enhanced-rule-context_zh_cn.md) — 当前注册 owner 标题及来源/Hash 边界。
 - [增强宿主绑定](../enhanced-native-state/enhanced-host-binding_zh_cn.md) — 可信身份和逐操作守卫证据。
 - [Coding Execution Decision Gate](execution-decision-gate_zh_cn.md) — 决策和放行责任。

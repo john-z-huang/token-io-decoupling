@@ -1,0 +1,2368 @@
+{
+  "api_calls": [
+    {
+      "api": "responses",
+      "arm": "baseline",
+      "case_id": "rules_current_verification",
+      "component": "caller",
+      "duration_ms": 2432.099,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "parse",
+      "reported_effort": "medium",
+      "reported_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 30.0,
+      "usage": {
+        "input_tokens": 538,
+        "output_tokens": 93,
+        "total_tokens": 631
+      }
+    },
+    {
+      "api": "responses",
+      "arm": "assisted",
+      "case_id": "rules_current_verification",
+      "component": "caller",
+      "duration_ms": 2007.411,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "parse",
+      "reported_effort": "medium",
+      "reported_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 30.0,
+      "usage": {
+        "input_tokens": 1605,
+        "output_tokens": 80,
+        "total_tokens": 1685
+      }
+    },
+    {
+      "api": "responses",
+      "arm": "baseline",
+      "case_id": "multi_auto_work_definition",
+      "component": "caller",
+      "duration_ms": 3006.17,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "parse",
+      "reported_effort": "medium",
+      "reported_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 30.0,
+      "usage": {
+        "input_tokens": 6360,
+        "output_tokens": 147,
+        "total_tokens": 6507
+      }
+    },
+    {
+      "api": "decisions",
+      "arm": "assisted",
+      "case_id": "multi_auto_work_definition",
+      "component": "inner",
+      "duration_ms": 1141.745,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "create",
+      "reported_effort": null,
+      "reported_model": "gpt-6-luna",
+      "requested_effort": null,
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 20.0,
+      "usage": {
+        "input_tokens": 2664,
+        "output_tokens": 0,
+        "total_tokens": 2664
+      }
+    },
+    {
+      "api": "responses",
+      "arm": "assisted",
+      "case_id": "multi_auto_work_definition",
+      "component": "caller",
+      "duration_ms": 2899.758,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "parse",
+      "reported_effort": "medium",
+      "reported_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 30.0,
+      "usage": {
+        "input_tokens": 3805,
+        "output_tokens": 75,
+        "total_tokens": 3880
+      }
+    },
+    {
+      "api": "responses",
+      "arm": "baseline",
+      "case_id": "generic_create_preflight_pass",
+      "component": "caller",
+      "duration_ms": 3998.82,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "parse",
+      "reported_effort": "medium",
+      "reported_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 30.0,
+      "usage": {
+        "input_tokens": 1614,
+        "output_tokens": 294,
+        "total_tokens": 1908
+      }
+    },
+    {
+      "api": "responses",
+      "arm": "assisted",
+      "case_id": "generic_create_preflight_pass",
+      "component": "caller",
+      "duration_ms": 3005.009,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "parse",
+      "reported_effort": "medium",
+      "reported_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 30.0,
+      "usage": {
+        "input_tokens": 1722,
+        "output_tokens": 139,
+        "total_tokens": 1861
+      }
+    },
+    {
+      "api": "responses",
+      "arm": "baseline",
+      "case_id": "skill_cross_language_preflight_fail",
+      "component": "caller",
+      "duration_ms": 3243.388,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "parse",
+      "reported_effort": "medium",
+      "reported_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 30.0,
+      "usage": {
+        "input_tokens": 1846,
+        "output_tokens": 178,
+        "total_tokens": 2024
+      }
+    },
+    {
+      "api": "responses",
+      "arm": "assisted",
+      "case_id": "skill_cross_language_preflight_fail",
+      "component": "caller",
+      "duration_ms": 3993.707,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "parse",
+      "reported_effort": "medium",
+      "reported_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 30.0,
+      "usage": {
+        "input_tokens": 2460,
+        "output_tokens": 111,
+        "total_tokens": 2571
+      }
+    },
+    {
+      "api": "responses",
+      "arm": "baseline",
+      "case_id": "primary_skill_fact_markdown_apply",
+      "component": "caller",
+      "duration_ms": 4439.439,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "parse",
+      "reported_effort": "medium",
+      "reported_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 30.0,
+      "usage": {
+        "input_tokens": 670,
+        "output_tokens": 147,
+        "total_tokens": 817
+      }
+    },
+    {
+      "api": "responses",
+      "arm": "assisted",
+      "case_id": "primary_skill_fact_markdown_apply",
+      "component": "inner",
+      "duration_ms": 2971.531,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "parse",
+      "reported_effort": "medium",
+      "reported_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 30.0,
+      "usage": {
+        "input_tokens": 210,
+        "output_tokens": 43,
+        "total_tokens": 253
+      }
+    },
+    {
+      "api": "responses",
+      "arm": "assisted",
+      "case_id": "primary_skill_fact_markdown_apply",
+      "component": "caller",
+      "duration_ms": 3037.998,
+      "error_type": null,
+      "http_attempts": 1,
+      "operation": "parse",
+      "reported_effort": "medium",
+      "reported_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "requested_model": "gpt-6-luna",
+      "status": "success",
+      "timeout_seconds": 30.0,
+      "usage": {
+        "input_tokens": 3338,
+        "output_tokens": 139,
+        "total_tokens": 3477
+      }
+    }
+  ],
+  "arms": [
+    "baseline",
+    "assisted"
+  ],
+  "blocking_reason": null,
+  "caller_reasoning_effort": "medium",
+  "case_ids": [
+    "rules_current_verification",
+    "multi_auto_work_definition",
+    "generic_create_preflight_pass",
+    "skill_cross_language_preflight_fail",
+    "primary_skill_fact_markdown_apply"
+  ],
+  "fingerprints": {
+    "dataset": {
+      "after": {
+        "case_ids": [
+          "rules_current_verification",
+          "multi_auto_work_definition",
+          "generic_create_preflight_pass",
+          "skill_cross_language_preflight_fail",
+          "primary_skill_fact_markdown_apply"
+        ],
+        "error_type": null,
+        "matches_fixed_case_order": true,
+        "sha256": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b"
+      },
+      "before": {
+        "case_ids": [
+          "rules_current_verification",
+          "multi_auto_work_definition",
+          "generic_create_preflight_pass",
+          "skill_cross_language_preflight_fail",
+          "primary_skill_fact_markdown_apply"
+        ],
+        "error_type": null,
+        "matches_fixed_case_order": true,
+        "sha256": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b"
+      },
+      "stable": true
+    },
+    "metadata": {
+      "after": {
+        "generic_create_preflight_pass": "12952069ece2d20c3ad945e8fceec6570f0845a8c4474b2085136e1bf2a5955e",
+        "multi_auto_work_definition": "9734a71168e872c510bce5b919cfaf9adc40beecc1b8acf940f712ed499f1fb7",
+        "primary_skill_fact_markdown_apply": "e049700f0c8215e986c997e7d62c7fb2447e178fdf6a6ea660ef6a663cc91bfb",
+        "rules_current_verification": "1b2965273be80965578bcd6a7360aa34e4b40f6c109dc9c32b724e50740cb366",
+        "skill_cross_language_preflight_fail": "12952069ece2d20c3ad945e8fceec6570f0845a8c4474b2085136e1bf2a5955e"
+      },
+      "before": {
+        "generic_create_preflight_pass": "12952069ece2d20c3ad945e8fceec6570f0845a8c4474b2085136e1bf2a5955e",
+        "multi_auto_work_definition": "9734a71168e872c510bce5b919cfaf9adc40beecc1b8acf940f712ed499f1fb7",
+        "primary_skill_fact_markdown_apply": "e049700f0c8215e986c997e7d62c7fb2447e178fdf6a6ea660ef6a663cc91bfb",
+        "rules_current_verification": "1b2965273be80965578bcd6a7360aa34e4b40f6c109dc9c32b724e50740cb366",
+        "skill_cross_language_preflight_fail": "12952069ece2d20c3ad945e8fceec6570f0845a8c4474b2085136e1bf2a5955e"
+      },
+      "errors_after": {},
+      "errors_before": {},
+      "stable": true
+    },
+    "sources": {
+      "after": {
+        "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification.md": "eed0e38731a885bc4ce261363ee3a2f389a15f3a81ae91e38cd7ae49e3aa94b3",
+        "docs/skill/references/coding/layer-04-workflows/coding-multi-agent.md": "26f2ced1487bf458e611866193750404b9ab7d9d180ae0db46eb04a0ae7dba0a",
+        "docs/skill/references/coding/layer-04-workflows/modules/work-definition.md": "4f9d21681814dbfa3729a786e140cf2f43f1446f93b1326d4cf565dfa4120042",
+        "mcp/CANDIDATE_COMPLIANCE.md": "760783c8e8cffeee09828f332e758aaeccb66c693c95ce7e99075dc27f7077c1",
+        "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+        "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/compliance_core.py": "af66e4f14bd529fb85e8a8261624cbfc8a8f05782a2cf3d6e8cf6932bc3514e1",
+        "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/materialization_models.py": "5ea2618a9e7bc056178622c23933cdacdff6f3ecdf958b0806b09f72b6cdae43",
+        "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/rules.py": "a395797cab235a7da945bd3fcd05d95a5ef92ba665866f9f60bede0084f5b7c8",
+        "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/payloads.py": "e3d7e0dc84e764aa3ee5235897947b40f517f570e6098fa102c0c05b483e3420",
+        "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/compliance_preflight.py": "a052b60bdf9f028ae8b81a61ac8b2cb8837be90675134d1ae270a94f6ca8c7aa",
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/materialization_templates.py": "52e4c33f58ae5944de3b3970d3aed3e716379c922e1b6648c56fe2b7d20e3f32",
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/output_materialization.py": "2f78d78a25ec0947fb8b24b32fe936ac1d72df841261a08c92d5937c8d2fc429",
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/tools.py": "c8910ca140f15b6f597f74aa4470e91e4a83eeb31cb9e31f57bd639c70b3f36c",
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/workflow_routing.py": "0413594d8817787ed1e8b9e8657574f6f1f3ef163be130d6022088f958f5d8bd",
+        "mcp/rule-context-index.json": "daab86a48a47482aef0d1a97bc58cf5d5b6752907684b43c7e45284592878143",
+        "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+        "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958",
+        "mcp/tests/support/optimization_benchmark.py": "f6c26c953e31be293066cef6ce1edd765dd519d9476f3b18d7b1014b52289320",
+        "mcp/tests/unit_tests/test_output_materialization.py": "59f49d1c2858796a53877ddd1d31304d7a0586b70d60ca59164388e0753e5671"
+      },
+      "before": {
+        "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification.md": "eed0e38731a885bc4ce261363ee3a2f389a15f3a81ae91e38cd7ae49e3aa94b3",
+        "docs/skill/references/coding/layer-04-workflows/coding-multi-agent.md": "26f2ced1487bf458e611866193750404b9ab7d9d180ae0db46eb04a0ae7dba0a",
+        "docs/skill/references/coding/layer-04-workflows/modules/work-definition.md": "4f9d21681814dbfa3729a786e140cf2f43f1446f93b1326d4cf565dfa4120042",
+        "mcp/CANDIDATE_COMPLIANCE.md": "760783c8e8cffeee09828f332e758aaeccb66c693c95ce7e99075dc27f7077c1",
+        "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+        "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/compliance_core.py": "af66e4f14bd529fb85e8a8261624cbfc8a8f05782a2cf3d6e8cf6932bc3514e1",
+        "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/materialization_models.py": "5ea2618a9e7bc056178622c23933cdacdff6f3ecdf958b0806b09f72b6cdae43",
+        "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/rules.py": "a395797cab235a7da945bd3fcd05d95a5ef92ba665866f9f60bede0084f5b7c8",
+        "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/payloads.py": "e3d7e0dc84e764aa3ee5235897947b40f517f570e6098fa102c0c05b483e3420",
+        "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/compliance_preflight.py": "a052b60bdf9f028ae8b81a61ac8b2cb8837be90675134d1ae270a94f6ca8c7aa",
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/materialization_templates.py": "52e4c33f58ae5944de3b3970d3aed3e716379c922e1b6648c56fe2b7d20e3f32",
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/output_materialization.py": "2f78d78a25ec0947fb8b24b32fe936ac1d72df841261a08c92d5937c8d2fc429",
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/tools.py": "c8910ca140f15b6f597f74aa4470e91e4a83eeb31cb9e31f57bd639c70b3f36c",
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/workflow_routing.py": "0413594d8817787ed1e8b9e8657574f6f1f3ef163be130d6022088f958f5d8bd",
+        "mcp/rule-context-index.json": "daab86a48a47482aef0d1a97bc58cf5d5b6752907684b43c7e45284592878143",
+        "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+        "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958",
+        "mcp/tests/support/optimization_benchmark.py": "f6c26c953e31be293066cef6ce1edd765dd519d9476f3b18d7b1014b52289320",
+        "mcp/tests/unit_tests/test_output_materialization.py": "59f49d1c2858796a53877ddd1d31304d7a0586b70d60ca59164388e0753e5671"
+      },
+      "errors_after": {},
+      "errors_before": {},
+      "stable": true
+    }
+  },
+  "finished_at_utc": "2026-11-02T15:50:09+00:00",
+  "fixed_model": "gpt-6-luna",
+  "http_attempts": 12,
+  "max_http_attempts": 30,
+  "protocol_version": 2,
+  "rows": [
+    {
+      "api_calls": [
+        {
+          "api": "responses",
+          "arm": "baseline",
+          "case_id": "rules_current_verification",
+          "component": "caller",
+          "duration_ms": 2432.099,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "parse",
+          "reported_effort": "medium",
+          "reported_model": "gpt-6-luna",
+          "requested_effort": "medium",
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 30.0,
+          "usage": {
+            "input_tokens": 538,
+            "output_tokens": 93,
+            "total_tokens": 631
+          }
+        }
+      ],
+      "api_usage": {
+        "api_calls": 1,
+        "api_calls_by_component": {
+          "caller": 1
+        },
+        "api_calls_by_operation": {
+          "parse": 1
+        },
+        "elapsed_ms": 2432.099,
+        "known_subtotal": {
+          "input_tokens": 538,
+          "output_tokens": 93,
+          "total_tokens": 631
+        },
+        "usage": {
+          "input_tokens": 538,
+          "output_tokens": 93,
+          "total_tokens": 631
+        },
+        "usage_coverage": {
+          "complete_calls": 1,
+          "complete_fraction": 1.0,
+          "fields": {
+            "input_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "output_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "total_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            }
+          },
+          "total_calls": 1
+        }
+      },
+      "arm": "baseline",
+      "case_id": "rules_current_verification",
+      "error_type": null,
+      "execution_status": "executed",
+      "http_attempts": 1,
+      "raw_case_row": {
+        "api_calls": [
+          {
+            "api": "responses",
+            "arm": "baseline",
+            "case_id": "rules_current_verification",
+            "component": "caller",
+            "duration_ms": 2432.099,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "parse",
+            "reported_effort": "medium",
+            "reported_model": "gpt-6-luna",
+            "requested_effort": "medium",
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 30.0,
+            "usage": {
+              "input_tokens": 538,
+              "output_tokens": 93,
+              "total_tokens": 631
+            }
+          }
+        ],
+        "arm": "baseline",
+        "case_id": "rules_current_verification",
+        "component_calls": [],
+        "execution_context": null,
+        "expected": "verification_required",
+        "expected_content_sha256": null,
+        "failure_category": null,
+        "first_attempt_success": true,
+        "http_attempts": 1,
+        "metadata_hash": "1b2965273be80965578bcd6a7360aa34e4b40f6c109dc9c32b724e50740cb366",
+        "observed": "verification_required",
+        "observed_content_sha256": null,
+        "prompt_hashes": {
+          "caller_1": "fc2122add17c2dc627f3cbb185409798818c6b3bc9a25b8b5e6268f082f9760a"
+        },
+        "repair_count": 0,
+        "semantic_success": true,
+        "service_status": "reference_context_loaded",
+        "source_hashes": {
+          "after": {
+            "hashes": {
+              "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification.md": "eed0e38731a885bc4ce261363ee3a2f389a15f3a81ae91e38cd7ae49e3aa94b3",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/rules.py": "a395797cab235a7da945bd3fcd05d95a5ef92ba665866f9f60bede0084f5b7c8",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/payloads.py": "e3d7e0dc84e764aa3ee5235897947b40f517f570e6098fa102c0c05b483e3420",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/rule-context-index.json": "daab86a48a47482aef0d1a97bc58cf5d5b6752907684b43c7e45284592878143",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "before": {
+            "hashes": {
+              "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification.md": "eed0e38731a885bc4ce261363ee3a2f389a15f3a81ae91e38cd7ae49e3aa94b3",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/rules.py": "a395797cab235a7da945bd3fcd05d95a5ef92ba665866f9f60bede0084f5b7c8",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/payloads.py": "e3d7e0dc84e764aa3ee5235897947b40f517f570e6098fa102c0c05b483e3420",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/rule-context-index.json": "daab86a48a47482aef0d1a97bc58cf5d5b6752907684b43c7e45284592878143",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "stable": true
+        },
+        "timings": {
+          "apply": 0.0,
+          "caller": 2.454373125001439,
+          "elapsed": 2.607184333999612,
+          "harness": 0.0,
+          "service": 0.000731709002138814,
+          "setup": 0.0001820839970605448
+        },
+        "workflow_completed": false,
+        "workflow_completion_reason": "case_has_no_file_effect",
+        "workflow_completion_status": "not_applicable"
+      },
+      "semantic_success": true,
+      "unrun_reason": null
+    },
+    {
+      "api_calls": [
+        {
+          "api": "responses",
+          "arm": "assisted",
+          "case_id": "rules_current_verification",
+          "component": "caller",
+          "duration_ms": 2007.411,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "parse",
+          "reported_effort": "medium",
+          "reported_model": "gpt-6-luna",
+          "requested_effort": "medium",
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 30.0,
+          "usage": {
+            "input_tokens": 1605,
+            "output_tokens": 80,
+            "total_tokens": 1685
+          }
+        }
+      ],
+      "api_usage": {
+        "api_calls": 1,
+        "api_calls_by_component": {
+          "caller": 1
+        },
+        "api_calls_by_operation": {
+          "parse": 1
+        },
+        "elapsed_ms": 2007.411,
+        "known_subtotal": {
+          "input_tokens": 1605,
+          "output_tokens": 80,
+          "total_tokens": 1685
+        },
+        "usage": {
+          "input_tokens": 1605,
+          "output_tokens": 80,
+          "total_tokens": 1685
+        },
+        "usage_coverage": {
+          "complete_calls": 1,
+          "complete_fraction": 1.0,
+          "fields": {
+            "input_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "output_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "total_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            }
+          },
+          "total_calls": 1
+        }
+      },
+      "arm": "assisted",
+      "case_id": "rules_current_verification",
+      "error_type": null,
+      "execution_status": "executed",
+      "http_attempts": 1,
+      "raw_case_row": {
+        "api_calls": [
+          {
+            "api": "responses",
+            "arm": "assisted",
+            "case_id": "rules_current_verification",
+            "component": "caller",
+            "duration_ms": 2007.411,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "parse",
+            "reported_effort": "medium",
+            "reported_model": "gpt-6-luna",
+            "requested_effort": "medium",
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 30.0,
+            "usage": {
+              "input_tokens": 1605,
+              "output_tokens": 80,
+              "total_tokens": 1685
+            }
+          }
+        ],
+        "arm": "assisted",
+        "case_id": "rules_current_verification",
+        "component_calls": [
+          {
+            "arguments_utf8_bytes": 98,
+            "result_utf8_bytes": 2548,
+            "seconds": 0.002053625001281034,
+            "status": "available",
+            "tool": "rules_get_context"
+          }
+        ],
+        "execution_context": null,
+        "expected": "verification_required",
+        "expected_content_sha256": null,
+        "failure_category": null,
+        "first_attempt_success": true,
+        "http_attempts": 1,
+        "metadata_hash": "1b2965273be80965578bcd6a7360aa34e4b40f6c109dc9c32b724e50740cb366",
+        "observed": "verification_required",
+        "observed_content_sha256": null,
+        "prompt_hashes": {
+          "caller_1": "720e27ed6faadd804c7584caa8c6e33eb52fade5115292e008e2bdd1714e6653"
+        },
+        "repair_count": 0,
+        "semantic_success": true,
+        "service_status": "available",
+        "source_hashes": {
+          "after": {
+            "hashes": {
+              "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification.md": "eed0e38731a885bc4ce261363ee3a2f389a15f3a81ae91e38cd7ae49e3aa94b3",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/rules.py": "a395797cab235a7da945bd3fcd05d95a5ef92ba665866f9f60bede0084f5b7c8",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/payloads.py": "e3d7e0dc84e764aa3ee5235897947b40f517f570e6098fa102c0c05b483e3420",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/rule-context-index.json": "daab86a48a47482aef0d1a97bc58cf5d5b6752907684b43c7e45284592878143",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "before": {
+            "hashes": {
+              "docs/skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification.md": "eed0e38731a885bc4ce261363ee3a2f389a15f3a81ae91e38cd7ae49e3aa94b3",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/rules.py": "a395797cab235a7da945bd3fcd05d95a5ef92ba665866f9f60bede0084f5b7c8",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/payloads.py": "e3d7e0dc84e764aa3ee5235897947b40f517f570e6098fa102c0c05b483e3420",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/rule-context-index.json": "daab86a48a47482aef0d1a97bc58cf5d5b6752907684b43c7e45284592878143",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "stable": true
+        },
+        "timings": {
+          "apply": 0.0,
+          "caller": 2.007528166999691,
+          "elapsed": 2.0128997080028057,
+          "harness": 0.0,
+          "service": 0.002053625001281034,
+          "setup": 0.00025695799922687
+        },
+        "workflow_completed": false,
+        "workflow_completion_reason": "case_has_no_file_effect",
+        "workflow_completion_status": "not_applicable"
+      },
+      "semantic_success": true,
+      "unrun_reason": null
+    },
+    {
+      "api_calls": [
+        {
+          "api": "responses",
+          "arm": "baseline",
+          "case_id": "multi_auto_work_definition",
+          "component": "caller",
+          "duration_ms": 3006.17,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "parse",
+          "reported_effort": "medium",
+          "reported_model": "gpt-6-luna",
+          "requested_effort": "medium",
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 30.0,
+          "usage": {
+            "input_tokens": 6360,
+            "output_tokens": 147,
+            "total_tokens": 6507
+          }
+        }
+      ],
+      "api_usage": {
+        "api_calls": 1,
+        "api_calls_by_component": {
+          "caller": 1
+        },
+        "api_calls_by_operation": {
+          "parse": 1
+        },
+        "elapsed_ms": 3006.17,
+        "known_subtotal": {
+          "input_tokens": 6360,
+          "output_tokens": 147,
+          "total_tokens": 6507
+        },
+        "usage": {
+          "input_tokens": 6360,
+          "output_tokens": 147,
+          "total_tokens": 6507
+        },
+        "usage_coverage": {
+          "complete_calls": 1,
+          "complete_fraction": 1.0,
+          "fields": {
+            "input_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "output_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "total_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            }
+          },
+          "total_calls": 1
+        }
+      },
+      "arm": "baseline",
+      "case_id": "multi_auto_work_definition",
+      "error_type": null,
+      "execution_status": "executed",
+      "http_attempts": 1,
+      "raw_case_row": {
+        "api_calls": [
+          {
+            "api": "responses",
+            "arm": "baseline",
+            "case_id": "multi_auto_work_definition",
+            "component": "caller",
+            "duration_ms": 3006.17,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "parse",
+            "reported_effort": "medium",
+            "reported_model": "gpt-6-luna",
+            "requested_effort": "medium",
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 30.0,
+            "usage": {
+              "input_tokens": 6360,
+              "output_tokens": 147,
+              "total_tokens": 6507
+            }
+          }
+        ],
+        "arm": "baseline",
+        "case_id": "multi_auto_work_definition",
+        "component_calls": [],
+        "execution_context": null,
+        "expected": "MM03",
+        "expected_content_sha256": null,
+        "failure_category": null,
+        "first_attempt_success": true,
+        "http_attempts": 1,
+        "metadata_hash": "9734a71168e872c510bce5b919cfaf9adc40beecc1b8acf940f712ed499f1fb7",
+        "observed": "MM03",
+        "observed_content_sha256": null,
+        "prompt_hashes": {
+          "caller_1": "ef651284854d89542e3cf83350eb99fe7c493d91d2e4460fdcf42326925d217e"
+        },
+        "repair_count": 0,
+        "semantic_success": true,
+        "service_status": "available",
+        "source_hashes": {
+          "after": {
+            "hashes": {
+              "docs/skill/references/coding/layer-04-workflows/coding-multi-agent.md": "26f2ced1487bf458e611866193750404b9ab7d9d180ae0db46eb04a0ae7dba0a",
+              "docs/skill/references/coding/layer-04-workflows/modules/work-definition.md": "4f9d21681814dbfa3729a786e140cf2f43f1446f93b1326d4cf565dfa4120042",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/workflow_routing.py": "0413594d8817787ed1e8b9e8657574f6f1f3ef163be130d6022088f958f5d8bd",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "before": {
+            "hashes": {
+              "docs/skill/references/coding/layer-04-workflows/coding-multi-agent.md": "26f2ced1487bf458e611866193750404b9ab7d9d180ae0db46eb04a0ae7dba0a",
+              "docs/skill/references/coding/layer-04-workflows/modules/work-definition.md": "4f9d21681814dbfa3729a786e140cf2f43f1446f93b1326d4cf565dfa4120042",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/workflow_routing.py": "0413594d8817787ed1e8b9e8657574f6f1f3ef163be130d6022088f958f5d8bd",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "stable": true
+        },
+        "timings": {
+          "apply": 0.0,
+          "caller": 3.0066513329984446,
+          "elapsed": 3.0129489579994697,
+          "harness": 0.0,
+          "service": 0.00010454100265633315,
+          "setup": 0.00027933299861615524
+        },
+        "workflow_completed": false,
+        "workflow_completion_reason": "case_has_no_file_effect",
+        "workflow_completion_status": "not_applicable"
+      },
+      "semantic_success": true,
+      "unrun_reason": null
+    },
+    {
+      "api_calls": [
+        {
+          "api": "decisions",
+          "arm": "assisted",
+          "case_id": "multi_auto_work_definition",
+          "component": "inner",
+          "duration_ms": 1141.745,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "create",
+          "reported_effort": null,
+          "reported_model": "gpt-6-luna",
+          "requested_effort": null,
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 20.0,
+          "usage": {
+            "input_tokens": 2664,
+            "output_tokens": 0,
+            "total_tokens": 2664
+          }
+        },
+        {
+          "api": "responses",
+          "arm": "assisted",
+          "case_id": "multi_auto_work_definition",
+          "component": "caller",
+          "duration_ms": 2899.758,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "parse",
+          "reported_effort": "medium",
+          "reported_model": "gpt-6-luna",
+          "requested_effort": "medium",
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 30.0,
+          "usage": {
+            "input_tokens": 3805,
+            "output_tokens": 75,
+            "total_tokens": 3880
+          }
+        }
+      ],
+      "api_usage": {
+        "api_calls": 2,
+        "api_calls_by_component": {
+          "caller": 1,
+          "inner": 1
+        },
+        "api_calls_by_operation": {
+          "create": 1,
+          "parse": 1
+        },
+        "elapsed_ms": 4041.503,
+        "known_subtotal": {
+          "input_tokens": 6469,
+          "output_tokens": 75,
+          "total_tokens": 6544
+        },
+        "usage": {
+          "input_tokens": 6469,
+          "output_tokens": 75,
+          "total_tokens": 6544
+        },
+        "usage_coverage": {
+          "complete_calls": 2,
+          "complete_fraction": 1.0,
+          "fields": {
+            "input_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 2,
+              "total_calls": 2
+            },
+            "output_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 2,
+              "total_calls": 2
+            },
+            "total_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 2,
+              "total_calls": 2
+            }
+          },
+          "total_calls": 2
+        }
+      },
+      "arm": "assisted",
+      "case_id": "multi_auto_work_definition",
+      "error_type": null,
+      "execution_status": "executed",
+      "http_attempts": 2,
+      "raw_case_row": {
+        "api_calls": [
+          {
+            "api": "decisions",
+            "arm": "assisted",
+            "case_id": "multi_auto_work_definition",
+            "component": "inner",
+            "duration_ms": 1141.745,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "create",
+            "reported_effort": null,
+            "reported_model": "gpt-6-luna",
+            "requested_effort": null,
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 20.0,
+            "usage": {
+              "input_tokens": 2664,
+              "output_tokens": 0,
+              "total_tokens": 2664
+            }
+          },
+          {
+            "api": "responses",
+            "arm": "assisted",
+            "case_id": "multi_auto_work_definition",
+            "component": "caller",
+            "duration_ms": 2899.758,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "parse",
+            "reported_effort": "medium",
+            "reported_model": "gpt-6-luna",
+            "requested_effort": "medium",
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 30.0,
+            "usage": {
+              "input_tokens": 3805,
+              "output_tokens": 75,
+              "total_tokens": 3880
+            }
+          }
+        ],
+        "arm": "assisted",
+        "case_id": "multi_auto_work_definition",
+        "component_calls": [
+          {
+            "arguments_utf8_bytes": 978,
+            "result_utf8_bytes": 5258,
+            "seconds": 1.18356466700061,
+            "status": "available",
+            "tool": "decide_decoupling_workflow"
+          }
+        ],
+        "execution_context": null,
+        "expected": "MM03",
+        "expected_content_sha256": null,
+        "failure_category": null,
+        "first_attempt_success": true,
+        "http_attempts": 2,
+        "metadata_hash": "9734a71168e872c510bce5b919cfaf9adc40beecc1b8acf940f712ed499f1fb7",
+        "observed": "MM03",
+        "observed_content_sha256": null,
+        "prompt_hashes": {
+          "caller_1": "46e6ff8c10d6a5ced8a24959741d37ce759909168c9ca40026f2ccfc3a4630bb"
+        },
+        "repair_count": 0,
+        "semantic_success": true,
+        "service_status": "available",
+        "source_hashes": {
+          "after": {
+            "hashes": {
+              "docs/skill/references/coding/layer-04-workflows/coding-multi-agent.md": "26f2ced1487bf458e611866193750404b9ab7d9d180ae0db46eb04a0ae7dba0a",
+              "docs/skill/references/coding/layer-04-workflows/modules/work-definition.md": "4f9d21681814dbfa3729a786e140cf2f43f1446f93b1326d4cf565dfa4120042",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/workflow_routing.py": "0413594d8817787ed1e8b9e8657574f6f1f3ef163be130d6022088f958f5d8bd",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "before": {
+            "hashes": {
+              "docs/skill/references/coding/layer-04-workflows/coding-multi-agent.md": "26f2ced1487bf458e611866193750404b9ab7d9d180ae0db46eb04a0ae7dba0a",
+              "docs/skill/references/coding/layer-04-workflows/modules/work-definition.md": "4f9d21681814dbfa3729a786e140cf2f43f1446f93b1326d4cf565dfa4120042",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/workflow_routing.py": "0413594d8817787ed1e8b9e8657574f6f1f3ef163be130d6022088f958f5d8bd",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "stable": true
+        },
+        "timings": {
+          "apply": 0.0,
+          "caller": 2.9002667919994565,
+          "elapsed": 4.092601624997769,
+          "harness": 0.0,
+          "service": 1.18356466700061,
+          "setup": 0.0005483749991981313
+        },
+        "workflow_completed": false,
+        "workflow_completion_reason": "case_has_no_file_effect",
+        "workflow_completion_status": "not_applicable"
+      },
+      "semantic_success": true,
+      "unrun_reason": null
+    },
+    {
+      "api_calls": [
+        {
+          "api": "responses",
+          "arm": "baseline",
+          "case_id": "generic_create_preflight_pass",
+          "component": "caller",
+          "duration_ms": 3998.82,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "parse",
+          "reported_effort": "medium",
+          "reported_model": "gpt-6-luna",
+          "requested_effort": "medium",
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 30.0,
+          "usage": {
+            "input_tokens": 1614,
+            "output_tokens": 294,
+            "total_tokens": 1908
+          }
+        }
+      ],
+      "api_usage": {
+        "api_calls": 1,
+        "api_calls_by_component": {
+          "caller": 1
+        },
+        "api_calls_by_operation": {
+          "parse": 1
+        },
+        "elapsed_ms": 3998.82,
+        "known_subtotal": {
+          "input_tokens": 1614,
+          "output_tokens": 294,
+          "total_tokens": 1908
+        },
+        "usage": {
+          "input_tokens": 1614,
+          "output_tokens": 294,
+          "total_tokens": 1908
+        },
+        "usage_coverage": {
+          "complete_calls": 1,
+          "complete_fraction": 1.0,
+          "fields": {
+            "input_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "output_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "total_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            }
+          },
+          "total_calls": 1
+        }
+      },
+      "arm": "baseline",
+      "case_id": "generic_create_preflight_pass",
+      "error_type": null,
+      "execution_status": "executed",
+      "http_attempts": 1,
+      "raw_case_row": {
+        "api_calls": [
+          {
+            "api": "responses",
+            "arm": "baseline",
+            "case_id": "generic_create_preflight_pass",
+            "component": "caller",
+            "duration_ms": 3998.82,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "parse",
+            "reported_effort": "medium",
+            "reported_model": "gpt-6-luna",
+            "requested_effort": "medium",
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 30.0,
+            "usage": {
+              "input_tokens": 1614,
+              "output_tokens": 294,
+              "total_tokens": 1908
+            }
+          }
+        ],
+        "arm": "baseline",
+        "case_id": "generic_create_preflight_pass",
+        "component_calls": [],
+        "execution_context": null,
+        "expected": "pass",
+        "expected_content_sha256": null,
+        "failure_category": null,
+        "first_attempt_success": true,
+        "http_attempts": 1,
+        "metadata_hash": "12952069ece2d20c3ad945e8fceec6570f0845a8c4474b2085136e1bf2a5955e",
+        "observed": "pass",
+        "observed_content_sha256": null,
+        "prompt_hashes": {
+          "caller_1": "6e5486cc98b6077a95683e1fd970031bb4b1af59420ed4469d6c766a2ff6bc04"
+        },
+        "repair_count": 0,
+        "semantic_success": true,
+        "service_status": "reference_context_loaded",
+        "source_hashes": {
+          "after": {
+            "hashes": {
+              "mcp/CANDIDATE_COMPLIANCE.md": "760783c8e8cffeee09828f332e758aaeccb66c693c95ce7e99075dc27f7077c1",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/compliance_core.py": "af66e4f14bd529fb85e8a8261624cbfc8a8f05782a2cf3d6e8cf6932bc3514e1",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/compliance_preflight.py": "a052b60bdf9f028ae8b81a61ac8b2cb8837be90675134d1ae270a94f6ca8c7aa",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/tools.py": "c8910ca140f15b6f597f74aa4470e91e4a83eeb31cb9e31f57bd639c70b3f36c",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "before": {
+            "hashes": {
+              "mcp/CANDIDATE_COMPLIANCE.md": "760783c8e8cffeee09828f332e758aaeccb66c693c95ce7e99075dc27f7077c1",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/compliance_core.py": "af66e4f14bd529fb85e8a8261624cbfc8a8f05782a2cf3d6e8cf6932bc3514e1",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/compliance_preflight.py": "a052b60bdf9f028ae8b81a61ac8b2cb8837be90675134d1ae270a94f6ca8c7aa",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/tools.py": "c8910ca140f15b6f597f74aa4470e91e4a83eeb31cb9e31f57bd639c70b3f36c",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "stable": true
+        },
+        "timings": {
+          "apply": 0.0,
+          "caller": 3.999207374999969,
+          "elapsed": 4.00946391600155,
+          "harness": 0.0,
+          "service": 0.00013549999857787043,
+          "setup": 0.0008779580020927824
+        },
+        "workflow_completed": false,
+        "workflow_completion_reason": "case_has_no_file_effect",
+        "workflow_completion_status": "not_applicable"
+      },
+      "semantic_success": true,
+      "unrun_reason": null
+    },
+    {
+      "api_calls": [
+        {
+          "api": "responses",
+          "arm": "assisted",
+          "case_id": "generic_create_preflight_pass",
+          "component": "caller",
+          "duration_ms": 3005.009,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "parse",
+          "reported_effort": "medium",
+          "reported_model": "gpt-6-luna",
+          "requested_effort": "medium",
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 30.0,
+          "usage": {
+            "input_tokens": 1722,
+            "output_tokens": 139,
+            "total_tokens": 1861
+          }
+        }
+      ],
+      "api_usage": {
+        "api_calls": 1,
+        "api_calls_by_component": {
+          "caller": 1
+        },
+        "api_calls_by_operation": {
+          "parse": 1
+        },
+        "elapsed_ms": 3005.009,
+        "known_subtotal": {
+          "input_tokens": 1722,
+          "output_tokens": 139,
+          "total_tokens": 1861
+        },
+        "usage": {
+          "input_tokens": 1722,
+          "output_tokens": 139,
+          "total_tokens": 1861
+        },
+        "usage_coverage": {
+          "complete_calls": 1,
+          "complete_fraction": 1.0,
+          "fields": {
+            "input_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "output_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "total_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            }
+          },
+          "total_calls": 1
+        }
+      },
+      "arm": "assisted",
+      "case_id": "generic_create_preflight_pass",
+      "error_type": null,
+      "execution_status": "executed",
+      "http_attempts": 1,
+      "raw_case_row": {
+        "api_calls": [
+          {
+            "api": "responses",
+            "arm": "assisted",
+            "case_id": "generic_create_preflight_pass",
+            "component": "caller",
+            "duration_ms": 3005.009,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "parse",
+            "reported_effort": "medium",
+            "reported_model": "gpt-6-luna",
+            "requested_effort": "medium",
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 30.0,
+            "usage": {
+              "input_tokens": 1722,
+              "output_tokens": 139,
+              "total_tokens": 1861
+            }
+          }
+        ],
+        "arm": "assisted",
+        "case_id": "generic_create_preflight_pass",
+        "component_calls": [
+          {
+            "arguments_utf8_bytes": 188,
+            "result_utf8_bytes": 1676,
+            "seconds": 0.00048754200179246254,
+            "status": "pass",
+            "tool": "validate_decoupling_compliance"
+          }
+        ],
+        "execution_context": null,
+        "expected": "pass",
+        "expected_content_sha256": null,
+        "failure_category": null,
+        "first_attempt_success": true,
+        "http_attempts": 1,
+        "metadata_hash": "12952069ece2d20c3ad945e8fceec6570f0845a8c4474b2085136e1bf2a5955e",
+        "observed": "pass",
+        "observed_content_sha256": null,
+        "prompt_hashes": {
+          "caller_1": "f66f32cc512c89dc5d48ef098d9cf4741b7f22d182fb3b0bc97f11b664c22563"
+        },
+        "repair_count": 0,
+        "semantic_success": true,
+        "service_status": "pass",
+        "source_hashes": {
+          "after": {
+            "hashes": {
+              "mcp/CANDIDATE_COMPLIANCE.md": "760783c8e8cffeee09828f332e758aaeccb66c693c95ce7e99075dc27f7077c1",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/compliance_core.py": "af66e4f14bd529fb85e8a8261624cbfc8a8f05782a2cf3d6e8cf6932bc3514e1",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/compliance_preflight.py": "a052b60bdf9f028ae8b81a61ac8b2cb8837be90675134d1ae270a94f6ca8c7aa",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/tools.py": "c8910ca140f15b6f597f74aa4470e91e4a83eeb31cb9e31f57bd639c70b3f36c",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "before": {
+            "hashes": {
+              "mcp/CANDIDATE_COMPLIANCE.md": "760783c8e8cffeee09828f332e758aaeccb66c693c95ce7e99075dc27f7077c1",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/compliance_core.py": "af66e4f14bd529fb85e8a8261624cbfc8a8f05782a2cf3d6e8cf6932bc3514e1",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/compliance_preflight.py": "a052b60bdf9f028ae8b81a61ac8b2cb8837be90675134d1ae270a94f6ca8c7aa",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/tools.py": "c8910ca140f15b6f597f74aa4470e91e4a83eeb31cb9e31f57bd639c70b3f36c",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "stable": true
+        },
+        "timings": {
+          "apply": 0.0,
+          "caller": 3.0055171249987325,
+          "elapsed": 3.0181958329994814,
+          "harness": 0.0,
+          "service": 0.00048754200179246254,
+          "setup": 0.0006239159993128851
+        },
+        "workflow_completed": false,
+        "workflow_completion_reason": "case_has_no_file_effect",
+        "workflow_completion_status": "not_applicable"
+      },
+      "semantic_success": true,
+      "unrun_reason": null
+    },
+    {
+      "api_calls": [
+        {
+          "api": "responses",
+          "arm": "baseline",
+          "case_id": "skill_cross_language_preflight_fail",
+          "component": "caller",
+          "duration_ms": 3243.388,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "parse",
+          "reported_effort": "medium",
+          "reported_model": "gpt-6-luna",
+          "requested_effort": "medium",
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 30.0,
+          "usage": {
+            "input_tokens": 1846,
+            "output_tokens": 178,
+            "total_tokens": 2024
+          }
+        }
+      ],
+      "api_usage": {
+        "api_calls": 1,
+        "api_calls_by_component": {
+          "caller": 1
+        },
+        "api_calls_by_operation": {
+          "parse": 1
+        },
+        "elapsed_ms": 3243.388,
+        "known_subtotal": {
+          "input_tokens": 1846,
+          "output_tokens": 178,
+          "total_tokens": 2024
+        },
+        "usage": {
+          "input_tokens": 1846,
+          "output_tokens": 178,
+          "total_tokens": 2024
+        },
+        "usage_coverage": {
+          "complete_calls": 1,
+          "complete_fraction": 1.0,
+          "fields": {
+            "input_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "output_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "total_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            }
+          },
+          "total_calls": 1
+        }
+      },
+      "arm": "baseline",
+      "case_id": "skill_cross_language_preflight_fail",
+      "error_type": null,
+      "execution_status": "executed",
+      "http_attempts": 1,
+      "raw_case_row": {
+        "api_calls": [
+          {
+            "api": "responses",
+            "arm": "baseline",
+            "case_id": "skill_cross_language_preflight_fail",
+            "component": "caller",
+            "duration_ms": 3243.388,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "parse",
+            "reported_effort": "medium",
+            "reported_model": "gpt-6-luna",
+            "requested_effort": "medium",
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 30.0,
+            "usage": {
+              "input_tokens": 1846,
+              "output_tokens": 178,
+              "total_tokens": 2024
+            }
+          }
+        ],
+        "arm": "baseline",
+        "case_id": "skill_cross_language_preflight_fail",
+        "component_calls": [],
+        "execution_context": null,
+        "expected": "fail",
+        "expected_content_sha256": null,
+        "failure_category": null,
+        "first_attempt_success": true,
+        "http_attempts": 1,
+        "metadata_hash": "12952069ece2d20c3ad945e8fceec6570f0845a8c4474b2085136e1bf2a5955e",
+        "observed": "fail",
+        "observed_content_sha256": null,
+        "prompt_hashes": {
+          "caller_1": "ffc17875e0f970659377e157970c4329d70244f57ad20329ea8825944127319b"
+        },
+        "repair_count": 0,
+        "semantic_success": true,
+        "service_status": "reference_context_loaded",
+        "source_hashes": {
+          "after": {
+            "hashes": {
+              "mcp/CANDIDATE_COMPLIANCE.md": "760783c8e8cffeee09828f332e758aaeccb66c693c95ce7e99075dc27f7077c1",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/compliance_core.py": "af66e4f14bd529fb85e8a8261624cbfc8a8f05782a2cf3d6e8cf6932bc3514e1",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/compliance_preflight.py": "a052b60bdf9f028ae8b81a61ac8b2cb8837be90675134d1ae270a94f6ca8c7aa",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/tools.py": "c8910ca140f15b6f597f74aa4470e91e4a83eeb31cb9e31f57bd639c70b3f36c",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "before": {
+            "hashes": {
+              "mcp/CANDIDATE_COMPLIANCE.md": "760783c8e8cffeee09828f332e758aaeccb66c693c95ce7e99075dc27f7077c1",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/compliance_core.py": "af66e4f14bd529fb85e8a8261624cbfc8a8f05782a2cf3d6e8cf6932bc3514e1",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/compliance_preflight.py": "a052b60bdf9f028ae8b81a61ac8b2cb8837be90675134d1ae270a94f6ca8c7aa",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/tools.py": "c8910ca140f15b6f597f74aa4470e91e4a83eeb31cb9e31f57bd639c70b3f36c",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "stable": true
+        },
+        "timings": {
+          "apply": 0.0,
+          "caller": 3.243917458003125,
+          "elapsed": 3.2558617089998734,
+          "harness": 0.0,
+          "service": 0.00020020900046802126,
+          "setup": 0.0008127500004775357
+        },
+        "workflow_completed": false,
+        "workflow_completion_reason": "case_has_no_file_effect",
+        "workflow_completion_status": "not_applicable"
+      },
+      "semantic_success": true,
+      "unrun_reason": null
+    },
+    {
+      "api_calls": [
+        {
+          "api": "responses",
+          "arm": "assisted",
+          "case_id": "skill_cross_language_preflight_fail",
+          "component": "caller",
+          "duration_ms": 3993.707,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "parse",
+          "reported_effort": "medium",
+          "reported_model": "gpt-6-luna",
+          "requested_effort": "medium",
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 30.0,
+          "usage": {
+            "input_tokens": 2460,
+            "output_tokens": 111,
+            "total_tokens": 2571
+          }
+        }
+      ],
+      "api_usage": {
+        "api_calls": 1,
+        "api_calls_by_component": {
+          "caller": 1
+        },
+        "api_calls_by_operation": {
+          "parse": 1
+        },
+        "elapsed_ms": 3993.707,
+        "known_subtotal": {
+          "input_tokens": 2460,
+          "output_tokens": 111,
+          "total_tokens": 2571
+        },
+        "usage": {
+          "input_tokens": 2460,
+          "output_tokens": 111,
+          "total_tokens": 2571
+        },
+        "usage_coverage": {
+          "complete_calls": 1,
+          "complete_fraction": 1.0,
+          "fields": {
+            "input_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "output_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "total_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            }
+          },
+          "total_calls": 1
+        }
+      },
+      "arm": "assisted",
+      "case_id": "skill_cross_language_preflight_fail",
+      "error_type": null,
+      "execution_status": "executed",
+      "http_attempts": 1,
+      "raw_case_row": {
+        "api_calls": [
+          {
+            "api": "responses",
+            "arm": "assisted",
+            "case_id": "skill_cross_language_preflight_fail",
+            "component": "caller",
+            "duration_ms": 3993.707,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "parse",
+            "reported_effort": "medium",
+            "reported_model": "gpt-6-luna",
+            "requested_effort": "medium",
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 30.0,
+            "usage": {
+              "input_tokens": 2460,
+              "output_tokens": 111,
+              "total_tokens": 2571
+            }
+          }
+        ],
+        "arm": "assisted",
+        "case_id": "skill_cross_language_preflight_fail",
+        "component_calls": [
+          {
+            "arguments_utf8_bytes": 964,
+            "result_utf8_bytes": 3716,
+            "seconds": 0.0012342080008238554,
+            "status": "fail",
+            "tool": "validate_decoupling_compliance"
+          }
+        ],
+        "execution_context": null,
+        "expected": "fail",
+        "expected_content_sha256": null,
+        "failure_category": null,
+        "first_attempt_success": true,
+        "http_attempts": 1,
+        "metadata_hash": "12952069ece2d20c3ad945e8fceec6570f0845a8c4474b2085136e1bf2a5955e",
+        "observed": "fail",
+        "observed_content_sha256": null,
+        "prompt_hashes": {
+          "caller_1": "01561752105c3d88f067ffcd3a1fc3db1a3012c1e337ff31ff2d31326f07f409"
+        },
+        "repair_count": 0,
+        "semantic_success": true,
+        "service_status": "fail",
+        "source_hashes": {
+          "after": {
+            "hashes": {
+              "mcp/CANDIDATE_COMPLIANCE.md": "760783c8e8cffeee09828f332e758aaeccb66c693c95ce7e99075dc27f7077c1",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/compliance_core.py": "af66e4f14bd529fb85e8a8261624cbfc8a8f05782a2cf3d6e8cf6932bc3514e1",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/compliance_preflight.py": "a052b60bdf9f028ae8b81a61ac8b2cb8837be90675134d1ae270a94f6ca8c7aa",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/tools.py": "c8910ca140f15b6f597f74aa4470e91e4a83eeb31cb9e31f57bd639c70b3f36c",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "before": {
+            "hashes": {
+              "mcp/CANDIDATE_COMPLIANCE.md": "760783c8e8cffeee09828f332e758aaeccb66c693c95ce7e99075dc27f7077c1",
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/compliance_core.py": "af66e4f14bd529fb85e8a8261624cbfc8a8f05782a2cf3d6e8cf6932bc3514e1",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/compliance_preflight.py": "a052b60bdf9f028ae8b81a61ac8b2cb8837be90675134d1ae270a94f6ca8c7aa",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/tools.py": "c8910ca140f15b6f597f74aa4470e91e4a83eeb31cb9e31f57bd639c70b3f36c",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "stable": true
+        },
+        "timings": {
+          "apply": 0.0,
+          "caller": 3.9942595419997815,
+          "elapsed": 4.007007083000644,
+          "harness": 0.0,
+          "service": 0.0012342080008238554,
+          "setup": 0.0005641669995384291
+        },
+        "workflow_completed": false,
+        "workflow_completion_reason": "case_has_no_file_effect",
+        "workflow_completion_status": "not_applicable"
+      },
+      "semantic_success": true,
+      "unrun_reason": null
+    },
+    {
+      "api_calls": [
+        {
+          "api": "responses",
+          "arm": "baseline",
+          "case_id": "primary_skill_fact_markdown_apply",
+          "component": "caller",
+          "duration_ms": 4439.439,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "parse",
+          "reported_effort": "medium",
+          "reported_model": "gpt-6-luna",
+          "requested_effort": "medium",
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 30.0,
+          "usage": {
+            "input_tokens": 670,
+            "output_tokens": 147,
+            "total_tokens": 817
+          }
+        }
+      ],
+      "api_usage": {
+        "api_calls": 1,
+        "api_calls_by_component": {
+          "caller": 1
+        },
+        "api_calls_by_operation": {
+          "parse": 1
+        },
+        "elapsed_ms": 4439.439,
+        "known_subtotal": {
+          "input_tokens": 670,
+          "output_tokens": 147,
+          "total_tokens": 817
+        },
+        "usage": {
+          "input_tokens": 670,
+          "output_tokens": 147,
+          "total_tokens": 817
+        },
+        "usage_coverage": {
+          "complete_calls": 1,
+          "complete_fraction": 1.0,
+          "fields": {
+            "input_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "output_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            },
+            "total_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 1,
+              "total_calls": 1
+            }
+          },
+          "total_calls": 1
+        }
+      },
+      "arm": "baseline",
+      "case_id": "primary_skill_fact_markdown_apply",
+      "error_type": null,
+      "execution_status": "executed",
+      "http_attempts": 1,
+      "raw_case_row": {
+        "api_calls": [
+          {
+            "api": "responses",
+            "arm": "baseline",
+            "case_id": "primary_skill_fact_markdown_apply",
+            "component": "caller",
+            "duration_ms": 4439.439,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "parse",
+            "reported_effort": "medium",
+            "reported_model": "gpt-6-luna",
+            "requested_effort": "medium",
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 30.0,
+            "usage": {
+              "input_tokens": 670,
+              "output_tokens": 147,
+              "total_tokens": 817
+            }
+          }
+        ],
+        "arm": "baseline",
+        "case_id": "primary_skill_fact_markdown_apply",
+        "component_calls": [],
+        "execution_context": {
+          "effect_executor": "isolated_harness",
+          "host_binding": "synthetic_fixture_not_used",
+          "operator_grant": "synthetic_fixture_not_used",
+          "production_authorization": false,
+          "state_service": "not_used",
+          "temporary_root": "isolated_per_case_arm"
+        },
+        "expected": "exact_content",
+        "expected_content_sha256": "9513eb0120cd929326ec310b5293db744d3ab062c5b75e852fbb5ed2d1947b5c",
+        "failure_category": null,
+        "first_attempt_success": true,
+        "http_attempts": 1,
+        "metadata_hash": "e049700f0c8215e986c997e7d62c7fb2447e178fdf6a6ea660ef6a663cc91bfb",
+        "observed": "exact_content",
+        "observed_content_sha256": "9513eb0120cd929326ec310b5293db744d3ab062c5b75e852fbb5ed2d1947b5c",
+        "prompt_hashes": {
+          "caller_1": "3c335997d8874bf24f3254bb11060a59f095c0e00295d3da086943ec4c10e993"
+        },
+        "repair_count": 0,
+        "semantic_success": true,
+        "service_status": "harness_written",
+        "source_hashes": {
+          "after": {
+            "hashes": {
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/materialization_models.py": "5ea2618a9e7bc056178622c23933cdacdff6f3ecdf958b0806b09f72b6cdae43",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/materialization_templates.py": "52e4c33f58ae5944de3b3970d3aed3e716379c922e1b6648c56fe2b7d20e3f32",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/output_materialization.py": "2f78d78a25ec0947fb8b24b32fe936ac1d72df841261a08c92d5937c8d2fc429",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958",
+              "mcp/tests/unit_tests/test_output_materialization.py": "59f49d1c2858796a53877ddd1d31304d7a0586b70d60ca59164388e0753e5671"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "before": {
+            "hashes": {
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/materialization_models.py": "5ea2618a9e7bc056178622c23933cdacdff6f3ecdf958b0806b09f72b6cdae43",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/materialization_templates.py": "52e4c33f58ae5944de3b3970d3aed3e716379c922e1b6648c56fe2b7d20e3f32",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/output_materialization.py": "2f78d78a25ec0947fb8b24b32fe936ac1d72df841261a08c92d5937c8d2fc429",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958",
+              "mcp/tests/unit_tests/test_output_materialization.py": "59f49d1c2858796a53877ddd1d31304d7a0586b70d60ca59164388e0753e5671"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "stable": true
+        },
+        "timings": {
+          "apply": 0.0,
+          "caller": 4.439977250000084,
+          "elapsed": 4.451440249998996,
+          "harness": 0.0012729999980365392,
+          "service": 0.0,
+          "setup": 0.0006272089995036367
+        },
+        "workflow_completed": true,
+        "workflow_completion_reason": "exact_frozen_content_present",
+        "workflow_completion_status": "complete"
+      },
+      "semantic_success": true,
+      "unrun_reason": null
+    },
+    {
+      "api_calls": [
+        {
+          "api": "responses",
+          "arm": "assisted",
+          "case_id": "primary_skill_fact_markdown_apply",
+          "component": "inner",
+          "duration_ms": 2971.531,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "parse",
+          "reported_effort": "medium",
+          "reported_model": "gpt-6-luna",
+          "requested_effort": "medium",
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 30.0,
+          "usage": {
+            "input_tokens": 210,
+            "output_tokens": 43,
+            "total_tokens": 253
+          }
+        },
+        {
+          "api": "responses",
+          "arm": "assisted",
+          "case_id": "primary_skill_fact_markdown_apply",
+          "component": "caller",
+          "duration_ms": 3037.998,
+          "error_type": null,
+          "http_attempts": 1,
+          "operation": "parse",
+          "reported_effort": "medium",
+          "reported_model": "gpt-6-luna",
+          "requested_effort": "medium",
+          "requested_model": "gpt-6-luna",
+          "status": "success",
+          "timeout_seconds": 30.0,
+          "usage": {
+            "input_tokens": 3338,
+            "output_tokens": 139,
+            "total_tokens": 3477
+          }
+        }
+      ],
+      "api_usage": {
+        "api_calls": 2,
+        "api_calls_by_component": {
+          "caller": 1,
+          "inner": 1
+        },
+        "api_calls_by_operation": {
+          "parse": 2
+        },
+        "elapsed_ms": 6009.529,
+        "known_subtotal": {
+          "input_tokens": 3548,
+          "output_tokens": 182,
+          "total_tokens": 3730
+        },
+        "usage": {
+          "input_tokens": 3548,
+          "output_tokens": 182,
+          "total_tokens": 3730
+        },
+        "usage_coverage": {
+          "complete_calls": 2,
+          "complete_fraction": 1.0,
+          "fields": {
+            "input_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 2,
+              "total_calls": 2
+            },
+            "output_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 2,
+              "total_calls": 2
+            },
+            "total_tokens": {
+              "fraction": 1.0,
+              "reported_calls": 2,
+              "total_calls": 2
+            }
+          },
+          "total_calls": 2
+        }
+      },
+      "arm": "assisted",
+      "case_id": "primary_skill_fact_markdown_apply",
+      "error_type": null,
+      "execution_status": "executed",
+      "http_attempts": 2,
+      "raw_case_row": {
+        "api_calls": [
+          {
+            "api": "responses",
+            "arm": "assisted",
+            "case_id": "primary_skill_fact_markdown_apply",
+            "component": "inner",
+            "duration_ms": 2971.531,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "parse",
+            "reported_effort": "medium",
+            "reported_model": "gpt-6-luna",
+            "requested_effort": "medium",
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 30.0,
+            "usage": {
+              "input_tokens": 210,
+              "output_tokens": 43,
+              "total_tokens": 253
+            }
+          },
+          {
+            "api": "responses",
+            "arm": "assisted",
+            "case_id": "primary_skill_fact_markdown_apply",
+            "component": "caller",
+            "duration_ms": 3037.998,
+            "error_type": null,
+            "http_attempts": 1,
+            "operation": "parse",
+            "reported_effort": "medium",
+            "reported_model": "gpt-6-luna",
+            "requested_effort": "medium",
+            "requested_model": "gpt-6-luna",
+            "status": "success",
+            "timeout_seconds": 30.0,
+            "usage": {
+              "input_tokens": 3338,
+              "output_tokens": 139,
+              "total_tokens": 3477
+            }
+          }
+        ],
+        "arm": "assisted",
+        "case_id": "primary_skill_fact_markdown_apply",
+        "component_calls": [
+          {
+            "arguments_utf8_bytes": 339,
+            "result_utf8_bytes": 650,
+            "seconds": 2.9821143750014016,
+            "status": "prepared",
+            "tool": "materialize_decoupled_output"
+          },
+          {
+            "arguments_utf8_bytes": 228,
+            "result_utf8_bytes": 424,
+            "seconds": 0.003144499998597894,
+            "status": "inspected",
+            "tool": "materialize_decoupled_output"
+          },
+          {
+            "arguments_utf8_bytes": 183,
+            "result_utf8_bytes": 460,
+            "seconds": 0.009417082997970283,
+            "status": "applied",
+            "tool": "materialize_decoupled_output"
+          }
+        ],
+        "execution_context": {
+          "effect_executor": "materialization_service",
+          "host_binding": "synthetic_test_fixture",
+          "operator_grant": "synthetic_test_fixture",
+          "production_authorization": false,
+          "state_service": "real_test_instance",
+          "temporary_root": "isolated_per_case_arm"
+        },
+        "expected": "exact_content",
+        "expected_content_sha256": "9513eb0120cd929326ec310b5293db744d3ab062c5b75e852fbb5ed2d1947b5c",
+        "failure_category": null,
+        "first_attempt_success": true,
+        "http_attempts": 2,
+        "metadata_hash": "e049700f0c8215e986c997e7d62c7fb2447e178fdf6a6ea660ef6a663cc91bfb",
+        "observed": "exact_content",
+        "observed_content_sha256": "9513eb0120cd929326ec310b5293db744d3ab062c5b75e852fbb5ed2d1947b5c",
+        "prompt_hashes": {
+          "caller_1": "d3b29b6eedac3ab2ccd6605ad9aede452fa011bb6d73f249222a74007aa7689b"
+        },
+        "repair_count": 0,
+        "semantic_success": true,
+        "service_status": "applied",
+        "source_hashes": {
+          "after": {
+            "hashes": {
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/materialization_models.py": "5ea2618a9e7bc056178622c23933cdacdff6f3ecdf958b0806b09f72b6cdae43",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/materialization_templates.py": "52e4c33f58ae5944de3b3970d3aed3e716379c922e1b6648c56fe2b7d20e3f32",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/output_materialization.py": "2f78d78a25ec0947fb8b24b32fe936ac1d72df841261a08c92d5937c8d2fc429",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958",
+              "mcp/tests/unit_tests/test_output_materialization.py": "59f49d1c2858796a53877ddd1d31304d7a0586b70d60ca59164388e0753e5671"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "before": {
+            "hashes": {
+              "mcp/benchmarks/issue_182_cases.json": "8354bf2310963c2950623c406e9ebbe67b9c430957c3a9158d4f21396df2fb3b",
+              "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/materialization_models.py": "5ea2618a9e7bc056178622c23933cdacdff6f3ecdf958b0806b09f72b6cdae43",
+              "mcp/packages/token_io_decoupling_transport/src/token_io_decoupling_transport/tool_metadata.py": "44407d2f76645efb0ac1302a1f4a006354282fab3681da3c246156a12a4af99f",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/materialization_templates.py": "52e4c33f58ae5944de3b3970d3aed3e716379c922e1b6648c56fe2b7d20e3f32",
+              "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/output_materialization.py": "2f78d78a25ec0947fb8b24b32fe936ac1d72df841261a08c92d5937c8d2fc429",
+              "mcp/tests/support/benchmark_cases.py": "c577c0da3f97ac54c380816a4b08c7d2b08e502dfdf22271b78da2750b5c03ae",
+              "mcp/tests/support/benchmark_metrics.py": "396845586d3a80c378bfd81be1c1d0937411e9b451a09de84688d82cbd99d958",
+              "mcp/tests/unit_tests/test_output_materialization.py": "59f49d1c2858796a53877ddd1d31304d7a0586b70d60ca59164388e0753e5671"
+            },
+            "status": "readable",
+            "unreadable_paths": []
+          },
+          "stable": true
+        },
+        "timings": {
+          "apply": 0.009417082997970283,
+          "caller": 3.0382240840008308,
+          "elapsed": 6.1527571250007895,
+          "harness": 0.0,
+          "service": 2.9852588749999995,
+          "setup": 0.10950208299982478
+        },
+        "workflow_completed": true,
+        "workflow_completion_reason": "exact_frozen_content_present",
+        "workflow_completion_status": "complete"
+      },
+      "semantic_success": true,
+      "unrun_reason": null
+    }
+  ],
+  "schema_version": 1,
+  "started_at_utc": "2026-11-02T15:49:32+00:00",
+  "status": "complete",
+  "summary": {
+    "api_calls": 12,
+    "caller": {
+      "api_calls": 10,
+      "api_calls_by_component": {
+        "caller": 10
+      },
+      "api_calls_by_operation": {
+        "parse": 10
+      },
+      "elapsed_ms": 32063.799,
+      "known_subtotal": {
+        "input_tokens": 23958,
+        "output_tokens": 1403,
+        "total_tokens": 25361
+      },
+      "usage": {
+        "input_tokens": 23958,
+        "output_tokens": 1403,
+        "total_tokens": 25361
+      },
+      "usage_coverage": {
+        "complete_calls": 10,
+        "complete_fraction": 1.0,
+        "fields": {
+          "input_tokens": {
+            "fraction": 1.0,
+            "reported_calls": 10,
+            "total_calls": 10
+          },
+          "output_tokens": {
+            "fraction": 1.0,
+            "reported_calls": 10,
+            "total_calls": 10
+          },
+          "total_tokens": {
+            "fraction": 1.0,
+            "reported_calls": 10,
+            "total_calls": 10
+          }
+        },
+        "total_calls": 10
+      }
+    },
+    "component_invocations": {
+      "argument_utf8_bytes": 2978,
+      "duration_seconds": 4.182016,
+      "invocations": 7,
+      "invocations_by_tool": {
+        "decide_decoupling_workflow": 1,
+        "materialize_decoupled_output": 3,
+        "rules_get_context": 1,
+        "validate_decoupling_compliance": 2
+      },
+      "result_utf8_bytes": 14732
+    },
+    "inner": {
+      "api_calls": 2,
+      "api_calls_by_component": {
+        "inner": 2
+      },
+      "api_calls_by_operation": {
+        "create": 1,
+        "parse": 1
+      },
+      "elapsed_ms": 4113.276,
+      "known_subtotal": {
+        "input_tokens": 2874,
+        "output_tokens": 43,
+        "total_tokens": 2917
+      },
+      "usage": {
+        "input_tokens": 2874,
+        "output_tokens": 43,
+        "total_tokens": 2917
+      },
+      "usage_coverage": {
+        "complete_calls": 2,
+        "complete_fraction": 1.0,
+        "fields": {
+          "input_tokens": {
+            "fraction": 1.0,
+            "reported_calls": 2,
+            "total_calls": 2
+          },
+          "output_tokens": {
+            "fraction": 1.0,
+            "reported_calls": 2,
+            "total_calls": 2
+          },
+          "total_tokens": {
+            "fraction": 1.0,
+            "reported_calls": 2,
+            "total_calls": 2
+          }
+        },
+        "total_calls": 2
+      }
+    },
+    "other_components": {
+      "api_calls": 0,
+      "api_calls_by_component": {},
+      "api_calls_by_operation": {},
+      "elapsed_ms": 0,
+      "known_subtotal": {
+        "input_tokens": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "usage": {
+        "input_tokens": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "usage_coverage": {
+        "complete_calls": 0,
+        "complete_fraction": null,
+        "fields": {
+          "input_tokens": {
+            "fraction": null,
+            "reported_calls": 0,
+            "total_calls": 0
+          },
+          "output_tokens": {
+            "fraction": null,
+            "reported_calls": 0,
+            "total_calls": 0
+          },
+          "total_tokens": {
+            "fraction": null,
+            "reported_calls": 0,
+            "total_calls": 0
+          }
+        },
+        "total_calls": 0
+      }
+    },
+    "timing_layers": {
+      "apply": {
+        "samples": 10,
+        "seconds_by_row": {
+          "generic_create_preflight_pass:assisted": 0.0,
+          "generic_create_preflight_pass:baseline": 0.0,
+          "multi_auto_work_definition:assisted": 0.0,
+          "multi_auto_work_definition:baseline": 0.0,
+          "primary_skill_fact_markdown_apply:assisted": 0.009417,
+          "primary_skill_fact_markdown_apply:baseline": 0.0,
+          "rules_current_verification:assisted": 0.0,
+          "rules_current_verification:baseline": 0.0,
+          "skill_cross_language_preflight_fail:assisted": 0.0,
+          "skill_cross_language_preflight_fail:baseline": 0.0
+        },
+        "sum_seconds": 0.009417
+      },
+      "caller": {
+        "samples": 10,
+        "seconds_by_row": {
+          "generic_create_preflight_pass:assisted": 3.005517,
+          "generic_create_preflight_pass:baseline": 3.999207,
+          "multi_auto_work_definition:assisted": 2.900267,
+          "multi_auto_work_definition:baseline": 3.006651,
+          "primary_skill_fact_markdown_apply:assisted": 3.038224,
+          "primary_skill_fact_markdown_apply:baseline": 4.439977,
+          "rules_current_verification:assisted": 2.007528,
+          "rules_current_verification:baseline": 2.454373,
+          "skill_cross_language_preflight_fail:assisted": 3.99426,
+          "skill_cross_language_preflight_fail:baseline": 3.243917
+        },
+        "sum_seconds": 32.089922
+      },
+      "elapsed": {
+        "samples": 10,
+        "seconds_by_row": {
+          "generic_create_preflight_pass:assisted": 3.018196,
+          "generic_create_preflight_pass:baseline": 4.009464,
+          "multi_auto_work_definition:assisted": 4.092602,
+          "multi_auto_work_definition:baseline": 3.012949,
+          "primary_skill_fact_markdown_apply:assisted": 6.152757,
+          "primary_skill_fact_markdown_apply:baseline": 4.45144,
+          "rules_current_verification:assisted": 2.0129,
+          "rules_current_verification:baseline": 2.607184,
+          "skill_cross_language_preflight_fail:assisted": 4.007007,
+          "skill_cross_language_preflight_fail:baseline": 3.255862
+        },
+        "sum_seconds": 36.620361
+      },
+      "harness": {
+        "samples": 10,
+        "seconds_by_row": {
+          "generic_create_preflight_pass:assisted": 0.0,
+          "generic_create_preflight_pass:baseline": 0.0,
+          "multi_auto_work_definition:assisted": 0.0,
+          "multi_auto_work_definition:baseline": 0.0,
+          "primary_skill_fact_markdown_apply:assisted": 0.0,
+          "primary_skill_fact_markdown_apply:baseline": 0.001273,
+          "rules_current_verification:assisted": 0.0,
+          "rules_current_verification:baseline": 0.0,
+          "skill_cross_language_preflight_fail:assisted": 0.0,
+          "skill_cross_language_preflight_fail:baseline": 0.0
+        },
+        "sum_seconds": 0.001273
+      },
+      "service": {
+        "samples": 10,
+        "seconds_by_row": {
+          "generic_create_preflight_pass:assisted": 0.000488,
+          "generic_create_preflight_pass:baseline": 0.000135,
+          "multi_auto_work_definition:assisted": 1.183565,
+          "multi_auto_work_definition:baseline": 0.000105,
+          "primary_skill_fact_markdown_apply:assisted": 2.985259,
+          "primary_skill_fact_markdown_apply:baseline": 0.0,
+          "rules_current_verification:assisted": 0.002054,
+          "rules_current_verification:baseline": 0.000732,
+          "skill_cross_language_preflight_fail:assisted": 0.001234,
+          "skill_cross_language_preflight_fail:baseline": 0.0002
+        },
+        "sum_seconds": 4.173771
+      },
+      "setup": {
+        "samples": 10,
+        "seconds_by_row": {
+          "generic_create_preflight_pass:assisted": 0.000624,
+          "generic_create_preflight_pass:baseline": 0.000878,
+          "multi_auto_work_definition:assisted": 0.000548,
+          "multi_auto_work_definition:baseline": 0.000279,
+          "primary_skill_fact_markdown_apply:assisted": 0.109502,
+          "primary_skill_fact_markdown_apply:baseline": 0.000627,
+          "rules_current_verification:assisted": 0.000257,
+          "rules_current_verification:baseline": 0.000182,
+          "skill_cross_language_preflight_fail:assisted": 0.000564,
+          "skill_cross_language_preflight_fail:baseline": 0.000813
+        },
+        "sum_seconds": 0.114275
+      }
+    }
+  },
+  "validation": {
+    "api_settings_valid": true,
+    "attempt_cap_blocked": false,
+    "attempts_within_cap": true,
+    "dataset_stable": true,
+    "error_rows": 0,
+    "executed_rows": 10,
+    "measurement_valid": true,
+    "metadata_stable": true,
+    "semantic_valid": true,
+    "source_stable": true,
+    "token_comparison_valid": true,
+    "unrun_rows": 0,
+    "usage_complete": true
+  }
+}

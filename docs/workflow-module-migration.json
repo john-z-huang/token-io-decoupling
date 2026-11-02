@@ -121,7 +121,7 @@
           "source_step": "S06",
           "semantic_substeps": [
             "Decision, Decision Brief and execution planning",
-            "Planning output/Memory lifecycle and optional advice",
+            "Planning output/Memory lifecycle, optional Decision advice, and task-stage routing advice",
             "Executor/output disposition for implementation"
           ],
           "targets": [
@@ -159,7 +159,7 @@
         {
           "source_step": "S07",
           "semantic_substeps": [
-            "Implementation and conditional code-structure evidence"
+            "Implementation, selected candidate/preflight flow, and conditional code-structure evidence"
           ],
           "targets": [
             {
@@ -217,7 +217,7 @@
         {
           "source_step": "S10",
           "semantic_substeps": [
-            "Final fingerprint/current Verification, independence, reporting, epochs and verification-impact advice"
+            "Actual-state fingerprint/current Verification after controlled output, independence, reporting, epochs and verification-impact advice"
           ],
           "targets": [
             {
@@ -262,7 +262,7 @@
         {
           "source_step": "S12",
           "semantic_substeps": [
-            "Parent-owned documentation, impact, Memory write/readback, checks and epoch reuse"
+            "Parent-owned documentation, optional pre-write candidate feedback, impact, Memory write/readback, post-write checks and epoch reuse"
           ],
           "targets": [
             {
@@ -458,7 +458,7 @@
         {
           "source_step": "M07",
           "semantic_substeps": [
-            "Decision, two-level plan, planning Memory and Decision advice",
+            "Decision, two-level plan, planning Memory, Decision advice and task-stage routing advice",
             "Bootstrap proposal plus actual-task authorization",
             "Executor/output/role decision and Slice release"
           ],
@@ -556,7 +556,7 @@
         {
           "source_step": "M11",
           "semantic_substeps": [
-            "Implementation/LSP, stage feedback, Control and follow-up/reuse",
+            "Implementation, selected candidate/preflight flow, LSP, stage feedback, Control and follow-up/reuse",
             "Control advice; pending child recovery at DE07",
             "Next-Slice freshness and reuse"
           ],
@@ -580,7 +580,7 @@
         {
           "source_step": "M12",
           "semantic_substeps": [
-            "Final-state Verification, independence, reporting, epochs/advice and conditional child-body visibility"
+            "Actual-state Verification after controlled output, independence, reporting, epochs/advice and conditional child-body visibility"
           ],
           "targets": [
             {
@@ -625,7 +625,7 @@
         {
           "source_step": "M14",
           "semantic_substeps": [
-            "Parent-owned docs, impact, project Memory/readback, checks and epoch reuse"
+            "Parent-owned docs, optional pre-write candidate feedback, impact, project Memory/readback, post-write checks and epoch reuse"
           ],
           "targets": [
             {

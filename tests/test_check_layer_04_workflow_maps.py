@@ -48,6 +48,13 @@ class WorkflowMapMigrationTests(unittest.TestCase):
     def assert_rejected(self):
         self.assertTrue(validator.check_repository(self.root))
 
+    def insert_map_edge(self, rel, edge):
+        path = self.root / rel
+        text = path.read_text(encoding="utf-8")
+        map_start = text.index("```mermaid")
+        closing_fence = text.index("```", map_start + len("```mermaid"))
+        path.write_text(text[:closing_fence] + f"    {edge}\n" + text[closing_fence:], encoding="utf-8")
+
     def test_real_repository_routes_and_all_eight_module_maps_pass(self):
         self.assertEqual(validator.check_repository(REPO), [])
 
@@ -71,7 +78,8 @@ class WorkflowMapMigrationTests(unittest.TestCase):
 
     def test_single_agent_cannot_gain_delegated_execution_checkpoint(self):
         self.mutate("docs/skill/references/coding/layer-04-workflows/coding-single-agent.md",
-                    'SM04["SM04 Single-Agent execution"]', 'DE04["DE04 delegated execution"]')
+                    'SM04["SM04 Single-Agent execution; selected controlled output/preflight"]',
+                    'DE04["DE04 delegated execution"]')
         self.assert_rejected()
 
     def test_route_shortcut_around_verification_is_rejected(self):
@@ -385,7 +393,10 @@ class WorkflowMapMigrationTests(unittest.TestCase):
         self.assertIn("return to DE01", delegated)
         self.assertIn("separately authorize and assess the original task", delegated)
         self.assertIn("write_content_memo: true` or `false", delegated)
-        self.assertIn("pending child result returns `needs_prerequisite` and resumes at DE07", delegated)
+        self.assertIn("enter DE07 immediately while the child executes", delegated)
+        self.assertIn("resume at the DE07 result-collection/review substep", delegated)
+        self.assertIn("Do not restart or repeat preparation, preflight, or application while collecting the result", delegated)
+        self.assertNotIn("pending child result returns `needs_prerequisite` and resumes at DE07", delegated)
 
     def test_memory_is_read_back_before_impact_and_archive_follows_all_criteria(self):
         docs = (ROUTES / "modules/documentation.md").read_text(encoding="utf-8")
@@ -401,6 +412,142 @@ class WorkflowMapMigrationTests(unittest.TestCase):
             self.assertIn("resume original suspended caller", text)
             self.assertIn("epoch/effect checks pass", text)
             self.assertIn("caller record missing or conflicts", text)
+
+    def test_work_definition_decision_advice_na_cannot_bypass_task_stage_advice(self):
+        rels = (
+            "docs/skill/references/coding/layer-04-workflows/modules/work-definition.md",
+            "docs/skill/references/coding/layer-04-workflows/modules/work-definition_zh_cn.md",
+        )
+        for rel in rels:
+            original = self.read(rel)
+            self.insert_map_edge(rel, "WD_ADVICE_NA --> WD03")
+            errors = validator.check_repository(self.root)
+            self.assertTrue(
+                any("map nodes, critical labels, and directed branch edges differ" in error for error in errors),
+                errors,
+            )
+            (self.root / rel).write_text(original, encoding="utf-8")
+
+    def test_selected_output_cannot_skip_preflight_or_current_state_review(self):
+        cases = (
+            ("single-execution", "SE_OUTPUT_PREP --> SE_OUTPUT_APPLY"),
+            ("single-execution", "SE_OUTPUT_APPLY --> SE04"),
+            ("delegated-execution", "DE_OUTPUT_PREP --> DE_OUTPUT_APPLY"),
+            ("delegated-execution", "DE_OUTPUT_APPLY --> D_RESULT"),
+        )
+        for module, shortcut in cases:
+            for suffix in ("", "_zh_cn"):
+                rel = f"docs/skill/references/coding/layer-04-workflows/modules/{module}{suffix}.md"
+                original = self.read(rel)
+                self.insert_map_edge(rel, shortcut)
+                errors = validator.check_repository(self.root)
+                with self.subTest(module=module, language=suffix, shortcut=shortcut):
+                    self.assertTrue(
+                        any("map nodes, critical labels, and directed branch edges differ" in error for error in errors),
+                        errors,
+                    )
+                (self.root / rel).write_text(original, encoding="utf-8")
+
+    def test_selected_documentation_preflight_missing_candidate_cannot_be_not_applicable(self):
+        rels = (
+            "docs/skill/references/coding/layer-04-workflows/modules/documentation.md",
+            "docs/skill/references/coding/layer-04-workflows/modules/documentation_zh_cn.md",
+        )
+        for rel in rels:
+            original = self.read(rel)
+            self.insert_map_edge(rel, "D_PREFLIGHT -- selected candidate or baseline missing --> DOC_PREFLIGHT_NA")
+            errors = validator.check_repository(self.root)
+            self.assertTrue(
+                any("map nodes, critical labels, and directed branch edges differ" in error for error in errors),
+                errors,
+            )
+            (self.root / rel).write_text(original, encoding="utf-8")
+
+    def test_each_new_single_and_delegated_owner_link_is_required_at_its_checkpoint(self):
+        cases = (
+            ("single-execution", "candidate-compliance.md"),
+            ("delegated-execution", "output-materialization.md"),
+        )
+        for module, target in cases:
+            for suffix in ("", "_zh_cn"):
+                rel = f"docs/skill/references/coding/layer-04-workflows/modules/{module}{suffix}.md"
+                owner_path = f"../../layer-01-fundamental-concepts/execution-planning/{target[:-3]}{suffix}.md"
+                original = self.read(rel)
+                self.assertIn(owner_path, original)
+                self.mutate(rel, owner_path, target[:-3])
+                errors = validator.check_repository(self.root)
+                with self.subTest(module=module, language=suffix, target=target):
+                    self.assertTrue(
+                        any(f"lacks exact direct owner link {owner_path}" in error for error in errors),
+                        errors,
+                    )
+                (self.root / rel).write_text(original, encoding="utf-8")
+
+    def test_delegated_pending_result_resumes_review_without_replaying_output(self):
+        edge_mutations = {
+            "": (
+                (
+                    "DE06 -- dispatch confirmed; enter while child executes --> DE07",
+                    "DE06 -- dispatch confirmed; enter while child executes --> DE_NEEDS_PENDING",
+                ),
+                (
+                    "DE_NEEDS_PENDING -- actual result received; reuse retained evidence without re-preparing or re-applying --> DE_RESULT_REVIEW",
+                    "DE_NEEDS_PENDING -- actual result received; reuse retained evidence without re-preparing or re-applying --> DE_OUTPUT_PREP",
+                ),
+                (
+                    "DE_NEEDS_PENDING -- actual result received; reuse retained evidence without re-preparing or re-applying --> DE_RESULT_REVIEW",
+                    "DE_NEEDS_PENDING -- actual result received; reuse retained evidence without re-preparing or re-applying --> DE_OUTPUT_APPLY",
+                ),
+                (
+                    "DE_NEEDS_PENDING -- actual result received; reuse retained evidence without re-preparing or re-applying --> DE_RESULT_REVIEW",
+                    "DE_NEEDS_PENDING -- actual result received; reuse retained evidence without re-preparing or re-applying --> DE07",
+                ),
+            ),
+            "_zh_cn": (
+                (
+                    "DE06 -- 派发已确认；子代理执行期间进入 --> DE07",
+                    "DE06 -- 派发已确认；子代理执行期间进入 --> DE_NEEDS_PENDING",
+                ),
+                (
+                    "DE_NEEDS_PENDING -- 收到实际结果；复用保留证据，不重新准备或再次应用 --> DE_RESULT_REVIEW",
+                    "DE_NEEDS_PENDING -- 收到实际结果；复用保留证据，不重新准备或再次应用 --> DE_OUTPUT_PREP",
+                ),
+                (
+                    "DE_NEEDS_PENDING -- 收到实际结果；复用保留证据，不重新准备或再次应用 --> DE_RESULT_REVIEW",
+                    "DE_NEEDS_PENDING -- 收到实际结果；复用保留证据，不重新准备或再次应用 --> DE_OUTPUT_APPLY",
+                ),
+                (
+                    "DE_NEEDS_PENDING -- 收到实际结果；复用保留证据，不重新准备或再次应用 --> DE_RESULT_REVIEW",
+                    "DE_NEEDS_PENDING -- 收到实际结果；复用保留证据，不重新准备或再次应用 --> DE07",
+                ),
+            ),
+        }
+        for suffix, mutations in edge_mutations.items():
+            rel = f"docs/skill/references/coding/layer-04-workflows/modules/delegated-execution{suffix}.md"
+            for old, new in mutations:
+                original = self.read(rel)
+                self.mutate(rel, old, new)
+                errors = validator.check_repository(self.root)
+                with self.subTest(language=suffix, changed_edge=new):
+                    self.assertTrue(
+                        any(
+                            "required module safety edge is missing" in error
+                            or "map nodes, critical labels, and directed branch edges differ" in error
+                            for error in errors
+                        ),
+                        errors,
+                    )
+                (self.root / rel).write_text(original, encoding="utf-8")
+
+            original = self.read(rel)
+            self.insert_map_edge(rel, "DE_RESULT_REVIEW --> DE_OUTPUT_APPLY")
+            errors = validator.check_repository(self.root)
+            with self.subTest(language=suffix, changed_edge="DE_RESULT_REVIEW --> DE_OUTPUT_APPLY"):
+                self.assertTrue(
+                    any("map nodes, critical labels, and directed branch edges differ" in error for error in errors),
+                    errors,
+                )
+            (self.root / rel).write_text(original, encoding="utf-8")
 
 
 if __name__ == "__main__":

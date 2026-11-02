@@ -129,13 +129,13 @@ def test_detached_sdist_cli_installs_without_checkout(tmp_path):
     rule_probe = """
 import json
 from token_io_decoupling_core.rules import RuleLoader
-from token_io_decoupling_core.owner_paths import OWNER_PATHS
+from token_io_decoupling_core.owner_paths import DELEGATION_POLICY_OWNERS
 loader = RuleLoader()
 registry = loader._load_registry()
 print(json.dumps({
     'contexts': [loader.load_context(n.node_id, language=language).context_hash
                  for n in registry.nodes for language in ('en', 'zh_cn')],
-    'policies': {name: loader.load_delegation_policy(name)[1] for name in OWNER_PATHS},
+    'policies': {name: loader.load_delegation_policy(name)[1] for name in DELEGATION_POLICY_OWNERS},
 }, sort_keys=True))
 """
 

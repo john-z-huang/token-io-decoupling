@@ -12,6 +12,7 @@ from token_io_decoupling_core.models import (
     DatabaseKind,
 )
 from token_io_decoupling_core.state_models import (
+    BindingIdentity,
     BlockerRecord,
     HostCapability,
     HostGuard,
@@ -42,6 +43,26 @@ def worker_get_assignment(self: StateService) -> dict[str, object]:
         if _hash_json(snapshot) != identity[8]:
             raise BindingError("Worker assignment snapshot hash differs from its bound identity")
         return snapshot
+
+
+def worker_get_materialization_context(
+    self: StateService,
+) -> tuple[BindingIdentity, dict[str, object], str]:
+    """Return the current verified binding, confirmed assignment snapshot, and hash."""
+    binding = self._worker_binding({HostCapability.WORKER_READ})
+    path, root = self._worker_database(binding.current_session_id, binding, create=False)
+    with self._read_transaction(path, DatabaseKind.WORKER, root) as connection:
+        identity = _worker_identity(connection, binding)
+        event_id = _nonempty(str(identity[7]), "event_id")
+        _require_confirmed_worker_event(connection, event_id)
+        row = _one(connection, "SELECT snapshot_json FROM assignment_snapshot WHERE singleton=1")
+        if row is None:
+            raise WorkflowNotOpenError("Worker assignment snapshot is missing")
+        snapshot = json.loads(row[0])
+        assignment_hash = _hash_json(snapshot)
+        if assignment_hash != identity[8]:
+            raise BindingError("Worker assignment snapshot hash differs from its bound identity")
+        return binding, snapshot, assignment_hash
 
 
 def worker_get_dispatch(self: StateService, event_id: str) -> dict[str, object]:

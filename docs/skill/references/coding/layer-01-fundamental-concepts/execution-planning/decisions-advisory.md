@@ -34,6 +34,7 @@ There is currently no provider-specific advisory optimization for Claude. Follow
 
 ## Related concepts
 
+- [Workflow Routing Advice](workflow-routing-advice.md) — owns task-level stage suggestions outside the five fixed semantic-advice nodes.
 - [Enhanced Rule Context](../enhanced-native-state/enhanced-rule-context.md) — current registered owner headings and source/hash boundaries.
 - [Enhanced Host Binding](../enhanced-native-state/enhanced-host-binding.md) — trusted identity and per-operation guard evidence.
 - [Coding Execution Decision Gate](execution-decision-gate.md) — decision and release ownership.

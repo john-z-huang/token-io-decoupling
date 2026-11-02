@@ -46,6 +46,8 @@ There are currently no concept-specific optimizations for this concept; follow t
 
 ## Related concepts
 
+- [Output Materialization](output-materialization.md) — owns controlled candidate preparation and application.
+- [Workflow Routing Advice](workflow-routing-advice.md) — owns optional checkpoint-stage suggestions.
 - [Task Assignment](task-assignment.md) — owns Root/child executor and current-child selection.
 - [Session Model](../session-runtime/session-model.md) — owns Session identity and topology semantics.
 - [Delegation Count Gate](../delegation/delegation-mode-count-gate.md) — owns locked child capacity and explicit expansion.

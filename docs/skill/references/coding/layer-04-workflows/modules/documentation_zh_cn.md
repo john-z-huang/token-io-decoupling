@@ -20,6 +20,10 @@
 flowchart TD
     DOC00["DOC00 解析模块入口"]
     DOC01["DOC01 核验当前已验证状态和批准的文档范围"]
+    D_PREFLIGHT{"是否选择了获授权的写前候选检查？"}
+    DOC_PREFLIGHT["根据当前可信基线检查准确的文档候选"]
+    DOC_PREFLIGHT_NA["not_applicable：未选择候选预检分支；已记录原因"]
+    DOC_NEEDS_PREFLIGHT["needs_prerequisite：解决候选/范围/基线/预检；恢复 DOC02"]
     DOC02["DOC02 编写获准输出或记录有证据的无变化"]
     D_MEMORY{"是否请求项目 Memory 或触发可复用知识条件？"}
     DOC03["DOC03 持久化并读回已授权项目 Memory"]
@@ -35,11 +39,17 @@ flowchart TD
     DOC00 -- 就绪 --> DOC01
     DOC00 -- 证据缺失 --> DOC_NEEDS
     DOC00 -- 冲突或状态不安全 --> DOC_BLOCK
-    DOC01 -- 适用输出；当前 Verification、批准范围和授权 --> DOC02
+    DOC01 -- 适用输出；当前 Verification、批准范围和授权 --> D_PREFLIGHT
     DOC01 -- 无适用输出；当前 Verification 且前后指纹不变 --> DOC_OUTPUT_NA
     DOC01 -- Verification 过期/缺失或范围不完整 --> DOC_NEEDS
     DOC01 -- 请求/触发输出缺少必需授权/路径/来源 --> DOC_NEEDS
     DOC01 -- 将普通文档分配给子代理或作者未授权 --> DOC_BLOCK
+    D_PREFLIGHT -- 已选择；准确候选、范围和可信基线当前有效 --> DOC_PREFLIGHT
+    D_PREFLIGHT -- 未选择/无适用候选；记录原因 --> DOC_PREFLIGHT_NA
+    D_PREFLIGHT -- 已选择但候选、范围或基线缺失 --> DOC_NEEDS_PREFLIGHT
+    DOC_PREFLIGHT -- 所有已选结构检查通过 --> DOC02
+    DOC_PREFLIGHT -- 已选检查失败、未知、遗漏或过期 --> DOC_NEEDS_PREFLIGHT
+    DOC_PREFLIGHT_NA --> DOC02
     DOC02 -- 基于来源编辑完成或有证据的无变化 --> D_MEMORY
     DOC02 -- 实质含义需要决策 --> DOC_NEEDS_IMPL
     D_MEMORY -- 请求或触发的可复用 Memory --> DOC03
@@ -59,7 +69,7 @@ flowchart TD
 
 1. **DOC00 — 解析入口。** 调用[模块入口解析](../../layer-03-workflow-checkpoints/module-entry-resolution_zh_cn.md)，提供当前 Contract/范围、适用的 implementation/content Verification、当前 epoch、已知效果、写前指纹和 continuation。仅在适用输出时提供批准路径、读者、目的、来源证据和作者授权。缺少必需证据时返回 `needs_prerequisite`；范围矛盾、状态不安全或效果未授权时返回 `blocked`。
 2. **DOC01 — 核验状态并判断适用输出。** 应用[Documentation](../../layer-02-workflow-concepts/completion-and-effects/documentation_zh_cn.md)和[Session 职责归属](../../layer-01-fundamental-concepts/session-runtime/session-role-ownership_zh_cn.md)。确认当前 Contract/范围、适用的 implementation/content Verification 和写前指纹。首先依据当前 Contract/用户意图及 owner triggers 判断是否适用文档、注释或可复用项目 Memory 输出。输出适用时，必须具备准确批准路径、读者、目的、来源及作者/职责授权；缺少必需授权/路径/来源时返回 `needs_prerequisite` 或 `blocked`，不得标为 `not_applicable`。普通非 Skill 文档/注释由 parent 编写。只有通过全部 release gates 后，才可将 Skill 指令/参考文档分配给 child；parent 在 Documentation 和 Acceptance 阶段审查。必需 Verification 缺失或过期时返回 Verification。
-3. **DOC02 — 编写获准输出或记录有证据的无变化。** 仅根据已验证来源编辑授权 Markdown/注释路径，保持必需的英中镜像一致。不得以文档名义引入行为、政策、Contract、验收、范围或 Git 变化。实质语义选择返回调用方 Contract/Decision 路径。无适用输出或获准输出实际无差异时，只有前后指纹匹配才可记录 `not_applicable`。保留已完成效果，恢复时不得重放。
+3. **DOC02 — 编写获准输出或记录有证据的无变化。** 对已授权文档候选，先确认可选候选预检分支确实已选择且适用。已选择时，先准备准确的有界候选并捕获当前可信基线，再对该候选/基线运行[候选合规预检](../../layer-01-fundamental-concepts/execution-planning/candidate-compliance_zh_cn.md)，然后才能应用候选。所选分支缺少候选或基线时，在 DOC02 返回 `needs_prerequisite`，直至准备完成；不得将已选分支标为 `not_applicable`。仅在 Skill 维护时使用 Skill-maintenance 范围；其他情况使用 generic project 范围。应用候选前，解决每项已选检查返回的失败、未知、遗漏、截断或过期结果。只有分支确实未选择，或其触发条件不存在/不适用时，才记录有原因的 `not_applicable` 并在授权的直接文档路径下继续。预检通过只是有限候选证据，不能替代 DOC05 写后检查、镜像语义审阅或当前 Verification。仅根据已验证来源编辑授权 Markdown/注释路径，保持必需的英中镜像一致。不得以文档名义引入行为、政策、Contract、验收、范围或 Git 变化。实质语义选择返回调用方 Contract/Decision 路径。无适用输出或获准输出实际无差异时，只有前后指纹匹配才可记录 `not_applicable`。保留已完成效果，恢复时不得重放。
 4. **DOC03 — 仅持久化已授权项目 Memory。** 用户要求可复用 Agent 项目知识，或 owner 定义的触发条件适用时，按适用情况应用[LSP MCP Tools](../../layer-01-fundamental-concepts/session-runtime/LSP-MCP-Tools_zh_cn.md)、[Content Memo](../../layer-01-fundamental-concepts/context-exchange/content-memo_zh_cn.md)及[Content Memo Lifecycle](../../layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle_zh_cn.md)：保留获准名称/路径，通过暴露的 Memory 能力写入，并在要求时读回确认。派发字段 `write_content_memo: false` 不代表项目 Memory 不适用。未请求且未触发项目 Memory 输出时记录带原因的 `not_applicable`。必需能力、写入或读回不可用/失败时，保持请求输出未完成；不得以文件替代。
 5. **DOC04 — 分类写后影响。** 在任何请求的 Memory 写入和读回之后，结合前后指纹应用[Documentation Impact](../../layer-03-workflow-checkpoints/documentation-impact_zh_cn.md)及[Verification Epoch](../../layer-02-workflow-concepts/verification-and-repair/verification-epoch_zh_cn.md)。实际维护文档/注释/Memory 变化推进 documentation epoch。若无输出变化且指纹匹配，不推进 epoch，并以证据记录 `not_applicable`。仅推进受影响维度，保留未受影响证据理由。可执行内容、Contract 或验收变化还须分类为 implementation/content 影响，并返回当前 Verification。影响未知时阻塞。
 6. **DOC05 — 运行文档检查并评估证据复用。** 所有文档和 Memory 写入后，运行适用的 Markdown、链接、空白、多语言和范围检查。仅文档影响时，凭指纹理由保留未受影响的当前证据，并重跑变更的文档检查。没有变更输出时，以匹配指纹将检查标为 `not_applicable`。行为/Contract/验收影响返回 implementation/content Verification；必需重验未解决时不得完成。

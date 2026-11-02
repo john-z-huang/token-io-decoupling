@@ -19,10 +19,10 @@
 ```mermaid
 flowchart TD
     VR00["VR00 解析模块入口"]
-    VR01["VR01 捕获当前最终指纹、验收条件和维度"]
+    VR01["VR01 在效果后捕获实际当前最终状态/指纹；映射标准和维度"]
     VR02["VR02 解析独立 Change Verification 职责"]
     D_INDEP{"Contract 是否要求独立验证？"}
-    VR03["VR03 运行适用的整体和定向检查"]
+    VR03["VR03 运行当前整体和定向检查；收据不是 Verification"]
     VR04["VR04 分类并报告当前证据；可选 epoch 建议"]
     D_RESULT{"当前 Verification 结果？"}
     VR05["VR05 路由具体失败或有依据的 Repair N/A"]
@@ -40,8 +40,8 @@ flowchart TD
     VR00 -- 就绪 --> VR01
     VR00 -- 前置证据缺失 --> VR_NEEDS
     VR00 -- 冲突或状态不安全 --> VR_BLOCK
-    VR01 -- 当前指纹和标准 --> VR02
-    VR01 -- 当前状态或范围证据缺失 --> VR_NEEDS
+    VR01 -- 实际当前状态已解决；指纹、标准和 epoch 已映射 --> VR02
+    VR01 -- 实际状态、指纹或范围证据缺失/不确定 --> VR_NEEDS
     VR01 -- 状态矛盾/不安全 --> VR_BLOCK
     VR02 --> D_INDEP
     D_INDEP -- 要求独立；验证者已确认为可用且独立性证据当前 --> VR03
@@ -74,9 +74,9 @@ flowchart TD
 ## 有序模块清单
 
 1. **VR00 — 解析入口。** 提供本声明、当前 Contract/标准、实施或子代理实际结果、任务范围、来源/效果证据和 continuation，调用[模块入口解析](../../layer-03-workflow-checkpoints/module-entry-resolution_zh_cn.md)。不要求预先存在最终 Verification 结果。证据缺失时返回 `needs_prerequisite`；冲突、状态不安全或效果无法恢复时返回 `blocked`。
-2. **VR01 — 捕获当前最终状态。** 应用[Verification](../../layer-02-workflow-concepts/verification-and-repair/verification_zh_cn.md)捕获准确的当前指纹/epoch，并将每项 Contract 验收条件映射到适用的覆盖维度。应用[Verification Epoch](../../layer-02-workflow-concepts/verification-and-repair/verification-epoch_zh_cn.md)，分别跟踪 implementation/content、documentation 和 Git metadata。当前实施状态和 Contract 标准是必需输入；只有指纹和 epoch 未变化的维度才能复用旧证据。当前状态或标准缺失时，阻塞依赖的验证。 应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)：确认准确共享计划与当前读取访问，或其已记录的限制例外。独立验证者仅接收获授权计划/来源范围，可更新具名验证贡献，不得编辑被审实现。
+2. **VR01 — 捕获实际当前最终状态。** 应用[Verification](../../layer-02-workflow-concepts/verification-and-repair/verification_zh_cn.md)检查实际当前状态、捕获准确指纹/epoch，并将每项 Contract 验收条件映射到覆盖维度。若先前输出使用了[输出物料化](../../layer-01-fundamental-concepts/execution-planning/output-materialization_zh_cn.md)，捕获前须根据实际当前文件核对其收据。先根据当前证据解决任何部分、冲突或不确定的应用；应用收据、候选预检或初步检查均不能替代实际状态指纹或最终 Verification。代码/配置/测试变化影响 implementation/content 维度；维护文档/注释变化影响 documentation 维度；改变可执行内容、Contract 或验收条件的文档还影响 implementation/content 维度。应用[Verification Epoch](../../layer-02-workflow-concepts/verification-and-repair/verification-epoch_zh_cn.md)，分别跟踪 implementation/content、documentation 和 Git metadata。只有指纹和 epoch 未变化的维度才能复用先前证据。当前状态或标准缺失/不确定时，返回 `needs_prerequisite` 或阻塞依赖验证。应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)：确认准确共享计划与当前读取访问，或其已记录的限制例外。独立验证者仅接收获授权计划/来源范围，可更新具名验证贡献，不得编辑被审实现。
 3. **VR02 — 解析独立性要求。** 应用[Verification Independence](../../layer-02-workflow-concepts/verification-and-repair/verification-independence_zh_cn.md)和[Session 职责归属](../../layer-01-fundamental-concepts/session-runtime/session-role-ownership_zh_cn.md)。Contract 要求独立 Change Verification Session 时，使用该职责并仅提供给定范围证据和验收条件；否则将同 Session 检查分类为逻辑验证。在 Multi-Agent 执行中，Worker/子代理实际正文或结果是实施证据，不是独立验证；复用或完整可见也不满足必需的独立验证。必需的独立性不可用时返回 `needs_prerequisite`；不得声称满足 Contract。
-4. **VR03 — 运行当前检查。** 针对准确的 VR01 指纹运行适用的最强整体和定向检查。涵盖所有必需标准及变化维度所需检查。不得对受影响维度复用较早 epoch 的证据。必需检查不可运行时，保留不可用原因及阻塞影响。
+4. **VR03 — 运行当前检查。** 针对 VR01 捕获的准确实际状态指纹运行适用的最强整体和定向检查。涵盖所有必需标准及变化维度所需检查。候选预检、应用收据和实施阶段检查仍是初步证据，不能替代这些当前检查。不得对受影响维度复用较早 epoch 的证据。必需检查不可运行时，保留不可用原因及阻塞影响。
 5. **VR04 — 分类并报告证据。** 应用[Verification Reporting](../../layer-02-workflow-concepts/verification-and-repair/verification-reporting_zh_cn.md)和[Verification Epoch](../../layer-02-workflow-concepts/verification-and-repair/verification-epoch_zh_cn.md)。报告通过、失败、不可用和假设的检查、剩余风险、未解决项目及阻塞影响。只有在启用、符合条件、相关、已授权且绑定到当前指纹/epoch 时，才可通过[建议选择](../../layer-03-workflow-checkpoints/advisory-selection_zh_cn.md)和[Decisions Advisory](../../layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md)评估可选的 verification-impact 建议。它只能建议维度，不能免除检查或宣告成功。否则记录带原因的建议 `not_applicable`，并使用直接证据。 新验证事实/进度先持久化到该计划并核验读回，再汇报或执行依赖动作；必需访问/更新失败阻塞该边界。遵守已记录的限制例外并保留验证独立性。
 6. **VR05 — 路由失败或确立 Repair N/A。** 应用[Repair Disposition](../../layer-03-workflow-checkpoints/repair-disposition_zh_cn.md)。具体失败必须有诊断、受影响路径和最小候选；之后依次应用[Repair Scope Gate](../../layer-02-workflow-concepts/verification-and-repair/repair-scope-gate_zh_cn.md)、[Repair Execution](../../layer-02-workflow-concepts/verification-and-repair/repair-execution_zh_cn.md)及[Repair Verification Handoff](../../layer-02-workflow-concepts/verification-and-repair/repair-verification-handoff_zh_cn.md)。仅执行已授权的窄范围修复，保留实际变更路径/证据，并将新指纹/受影响 epoch 返回 VR01 进行当前重验。Contract 或 Decision 实质变化时，返回 `needs_prerequisite` 给调用方进行语义审查和调度；不得把它当作修复。无具体失败时，以证据依据记录 Repair `not_applicable` 并返回 VR01，确认当前 Verification 结果。诊断、授权、有界范围、修复证据或交接缺失时，阻塞依赖工作。
 7. **VR06 — 返回当前最终 Verification。** 返回当前指纹、每个适用 epoch 及状态、标准与证据的映射、独立性分类、检查/结果类别、剩余风险、未解决项目和阻塞影响。仅当所有必需的当前 Verification 项目通过、必需的独立验证已满足、且没有未解决的必需修复/证据时返回 `complete`。此结果本身不宣告整体验收。
