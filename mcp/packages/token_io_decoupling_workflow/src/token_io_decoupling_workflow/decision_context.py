@@ -240,14 +240,9 @@ class DecisionContextGenerator:
     def _make_client(self, api_key: str, base_url: str) -> object:
         if self._client_factory is not None:
             return self._client_factory(api_key, base_url)
-        from openai import OpenAI
+        from .openai_client import make_openai_client
 
-        return OpenAI(
-            api_key=api_key,
-            base_url=base_url,
-            timeout=GENERATION_TIMEOUT_SECONDS,
-            max_retries=0,
-        )
+        return make_openai_client(api_key, base_url, timeout=GENERATION_TIMEOUT_SECONDS)
 
 
 def _request_input(payload: DecisionContextInput) -> str:

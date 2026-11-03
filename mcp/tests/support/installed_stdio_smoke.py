@@ -373,7 +373,19 @@ def _exercise_codex_dry_run(cli_path: Path, repo_root: Path) -> None:
         lines = result.stdout.splitlines()
         if not lines or lines[0] != "Dry run: no Codex command or configuration preflight was run.":
             raise AssertionError("installed setup dry-run performed or claimed a preflight")
-        plan = "Would merge env_vars ['OPENAI_API_KEY', 'OPENAI_BASE_URL'] into: " + ", ".join(
+        forwarding_names = [
+            "OPENAI_API_KEY",
+            "OPENAI_BASE_URL",
+            "HTTP_PROXY",
+            "HTTPS_PROXY",
+            "ALL_PROXY",
+            "NO_PROXY",
+            "http_proxy",
+            "https_proxy",
+            "all_proxy",
+            "no_proxy",
+        ]
+        plan = f"Would merge env_vars {forwarding_names!r} into: " + ", ".join(
             name for _profile, name in SERVER_NAMES.items()
         )
         if not lines or lines[-1] != plan:

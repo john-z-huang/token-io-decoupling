@@ -3,12 +3,18 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx2
 import pytest
+import token_io_decoupling_workflow.openai_client as openai_client
 from openai import OpenAI
 from token_io_decoupling_core.rules import RuleLoader
-from token_io_decoupling_workflow.decisions import DECISIONS_MODEL, DecisionsRuntimeConfig
+from token_io_decoupling_workflow.decisions import (
+    DECISIONS_MODEL,
+    DECISIONS_TIMEOUT_SECONDS,
+    DecisionsRuntimeConfig,
+)
 from token_io_decoupling_workflow.workflow_routing import (
     DecouplingWorkflowRequest,
     WorkflowRouter,
@@ -139,3 +145,66 @@ def test_decisions_call_uses_fixed_model_facts_and_closed_choice_set_over_mock_h
     assert decision["current_rule_context"]
     assert "canary-secret-key" not in request.content.decode()
     assert transport.is_closed
+
+
+def test_router_default_factory_passes_environment_and_httpx2_options(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://example.invalid/v1")
+    arguments: list[dict[str, object]] = []
+    closed = False
+
+    class FakeDecisions:
+        def create(self, **_kwargs: object) -> object:
+            return SimpleNamespace(
+                answers=[SimpleNamespace(type="choice", name="workflow_stage", choice="execution")],
+                model=DECISIONS_MODEL,
+                status="completed",
+                error=None,
+                incomplete_details=None,
+                usage=SimpleNamespace(total_tokens=17),
+            )
+
+    class FakeOpenAI:
+        def __init__(self, **kwargs: object) -> None:
+            arguments.append(kwargs)
+            self.decisions = FakeDecisions()
+
+        def close(self) -> None:
+            nonlocal closed
+            closed = True
+            http_client = arguments[0]["http_client"]
+            assert isinstance(http_client, httpx2.Client)
+            http_client.close()
+
+    monkeypatch.setattr(openai_client, "OpenAI", FakeOpenAI)
+    router = WorkflowRouter(
+        RuleLoader(repository_root=_REPOSITORY_ROOT),
+        DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True),
+    )
+    request = DecouplingWorkflowRequest.model_validate_json(
+        json.dumps(_request(), ensure_ascii=False)
+    )
+    result = router.decide(request)
+
+    assert (result.status, result.reason) == ("available", "stage_selected")
+    assert len(arguments) == 1
+    kwargs = arguments[0]
+    assert {key: kwargs[key] for key in ("api_key", "base_url", "timeout", "max_retries")} == {
+        "api_key": "test-key",
+        "base_url": "https://example.invalid/v1",
+        "timeout": DECISIONS_TIMEOUT_SECONDS,
+        "max_retries": 0,
+    }
+    http_client = kwargs["http_client"]
+    assert isinstance(http_client, httpx2.Client)
+    assert http_client._trust_env is True
+    assert http_client.timeout.as_dict() == {
+        "connect": DECISIONS_TIMEOUT_SECONDS,
+        "read": DECISIONS_TIMEOUT_SECONDS,
+        "write": DECISIONS_TIMEOUT_SECONDS,
+        "pool": DECISIONS_TIMEOUT_SECONDS,
+    }
+    assert closed
+    assert http_client.is_closed

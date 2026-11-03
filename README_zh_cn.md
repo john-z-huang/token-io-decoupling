@@ -47,4 +47,6 @@ bash /absolute/path/to/skill/scripts/install-codex-mcp.sh
 
 可选 Decisions 集成默认关闭。每次真实请求（包括测试请求）必须读取本地 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，缺少任一项就不得请求。显式启用与测试方法见开发指南。当前生产入口没有经核验的 Codex CLI 宿主绑定，因此只暴露公共诊断与规则上下文。
 
-`token-io-decoupling setup codex` 会注册所选 profile，并自动将 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL` 合并到各服务的 `env_vars`，包括已匹配的注册项。随后重新加载服务。对于任意名称的已注册服务，可使用 `setup codex-env --server NAME` 或[独立修复脚本](scripts/configure-codex-mcp-env.py)，两者都支持 `--dry-run`。详见[环境转发说明](mcp/DEVELOPMENT_zh_cn.md#codex-stdio-环境变量转发)。转发只让进程获得配置，不会启用 Decisions 或建立宿主绑定。
+OpenAI API 工具共用显式设置 `trust_env=True` 的 HTTPX2 客户端，从 MCP 进程环境读取 `HTTP_PROXY`、`HTTPS_PROXY`、`ALL_PROXY` 和 `NO_PROXY`，包括对应的小写形式。`NO_PROXY` 可使指定目标绕过代理；未配置代理时使用客户端正常的直连路径。代理无效或不可达时返回现有的安全 API 错误结果，不会改为直连重试。
+
+`token-io-decoupling setup codex` 会注册所选 profile，并自动将 `OPENAI_API_KEY`、`OPENAI_BASE_URL` 及上述可选代理变量名合并到各服务的 `env_vars`，包括已匹配的注册项。随后重新加载服务。对于任意名称的已注册服务，可使用 `setup codex-env --server NAME` 或[独立修复脚本](scripts/configure-codex-mcp-env.py)，两者都支持 `--dry-run`。详见[环境转发说明](mcp/DEVELOPMENT_zh_cn.md#codex-stdio-环境变量转发)。只写入变量名，不保存变量值。转发只让进程获得配置，不会启用 Decisions 或建立宿主绑定。

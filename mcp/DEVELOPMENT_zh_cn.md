@@ -207,7 +207,7 @@ bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh
 
 脚本在安装前验证参数及必需命令。某阶段失败后停止后续阶段并返回非零状态。安装和注册是不同副作用：若安装后 setup 失败，更新后的工具仍保留安装状态；重新运行前先检查 setup 的部分状态报告。注册设置保留和转发检查仍由现有 setup helper 负责。成功后重新加载受影响的服务；脚本不会重启客户端或提供凭据值。
 
-Setup 使用一个核验后的可执行文件绝对路径和不同 profile 参数注册上表的四个服务名，并自动将两个必需环境变量名合并到各自的 `env_vars`。自行单独管理工具安装的用户仍可直接调用 `token-io-decoupling setup codex`。例如，一次安装后命令调用即可只注册 root profile 并修复其转发：
+Setup 使用一个核验后的可执行文件绝对路径和不同 profile 参数注册上表的四个服务名，并自动将必需 API 变量和可选代理变量的名称合并到各自的 `env_vars`。自行单独管理工具安装的用户仍可直接调用 `token-io-decoupling setup codex`。例如，一次安装后命令调用即可只注册 root profile 并修复其转发：
 
 ```sh
 token-io-decoupling setup codex --profile root
@@ -231,7 +231,7 @@ Setup 与启动的分离参考 [Serena 的客户端 setup 实现](https://github
 uv run --managed-python -- /absolute/path/to/skill/scripts/configure-codex-mcp-env.py --server dev-workflow-standards-tools
 ```
 
-追加 `--dry-run` 可改为只预览而不写入。已有安装也可用 `token-io-decoupling setup codex-env --server NAME` 完成相同操作；两者是替代入口，无须连续执行。重复 `--server NAME` 可在一次文件操作中更新多个已有 stdio 注册项。默认合并 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`；重复 `--env-var NAME` 可改用自定义变量名列表。`--config /absolute/path/config.toml` 显式选择文件，否则目标为 `$CODEX_HOME/config.toml`，未设置 `CODEX_HOME` 时使用 `~/.codex/config.toml`。脚本通过 PEP 723 元数据让 uv 准备 TOML Kit，并从当前 checkout 导入 helper，因此不依赖已安装的 MCP 包或 Codex CLI。安装后的命令使用相同 helper。
+追加 `--dry-run` 可改为只预览而不写入。已有安装也可用 `token-io-decoupling setup codex-env --server NAME` 完成相同操作；两者是替代入口，无须连续执行。重复 `--server NAME` 可在一次文件操作中更新多个已有 stdio 注册项。默认合并 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`HTTP_PROXY`、`HTTPS_PROXY`、`ALL_PROXY`、`NO_PROXY` 及四个代理变量的小写形式；重复 `--env-var NAME` 可改用自定义变量名列表。`--config /absolute/path/config.toml` 显式选择文件，否则目标为 `$CODEX_HOME/config.toml`，未设置 `CODEX_HOME` 时使用 `~/.codex/config.toml`。脚本通过 PEP 723 元数据让 uv 准备 TOML Kit，并从当前 checkout 导入 helper，因此不依赖已安装的 MCP 包或 Codex CLI。安装后的命令使用相同 helper。
 
 Helper 只合并所选 `env_vars`，保留其他变量名、注释、设置和文件权限。没有缺失变量名时，重复成功运行不改变文件字节或修改时间。写入通过同目录临时文件完成，并在替换前检测输入是否发生变化；应避免其他进程同时写配置，因为这不是跨客户端事务。文件或服务条目不存在、非 stdio 服务、TOML 或字段类型无效、目标为符号链接、所需变量存在冲突的远端来源、写入失败时，均返回安全错误。它不会创建服务条目、打印配置值或发起 API 请求。此修复命令的 `--dry-run` 会读取并验证所选文件，但不写入；上文的注册 dry-run 则明确不检查配置。
 
@@ -241,19 +241,35 @@ TOML Kit 文档说明了一项格式保留例外：扩展数组表的乱序子�
 
 ```toml
 [mcp_servers.token-io-decoupling-workflow]
-env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+env_vars = [
+  "OPENAI_API_KEY", "OPENAI_BASE_URL",
+  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+]
 
 [mcp_servers.token-io-decoupling-root-agent-tools]
-env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+env_vars = [
+  "OPENAI_API_KEY", "OPENAI_BASE_URL",
+  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+]
 
 [mcp_servers.token-io-decoupling-worker-agent-tools]
-env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+env_vars = [
+  "OPENAI_API_KEY", "OPENAI_BASE_URL",
+  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+]
 
 [mcp_servers.token-io-decoupling-share-tools]
-env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+env_vars = [
+  "OPENAI_API_KEY", "OPENAI_BASE_URL",
+  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+]
 ```
 
-Codex 自身的环境中必须持有这两个非空白变量。`env_vars` 允许将对应变量转发给各自单独启动的 MCP 进程；它不会读取 Shell 配置或 `.env` 文件，也不会复制其他终端的环境。不要将真实值写入仓库文件、setup 参数、日志或示例。字段含义见 [Codex MCP 配置参考](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
+Codex 自身的环境中必须持有这两个非空白 API 变量，以及需要使用的代理变量。`env_vars` 允许将对应变量值转发给各自单独启动的 MCP 进程；它不会读取 Shell 配置或 `.env` 文件，也不会复制其他终端的环境。不要将真实值写入仓库文件、setup 参数、日志或示例。字段含义见 [Codex MCP 配置参考](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
 
 新注册和已匹配注册都会在 setup 时合并转发声明，`--replace` 后也会执行相同合并。安装脚本已自动包含 setup；单独执行 `uv tool install` 仍不会注册服务或提供凭据。修改配置后重新加载受影响的 MCP 服务；若客户端没有重载机制，退出后重新打开客户端以创建新服务进程。运行中的进程不会自动获得修改后的配置。
 
@@ -278,6 +294,10 @@ CLI 使用操作系统凭据认证对端：Linux 使用 `SO_PEERCRED`，macOS �
 [Codex 调用者匹配](CODEX_CALLER_CONTEXT_zh_cn.md)说明对已有可信宿主绑定可选启用的 `--codex-context` 请求匹配门禁。它消费 SDK 请求元数据，不增加身份认证来源。
 
 ## 真实 API 请求的必需配置
+
+六处 OpenAI 客户端构造路径均使用共享 HTTPX2 客户端构建函数，显式设置 `trust_env=True`，保留 SDK 的连接数限制及重定向默认值、各操作的 timeout 和 `max_retries=0`。每次创建客户端时，从 MCP 进程环境读取 `HTTP_PROXY`、`HTTPS_PROXY`、`ALL_PROXY` 和 `NO_PROXY`，包括对应的小写形式。代理选择和绕过行为遵循 [HTTPX2 环境变量规则](https://pydantic.dev/docs/httpx2/api/environment_variables/)。`NO_PROXY` 可允许直连；未配置代理时仍可使用正常的直连路径。代理无效或不可达时沿用现有的安全 API 失败结果，服务不会改为直连重试。关闭 SDK 客户端时一并关闭 HTTPX2 客户端；SDK 构造失败时也会关闭刚创建的 HTTP 客户端。
+
+已有安装应更新工具、运行 `token-io-decoupling setup codex` 合并新增的转发变量名，再重新加载 MCP 服务。代理变量必须存在于启动服务的 Codex 进程环境中，只在其他终端设置并不生效。Setup 仅保存变量名，不需要通过参数提供代理值。单独调用 API 工具不会修改系统代理或用户配置。
 
 Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke 代码中遵守此限制：每次真实 API 请求前，从本地进程环境读取 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`。两项都必须存在且非空，仅含空白字符也视为无效。缺少任一项或任一项无效时，不得创建 SDK client 或发送真实请求，改走文档规定的回退路径。
 
@@ -341,6 +361,13 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 ```sh
 TOKEN_IO_RUN_REAL_API=1 uv run --managed-python --locked -- pytest -m real_api tests/real_api_tests/ -q
+```
+
+独立的[官方 HTTPX2 smoke 测试](tests/real_api_tests/test_official_httpx2.py) 使用 `OPENAI_API_KEY_OFFICAL` 和 `OPENAI_BASE_URL_OFFICAL`（有意保留 `OFFICAL` 拼写），由单独的 `TOKEN_IO_RUN_OFFICIAL_API=1` 开关启用。该测试专用配置不改变生产工具的必需变量名。它调用共享 HTTPX2 构建函数，向固定的 `gpt-6-luna` 发出一次简短 Responses 请求，超时为 60 秒、不重试且 `store=False`。测试验证响应完成并有非空文本，只报告安全状态及配置的 transport 是否选择代理，不输出凭据、URL、响应正文或原始服务错误。代理标志为 false 表示实际配置选择直连，包括可能的 `NO_PROXY` 绕过。未启用开关时，在读取这两项变量之前跳过。取得该真实请求的授权后，从 `mcp/` 在 Zsh 中加载变量并运行：
+
+```sh
+source ~/.zshrc
+TOKEN_IO_RUN_OFFICIAL_API=1 uv run --managed-python --locked -- pytest tests/real_api_tests/test_official_httpx2.py -q -s --tb=no
 ```
 
 旧的任务意图 advisor smoke 保持独立，使用自己的启用开关。获得该真实合成请求的显式授权后，确保两项本地环境变量已配置，再从 `mcp/` 运行：

@@ -207,7 +207,7 @@ Each operation is a single script call. Append the relevant options to the comma
 
 The script validates arguments and required commands before installation. A failed stage stops subsequent stages and returns a nonzero status. Installation and registration are separate effects: if setup fails after installation, the refreshed tool remains installed; inspect setup's partial-state report before rerunning. Existing registration-preservation and forwarding checks remain in the setup helper. Reload the affected servers after success; the script does not restart the client or supply credential values.
 
-Setup registers all four server names above using one verified absolute executable path and profile-specific arguments, and automatically merges the two required environment-variable names into their `env_vars`. Users who already manage tool installation separately can still invoke `token-io-decoupling setup codex` directly. For example, register and repair forwarding for only the root profile with one installed-command call:
+Setup registers all four server names above using one verified absolute executable path and profile-specific arguments, and automatically merges the required API and optional proxy environment-variable names into their `env_vars`. Users who already manage tool installation separately can still invoke `token-io-decoupling setup codex` directly. For example, register and repair forwarding for only the root profile with one installed-command call:
 
 ```sh
 token-io-decoupling setup codex --profile root
@@ -231,7 +231,7 @@ The installer already handles forwarding through setup. For a forwarding-only re
 uv run --managed-python -- /absolute/path/to/skill/scripts/configure-codex-mcp-env.py --server dev-workflow-standards-tools
 ```
 
-Add `--dry-run` to preview instead of writing. Alternatively, an existing installation offers the same operation as `token-io-decoupling setup codex-env --server NAME`; these are alternatives, not sequential steps. Repeat `--server NAME` to update multiple existing stdio registrations in one file operation. The default names to merge are `OPENAI_API_KEY` and `OPENAI_BASE_URL`; repeat `--env-var NAME` to supply a custom name list instead. `--config /absolute/path/config.toml` selects a file explicitly; otherwise the target is `$CODEX_HOME/config.toml`, or `~/.codex/config.toml` when `CODEX_HOME` is unset. The script uses PEP 723 metadata to obtain TOML Kit through uv and imports the helper from this checkout, so it does not require an installed MCP package or Codex CLI. The installed command uses the same helper.
+Add `--dry-run` to preview instead of writing. Alternatively, an existing installation offers the same operation as `token-io-decoupling setup codex-env --server NAME`; these are alternatives, not sequential steps. Repeat `--server NAME` to update multiple existing stdio registrations in one file operation. The default names to merge are `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` and the four lowercase proxy forms; repeat `--env-var NAME` to supply a custom name list instead. `--config /absolute/path/config.toml` selects a file explicitly; otherwise the target is `$CODEX_HOME/config.toml`, or `~/.codex/config.toml` when `CODEX_HOME` is unset. The script uses PEP 723 metadata to obtain TOML Kit through uv and imports the helper from this checkout, so it does not require an installed MCP package or Codex CLI. The installed command uses the same helper.
 
 The helper merges only selected `env_vars`, preserving other names, comments, settings, and file mode. Repeated successful runs with no missing names leave file bytes and modification time unchanged. It writes through a temporary file in the same directory and detects changes to its input before replacement; avoid concurrent configuration writers, since this is not a cross-client transaction. Missing files or server entries, non-stdio servers, invalid TOML/field types, symlink targets, conflicting remote sources for requested variables, and write failures return safe errors. It creates no server entries, prints no configuration values, and makes no API request. `--dry-run` for this repair reads and validates the selected file but writes nothing; the registration dry-run above deliberately does not inspect configuration.
 
@@ -241,19 +241,35 @@ The following partial example illustrates the resulting settings. Preserve exist
 
 ```toml
 [mcp_servers.token-io-decoupling-workflow]
-env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+env_vars = [
+  "OPENAI_API_KEY", "OPENAI_BASE_URL",
+  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+]
 
 [mcp_servers.token-io-decoupling-root-agent-tools]
-env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+env_vars = [
+  "OPENAI_API_KEY", "OPENAI_BASE_URL",
+  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+]
 
 [mcp_servers.token-io-decoupling-worker-agent-tools]
-env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+env_vars = [
+  "OPENAI_API_KEY", "OPENAI_BASE_URL",
+  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+]
 
 [mcp_servers.token-io-decoupling-share-tools]
-env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+env_vars = [
+  "OPENAI_API_KEY", "OPENAI_BASE_URL",
+  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+]
 ```
 
-Codex must itself have both nonblank variables in its environment. `env_vars` allows and forwards their names to each separately launched MCP process; it neither loads Shell configuration or `.env` files nor copies another terminal's environment. Store no actual values in repository files, setup arguments, logs, or examples. See the [Codex MCP configuration reference](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+Codex must itself have both nonblank API variables and any desired proxy variables in its environment. `env_vars` allows and forwards the corresponding values to each separately launched MCP process; it neither loads Shell configuration or `.env` files nor copies another terminal's environment. Store no actual values in repository files, setup arguments, logs, or examples. See the [Codex MCP configuration reference](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 
 Both new and matching registrations receive the forwarding merge during setup; `--replace` is followed by the same merge. The installation script includes setup automatically; a bare `uv tool install` still does not register servers or supply credentials. Reload the affected MCP servers after configuration changes; if the client has no reload mechanism, quit and reopen it so new service processes are created. Running processes do not automatically receive changed configuration.
 
@@ -278,6 +294,10 @@ Before claiming an actual runtime integration, verify Root initialization, evide
 [Codex caller matching](CODEX_CALLER_CONTEXT.md) describes the optional `--codex-context` request-matching gate for an already verified host binding. It consumes SDK request metadata and does not add an authentication source.
 
 ## Required configuration for real API requests
+
+All six OpenAI client construction paths use the shared HTTPX2 client builder with explicit `trust_env=True`, preserving the SDK's connection limits and redirect defaults, each operation's timeout, and `max_retries=0`. It reads `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY`, including their lowercase forms, from the MCP process environment when creating a client. [HTTPX2 environment rules](https://pydantic.dev/docs/httpx2/api/environment_variables/) determine proxy selection and bypasses. `NO_PROXY` can allow a direct route; without proxy configuration, normal direct routing remains available. Invalid or unreachable proxies follow the existing safe API failure results; the server does not retry them through a direct route. Closing the SDK client also closes its HTTPX2 client, and an SDK construction failure closes the newly created HTTP client.
+
+For an existing installation, update the tool, run `token-io-decoupling setup codex` to merge the new forwarding names, and reload its MCP servers. Proxy variables must be present in the launching Codex process, not just an unrelated terminal. Setup persists names only and requires no proxy values as arguments. No system proxy or user configuration is changed merely by calling an API tool.
 
 Root and every delegated Agent must follow this constraint in both project functionality and test/smoke code: immediately before any real API request, read both `OPENAI_API_KEY` and `OPENAI_BASE_URL` from the local process environment. Both values must be present and nonempty; whitespace-only values are invalid too. If either is missing or invalid, do not create the SDK client or send a real request; return to the documented fallback instead.
 
@@ -341,6 +361,13 @@ Ordinary pytest runs collect and skip these cases before credentials or clients 
 
 ```sh
 TOKEN_IO_RUN_REAL_API=1 uv run --managed-python --locked -- pytest -m real_api tests/real_api_tests/ -q
+```
+
+The separate [official HTTPX2 smoke test](tests/real_api_tests/test_official_httpx2.py) uses `OPENAI_API_KEY_OFFICAL` and `OPENAI_BASE_URL_OFFICAL` (the `OFFICAL` spelling is intentional) under its own `TOKEN_IO_RUN_OFFICIAL_API=1` opt-in. This test-only configuration choice does not change the production tools' required variable names. It calls the shared HTTPX2 builder and sends one short Responses request to fixed `gpt-6-luna`, with a 60-second timeout, no retries and `store=False`. It validates completed nonempty text and reports only safe status and whether the configured transport selected a proxy; it prints no credentials, URLs, response body or raw provider error. A false proxy flag means the configured route was direct, including a possible `NO_PROXY` bypass. Without its opt-in it skips before reading the two variables. After authorizing this real request, load the variables and run from `mcp/` in Zsh:
+
+```sh
+source ~/.zshrc
+TOKEN_IO_RUN_OFFICIAL_API=1 uv run --managed-python --locked -- pytest tests/real_api_tests/test_official_httpx2.py -q -s --tb=no
 ```
 
 The older task-intent advisor smoke remains separate and uses its own opt-in. After explicit authorization for that real synthetic request, run from `mcp/` with both local environment variables configured:
