@@ -27,6 +27,10 @@ Skill 指令源位于 [docs/skill](docs/skill/SKILL_zh_cn.md)。wheel 和源码�
 
 其他 Code Agent 可以不使用此 MCP Server，通过纯文档方式使用 Skill。本项目会持续更新指令，在支持 Codex CLI 的同时维护对其他 Code Agent 的描述兼容；MCP Server 的开发始终聚焦 Codex CLI。
 
+## 开发本仓库
+
+独立的[项目开发 MCP](mcp-project-dev/README_zh_cn.md)和[开发 Skill](.agents/skills/token-io-decoupling-dev/SKILL_zh_cn.md)说明仓库维护与产品工具的分阶段拆分。开发服务当前提供只读骨架能力，后续迁移阶段仍明确列出。
+
 ## 将 MCP 服务安装到 Codex
 
 准备好 `uv`、Bash 3.2 或更新版本和 Codex CLI 后，从任意工作目录执行一条命令：

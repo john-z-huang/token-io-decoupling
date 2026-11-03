@@ -27,6 +27,10 @@ This project's MCP Server is developed only for local Codex CLI. Local ChatGPT W
 
 Other Code Agents may use the Skill through its documents without this MCP Server. The project will continue maintaining instructions compatible with other Code Agents alongside Codex CLI support; MCP Server development remains focused on Codex CLI.
 
+## Develop this repository
+
+The independent [project development MCP](mcp-project-dev/README.md) and [development Skill](.agents/skills/token-io-decoupling-dev/SKILL.md) document the staged separation of repository maintenance from product tools. The development service currently exposes its read-only skeleton capabilities; later migration stages remain explicit.
+
 ## Install the MCP servers in Codex
 
 With `uv`, Bash 3.2 or later, and the Codex CLI available, run one command from any working directory:
