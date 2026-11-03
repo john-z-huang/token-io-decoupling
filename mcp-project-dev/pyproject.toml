@@ -7,7 +7,7 @@ name = "token-io-decoupling-dev"
 version = "0.1.0"
 description = "Standalone development MCP server for Token I/O project maintenance"
 requires-python = ">=3.11"
-dependencies = ["mcp>=2.3,<3"]
+dependencies = ["mcp>=2.3,<3", "token-io-decoupling-core==0.1.0"]
 
 [project.scripts]
 token-io-decoupling-dev = "token_io_decoupling_dev.cli:main"
@@ -37,3 +37,6 @@ python-version = "3.11"
 
 [tool.ty.src]
 include = ["src", "tests"]
+
+[tool.uv.sources]
+token-io-decoupling-core = { path = "../mcp/packages/token_io_decoupling_core" }
