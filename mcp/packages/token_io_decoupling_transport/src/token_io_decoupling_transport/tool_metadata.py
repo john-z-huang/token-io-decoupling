@@ -29,6 +29,14 @@ _RECEIPT = (
     "MutationReceipt fields are operation, payload_hash, result, receipt_revision, "
     "current_revision, and replayed."
 )
+_PROXY_DESCRIPTION = (
+    "OpenAI API requests use an HTTPX2 client with trust_env=True, reading HTTP_PROXY, "
+    "HTTPS_PROXY, ALL_PROXY and NO_PROXY (including lowercase forms) from the MCP process "
+    "environment. NO_PROXY may bypass the proxy; without proxy configuration the client uses "
+    "its normal direct route. Invalid or unreachable proxies fail through existing safe API "
+    "error results without a direct-connection retry. Forward these variable names through "
+    "Codex env_vars and restart the server after changes; values are never tool arguments."
+)
 _DECISION_RESULT = (
     "DelegationDecisionResult status is available, skipped, fallback, blocked, or stale: "
     "available is a suggestion; skipped means a local explicit/policy branch did not call "
@@ -985,12 +993,15 @@ def tool_description(name: str) -> str:
             )
         else:
             raise ValueError(f"missing recovery classification for MCP tool: {name}")
-        return (
+        result = (
             "Codex CLI MCP tool, including Codex CLI/app-server use from Desktop and local Work. "
             + description
             + " "
             + recovery
         )
+        if name in _STATELESS_API_TOOLS | _STATE_ADVICE_TOOLS | {"materialize_decoupled_output"}:
+            result += " " + _PROXY_DESCRIPTION
+        return result
     except KeyError as exc:
         raise ValueError(f"missing Agent-facing metadata for MCP tool: {name}") from exc
 

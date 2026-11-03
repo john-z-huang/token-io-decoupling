@@ -31,7 +31,7 @@ def main() -> int:
         "--env-var",
         action="append",
         metavar="NAME",
-        help="environment variable name to forward (default: OPENAI_API_KEY and OPENAI_BASE_URL)",
+        help="environment variable name to forward (default: OpenAI configuration and proxy names)",
     )
     parser.add_argument(
         "--dry-run", action="store_true", help="show proposed names without writing"

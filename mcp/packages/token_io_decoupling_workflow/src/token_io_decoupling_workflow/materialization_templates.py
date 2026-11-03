@@ -175,14 +175,9 @@ class MaterializationTemplateRenderer:
         return result
 
     def _make_client(self, api_key: str, base_url: str) -> object:
-        from openai import OpenAI
+        from .openai_client import make_openai_client
 
-        return OpenAI(
-            api_key=api_key,
-            base_url=base_url,
-            timeout=TIMEOUT_SECONDS,
-            max_retries=0,
-        )
+        return make_openai_client(api_key, base_url, timeout=TIMEOUT_SECONDS)
 
     @staticmethod
     def _render_fact_markdown(

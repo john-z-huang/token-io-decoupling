@@ -14,7 +14,18 @@ from typing import Any
 import tomlkit
 from tomlkit.exceptions import ParseError
 
-DEFAULT_ENV_VARS = ("OPENAI_API_KEY", "OPENAI_BASE_URL")
+DEFAULT_ENV_VARS = (
+    "OPENAI_API_KEY",
+    "OPENAI_BASE_URL",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "NO_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+    "no_proxy",
+)
 
 
 class CodexEnvError(RuntimeError):

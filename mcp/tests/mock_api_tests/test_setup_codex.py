@@ -8,6 +8,7 @@ import tomlkit
 from token_io_decoupling_core.profiles import PROFILE_SERVER_NAMES
 
 from token_io_decoupling import setup_codex
+from token_io_decoupling.codex_env import DEFAULT_ENV_VARS
 from token_io_decoupling.setup_codex import SetupError
 
 
@@ -136,10 +137,9 @@ def test_setup_repairs_forwarding_for_matching_profile(monkeypatch, tmp_path, ca
     )
     assert setup_codex.setup_codex(profile="worker") == 0
     assert not any(argv[1:3] == ["mcp", "add"] for argv in calls)
-    assert tomlkit.parse(config.read_text())["mcp_servers"][name]["env_vars"] == [
-        "OPENAI_API_KEY",
-        "OPENAI_BASE_URL",
-    ]
+    assert tomlkit.parse(config.read_text())["mcp_servers"][name]["env_vars"] == list(
+        DEFAULT_ENV_VARS
+    )
     assert "updated environment forwarding" in capsys.readouterr().out
 
 
@@ -170,7 +170,7 @@ def test_setup_new_registration_adds_forwarding_after_registration(monkeypatch, 
     assert setup_codex.setup_codex(profile="share") == 0
     name = PROFILE_SERVER_NAMES["share"]
     parsed = tomlkit.parse(config.read_text(encoding="utf-8"))
-    assert parsed["mcp_servers"][name]["env_vars"] == ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+    assert parsed["mcp_servers"][name]["env_vars"] == list(DEFAULT_ENV_VARS)
     assert "# retain this comment" in config.read_text(encoding="utf-8")
 
 
@@ -213,7 +213,7 @@ def test_setup_replace_repairs_conflicting_http_registration(monkeypatch, tmp_pa
     assert setup_codex.setup_codex(profile="share", replace=True) == 0
     parsed = tomlkit.parse(config.read_text(encoding="utf-8"))
     assert parsed["mcp_servers"][name]["args"] == ["start-mcp-server", "--profile", "share"]
-    assert parsed["mcp_servers"][name]["env_vars"] == ["OPENAI_API_KEY", "OPENAI_BASE_URL"]
+    assert parsed["mcp_servers"][name]["env_vars"] == list(DEFAULT_ENV_VARS)
     assert parsed["mcp_servers"][name]["default_tools_approval_mode"] == "writes"
     assert parsed["mcp_servers"][name]["tools"] == ["keep-tool"]
     assert parsed["mcp_servers"][name]["startup_timeout_sec"] == 31
@@ -265,7 +265,7 @@ def test_setup_stdio_replace_restores_extra_settings_and_env_vars(monkeypatch, t
     assert server["command"] == str(executable.resolve())
     assert server["args"] == ["start-mcp-server", "--profile", "workflow"]
     assert server["enabled"] is True
-    assert server["env_vars"] == ["KEEP", "OPENAI_API_KEY", "OPENAI_BASE_URL"]
+    assert server["env_vars"] == ["KEEP", *DEFAULT_ENV_VARS]
     assert server["env"] == {"EXISTING": "kept"}
     assert server["default_tools_approval_mode"] == "writes"
 
@@ -316,7 +316,7 @@ def test_setup_partial_registration_keeps_prior_settings_restored(monkeypatch, t
         setup_codex.setup_codex(all_profiles=True, replace=True)
     parsed = tomlkit.parse(config.read_text(encoding="utf-8"))
     workflow = parsed["mcp_servers"][workflow_name]
-    assert workflow["env_vars"] == ["KEEP", "OPENAI_API_KEY", "OPENAI_BASE_URL"]
+    assert workflow["env_vars"] == ["KEEP", *DEFAULT_ENV_VARS]
     assert workflow["default_tools_approval_mode"] == "writes"
     assert parsed["mcp_servers"][root_name]["env_vars"] == ["ROOT_KEEP"]
 

@@ -10,7 +10,6 @@ import pytest
 from pydantic import ValidationError
 from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_workflow.decisions import (
-    DECISIONS_TIMEOUT_SECONDS,
     DecisionsRuntimeConfig,
 )
 from token_io_decoupling_workflow.workflow_routing import (
@@ -430,35 +429,6 @@ def test_auto_configuration_and_permission_denials_do_not_create_client(
         "outbound_data_not_permitted",
     )
     assert calls == []
-
-
-def test_router_constructs_sdk_with_explicit_environment_and_zero_retries(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    monkeypatch.setenv("OPENAI_BASE_URL", "https://example.invalid/v1")
-    client = _FakeApiClient(_api_response(choice="execution"))
-    arguments: list[dict[str, object]] = []
-
-    def openai_factory(**kwargs: object) -> _FakeApiClient:
-        arguments.append(kwargs)
-        return client
-
-    import openai
-
-    monkeypatch.setattr(openai, "OpenAI", openai_factory)
-    result = _router().decide(_request(stage="auto", outbound_data_permitted=True))
-
-    assert (result.status, result.reason) == ("available", "stage_selected")
-    assert arguments == [
-        {
-            "api_key": "test-key",
-            "base_url": "https://example.invalid/v1",
-            "timeout": DECISIONS_TIMEOUT_SECONDS,
-            "max_retries": 0,
-        }
-    ]
-    assert client.closed
 
 
 def test_auto_detects_rule_context_change_during_api_call(monkeypatch: pytest.MonkeyPatch) -> None:

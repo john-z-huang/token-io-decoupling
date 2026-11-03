@@ -1164,6 +1164,7 @@ name = "token-io-decoupling-workflow"
 version = "0.1.0"
 source = { editable = "packages/token_io_decoupling_workflow" }
 dependencies = [
+    { name = "httpx2" },
     { name = "openai" },
     { name = "pydantic" },
     { name = "token-io-decoupling-core" },
@@ -1173,6 +1174,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx2", specifier = ">=2.16,<3" },
     { name = "openai", specifier = ">=3.37,<4" },
     { name = "pydantic", specifier = ">=2.12,<3" },
     { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },

@@ -8,6 +8,7 @@ import pytest
 import tomlkit
 
 from token_io_decoupling.codex_env import (
+    DEFAULT_ENV_VARS,
     CodexEnvError,
     merge_env_vars,
     validate_setup_config,
@@ -37,25 +38,51 @@ def test_merge_preserves_comments_unrelated_data_and_mode(tmp_path: Path) -> Non
     assert 'approval_mode = "approve"' in updated
     assert 'env = { EXISTING = "kept" }' in updated
     assert 'EXISTING = "kept"' in updated
-    assert tomlkit.parse(updated)["mcp_servers"]["quoted-name"]["env_vars"] == [
-        "OPENAI_API_KEY",
-        "OPENAI_BASE_URL",
-    ]
+    assert tomlkit.parse(updated)["mcp_servers"]["quoted-name"]["env_vars"] == list(
+        DEFAULT_ENV_VARS
+    )
     assert path.stat().st_mode & 0o777 == 0o640
     assert original != updated
 
 
 def test_existing_names_and_local_objects_are_idempotent(tmp_path: Path) -> None:
+    names = ", ".join(f'"{name}"' for name in DEFAULT_ENV_VARS if name != "OPENAI_BASE_URL")
     path = _config(
         tmp_path,
         '[mcp_servers.server]\ncommand = "runner"\n'
-        'env_vars = ["OPENAI_API_KEY", { name = "OPENAI_BASE_URL", source = "local" }]\n',
+        f'env_vars = [{names}, {{ name = "OPENAI_BASE_URL", source = "local" }}]\n',
     )
     before = path.read_bytes()
     mtime = path.stat().st_mtime_ns
     assert merge_env_vars(path, ("server",)) == ()
     assert path.read_bytes() == before
     assert path.stat().st_mtime_ns == mtime
+
+
+def test_default_proxy_names_are_added_and_idempotent(tmp_path: Path) -> None:
+    path = _config(
+        tmp_path,
+        '[mcp_servers.server]\ncommand = "runner"\nenv_vars = ["KEEP", "OPENAI_API_KEY"]\n',
+    )
+    expected = [
+        "KEEP",
+        "OPENAI_API_KEY",
+        "OPENAI_BASE_URL",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "NO_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+        "no_proxy",
+    ]
+    assert merge_env_vars(path, ("server",)) == ("server",)
+    config = tomlkit.parse(path.read_text(encoding="utf-8"))
+    assert config["mcp_servers"]["server"]["env_vars"] == expected
+    before = path.read_bytes()
+    assert merge_env_vars(path, ("server",)) == ()
+    assert path.read_bytes() == before
 
 
 def test_non_roundtripping_layout_blocks_repair_but_allows_complete_noop(
@@ -72,7 +99,8 @@ def test_non_roundtripping_layout_blocks_repair_but_allows_complete_noop(
         merge_env_vars(path, ("demo",))
     assert path.read_bytes() == before
 
-    complete = prefix + 'env_vars = ["OPENAI_API_KEY", "OPENAI_BASE_URL"]\n'
+    encoded_names = ", ".join(f'"{name}"' for name in DEFAULT_ENV_VARS)
+    complete = prefix + f"env_vars = [{encoded_names}]\n"
     path.write_text(complete, encoding="utf-8")
     before = path.read_bytes()
     mtime = path.stat().st_mtime_ns
