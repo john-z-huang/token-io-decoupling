@@ -29,16 +29,15 @@ Other Code Agents may use the Skill through its documents without this MCP Serve
 
 ## Install the MCP servers in Codex
 
-With `uv`, Bash 3.2 or later, the Codex CLI, and Serena already installed using `uv tool`, run this command from any working directory. Select the existing Serena project whose Memories these tools should read:
+With `uv`, Bash 3.2 or later, and the Codex CLI available, run this command from the repository root:
 
 ```sh
-bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh \
-  --serena-project-root /absolute/path/to/your-project
+bash scripts/install-codex-mcp.sh
 ```
 
-The [installer](scripts/install-codex-mcp.sh) installs or updates this checkout's MCP package, resolves its executable, registers all four profiles, and merges environment-variable forwarding names. For the workflow profile it discovers `serena-agent/bin/python` under `uv tool dir`, verifies the existing project/backend, and saves the explicit project/interpreter startup arguments plus the `SERENA_HOME` forwarding name. No custom factory module or manual TOML edit is needed. Serena runs in its existing isolated environment; it is not reinstalled or mixed into this MCP's dependencies. The tool bin directory need not be on `PATH`.
+The installer does not bind a Memory project or install Serena. Start Codex from the target project root; that MCP process reads only files under `<working directory>/.serena/memories/`. It does not search parent or sibling projects. The directory and requested file must already exist; missing paths return a non-success result without creating files or directories.
 
-Use the same command after source updates. Add `--serena-python /absolute/Serena-env/bin/python` for a nonstandard interpreter, or `--dry-run` to preview without discovery, installation or configuration writes. The project must already have Serena configuration and Memory directories; this installer does not initialize them. An existing bare workflow registration from this tool is upgraded; a different project/interpreter or other conflict requires `--replace`. Other profiles and settings are preserved. Reload the affected MCP servers afterward. Omitting the project option retains the legacy install flow and preserves an existing managed binding, but does not enable Memory reads for a new registration. See the [setup guide](mcp/DEVELOPMENT.md#uv-tool-installation-and-codex-setup) and [Memory tools guide](mcp/SERENA_MEMORY_TOOLS.md).
+The [installer](scripts/install-codex-mcp.sh) installs or updates this checkout's MCP package, resolves its executable, registers the profiles and merges environment-variable forwarding names. Memory reads use Python's standard library and do not require a Serena package, separate interpreter, factory or helper. Use `--dry-run` to preview without installation or configuration writes. Reload the affected MCP servers afterward. For a non-root working directory, call the installer by its absolute script path, replacing the placeholder with its actual location. See the [setup guide](mcp/DEVELOPMENT.md#uv-tool-installation-and-codex-setup) and [Memory tools guide](mcp/SERENA_MEMORY_TOOLS.md).
 
 ## Documentation
 

@@ -143,13 +143,16 @@ def capability_report(
                 "serena_memory_reads": _detail(
                     str(memory_read_details.get("status", "unavailable")),
                     str(memory_read_details.get("reason_code", "serena_memory_unavailable")),
-                    "Read-only tail and literal write-check tools use an explicitly bound "
-                    "Serena MemoryManager, normally through an isolated Serena Python helper. "
-                    "No backend means no path probe or Serena import; no model/API request.",
+                    "Read-only tail and literal write-check tools read files only under "
+                    "<workflow server startup cwd>/.serena/memories. They use Python standard "
+                    "library file operations and do not require Serena-Agent or another local "
+                    "program. Missing directories/files are unavailable; no model/API request.",
                     "server.serena_memory_service",
-                    "Run setup codex --serena-project-root to discover uv tool Serena Python "
-                    "and save the isolated startup binding, or use a trusted native factory; "
-                    "inspect the returned binding and limits before reading.",
+                    "Start the workflow server with the intended project as its runtime working "
+                    "directory. It captures that cwd at startup and reads only "
+                    "its .serena/memories "
+                    "directory; tool arguments do not select project paths. Inspect the "
+                    "returned binding and limits before reading.",
                 ),
                 "task_plan_tools": _detail(
                     task_plan_details.get("status", "unavailable"),

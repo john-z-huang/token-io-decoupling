@@ -50,8 +50,6 @@ def dispatch_command(
     codex.add_argument("--all", action="store_true", help="explicitly configure all profiles")
     codex.add_argument("--dry-run", action="store_true")
     codex.add_argument("--replace", action="store_true")
-    codex.add_argument("--serena-project-root", type=Path, default=argparse.SUPPRESS)
-    codex.add_argument("--serena-python", type=Path, default=argparse.SUPPRESS)
     codex_env = targets.add_parser(
         "codex-env", help="merge environment variable names into existing Codex servers"
     )
@@ -75,9 +73,6 @@ def dispatch_command(
             args.host_fd is not None
             or args.codex_context
             or args.task_plan_factory is not None
-            or args.serena_memory_factory is not None
-            or args.serena_project_root is not None
-            or args.serena_python is not None
             or args.compliance_factory is not None
             or args.output_materializer_factory is not None
         ):
@@ -97,9 +92,6 @@ def dispatch_command(
         if args.task_plan_factory is not None:
             print(f"{prog}: --task-plan-factory is a server startup option", file=sys.stderr)
             return 2
-        if args.serena_memory_factory is not None:
-            print(f"{prog}: --serena-memory-factory is a server startup option", file=sys.stderr)
-            return 2
         if args.compliance_factory is not None:
             print(f"{prog}: --compliance-factory is a server startup option", file=sys.stderr)
             return 2
@@ -110,9 +102,6 @@ def dispatch_command(
             )
             return 2
         if args.target == "codex-env":
-            if args.serena_project_root is not None or args.serena_python is not None:
-                print(f"{prog}: Serena binding options require setup codex", file=sys.stderr)
-                return 2
             try:
                 names = tuple(args.env_var) if args.env_var else DEFAULT_ENV_VARS
                 changed = merge_env_vars(
@@ -132,18 +121,11 @@ def dispatch_command(
             print(f"{prog}: --profile cannot be combined with --all", file=sys.stderr)
             return 2
         try:
-            memory_options: dict[str, Any] = {}
-            if args.serena_project_root is not None or args.serena_python is not None:
-                memory_options = {
-                    "serena_project_root": args.serena_project_root,
-                    "serena_python": args.serena_python,
-                }
             return setup_codex(
                 profile=args.profile,
                 all_profiles=args.all or args.profile is None,
                 dry_run=args.dry_run,
                 replace=args.replace,
-                **memory_options,
             )
         except SetupError as exc:
             print(f"{prog}: {exc}", file=sys.stderr)
@@ -176,24 +158,6 @@ def _add_runtime_options(
         metavar="MODULE:CALLABLE",
         default=suppressed if subparser else None,
         help="explicitly load trusted operator code that returns a configured TaskPlanService",
-    )
-    parser.add_argument(
-        "--serena-memory-factory",
-        metavar="MODULE:CALLABLE",
-        default=suppressed if subparser else None,
-        help="explicitly load trusted operator code that returns a SerenaMemoryReadService",
-    )
-    parser.add_argument(
-        "--serena-project-root",
-        type=Path,
-        default=suppressed if subparser else None,
-        help="existing Serena project bound to the isolated Memory read backend",
-    )
-    parser.add_argument(
-        "--serena-python",
-        type=Path,
-        default=suppressed if subparser else None,
-        help="Serena environment Python; setup can discover the uv tool interpreter",
     )
     parser.add_argument(
         "--compliance-factory",

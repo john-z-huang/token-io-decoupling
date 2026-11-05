@@ -19,11 +19,6 @@ from token_io_decoupling.output_materializer_factory import (
     OutputMaterializerFactoryError,
     load_output_materializer_config,
 )
-from token_io_decoupling.serena_memory_factory import (
-    SerenaMemoryFactoryError,
-    load_serena_memory_service,
-)
-from token_io_decoupling.serena_memory_runtime import IsolatedSerenaMemoryService
 from token_io_decoupling.server import create_server
 from token_io_decoupling.task_plan_factory import (
     TaskPlanFactoryError,
@@ -75,33 +70,6 @@ def _run(*, prog: str, default_profile: str | None) -> int:
                 file=sys.stderr,
             )
             return 2
-        project_root = args.serena_project_root
-        serena_python = args.serena_python
-        if (project_root is None) != (serena_python is None):
-            print(f"{prog}: both Serena project root and Python are required", file=sys.stderr)
-            return 2
-        if args.serena_memory_factory is not None and project_root is not None:
-            print(
-                f"{prog}: Serena factory and isolated binding are mutually exclusive",
-                file=sys.stderr,
-            )
-            return 2
-        if project_root is not None:
-            if profile not in {None, "workflow"}:
-                print(
-                    f"{prog}: isolated Serena Memory is available only for workflow",
-                    file=sys.stderr,
-                )
-                return 2
-            serena_memory_service = IsolatedSerenaMemoryService(project_root, serena_python)
-        else:
-            try:
-                serena_memory_service = load_serena_memory_service(args.serena_memory_factory)
-            except SerenaMemoryFactoryError as exc:
-                print(
-                    f"{prog}: Serena Memory startup factory failed ({exc.reason})", file=sys.stderr
-                )
-                return 2
         try:
             compliance_service = load_compliance_service(args.compliance_factory)
         except ComplianceFactoryError as exc:
@@ -126,7 +94,6 @@ def _run(*, prog: str, default_profile: str | None) -> int:
             require_codex_context=args.codex_context,
             state_root=_trusted_state_root() if provider is not None else None,
             task_plan_service=task_plan_service,
-            serena_memory_service=serena_memory_service,
             compliance_service=compliance_service,
             output_materializer_config=output_materializer_config,
             profile=profile,
