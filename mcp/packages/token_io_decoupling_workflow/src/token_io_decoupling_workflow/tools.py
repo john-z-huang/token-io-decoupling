@@ -44,6 +44,8 @@ from token_io_decoupling_workflow.payloads import (
     _CONTROL_EVALUATE,
     _EVALUATE,
 )
+from token_io_decoupling_workflow.serena_memory import SerenaMemoryReadService
+from token_io_decoupling_workflow.serena_memory_tools import register_serena_memory_tools
 from token_io_decoupling_workflow.task_plan_core import TaskPlanService
 from token_io_decoupling_workflow.task_plan_payloads import (
     TaskPlanArchivePayload,
@@ -100,7 +102,10 @@ def register_workflow_tools(
     require_codex_context: bool,
     binding_details: Callable[[BindingProvider], dict[str, str]],
     output_materialization_details: dict[str, str] | None = None,
+    serena_memory_service: SerenaMemoryReadService | None = None,
 ) -> None:
+    memory_reads = serena_memory_service or SerenaMemoryReadService()
+    register_serena_memory_tools(registrar, memory_reads)
     effort_selector = ChildEffortSelector()
     context_generator = DecisionContextGenerator(rules=rules)
     delegation_selector = DelegationDecisionSelector(rules)
@@ -125,6 +130,7 @@ def register_workflow_tools(
             api_decisions_enabled=bool(decisions_config and decisions_config.enabled),
             diagnose_binding=binding_details,
             task_plan_service=task_plan_service,
+            serena_memory_service=memory_reads,
             compliance_service=compliance_service,
             output_materialization=output_materialization_details,
         ),

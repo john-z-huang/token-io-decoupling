@@ -148,7 +148,19 @@ class FixedCodexSession:
             response_model=self._types[3],
         )
         if command.exit_code != 0 or "token-io-" not in command.stdout:
-            raise CodexTestError("installed MCP executable version check failed")
+            # Report only fixed classifications; SDK stdout/stderr can contain secrets.
+            diagnostic = (command.stderr or "").lower()
+            permission_denied = (
+                "operation not permitted" in diagnostic or "permission denied" in diagnostic
+            )
+            import_error = "modulenotfounderror" in diagnostic or "importerror" in diagnostic
+            raise CodexTestError(
+                "installed MCP executable version check failed "
+                f"(exit={command.exit_code}, "
+                f"permission_denied={permission_denied}, "
+                f"missing_file={'no such file' in diagnostic}, "
+                f"import_error={import_error})"
+            )
         self.start_thread()
         status = self._client.request(
             "mcpServerStatus/list",

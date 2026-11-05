@@ -19,6 +19,8 @@ EXPECTED_TOOLS = {
         "task_plan_update",
         "task_plan_complete",
         "task_plan_archive",
+        "serena_memory_tail_read",
+        "serena_memory_write_check",
         "rules_get_context",
         "validate_decoupling_compliance",
         "decide_decoupling_workflow",

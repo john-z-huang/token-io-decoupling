@@ -14,6 +14,8 @@ usage() {
     '  --all                Configure all profiles (the default)' \
     '  --replace            Replace conflicting existing registrations' \
     '  --python VERSION     Python version for uv (default: 3.14)' \
+    '  --serena-project-root PATH  Bind Memory reads to an existing absolute Serena project' \
+    '  --serena-python PATH        Override automatic uv tool Serena Python discovery' \
     '  --dry-run            Print the ordered plan without checking prerequisites' \
     '  -h, --help           Show this help'
 }
@@ -75,6 +77,10 @@ dry_run=0
 python_version='3.14'
 python_seen=0
 selection_seen=0
+serena_project_root=''
+serena_python=''
+serena_project_seen=0
+serena_python_seen=0
 
 while (($# > 0)); do
   case "$1" in
@@ -131,12 +137,44 @@ while (($# > 0)); do
       python_seen=1
       shift 2
       ;;
+    --serena-project-root|--serena-python)
+      memory_option=$1
+      if (($# < 2)) || [[ "$2" != /* ]]; then
+        fail "$memory_option requires an absolute path"
+        exit 2
+      fi
+      if [[ "$memory_option" == --serena-project-root ]]; then
+        if ((serena_project_seen != 0)); then
+          fail '--serena-project-root may be specified only once'
+          exit 2
+        fi
+        serena_project_root=$2
+        serena_project_seen=1
+      else
+        if ((serena_python_seen != 0)); then
+          fail '--serena-python may be specified only once'
+          exit 2
+        fi
+        serena_python=$2
+        serena_python_seen=1
+      fi
+      shift 2
+      ;;
     *)
       fail "unknown argument: $1"
       exit 2
       ;;
   esac
 done
+
+if ((serena_python_seen != 0 && serena_project_seen == 0)); then
+  fail '--serena-python requires --serena-project-root'
+  exit 2
+fi
+if ((serena_project_seen != 0)) && [[ -n "$profile" && "$profile" != workflow ]]; then
+  fail 'Serena Memory configuration requires --all or --profile workflow'
+  exit 2
+fi
 
 setup_args=(setup codex)
 if [[ -n "$profile" ]]; then
@@ -146,6 +184,12 @@ else
 fi
 if ((replace != 0)); then
   setup_args+=(--replace)
+fi
+if ((serena_project_seen != 0)); then
+  setup_args+=(--serena-project-root "$serena_project_root")
+fi
+if ((serena_python_seen != 0)); then
+  setup_args+=(--serena-python "$serena_python")
 fi
 
 if repo_root=$(resolve_repo_root); then
@@ -165,6 +209,9 @@ if ((dry_run != 0)); then
     printf ' %q' "$argument"
   done
   printf '\n%s\n' '4. Reload affected MCP servers in Codex.'
+  if ((serena_project_seen != 0 && serena_python_seen == 0)); then
+    printf '%s\n' 'Setup will discover Serena Python via uv tool dir; discovery was not run.'
+  fi
   exit 0
 fi
 
@@ -205,6 +252,9 @@ fi
 
 if "$launcher" "${setup_args[@]}"; then
   printf '%s\n' 'Codex MCP setup completed. Reload the affected MCP servers in Codex to use the updated registrations.'
+  if ((serena_project_seen == 0)) && [[ -z "$profile" || "$profile" == workflow ]]; then
+    printf '%s\n' 'Serena Memory was not newly configured. Use --serena-project-root /absolute/project to enable it; an existing managed binding is preserved.'
+  fi
 else
   exit_code=$?
   fail "tool installation succeeded, but Codex setup failed (exit $exit_code); the installed tool remains available, and no automatic rollback was attempted"

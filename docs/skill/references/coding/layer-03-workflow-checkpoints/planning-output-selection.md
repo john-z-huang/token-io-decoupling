@@ -17,7 +17,7 @@ For every Coding task, consume the current user goal, Issue/discussion when pres
 
 ## Failure boundary
 
-Unavailable required access, failed persistence, or failed owner-required verification blocks dependent work. This selection does not authorize implementation, change the user's goal, or weaken naming, update coordination, role boundaries, archive or immutability rules.
+Unavailable required access, failed persistence, or failed owner-required verification blocks dependent work. Bounded content evidence covers only its inspected window and does not replace owner-required complete-content checks. This selection does not authorize implementation, change the user's goal, or weaken naming, update coordination, role boundaries, archive or immutability rules.
 
 ## Related concepts
 

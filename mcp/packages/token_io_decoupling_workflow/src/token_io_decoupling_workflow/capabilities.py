@@ -9,6 +9,7 @@ from token_io_decoupling_core.binding import BindingProvider, DenyingBindingProv
 from token_io_decoupling_core.host_binding import HostChannelBindingProvider
 
 from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
+from token_io_decoupling_workflow.serena_memory import SerenaMemoryReadService
 from token_io_decoupling_workflow.task_plan_core import TaskPlanService
 
 
@@ -32,6 +33,7 @@ def capability_report(
     task_plan_service: TaskPlanService | None = None,
     compliance_service: CompliancePreflightService | None = None,
     output_materialization: dict[str, str] | None = None,
+    serena_memory_service: SerenaMemoryReadService | None = None,
 ) -> dict[str, Any]:
     """Read binding evidence and task-plan diagnostics without state mutation or API calls.
 
@@ -40,6 +42,7 @@ def capability_report(
     root; it never creates or initializes Memory paths here.
     """
     binding = diagnose_binding(provider)
+    memory_read_details = (serena_memory_service or SerenaMemoryReadService()).capability()
     caller_match = "required" if require_codex_context else "disabled"
     api_decisions = "enabled" if api_decisions_enabled else "disabled"
     task_plan_details = (
@@ -118,6 +121,8 @@ def capability_report(
         "delegation_decisions": "available_per_invocation",
         "decision_context_generation": "available_per_invocation",
         "task_plan_tools": task_plan_details.get("status", "unavailable"),
+        "serena_memory_reads": memory_read_details.get("status", "unavailable"),
+        "serena_memory_binding": memory_read_details,
         "decoupling_compliance": compliance_details.get("status", "unavailable"),
         "compliance_policy_scopes": compliance_details.get("policy_scopes", []),
         "output_materialization": output_details.get("status", "unavailable"),
@@ -135,6 +140,17 @@ def capability_report(
                 )
             },
             "configuration": {
+                "serena_memory_reads": _detail(
+                    str(memory_read_details.get("status", "unavailable")),
+                    str(memory_read_details.get("reason_code", "serena_memory_unavailable")),
+                    "Read-only tail and literal write-check tools use an explicitly bound "
+                    "Serena MemoryManager, normally through an isolated Serena Python helper. "
+                    "No backend means no path probe or Serena import; no model/API request.",
+                    "server.serena_memory_service",
+                    "Run setup codex --serena-project-root to discover uv tool Serena Python "
+                    "and save the isolated startup binding, or use a trusted native factory; "
+                    "inspect the returned binding and limits before reading.",
+                ),
                 "task_plan_tools": _detail(
                     task_plan_details.get("status", "unavailable"),
                     task_plan_details.get("reason_code", "task_plan_backend_unavailable"),

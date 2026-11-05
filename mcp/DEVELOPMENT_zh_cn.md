@@ -44,7 +44,7 @@ token-io-decoupling start-mcp-server --profile workflow
 
 | Profile / Codex 服务注册名 | 工具 |
 | --- | --- |
-| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`、`rules_get_context`、`workflow_generate_decision_context`、`workflow_select_child_effort`、`decide_decoupling_workflow`、`validate_decoupling_compliance`、`workflow_select_child_role`、`workflow_select_executor`、`workflow_select_child`、`workflow_assess_output_tokens`、`task_plan_update`、`task_plan_complete`、`task_plan_archive`、`workflow_evaluate`、`evaluate_control_checkpoint` |
+| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`、`rules_get_context`、`workflow_generate_decision_context`、`workflow_select_child_effort`、`decide_decoupling_workflow`、`validate_decoupling_compliance`、`workflow_select_child_role`、`workflow_select_executor`、`workflow_select_child`、`workflow_assess_output_tokens`、`task_plan_update`、`task_plan_complete`、`task_plan_archive`、`serena_memory_tail_read`、`serena_memory_write_check`、`workflow_evaluate`、`evaluate_control_checkpoint` |
 | `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`、`delegation_reserve`、`delegation_unreserve`、`delegation_bind`、`slice_check`、`slice_release`、`workflow_transition`、`parent_get_worker_summary`、`workflow_reconcile` |
 | `worker` / `token-io-decoupling-worker-agent-tools` | `worker_get_assignment`、`worker_record_progress`、`worker_get_evidence`、`worker_report_blocker`、`worker_get_recovery_context`、`materialize_decoupled_output` |
 | `share` / `token-io-decoupling-share-tools` | `database_schema_status`、`state_get`、`record_evidence` |
@@ -60,6 +60,8 @@ Profile 控制工具发现，不授予权限。没有可信宿主通道时，公
 三个 Native 任务计划工具使用单独配置且绑定 checkout 的 Serena 后端，不使用 Enhanced 数据库。宿主可选择按仓库分层的全局存储，让主工作区与 linked worktrees 共享规划、独立仓库保持隔离；旧项目本地存储保持兼容。没有显式注入或受信任启动 factory 时，保持 `unavailable`。其 payload、配置、身份/路径映射、确定性检查、测试和保护限制由[任务计划生命周期工具](TASK_PLAN_TOOLS_zh_cn.md)负责。不会自动加载 Serena 配置或发起模型请求。
 
 Canonical Python 实现使用架构契约列出的独立包名。重命名后的 `token_io_decoupling_mcp` 适配命名空间承载原 façade 模块和默认 factory 的仅公共接口行为；`python -m token_io_decoupling_mcp.cli` 仍可使用。旧 `token_io_mcp` 导入命名空间不再作为通用 API 暴露。两个不可变 v1 迁移源仍保留历史字节中的 `token_io_mcp.models`；state migration loader 仅在导入期间临时提供 `DatabaseKind` 别名，随后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 adapter migration 路径。兼容文件分别由 core、state 或 launcher 负责，wheel 路径不重复。本 workspace 不导出旧四个 console script，也不导出之前的 `token-io-mcp` console script。
+
+[Serena Memory 工具指南](SERENA_MEMORY_TOOLS_zh_cn.md)负责直接尾读/写入检查参数、可信 `--serena-memory-factory` 配置、路径/策略行为、行数证据及匹配限制。此独立只读后端不配置任务计划写入；未配置时，两工具返回 unavailable，不探测 Memory 路径。
 
 ## 能力报告诊断
 
@@ -119,6 +121,16 @@ uv run --no-sync python tests/support/final_codex_check.py
 
 每次 SDK 启动都要求并显式复用进程中非空的 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，固定模型为 `gpt-6-luna`、推理强度为 `medium`，并核验实际配置及线程设置。配置缺失或冲突时失败，不回退到已保存登录或其他凭据、端点、模型、推理强度。Key 仅通过子进程环境传递；不得输出凭据值或 SDK 原始诊断，也不得写入认证文件。
 
+Serena 安装/配置改动应使用已有 uv tool Serena 解释器启用真实文档安装检查：
+
+```sh
+TOKEN_IO_RUN_SERENA_INSTALLER=1 \
+TOKEN_IO_SERENA_TEST_PYTHON="$(uv tool dir)/serena-agent/bin/python" \
+  uv run --no-sync python tests/support/final_codex_check.py
+```
+
+普通检查和隔离工具安装通过后，该开关在临时 Codex/uv 目录运行默认安装器，发现已有隔离 Serena 环境，核验保存的启动参数/转发及重复 setup，并对临时数据调用已安装的 Memory 工具。它在 SDK 查看前运行，不启动模型轮次、不改变用户安装或配置；缺运行环境或检查失败就停止。普通 pytest 不启动该步骤。
+
 适配器选择 `PATH` 中已安装的 `codex`，或 `TOKEN_IO_CODEX_CLI_PATH` 指定的绝对可执行路径，不使用 SDK 自带 CLI。临时 `HOME`／`CODEX_HOME` 隔离配置。全新实例仅加载刚安装的 MCP 命令，通过只读 `command/exec` 执行其 `--version`，发现工具，并调用 `workflow_capabilities` 及双语 `rules_get_context`。禁止模型回合、mutation、任意 Shell 命令及复杂任务。这用于弥补当前会话无法动态重载更新后 MCP Server 的问题，不证明既有会话已重载。CI 安装测试依赖组以执行策略、静态和类型检查，不启动该 SDK 最终查看。
 
 
@@ -155,10 +167,12 @@ uv tool install --force --reinstall --managed-python --python 3.14 --find-links 
 确保 Codex CLI 位于 `PATH` 后，单独注册 MCP profiles：
 
 ```sh
-token-io-decoupling setup codex
+token-io-decoupling setup codex --serena-project-root /absolute/path/to/your-project
 ```
 
 注册或更新工具后重新加载受影响的 MCP Server。注册会转发必需环境变量的名称，但不提供变量值，也不建立可信宿主绑定。
+
+Memory 工具要求已通过 `uv tool` 安装 Serena，目标项目已有 Serena 配置和 Memory 目录。Setup 定位 `<uv tool dir>/serena-agent/bin/python`，探测后端，再将 `--serena-project-root` 与 `--serena-python` 保存到 workflow 注册。可用 `--serena-python /absolute/Serena-env/bin/python` 覆盖发现结果；解释器保留虚拟环境路径，不会重装 Serena 或将其混入当前 MCP 不兼容的依赖集合。Setup 仅对 workflow 转发可选的 `SERENA_HOME` 名称；使用自定义 home 时，应让启动 Codex 的环境提供相同值。无需自编 factory 或手改 TOML，详见[Memory 工具](SERENA_MEMORY_TOOLS_zh_cn.md)。
 
 ### 安装与更新本地 Skill 指令
 
@@ -189,7 +203,8 @@ token-io-decoupling skills update
 也可用[安装脚本](../scripts/install-codex-mcp.sh)替代单独的工具安装及 `setup codex` 命令，从任意工作目录一次完成包安装或更新及 Codex 配置。之后仍按上述方法执行 `skills install` 或 `skills update`：
 
 ```sh
-bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh
+bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh \
+  --serena-project-root /absolute/path/to/your-project
 ```
 
 前置条件为 Bash 3.2 或更新版本（包括 macOS 的 `/bin/bash`）、`uv` 和 Codex CLI；`uv` 与 `codex` 必须位于 `PATH`。脚本相对自身定位 `mcp/`，针对该源码执行 `uv tool install --force --reinstall --managed-python --python 3.14`，通过 `uv tool dir --bin` 获取 bin 目录，再以绝对路径调用安装后入口的 `setup codex`。uv 会解析已声明的本地 workspace 依赖；即使只修改了依赖的源码或打包规则，`--reinstall` 也会更新它们。工具 bin 目录无需位于 `PATH`，不必手动切换目录、激活虚拟环境或另行执行 setup。重复运行会从当前 checkout 更新此工具，不会卸载旧 `token-io-mcp` 工具。
@@ -199,10 +214,12 @@ bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh
 | 选项 | 操作 |
 | --- | --- |
 | `--dry-run` | 输出安装和 setup 计划，不运行安装/setup 命令或读写配置；真实运行前，未来的工具 bin 路径以符号占位表示。 |
-| `--profile root` | 只注册指定的 `workflow`、`root`、`worker` 或 `share` profile；安装包仍包含全部 profile。 |
+| `--profile workflow` | 只注册一个 profile；省略 Serena 绑定参数时也支持 `root`、`worker` 或 `share`，安装包仍包含全部 profile。 |
 | `--all` | 显式选择默认的四个 profile，不能与 `--profile` 同用。 |
 | `--replace` | 允许 setup 替换冲突或已禁用的注册；省略时仍拒绝冲突。 |
 | `--python VERSION` | 指定 uv 托管的 Python 版本，替代默认的 `3.14`。 |
+| `--serena-project-root PATH` | 将 Memory 读取绑定到明确指定的已有绝对项目路径，不从安装源码或当前目录推断；仅 workflow/all 接受。 |
+| `--serena-python PATH` | 用已有 Serena 环境解释器的绝对路径覆盖 uv tool 自动发现；需同时提供项目参数。 |
 | `--help` | 显示用法，不安装或修改配置。 |
 
 脚本在安装前验证参数及必需命令。某阶段失败后停止后续阶段并返回非零状态。安装和注册是不同副作用：若安装后 setup 失败，更新后的工具仍保留安装状态；重新运行前先检查 setup 的部分状态报告。注册设置保留和转发检查仍由现有 setup helper 负责。成功后重新加载受影响的服务；脚本不会重启客户端或提供凭据值。
@@ -215,7 +232,7 @@ token-io-decoupling setup codex --profile root
 
 Setup 与启动的分离参考 [Serena 的客户端 setup 实现](https://github.com/oraios/serena/blob/main/src/serena/config/client_setup.py)。本入口从当前安装环境的 scripts 目录及精确的分发包入口元数据解析可执行文件，不根据启动目录推断项目或身份。
 
-安装后命令的 `setup codex --dry-run` 输出所选 profile 的 JSON 参数向量及变量名转发计划，不运行子进程，也不读写配置。真实 setup 在注册写入前验证本地配置并探测 CLI，读取服务清单及嵌套 `transport` 数据。已启用且解析后的命令与 `start-mcp-server --profile <profile>` 参数匹配的注册会跳过重新注册，但仍补齐缺失的转发变量名。冲突或已禁用条目要求 `--replace`。替换使用官方同名 upsert，不先删除旧条目。后续转发失败会与已经应用的注册分开报告；重试前先检查报告中的部分状态。不打印捕获的配置或子进程输出。
+安装后命令的 `setup codex --dry-run` 输出所选 profile 的 JSON 参数向量及变量名转发计划，不运行子进程，也不读写配置；Serena 自动发现同样延后，解释器路径显示为明确的占位。真实 setup 在注册写入前核验所选 Memory 后端和本地配置，再探测 CLI，读取清单及嵌套 `transport` 数据。启用状态、命令和启动参数匹配的注册跳过重新注册，但补齐转发名称。显式请求 Memory 绑定可升级本工具原有 bare workflow 注册；另一项目/解释器或其他冲突仍要求 `--replace`。未提供绑定参数的 setup 保留可识别的已有 Memory 绑定；新建的未绑定注册仍不可用，并提示启用方法。替换使用同名 upsert，不先删除；后续转发失败与已应用注册分开报告。不打印捕获的配置或子进程输出。
 
 由于 Codex upsert 会替换注册项，setup 会将原设置暂存在内存中，每次 upsert 成功后连同转发声明一起恢复，再处理下一个 profile。替换 stdio 注册时保留附加设置和已有转发变量名，只改变入口、profile 参数及预期的启用状态。HTTP 转为 stdio 时保留通用工具策略和超时设置，但移除旧传输与认证字段。后续 profile 失败时，报告会区分已完成的注册/转发和待处理项。需要保留这些设置的替换应使用 setup。
 

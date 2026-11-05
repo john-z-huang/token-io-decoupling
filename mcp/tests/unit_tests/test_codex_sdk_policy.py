@@ -179,6 +179,26 @@ def test_raw_sdk_failures_do_not_expose_credentials(settings, monkeypatch):
     assert "synthetic.invalid" not in str(error.value)
 
 
+def test_version_failure_reports_only_bounded_classifications(settings, monkeypatch):
+    class FailedVersionClient:
+        def request(self, *_args, **_kwargs):
+            return SimpleNamespace(
+                exit_code=126,
+                stdout="synthetic-test-key",
+                stderr="Permission denied: https://synthetic.invalid/v1",
+            )
+
+    session = adapter.FixedCodexSession(
+        FailedVersionClient(), [None] * 4, settings[1], "unused", settings[2]
+    )
+    monkeypatch.setattr(session, "verify_configuration", lambda: None)
+    with pytest.raises(adapter.CodexTestError) as error:
+        session.check_mcp()
+    message = str(error.value)
+    assert "exit=126" in message and "permission_denied=True" in message
+    assert "synthetic-test-key" not in message and "synthetic.invalid" not in message
+
+
 def test_sdk_factory_gets_explicit_cli_and_isolated_fixed_configuration(settings, monkeypatch):
     captured = {}
 

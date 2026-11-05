@@ -42,6 +42,8 @@ PUBLIC_TOOLS = {
     "task_plan_update",
     "task_plan_complete",
     "task_plan_archive",
+    "serena_memory_tail_read",
+    "serena_memory_write_check",
     "rules_get_context",
     "validate_decoupling_compliance",
     "decide_decoupling_workflow",
@@ -260,9 +262,9 @@ def test_tool_inventory_is_exact_and_default_server_is_public_only() -> None:
     worker_tools = _tool_names(create_server(FakeBindingProvider(SessionRole.WORKER)))
     assert root_tools == PUBLIC_TOOLS | ROOT_TOOLS
     assert worker_tools == PUBLIC_TOOLS | WORKER_TOOLS
-    assert len(root_tools) == 27
-    assert len(worker_tools) == 22
-    assert len(root_tools | worker_tools) == 35
+    assert len(root_tools) == 29
+    assert len(worker_tools) == 24
+    assert len(root_tools | worker_tools) == 37
     for tool in create_server(FakeBindingProvider())._tool_manager.list_tools():
         assert not any(
             forbidden in str(tool.parameters).casefold()
