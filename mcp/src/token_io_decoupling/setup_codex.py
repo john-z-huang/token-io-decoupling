@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from token_io_decoupling_core.profiles import PROFILE_SERVER_NAMES
+from token_io_decoupling_transport.tool_metadata import STANDARD_INSTALL_NOTICE
 
 from token_io_decoupling.codex_env import (
     DEFAULT_ENV_VARS,
@@ -190,6 +191,7 @@ def setup_codex(
             print(json.dumps(add_commands[item]))
         names = [PROFILE_SERVER_NAMES[item] for item in profiles]
         print(f"Would merge env_vars {list(DEFAULT_ENV_VARS)!r} into: {', '.join(names)}")
+        print(STANDARD_INSTALL_NOTICE)
         return 0
 
     codex = shutil.which("codex")
@@ -294,4 +296,5 @@ def setup_codex(
         print("updated environment forwarding: " + ", ".join(dict.fromkeys(forwarded)))
     else:
         print("environment forwarding already configured: " + ", ".join(selected_names))
+    print(STANDARD_INSTALL_NOTICE)
     return 0

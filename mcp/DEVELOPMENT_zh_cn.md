@@ -65,32 +65,7 @@ Canonical Python 实现使用架构契约列出的独立包名。重命名后的
 
 ## 能力报告诊断
 
-`workflow_capabilities({})` 是无参数公共工具。它保留顶层摘要，新增 `agent_runtime: "codex_cli"`，并返回 `schema_version: 2` 的 `capability_details`。版本 2 将版本 1 的 `host_adapters` 字段替换为 `support.agent_runtime` 固定产品范围详情；这不证明调用方身份。每个详情项包含 `status`、`reason_code`、安全的 `message`、诊断 `source` 和 `next_step`。
-
-| 详情分组 | 含义与边界 |
-| --- | --- |
-| `agent_runtime` / `support.agent_runtime` | 固定产品范围 `codex_cli`；详情为 `available/fixed_codex_cli`。这不是宿主身份或权限证明。 |
-| `configuration.caller_match` | 启动配置 `required/configured_required` 或 `disabled/configured_disabled`。公共发现不验证请求调用方元数据。 |
-| `configuration.api_decisions` | 持久化建议配置 `enabled/configured_enabled` 或 `disabled/configured_disabled`。disabled 是正常配置。逐调用工具独立，不测试 API 是否可用。 |
-| `runtime.binding` | 当前 Session 关系和基线守卫。成功仅含角色（`parent` 或 `worker`），不含身份值；具体操作授权另行检查。 |
-| `runtime.binding_transport` | 类型分类：已知继承宿主通道为 `available/known_transport`，自定义 provider 为 `unverified/transport_not_reported`。识别类型不证明当前通道健康。 |
-| `runtime.server_mode` | 启动准入（`embedded` 或 `public_only`）。后续诊断不扩大注册范围，不绕过检查。 |
-
-绑定诊断结果：
-
-| 状态 / 原因代码 | 证据与下一步 |
-| --- | --- |
-| `unverified/provider_not_configured` | 默认拒绝 provider，未尝试探测。受保护操作前须配置可信宿主集成。 |
-| `available/baseline_verified` | Session 关系和基线守卫通过。另行检查目标操作守卫和调用方上下文。 |
-| `unavailable/required_guards_missing` | 缺少基线守卫。修正宿主绑定，不绕过检查。 |
-| `unavailable/session_identity_mismatch` | 角色/Session 关系无效。修正宿主提供的身份。 |
-| `unavailable/permission_denied` | provider 抛出非 `BindingError` 的 `PermissionError`。由宿主维护者检查权限。 |
-| `unknown/binding_unavailable` | `BindingError` 无法区分拒绝、超时或协议故障。查阅可信宿主诊断，不猜测根因。 |
-| `unknown/probe_failed` 或 `unknown/invalid_binding_response` | 意外异常或无效类型结果。修复 provider 后再进行受保护访问。 |
-
-`BindingError` 继承 `PermissionError`，因此优先分类前者。绑定诊断最多读取一次绑定，可能联系已配置的宿主通道，不发送 API 请求，不检查状态或路径。其固定解释不回显异常、凭据、身份值、路径或任意 provider 属性。另行显式配置的任务计划后端会核对 checkout/存储映射；全局模式可能执行本地 Git 身份查询。未配置任务计划后端时，不探测 Memory 路径或 Git。这些诊断不初始化存储，也不证明调用者授权。
-
-非 embedded 的旧摘要保持 `enhanced_binding: unverified` 和 `binding_transport: unavailable`，即使后续探测成功也不改变；详情区分当前验证与启动准入。embedded 的绑定摘要仍为 `available`/`unavailable`。传输摘要仅使用 `authenticated_inherited_unix_socket` 或 `embedded_provider`，不回显自定义标签。任何结果均不自动启用 Enhanced 或授予权限。
+`workflow_capabilities({})` 是无参数公共工具；`capability_details.schema_version=2` 保留现有摘要并报告 `support.local_stdio=available/local_stdio_request_scoping`。`runtime.server_mode=local_stdio` 表示具名 profile 使用本地请求范围；无状态元数据时 `runtime.binding=request_required/local_codex_context_required`。这些结果不是身份认证或操作授权。配置详情分别报告计划后端、Memory 路径、合规 reader、API 和物化条件；未探测的依赖不得视为已就绪。旧摘要 `enhanced_binding=not_applicable`、`binding_transport=stdio` 不再声称宿主认证。
 
 ### 已安装客户端运行时检查
 
@@ -154,13 +129,17 @@ uv tool install --force --reinstall --managed-python --python 3.14 --find-links 
 "$(uv tool dir --bin)/token-io-decoupling" --version
 ```
 
+### 标准安装可用范围
+
+标准安装可直接使用本地 stdio 状态操作，不要求特权服务或外部 provider。安装后重载服务并启动 fresh Codex CLI 会话，从目标项目根目录运行。状态调用要求有效线程元数据，Worker 必须先由 Root 登记；保留路径、角色、分配与逐操作授权检查。各公共工具的独立配置条件仍适用：Memory 需要已有项目文件，计划需要配置后端，合规预检需要配置 reader，API 工具需要两个非空 API 环境变量和逐调用外发授权，物化另需已登记 Worker、固定根目录、新鲜预检和独立 operator grant。可发现不等于已配置或已授权。
+
 确保 Codex CLI 位于 `PATH` 后，单独注册 MCP profiles：
 
 ```sh
 token-io-decoupling setup codex
 ```
 
-注册或更新工具后重新加载受影响的 MCP Server。注册会转发必需环境变量的名称，但不提供变量值，也不建立可信宿主绑定。
+注册或更新工具后重新加载受影响的 MCP Server。注册会转发必需环境变量的名称，但不提供变量值，也不建立本地会话上下文。
 
 Memory 工具不需要额外安装选项或 Serena 包。从目标项目根目录启动 Codex；MCP 使用启动工作目录作为项目根，只读取 `.serena/memories/` 中的文件。它不搜索父级或兄弟项目。Memory 目录和所请求的文件必须已存在；缺失时返回非成功结果，不创建任何内容。文件操作使用 Python 标准库。详见[Memory 工具](SERENA_MEMORY_TOOLS_zh_cn.md)。
 
@@ -239,7 +218,7 @@ token-io-decoupling setup codex --profile root
 
 由于 Codex upsert 会替换注册项，setup 会将原设置暂存在内存中，每次 upsert 成功后连同转发声明一起恢复，再处理下一个 profile。替换 stdio 注册时保留附加设置和已有转发变量名，只改变入口、profile 参数及预期的启用状态。HTTP 转为 stdio 时保留通用工具策略和超时设置，但移除旧传输与认证字段。后续 profile 失败时，报告会区分已完成的注册/转发和待处理项。需要保留这些设置的替换应使用 setup。
 
-新入口及注册核验通过后，从本仓库旧四命令工具迁移的环境可用 `uv tool uninstall token-io-mcp` 移除旧分发包。保留其他工具、服务和设置，并重新连接 MCP 客户端以加载新启动命令。Setup 不建立可信宿主绑定。
+新入口及注册核验通过后，从本仓库旧四命令工具迁移的环境可用 `uv tool uninstall token-io-mcp` 移除旧分发包。保留其他工具、服务和设置，并重新连接 MCP 客户端以加载新启动命令。Setup 不建立本地会话上下文。
 
 协议目标仍为 `2026-07-28`。SDK 子进程测试核验协商与调用；实际可信宿主集成仍需独立证据。
 
@@ -293,25 +272,15 @@ Codex 自身的环境中必须持有这两个非空白 API 变量，以及需要
 
 新注册和已匹配注册都会在 setup 时合并转发声明，`--replace` 后也会执行相同合并。安装脚本已自动包含 setup；单独执行 `uv tool install` 仍不会注册服务或提供凭据。修改配置后重新加载受影响的 MCP 服务；若客户端没有重载机制，退出后重新打开客户端以创建新服务进程。运行中的进程不会自动获得修改后的配置。
 
-终端调用成功而 MCP 请求报告缺配置时，检查客户端进程环境、各注册项的转发变量名，以及服务是否已重新创建。只记录变量存在性及是否非空白。当前 Decisions advisor 在任一必需值缺失或为空白时，在创建 SDK client 之前返回 `fallback`，原因为 `missing_credentials`；不要套用其他服务的 `missing_api_key` 错误名称。转发不会启用 API 请求、授予出站数据权限或建立可信宿主绑定；下文的独立要求仍须满足。
+终端调用成功而 MCP 请求报告缺配置时，检查客户端进程环境、各注册项的转发变量名，以及服务是否已重新创建。只记录变量存在性及是否非空白。当前 Decisions advisor 在任一必需值缺失或为空白时，在创建 SDK client 之前返回 `fallback`，原因为 `missing_credentials`；不要套用其他服务的 `missing_api_key` 错误名称。转发不会启用 API 请求、授予出站数据权限或建立本地会话上下文；下文的独立要求仍须满足。
 
 
 
-## 已认证的宿主通道
+## 本地 stdio 会话上下文
 
-`token_io_decoupling_core.host_binding` 中的 `HostChannelBindingProvider` 和 `serve_host_binding_channel` 将 CLI 连接到可信宿主已有的 `BindingProvider`。宿主在 MCP 请求参数之外，将一个真实 Session 绑定到一个已连接的 Unix stream socket，再把该连接的描述符传给非特权 CLI 进程，并服务另一端。supervisor 必须将服务端端点保留在可信边界内，且不得将同一通道重新分配给其他 Session。宿主启动所选可执行程序，例如 `token-io-decoupling start-mcp-server --profile root --host-fd N`，其中 `N` 是不小于 3 的继承描述符；该参数只定位传输通道，不提供身份或权限。
+CLI 默认从进程的 OS 账户主目录派生 `.local/state/token-io-decoupling`，不使用调用方修改的 `HOME`。项目由启动 cwd 固定，状态按项目哈希与线程分区。无需 UID 0、继承 socket 或 provider 工厂；旧宿主通道实现和命令选项已删除。内部 Python provider 参数只保留为兼容嵌入/测试接口。
 
-CLI 使用操作系统凭据认证对端：Linux 使用 `SO_PEERCRED`，macOS 使用原生 `getpeereid` 调用。此实现将可信对端固定为 UID 0，并拒绝自身以 UID 0 运行的 CLI。Agent 当前用户创建的 socket 无法建立信任。不支持的凭据能力、无效描述符或启动绑定失败，都会终止所请求的绑定启动。内核机制见 [Linux Unix socket 手册](https://man7.org/linux/man-pages/man7/unix.7.html)和 [Apple 对端凭据手册](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getpeereid.3.html)。
-
-绑定启动的 CLI 从操作系统账户数据库获取当前有效用户的主目录，并将其下的 `.local/state/token-io-decoupling` 作为状态根目录。调用方控制的 `HOME` 不能重定向该路径；账户映射不可用或无效时拒绝启动。可信 Python embedding 仍保留 factory 的显式 `state_root` 参数。
-
-桥接在启动时锁定项目、Root、当前 Session、parent 和角色。每次受保护调用都会重新向宿主读取当前能力与守卫证据；撤销或身份变化会使调用被拒绝。子身份验证使用宿主当前的 parent 身份。线协议只接受两种绑定操作，限制帧大小并设置有限超时；格式错误或不匹配的响应直接拒绝，不重试。失败通道不能通过后续响应重新获得信任。
-
-宿主必须先落实实际 sandbox、路径与 Worker store 边界，再报告相应守卫。内核认证只确认可信 supervisor，不会创建这些守卫，也不证明某运行时的 Session 映射正确。此包提供桥接及宿主侧服务 API，不提供特权服务安装器，也不构成已经验证的 Codex CLI 宿主集成。普通 MCP 客户端配置不能凭空建立继承的特权通道。既有测试 provider 和模拟对端凭据的测试仍属于合成证据；未修改认证逻辑的同用户通道拒绝测试覆盖真实本地凭据边界。
-
-声明实际运行时集成前，必须通过该运行时的 MCP 连接验证 Root 初始化、证据插入、状态转换及回读；验证真实释放且绑定的 Worker 能读取任务并只写入自己的进度/证据；并在实际宿主守卫下检查撤销和跨 Worker 拒绝。现有客户端需要重启或重新连接，才能加载改变的启动参数与工具清单；编辑 checkout 不会改变已经运行的 MCP 进程。
-
-[Codex 调用者匹配](CODEX_CALLER_CONTEXT_zh_cn.md)说明对已有可信宿主绑定可选启用的 `--codex-context` 请求匹配门禁。它消费 SDK 请求元数据，不增加身份认证来源。
+[本地会话上下文](CODEX_CALLER_CONTEXT_zh_cn.md)负责元数据、Root/Worker 登记、角色与路径校验及同用户信任边界。不存在独立进程认证或 OS 级 Worker 隔离承诺。安装包测试验证实际 stdio 行为；SDK 最终检查仍限版本、发现、能力和规则读取，禁止模型轮次或状态修改。
 
 ## 真实 API 请求的必需配置
 
@@ -396,7 +365,7 @@ TOKEN_IO_RUN_OFFICIAL_API=1 uv run --managed-python --locked -- pytest tests/rea
 TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/real_api_tests/decisions_real_smoke.py
 ```
 
-没有 opt-in 时，脚本不发请求。它使用临时 Root 数据库和合成可信 provider，直接调用 `DecisionsAdvisor`，仅报告安全的状态、原因、分类元数据、选项和用量。它不证明真实宿主绑定，也不证明真实 API 请求经过了 MCP handler。MCP handler/协议测试使用模拟 API transport。advisor 在实际调用时读取两项必需的本地变量；脚本和项目都不提供替代凭据或默认端点。
+没有 opt-in 时，脚本不发请求。它使用临时 Root 数据库和合成可信 provider，直接调用 `DecisionsAdvisor`，仅报告安全的状态、原因、分类元数据、选项和用量。它不证明本地会话范围，也不证明真实 API 请求经过了 MCP handler。MCP handler/协议测试使用模拟 API transport。advisor 在实际调用时读取两项必需的本地变量；脚本和项目都不提供替代凭据或默认端点。
 
 ## 构建、规则资源与安装检查
 

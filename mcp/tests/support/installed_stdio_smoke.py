@@ -116,6 +116,10 @@ async def _exercise(
             ):
                 raise AssertionError(f"installed {profile} profile omitted discovery metadata")
             tools = await client.list_tools()
+            if "Standard local Codex stdio" not in client.instructions:
+                raise AssertionError("profile discovery omitted the standard-install limitation")
+            if "Standard local Codex stdio" not in client.server_info.description:
+                raise AssertionError("server description omitted the standard-install limitation")
             names = {tool.name for tool in tools.tools}
             if names != EXPECTED_TOOLS[profile]:
                 raise AssertionError(f"unbound {profile} profile exposed unexpected tools: {names}")
@@ -148,6 +152,15 @@ async def _exercise(
                 capability_data = json.loads(_text(capabilities))
                 if capabilities.is_error or capability_data.get("mode_fallback") != "Native":
                     raise AssertionError("installed unbound CLI did not report Native fallback")
+                details = capability_data["capability_details"]
+                if (
+                    details["support"]["local_stdio"]["status"] != "available"
+                    or details["runtime"]["binding"]["reason_code"]
+                    != "local_codex_context_required"
+                    or details["configuration"]["public_interfaces"]["reason_code"]
+                    != "tool_dependencies_not_probed"
+                ):
+                    raise AssertionError("installed CLI misstated binding/readiness boundaries")
                 denied_context = await client.call_tool(
                     "workflow_generate_decision_context",
                     {
@@ -362,7 +375,7 @@ async def _exercise(
                 }
                 protected_tool, arguments = protected_calls[profile]
                 denied = await client.call_tool(protected_tool, arguments)
-            if not denied.is_error or "binding" not in _text(denied).casefold():
+            if not denied.is_error or "context" not in _text(denied).casefold():
                 raise AssertionError("unbound profile operation was not denied by its binding gate")
             if profile == "share":
                 status = await client.call_tool("database_schema_status", {})
@@ -422,10 +435,12 @@ def _exercise_codex_dry_run(cli_path: Path, repo_root: Path) -> None:
         plan = f"Would merge env_vars {forwarding_names!r} into: " + ", ".join(
             name for _profile, name in SERVER_NAMES.items()
         )
-        if not lines or lines[-1] != plan:
+        if not lines or lines[-2] != plan:
             raise AssertionError("installed setup dry-run omitted the forwarding plan")
+        if "Standard local Codex stdio" not in lines[-1] or "application scope" not in lines[-1]:
+            raise AssertionError("installed setup omitted the standard-install limitation")
         try:
-            commands = [json.loads(line) for line in lines[1:-1]]
+            commands = [json.loads(line) for line in lines[1:-2]]
         except json.JSONDecodeError as exc:
             raise AssertionError("installed setup dry-run printed invalid command JSON") from exc
         expected = [

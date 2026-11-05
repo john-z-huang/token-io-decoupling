@@ -42,6 +42,9 @@ def test_one_installed_launcher_is_used_for_each_profile(monkeypatch, tmp_path, 
     assert setup_codex.setup_codex(all_profiles=True, dry_run=True) == 0
     output = capsys.readouterr().out
     assert output.count(str(executable.resolve())) == 4
+    assert "Standard local Codex stdio" in output
+    assert "application scope" in output
+    assert "external identity provider" in output
     for profile, name in PROFILE_SERVER_NAMES.items():
         assert name in output
         assert f'"{profile}"' in output
@@ -140,7 +143,10 @@ def test_setup_repairs_forwarding_for_matching_profile(monkeypatch, tmp_path, ca
     assert tomlkit.parse(config.read_text())["mcp_servers"][name]["env_vars"] == list(
         DEFAULT_ENV_VARS
     )
-    assert "updated environment forwarding" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "updated environment forwarding" in output
+    assert "Standard local Codex stdio" in output
+    assert "not independent process authentication" in output
 
 
 def test_setup_new_registration_adds_forwarding_after_registration(monkeypatch, tmp_path) -> None:

@@ -35,6 +35,8 @@ Skill 指令源位于 [docs/skill](docs/skill/SKILL_zh_cn.md)。wheel 和源码�
 bash scripts/install-codex-mcp.sh
 ```
 
+标准安装使用本地 Codex CLI stdio，不需要特权宿主服务、宿主描述符或额外 identity provider。状态调用使用 Codex 的线程元数据和已有分配记录，继续检查路径、角色及授权；这不是独立进程认证或 OS 隔离。参见[本地会话上下文](mcp/CODEX_CALLER_CONTEXT_zh_cn.md)。
+
 安装脚本不会绑定 Memory 项目或安装 Serena。从目标项目根目录启动 Codex；MCP 进程只读取 `<工作目录>/.serena/memories/` 下的文件，不搜索父级或兄弟项目。Memory 目录和所请求的文件必须已存在；缺失时返回非成功结果，不创建文件或目录。
 
 [安装脚本](scripts/install-codex-mcp.sh)会安装或更新当前 checkout 的 MCP 包，定位可执行文件、注册各 profile，并合并环境变量转发名称。Memory 读取使用 Python 标准库，不需要 Serena 包、额外解释器、factory 或 helper。`--dry-run` 可预览而不安装或写入配置。完成后重新加载 MCP 服务。从非仓库根目录运行时，使用安装脚本的绝对路径，并将占位内容替换为真实位置。详见[安装指南](mcp/DEVELOPMENT_zh_cn.md#uv-tool-安装与-codex-setup)和[Memory 工具指南](mcp/SERENA_MEMORY_TOOLS_zh_cn.md)。
@@ -47,7 +49,7 @@ bash scripts/install-codex-mcp.sh
 - [增强架构](docs/skill/ENHANCED_ARCHITECTURE_zh_cn.md)：可选 MCP 状态、规则上下文、语义建议及经核验的宿主边界；Native 仍为默认路径。
 - [MCP 开发指南](mcp/DEVELOPMENT_zh_cn.md)：本地 Python 检查与包构建。
 
-可选 Decisions 集成默认关闭。每次真实请求（包括测试请求）必须读取本地 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，缺少任一项就不得请求。显式启用与测试方法见开发指南。当前生产入口没有经核验的 Codex CLI 宿主绑定，因此只暴露公共诊断与规则上下文。
+可选的持久化 Decisions 集成默认关闭。每次真实请求（包括测试请求）必须读取本地 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，缺少任一项就不得请求。显式启用与测试方法见开发指南。公共接口还包括本地 Memory 读取、Native 任务计划、合规预检、路由及无状态上下文/选择工具。它们不要求 Enhanced binding，但保留各自的配置与授权条件；工具发现本身不能证明任何一项已满足。状态操作要求有效的本地请求范围、已登记角色与操作授权。
 
 OpenAI API 工具共用显式设置 `trust_env=True` 的 HTTPX2 客户端，从 MCP 进程环境读取 `HTTP_PROXY`、`HTTPS_PROXY`、`ALL_PROXY` 和 `NO_PROXY`，包括对应的小写形式。`NO_PROXY` 可使指定目标绕过代理；未配置代理时使用客户端正常的直连路径。代理无效或不可达时返回现有的安全 API 错误结果，不会改为直连重试。
 

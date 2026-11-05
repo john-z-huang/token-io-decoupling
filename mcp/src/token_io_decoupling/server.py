@@ -15,7 +15,9 @@ from token_io_decoupling_core.profiles import PROFILE_TOOLS as PROFILE_TOOLS
 from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_root.tools import register_root_tools
 from token_io_decoupling_shared.tools import register_shared_tools
+from token_io_decoupling_state.local_context import LocalSessionContext
 from token_io_decoupling_state.service import StateService
+from token_io_decoupling_state.state.common import DEFAULT_STATE_ROOT
 from token_io_decoupling_transport.identity import (
     binding_details as _binding_details,
 )
@@ -57,8 +59,13 @@ def create_server(
     profile: str | None = None,
     server_name: str | None = None,
 ) -> MCPServer[Any]:
-    """Create a public-only server by default or a trusted embedding server."""
-    provider = binding_provider or DenyingBindingProvider()
+    """Create named local stdio profiles, or an explicit embedding/test context."""
+    local = binding_provider is None and profile is not None
+    provider = binding_provider or (
+        LocalSessionContext(Path.cwd(), Path(state_root) if state_root else DEFAULT_STATE_ROOT)
+        if local
+        else DenyingBindingProvider()
+    )
     registry_resource = resources.files("token_io_decoupling_core").joinpath(
         "_resources", "registry.json"
     )
@@ -83,7 +90,7 @@ def create_server(
     if require_bound and bound_role is None:
         raise BindingError("authenticated host channel did not provide a usable bound identity")
     embedded = bound_role is not None
-    if require_codex_context and not embedded:
+    if require_codex_context and not embedded and not local:
         raise BindingError("Codex caller matching requires a usable bound identity")
     server = MCPServer(
         name=server_name or "token-io-decoupling",
@@ -92,7 +99,10 @@ def create_server(
         instructions=server_instructions(profile, bound_role),
     )
 
-    state_provider = CodexCallerBoundProvider(provider) if require_codex_context else provider
+    state_provider = (
+        CodexCallerBoundProvider(provider) if require_codex_context and not local else provider
+    )
+    require_codex_context = require_codex_context or local
     service = StateService(
         binding_provider=state_provider, state_root=state_root, rule_loader=rules
     )

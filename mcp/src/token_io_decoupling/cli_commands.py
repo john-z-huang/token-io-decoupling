@@ -70,9 +70,7 @@ def dispatch_command(
         from token_io_decoupling.skills import install_skill
 
         if (
-            args.host_fd is not None
-            or args.codex_context
-            or args.task_plan_factory is not None
+            args.task_plan_factory is not None
             or args.compliance_factory is not None
             or args.output_materializer_factory is not None
         ):
@@ -86,9 +84,6 @@ def dispatch_command(
         print(f"Skill {args.skill_action}: {target}")
         return 0
     if args.command == "setup":
-        if args.host_fd is not None or args.codex_context:
-            print(f"{prog}: host binding options cannot be used with setup", file=sys.stderr)
-            return 2
         if args.task_plan_factory is not None:
             print(f"{prog}: --task-plan-factory is a server startup option", file=sys.stderr)
             return 2
@@ -142,17 +137,6 @@ def _add_runtime_options(
     parser: argparse.ArgumentParser, *, default_profile: str | None, subparser: bool = False
 ) -> None:
     suppressed = cast(Any, argparse.SUPPRESS)
-    parser.add_argument(
-        "--host-fd",
-        type=int,
-        metavar="INTEGER",
-        default=suppressed if subparser else None,
-    )
-    parser.add_argument(
-        "--codex-context",
-        action="store_true",
-        default=suppressed if subparser else False,
-    )
     parser.add_argument(
         "--task-plan-factory",
         metavar="MODULE:CALLABLE",

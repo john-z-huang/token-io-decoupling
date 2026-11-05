@@ -35,6 +35,8 @@ With `uv`, Bash 3.2 or later, and the Codex CLI available, run this command from
 bash scripts/install-codex-mcp.sh
 ```
 
+Standard installation uses local Codex CLI stdio without a privileged host service, inherited host descriptor or external identity provider. State calls use Codex thread metadata and existing allocations while enforcing paths, roles and authorization; this is not independent process authentication or OS isolation. See [local session context](mcp/CODEX_CALLER_CONTEXT.md).
+
 The installer does not bind a Memory project or install Serena. Start Codex from the target project root; that MCP process reads only files under `<working directory>/.serena/memories/`. It does not search parent or sibling projects. The directory and requested file must already exist; missing paths return a non-success result without creating files or directories.
 
 The [installer](scripts/install-codex-mcp.sh) installs or updates this checkout's MCP package, resolves its executable, registers the profiles and merges environment-variable forwarding names. Memory reads use Python's standard library and do not require a Serena package, separate interpreter, factory or helper. Use `--dry-run` to preview without installation or configuration writes. Reload the affected MCP servers afterward. For a non-root working directory, call the installer by its absolute script path, replacing the placeholder with its actual location. See the [setup guide](mcp/DEVELOPMENT.md#uv-tool-installation-and-codex-setup) and [Memory tools guide](mcp/SERENA_MEMORY_TOOLS.md).
@@ -47,7 +49,7 @@ The [installer](scripts/install-codex-mcp.sh) installs or updates this checkout'
 - [Enhanced architecture](docs/skill/ENHANCED_ARCHITECTURE.md): optional MCP state, rule context, semantic advice, and verified host boundaries; Native remains the default.
 - [MCP development guide](mcp/DEVELOPMENT.md): local Python checks and package builds.
 
-The optional Decisions integration is disabled by default. Every real request, including test requests, must read both local `OPENAI_API_KEY` and `OPENAI_BASE_URL`; missing either prevents a request. Follow the development guide for explicit enablement and testing. The current production entry has no verified Codex CLI host binding and therefore exposes only public diagnostics and rule context.
+The optional persisted Decisions integration is disabled by default. Every real request, including test requests, must read both local `OPENAI_API_KEY` and `OPENAI_BASE_URL`; missing either prevents a request. Follow the development guide for explicit enablement and testing. Public interfaces also include local Memory reads, Native task plans, compliance preflight, routing, and stateless context/selection tools. They do not require Enhanced binding, but retain their individual configuration and authorization requirements; discovery alone establishes neither. State operations require valid local request scope, recorded roles and operation authorization.
 
 OpenAI API tools share an HTTPX2 client with `trust_env=True`. They read `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY`, including lowercase forms, from the MCP process environment. `NO_PROXY` can bypass the proxy; without proxy settings, the client uses its normal direct route. An invalid or unreachable proxy returns the existing safe API error result without retrying a direct connection.
 

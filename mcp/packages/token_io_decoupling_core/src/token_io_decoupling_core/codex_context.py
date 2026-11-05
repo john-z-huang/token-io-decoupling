@@ -1,4 +1,4 @@
-"""Strict extraction of Codex caller context from MCP request metadata."""
+"""Strict extraction of Codex request context from MCP request metadata."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ class CodexRequestContext:
 def parse_codex_request_context(meta: object) -> CodexRequestContext:
     """Read only threadId/sessionId from a request `_meta` mapping."""
     if not isinstance(meta, Mapping):
-        raise BindingError("Codex caller context is missing or malformed")
+        raise BindingError("Codex request context is missing or malformed")
     thread_id = _context_value(meta, "threadId")
     session_id = _context_value(meta, "sessionId")
     return CodexRequestContext(thread_id=thread_id, session_id=session_id)
@@ -56,7 +56,7 @@ class CodexCallerBoundProvider:
         binding = self._provider.current_binding()
         request_thread_id = self._request_thread_id.get()
         if request_thread_id is None or request_thread_id != binding.current_session_id:
-            raise BindingError("Codex caller context is unavailable or mismatched")
+            raise BindingError("Codex request context is unavailable or mismatched")
         return binding
 
     def verify_child_binding(
@@ -76,5 +76,5 @@ def _context_value(meta: Mapping[object, object], key: str) -> str:
         or len(value) > _MAX_CONTEXT_VALUE
         or any(unicodedata.category(character) == "Cc" for character in value)
     ):
-        raise BindingError("Codex caller context is missing or malformed")
+        raise BindingError("Codex request context is missing or malformed")
     return value

@@ -93,7 +93,7 @@ def test_real_sdk_meta_guards_protected_tools_and_is_request_scoped(
                 meta=_meta("wrong-thread"),
             )
             assert wrong_open.is_error
-            assert "Codex caller context" in _text(wrong_open)
+            assert "Codex request context" in _text(wrong_open)
             assert not (tmp_path / "state").exists()
             monkeypatch.setenv("CODEX_THREAD_ID", "codex-context-test-thread")
             forged_payload = _open_arguments()
@@ -123,7 +123,7 @@ def test_real_sdk_meta_guards_protected_tools_and_is_request_scoped(
                 "database_schema_status", {}, meta=_meta("wrong-thread")
             )
             assert mismatched_status.is_error
-            assert "Codex caller context" in _text(mismatched_status)
+            assert "Codex request context" in _text(mismatched_status)
 
             mismatched = await client.call_tool(
                 "workflow_get_state",
@@ -175,7 +175,7 @@ def test_profile_sdk_meta_guards_root_and_shared_operations(tmp_path: Path) -> N
             denied = await client.call_tool(
                 "workflow_open", _open_arguments(), meta=_meta("wrong-thread")
             )
-            assert denied.is_error and "Codex caller context" in _text(denied)
+            assert denied.is_error and "Codex request context" in _text(denied)
             assert not (tmp_path / "profile-state").exists()
             opened = await client.call_tool(
                 "workflow_open",
@@ -187,7 +187,7 @@ def test_profile_sdk_meta_guards_root_and_shared_operations(tmp_path: Path) -> N
             denied = await client.call_tool(
                 "state_get", {"payload": {}}, meta=_meta("wrong-thread")
             )
-            assert denied.is_error and "Codex caller context" in _text(denied)
+            assert denied.is_error and "Codex request context" in _text(denied)
             state = await client.call_tool(
                 "state_get",
                 {"payload": {}},

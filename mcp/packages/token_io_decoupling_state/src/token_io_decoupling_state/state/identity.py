@@ -61,7 +61,7 @@ def _validate_root_identity(connection: sqlite3.Connection, binding: BindingIden
     if row is None:
         return
     if (row[0], row[1]) != (binding.project_id, binding.root_session_id):
-        raise BindingError("Root database identity does not match the trusted runtime binding")
+        raise BindingError("Root database identity does not match the current session scope")
 
 
 def _worker_identity(
@@ -71,14 +71,14 @@ def _worker_identity(
     row = _one(connection, "SELECT * FROM worker_identity WHERE singleton=1")
     if row is None:
         raise WorkflowNotOpenError(
-            "Worker database has not been initialized by a verified Root binding"
+            "Worker database has not been initialized by the current Root allocation"
         )
     if isinstance(binding, VerifiedChildBinding):
         expected = (binding.project_id, binding.root_session_id, binding.child_session_id)
     else:
         expected = (binding.project_id, binding.root_session_id, binding.current_session_id)
     if (row[1], row[2], row[3]) != expected:
-        raise BindingError("Worker database identity does not match the trusted runtime binding")
+        raise BindingError("Worker database identity does not match the current session scope")
     return row
 
 
@@ -92,6 +92,8 @@ def _validate_child_binding(
     parent: BindingIdentity,
     child: VerifiedChildBinding,
     requested_session_id: str,
+    *,
+    check_host_guards: bool = True,
 ) -> None:
     if (
         child.project_id != parent.project_id
@@ -110,16 +112,17 @@ def _validate_child_binding(
             HostCapability.WORKER_STORE_CREATE,
         },
     )
-    _require_guards(
-        child,
-        {
-            HostGuard.IDENTITY_BOUND,
-            HostGuard.SESSION_BOUND,
-            HostGuard.PATH_BOUNDARY,
-            HostGuard.PARENT_CHILD_RELATION,
-            HostGuard.WORKER_STORE_ISOLATION,
-        },
-    )
+    if check_host_guards:
+        _require_guards(
+            child,
+            {
+                HostGuard.IDENTITY_BOUND,
+                HostGuard.SESSION_BOUND,
+                HostGuard.PATH_BOUNDARY,
+                HostGuard.PARENT_CHILD_RELATION,
+                HostGuard.WORKER_STORE_ISOLATION,
+            },
+        )
     _safe_component(child.child_session_id, "worker_session_id")
 
 

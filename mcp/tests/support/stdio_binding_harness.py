@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-import socket
 import sys
-import threading
 from pathlib import Path
 from typing import cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from token_io_decoupling_core import host_binding
 from token_io_decoupling_core.binding import BindingError, BindingProvider
-from token_io_decoupling_core.host_binding import serve_host_binding_channel
 from token_io_decoupling_core.state_models import (
     BindingIdentity,
     HostCapability,
@@ -21,7 +17,6 @@ from token_io_decoupling_core.state_models import (
     VerifiedChildBinding,
 )
 
-from token_io_decoupling import cli
 from token_io_decoupling.server import create_server
 
 
@@ -71,59 +66,19 @@ def main() -> None:
         require_codex_context = sys.argv[1] == "bridge-codex"
         role = SessionRole.PARENT if sys.argv[2] == "root" else SessionRole.WORKER
         provider = TestOnlyBindingProvider(role)
-        client_socket, host_socket = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
+        from token_io_decoupling.compliance_factory import load_compliance_service
+        from token_io_decoupling.output_materializer_factory import load_output_materializer_config
 
-        # Synthetic kernel-auth bypass exists only inside this explicitly test-only process.
-        def synthetic_peer_uid(_sock: socket.socket) -> int:
-            return 0
-
-        host_binding.__dict__["_peer_uid"] = synthetic_peer_uid
-        host_thread = threading.Thread(
-            target=serve_host_binding_channel,
-            args=(host_socket, provider),
-            daemon=True,
+        materializer = load_output_materializer_config(output_materializer_factory)
+        server = create_server(
+            provider,
+            state_root=Path(sys.argv[3]),
+            require_codex_context=require_codex_context,
+            output_materializer_config=materializer,
+            compliance_service=load_compliance_service(None),
         )
-        host_thread.start()
-        temporary_state_root = Path(sys.argv[3])
-        original_create_server = cli.create_server
-
-        def test_only_server(
-            binding_provider,
-            *,
-            require_bound=False,
-            require_codex_context=False,
-            state_root=None,
-            task_plan_service=None,
-            serena_memory_service=None,
-            compliance_service=None,
-            output_materializer_config=None,
-            profile=None,
-            server_name=None,
-        ):
-            del state_root
-            return original_create_server(
-                binding_provider,
-                require_bound=require_bound,
-                require_codex_context=require_codex_context,
-                state_root=temporary_state_root,
-                task_plan_service=task_plan_service,
-                serena_memory_service=serena_memory_service,
-                compliance_service=compliance_service,
-                output_materializer_config=output_materializer_config,
-                profile=profile,
-                server_name=server_name,
-            )
-
-        cli.__dict__["create_server"] = test_only_server
-        client_fd = client_socket.detach()
-        sys.argv = ["token-io-mcp", "--host-fd", str(client_fd)]
-        if output_materializer_factory is not None:
-            sys.argv.extend(["--output-materializer-factory", output_materializer_factory])
-        if require_codex_context:
-            sys.argv.append("--codex-context")
-        exit_code = cli.legacy_main()
-        host_thread.join(timeout=1)
-        raise SystemExit(exit_code)
+        server.run(transport="stdio")
+        return
     if len(sys.argv) != 3 or sys.argv[1] not in {"root", "worker"}:
         raise SystemExit("usage is private to tests")
     role = SessionRole.PARENT if sys.argv[1] == "root" else SessionRole.WORKER

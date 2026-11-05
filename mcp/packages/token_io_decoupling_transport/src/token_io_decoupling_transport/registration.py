@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Annotated, Any
 
 from mcp.server import MCPServer
@@ -13,6 +13,7 @@ from pydantic import BaseModel, TypeAdapter, ValidationError, WithJsonSchema
 from token_io_decoupling_core.binding import BindingError, BindingProvider
 from token_io_decoupling_core.codex_context import CodexCallerBoundProvider
 from token_io_decoupling_core.profiles import PROFILE_ROLES, PROFILE_TOOLS
+from token_io_decoupling_state.local_context import LocalSessionContext
 from token_io_decoupling_state.service import StateServiceError
 
 from token_io_decoupling_transport.payloads import inline_schema
@@ -54,9 +55,9 @@ class ToolRegistrar:
         actual = self._bound_role_for(self.provider)
         required = PROFILE_ROLES[self.profile]
         if actual is None or (required is not None and actual != required):
-            raise BindingError("usable host binding for this profile is unavailable")
+            raise BindingError("session role for this profile is unavailable")
         if expected is not None and actual != expected:
-            raise BindingError("host binding role does not match this operation")
+            raise BindingError("session role does not match this operation")
         return callback()
 
     def with_codex_context(self, context: MCPContext | None, callback: Callable[[], Any]) -> Any:
@@ -64,12 +65,12 @@ class ToolRegistrar:
             return callback()
         try:
             meta = context.request_context.meta if context is not None else None
-            if not isinstance(self.state_provider, CodexCallerBoundProvider):
+            if not isinstance(self.state_provider, (CodexCallerBoundProvider, LocalSessionContext)):
                 raise BindingError("Codex caller provider is unavailable")
             with self.state_provider.request_scope(meta):
                 return callback()
         except (BindingError, ValueError) as exc:
-            raise ToolError("verified Codex caller context is unavailable or mismatched") from exc
+            raise ToolError("Codex request context is unavailable or mismatched") from exc
 
     @staticmethod
     def _call_safely(callback: Callable[[], Any]) -> Any:
@@ -77,7 +78,9 @@ class ToolRegistrar:
             value = callback()
             return _jsonable(value)
         except BindingError as exc:
-            raise ToolError("trusted host binding or required guard is unavailable") from exc
+            raise ToolError(
+                "session binding, role, scope or required authorization is unavailable"
+            ) from exc
         except StateServiceError as exc:
             raise ToolError(str(exc)) from exc
         except (ValidationError, ValueError, TypeError) as exc:
@@ -161,6 +164,15 @@ class ToolRegistrar:
 
             def handler(context: MCPContext) -> Any:
                 enforce_role = name not in {"workflow_capabilities", "database_schema_status"}
+                if (
+                    name == "database_schema_status"
+                    and isinstance(self.state_provider, LocalSessionContext)
+                    and (
+                        not isinstance(context.request_context.meta, Mapping)
+                        or "threadId" not in context.request_context.meta
+                    )
+                ):
+                    return self._call_safely(callback)
                 return self.with_codex_context(
                     context,
                     lambda: self._call_safely(

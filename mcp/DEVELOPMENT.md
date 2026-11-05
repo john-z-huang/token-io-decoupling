@@ -65,36 +65,11 @@ The [Memory tools guide](SERENA_MEMORY_TOOLS.md) owns direct tail-read/write-che
 
 ## Capability report diagnostics
 
-`workflow_capabilities({})` is public and takes no arguments. It preserves top-level summaries, adds `agent_runtime: "codex_cli"`, and returns `capability_details` with `schema_version: 2`. Version 2 replaces the version 1 `host_adapters` fields with `support.agent_runtime`, a static product-scope detail; it does not attest caller identity. Each detail contains `status`, `reason_code`, a safe `message`, diagnostic `source`, and `next_step`.
-
-| Detail group | Meaning and boundary |
-| --- | --- |
-| `agent_runtime` / `support.agent_runtime` | Fixed product scope `codex_cli`; detail is `available/fixed_codex_cli`. This is not a host identity or permission attestation. |
-| `configuration.caller_match` | Startup `required/configured_required` or `disabled/configured_disabled`. Public discovery does not verify request caller metadata. |
-| `configuration.api_decisions` | Persisted advice `enabled/configured_enabled` or `disabled/configured_disabled`. Disabled is normal configuration. Per-invocation tools remain separate; no API readiness is tested. |
-| `runtime.binding` | Current session relationship and baseline guards. Success includes only role (`parent` or `worker`), never identity values; operation-specific authorization remains separate. |
-| `runtime.binding_transport` | Type classification: known inherited host channel `available/known_transport`; custom provider `unverified/transport_not_reported`. Recognizing a type does not prove current channel health. |
-| `runtime.server_mode` | Startup admission (`embedded` or `public_only`). Later diagnostics never expand registered scope or bypass checks. |
-
-Binding diagnostic outcomes:
-
-| Status / reason code | Evidence and next action |
-| --- | --- |
-| `unverified/provider_not_configured` | Default denying provider; no probe attempted. Configure a trusted host integration before protected operations. |
-| `available/baseline_verified` | Session relationship and baseline guards passed. Check intended-operation guards and caller context separately. |
-| `unavailable/required_guards_missing` | Baseline guards are absent. Correct the host binding without bypassing checks. |
-| `unavailable/session_identity_mismatch` | Role/session relationship is invalid. Correct host-supplied identity. |
-| `unavailable/permission_denied` | Provider raised `PermissionError` other than `BindingError`. Have the host owner check permissions. |
-| `unknown/binding_unavailable` | `BindingError` cannot distinguish denial, timeout, or protocol failure. Consult trusted host diagnostics rather than guessing. |
-| `unknown/probe_failed` or `unknown/invalid_binding_response` | Unexpected exception or invalid typed result. Repair the provider before protected use. |
-
-`BindingError` inherits `PermissionError`, so it is classified first. Binding diagnostics read the binding at most once, may contact the configured host channel, and make no API request or state/path inspection. Their fixed explanations never echo exceptions, credentials, identity values, paths, or arbitrary provider attributes. Separately, an explicitly configured task-plan backend validates its checkout/storage mapping; global mode can perform local Git identity queries. An unconfigured task-plan backend performs no Memory-path or Git probe. These diagnostics do not initialize storage or prove caller authorization.
-
-Legacy non-embedded summaries remain `enhanced_binding: unverified` and `binding_transport: unavailable`, even if a later probe succeeds; details separate current validation from startup admission. Embedded binding summaries remain `available`/`unavailable`. Transport summaries use only `authenticated_inherited_unix_socket` or `embedded_provider`, never custom labels. No result automatically enables Enhanced or grants authority.
+`workflow_capabilities({})` is public and takes no arguments. `capability_details.schema_version=2` retains existing summaries and reports `support.local_stdio=available/local_stdio_request_scoping`. `runtime.server_mode=local_stdio` means named profiles use local request scope; without state-call metadata, `runtime.binding=request_required/local_codex_context_required`. These results are not authentication or operation authorization. Configuration details separately report plan backend, Memory paths, compliance reader, API and materialization conditions; unprobed dependencies are not readiness evidence. Legacy summaries `enhanced_binding=not_applicable` and `binding_transport=stdio` no longer claim host authentication.
 
 ### Installed client runtime checks
 
-The `real_client` cases in `tests/unit_tests/test_real_clients.py` run the actual installed Codex CLI and the Codex executable shipped inside ChatGPT Desktop. They exercise each executable's app-server MCP interface without mocked client transport or host identity. This covers the MCP host-runtime boundary, not Desktop GUI interaction, an already-running daemon, or authenticated Enhanced host binding.
+The `real_client` cases in `tests/unit_tests/test_real_clients.py` run the actual installed Codex CLI and the Codex executable shipped inside ChatGPT Desktop. They exercise each executable's app-server MCP interface without mocked client transport or host identity. This covers the MCP host-runtime boundary, not Desktop GUI interaction, an already-running daemon, or independent host authentication.
 
 After authorization for temporary test threads and processes, run from `mcp/`:
 
@@ -154,13 +129,17 @@ Use the actual artifact version in the filename. Subsequent examples assume uv's
 "$(uv tool dir --bin)/token-io-decoupling" --version
 ```
 
+### Standard installation availability
+
+Standard installation directly supports local stdio state operations without a privileged service or external provider. Reload servers and start a fresh Codex CLI session from the intended project root. State calls require valid thread metadata; Root must register Workers first. Path, role, allocation and per-operation authorization checks remain. Public tools retain independent dependencies: existing project files for Memory, a configured plan backend, a configured compliance reader, both nonblank API environment variables plus per-call outbound authorization for API tools, and a registered Worker, pinned roots, fresh preflight and independent operator grant for materialization. Discovery is neither configuration nor permission.
+
 With the Codex CLI available on `PATH`, register the MCP profiles separately:
 
 ```sh
 token-io-decoupling setup codex
 ```
 
-Reload the affected MCP servers after registration or tool updates. Registration forwards the required environment-variable names but does not supply their values or establish a trusted host binding.
+Reload the affected MCP servers after registration or tool updates. Registration forwards the required environment-variable names but does not supply their values or establish a local session context.
 
 The Memory tools need no additional installation options or Serena packages. Start Codex from the target project root; the MCP uses its startup working directory as the project root and reads only files under `.serena/memories/`. It does not search parent or sibling projects. The Memory directory and requested file must already exist; missing paths return a non-success result without creating anything. The local file operations use Python's standard library. See [Memory tools](SERENA_MEMORY_TOOLS.md).
 
@@ -239,7 +218,7 @@ The installed command's `setup codex --dry-run` prints the selected JSON argumen
 
 Because the Codex upsert replaces a registration, setup keeps the previous settings in memory and restores them with forwarding after each successful upsert, before processing the next profile. Stdio replacement preserves additional settings and forwarded names while changing the launcher, profile arguments and intended enabled state. HTTP-to-stdio replacement preserves common tool policies and timeouts, but removes the old transport and authentication fields. If a later profile fails, the report distinguishes completed registrations/forwarding from pending work. Use setup for replacements that must preserve these settings.
 
-After the new launcher and registrations are verified, a migration from this repository's old four-command tool can remove that old distribution with `uv tool uninstall token-io-mcp`. Preserve unrelated tools, servers and settings, and reconnect the MCP client to load the new launch command. Setup does not establish a trusted host binding.
+After the new launcher and registrations are verified, a migration from this repository's old four-command tool can remove that old distribution with `uv tool uninstall token-io-mcp`. Preserve unrelated tools, servers and settings, and reconnect the MCP client to load the new launch command. Setup does not establish a local session context.
 
 The protocol target remains `2026-07-28`. SDK subprocess tests verify negotiation and calls; actual trusted host integration remains separate evidence.
 
@@ -293,25 +272,15 @@ Codex must itself have both nonblank API variables and any desired proxy variabl
 
 Both new and matching registrations receive the forwarding merge during setup; `--replace` is followed by the same merge. The installation script includes setup automatically; a bare `uv tool install` still does not register servers or supply credentials. Reload the affected MCP servers after configuration changes; if the client has no reload mechanism, quit and reopen it so new service processes are created. Running processes do not automatically receive changed configuration.
 
-When a terminal invocation works but an MCP request reports missing configuration, check the client process environment, each registration's forwarding names, and whether the service was recreated. Record only variable presence/nonblank status. The current Decisions advisor returns `fallback` with reason `missing_credentials` before creating the SDK client when either required value is absent or blank; do not assume another service's `missing_api_key` error name applies here. Forwarding does not enable API requests, grant outbound-data authorization, or establish a trusted host binding; the separate requirements below still apply.
+When a terminal invocation works but an MCP request reports missing configuration, check the client process environment, each registration's forwarding names, and whether the service was recreated. Record only variable presence/nonblank status. The current Decisions advisor returns `fallback` with reason `missing_credentials` before creating the SDK client when either required value is absent or blank; do not assume another service's `missing_api_key` error name applies here. Forwarding does not enable API requests, grant outbound-data authorization, or establish a local session context; the separate requirements below still apply.
 
 
 
-## Authenticated host channel
+## Local stdio session context
 
-`HostChannelBindingProvider` and `serve_host_binding_channel` in `token_io_decoupling_core.host_binding` connect the CLI to a trusted host's existing `BindingProvider`. The host attaches one real Session to one connected Unix stream socket outside MCP request arguments. It passes the connected descriptor to an unprivileged CLI process and serves the other end. The supervisor must retain its serving endpoint within the trusted boundary and must not reassign a channel to another Session. The host launches the selected executable, for example `token-io-decoupling start-mcp-server --profile root --host-fd N`, where `N` is an inherited descriptor numbered at least 3; this argument locates a transport and supplies no identity or permission.
+The CLI derives `.local/state/token-io-decoupling` from the process's OS account home, ignoring caller-modified `HOME`. Startup cwd fixes the project; state is partitioned by project hash and thread. No UID 0, inherited socket or provider factory is needed; the old host-channel implementation and command options are removed. Internal Python provider arguments remain only as compatible embedding/test seams.
 
-The CLI authenticates the peer through operating-system credentials: `SO_PEERCRED` on Linux and the native `getpeereid` call on macOS. This implementation pins the trusted peer to UID 0 and rejects a CLI process running as UID 0. A socket created by the Agent's own user cannot establish trust. Unsupported credential facilities, invalid descriptors, and failed startup binding terminate the requested bound launch. See the [Linux Unix-socket manual](https://man7.org/linux/man-pages/man7/unix.7.html) and [Apple peer-credential manual](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/getpeereid.3.html) for the kernel mechanisms.
-
-For a bound CLI launch, the state root is `.local/state/token-io-decoupling` beneath the current effective user's home from the operating-system account database. Caller-controlled `HOME` values cannot redirect it; an unavailable or invalid account mapping rejects startup. Trusted Python embeddings retain their explicit `state_root` factory argument.
-
-The bridge pins project, Root, current Session, parent, and role at startup. Every protected call rereads current capability and guard evidence from the host; revocation or an identity change rejects the call. Child verification uses the host's current parent identity. The wire format accepts only the two binding operations, uses bounded frames and a finite timeout, and rejects malformed or mismatched responses without retry. A failed channel cannot regain trust through later responses.
-
-The host must enforce the actual sandbox, path, and Worker-store boundaries before reporting the corresponding guards. Kernel authentication identifies the trusted supervisor; it does not create those guards or prove that a runtime's Session mapping is correct. This package supplies the bridge and host-side serving API, not a privileged service installer or a verified Codex CLI host integration. A normal MCP client configuration cannot manufacture the inherited privileged channel. Existing test providers and tests that mock peer credentials remain synthetic evidence; the unmodified same-user channel rejection test exercises the real local credential boundary.
-
-Before claiming an actual runtime integration, verify Root initialization, evidence insertion, transition and readback through that runtime's MCP connection; verify a real released and bound Worker can read its assignment and write only its own progress/evidence; and test revocation and cross-Worker rejection with the actual host guards. Restart or reconnect an existing client to load changed startup arguments and tool inventory; editing this checkout does not change an already running MCP process.
-
-[Codex caller matching](CODEX_CALLER_CONTEXT.md) describes the optional `--codex-context` request-matching gate for an already verified host binding. It consumes SDK request metadata and does not add an authentication source.
+[Local session context](CODEX_CALLER_CONTEXT.md) owns metadata, Root/Worker registration, role/path checks and the same-user trust boundary. There is no independent process-authentication or OS-level Worker-isolation claim. Installed-package checks verify real stdio behavior. The final SDK inspection remains limited to version, discovery, capabilities and rules, with no model turns or state mutations.
 
 ## Required configuration for real API requests
 

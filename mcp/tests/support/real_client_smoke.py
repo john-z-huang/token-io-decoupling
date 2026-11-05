@@ -204,7 +204,7 @@ def exercise_client(executable: Path, client: str) -> dict[str, Any]:
             assert details["schema_version"] == 2
             assert details["support"]["agent_runtime"]["reason_code"] == "fixed_codex_cli"
             configuration = details["configuration"]
-            for name in ("caller_match", "api_decisions"):
+            for name in ("api_decisions",):
                 entry = configuration[name]
                 assert (entry["status"], entry["reason_code"]) == (
                     "disabled",
@@ -216,11 +216,11 @@ def exercise_client(executable: Path, client: str) -> dict[str, Any]:
                 "task_plan_backend_not_configured",
             )
             runtime = details["runtime"]
-            assert runtime["binding"]["status"] == "unverified"
-            assert runtime["binding"]["reason_code"] == "provider_not_configured"
-            assert runtime["server_mode"]["status"] == "public_only"
-            assert report["enhanced_binding"] == "unverified"
-            assert report["binding_transport"] == "unavailable"
+            assert runtime["binding"]["status"] == "request_required"
+            assert runtime["binding"]["reason_code"] == "local_codex_context_required"
+            assert runtime["server_mode"]["status"] == "local_stdio"
+            assert report["enhanced_binding"] == "not_applicable"
+            assert report["binding_transport"] == "stdio"
             assert all(runtime["binding"][key] for key in ("message", "source", "next_step"))
             denied = app.request(
                 "mcpServer/tool/call",
@@ -232,7 +232,7 @@ def exercise_client(executable: Path, client: str) -> dict[str, Any]:
             )
             assert denied["isError"] is True
             assert (
-                "trusted host binding or required guard is unavailable"
+                "session binding, role, scope or required authorization is unavailable"
                 in (denied["content"][0]["text"])
             )
             assert not any(method.startswith("turn/") for method in app.requested_methods)

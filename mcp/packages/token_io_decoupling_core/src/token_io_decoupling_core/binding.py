@@ -8,11 +8,11 @@ from token_io_decoupling_core.state_models import BindingIdentity, VerifiedChild
 
 
 class BindingError(PermissionError):
-    """Trusted runtime identity or a required permission boundary is unavailable."""
+    """Current session scope or required operation permission is unavailable."""
 
 
 class BindingProvider(Protocol):
-    """The host supplies this provider; request parameters never establish identity."""
+    """Internal session-context seam; local CLI profiles configure request scope automatically."""
 
     def current_binding(self) -> BindingIdentity: ...
 
@@ -22,7 +22,7 @@ class BindingProvider(Protocol):
 
 
 class DenyingBindingProvider:
-    """Production default until a concrete trusted host adapter is implemented."""
+    """Unavailable fallback for standalone use without a session context."""
 
     def current_binding(self) -> BindingIdentity:
         raise BindingError("enhanced state is unavailable without a trusted host binding")

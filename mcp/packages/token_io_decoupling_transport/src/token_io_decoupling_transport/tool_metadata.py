@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+STANDARD_INSTALL_NOTICE = (
+    "Standard local Codex stdio profiles use threadId/sessionId request metadata and existing "
+    "allocations for application scope. No privileged host service or external identity provider "
+    "is required. This is not independent process authentication or OS isolation. Profiles "
+    "restrict tools; state calls still check roles, paths and explicit operation authorization."
+)
+
 SERVER_DESCRIPTION = (
     "MCP server for a locally available Codex CLI, including local Work when it uses the local "
     "Codex CLI/app-server path. Cloud ChatGPT conversations, remote Work, and other Code Agents "
     "are not direct clients. If another Agent installs and configures Codex CLI in its own "
     "environment, only that local CLI path is supported; no other Agent or cloud adapter is "
     "provided. No runtime-environment selection step is exposed. Bounded Token I/O tools. The "
-    "active profile and verified role determine exposed operations. Discovery reports "
+    "active profile and current role determine exposed operations. Discovery reports "
     "availability, not identity or authority."
 )
 
@@ -140,6 +147,8 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     ),
     "workflow_capabilities": _description(
         "Read public capability summaries and capability_details (schema_version=2). No arguments;",
+        "support.local_stdio describes local request scoping and its limits;",
+        "configuration.public_interfaces describes independent public-tool dependencies.",
         "no identity or permission prerequisite. agent_runtime is the fixed local Codex CLI",
         "product scope, including local Work when it uses that local CLI/app-server path. Cloud",
         "ChatGPT conversations, remote Work, and other Code Agents are not direct clients. When",
@@ -160,7 +169,8 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "and already-bound global root without creating paths. No credential or identity values,",
         "or raw errors are returned.",
         "On missing provider, guard failure, denial, or probe failure, inspect reason_code",
-        "and next_step; configure a trusted host provider when required. A known transport or",
+        "and next_step; use local stdio profiles with valid request metadata.",
+        "A known transport or",
         "verified",
         "baseline does not verify caller metadata or operation-specific guards, enable Enhanced,",
         "change startup admission, or grant authority. No revision or idempotency key is required.",
@@ -538,7 +548,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "reviewed input; idempotency_key prevents duplicate writes.",
         "Evaluation outcome is ready, incomplete, blocked, or evidence_on_demand;",
         "it records a gate result and does not itself authorize execution.",
-        "Requires verified Root identity and guards; returns evaluation outcome",
+        "Requires current Root identity and guards; returns evaluation outcome",
         "(ready, incomplete, blocked, or evidence_on_demand), branch, rule/input",
         "hashes, basis/result revisions, missing facts/evidence, and stale status.",
         "Optional semantic_input is a node_id-discriminated object for",
@@ -566,7 +576,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "Provide expected_revision and idempotency_key; optional branch,",
         "input_hash, slice_ids, and semantic_input follow the Control",
         "contract.",
-        "Requires verified Root identity and guards; returns evaluation outcome",
+        "Requires current Root identity and guards; returns evaluation outcome",
         "(ready, incomplete, blocked, or evidence_on_demand), branch, rule/input",
         "hashes, basis/result revisions, missing facts/evidence, and stale status.",
         "Without semantic_input the JSON result is the evaluation; with it,",
@@ -590,7 +600,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "source as SemanticRef {uri, content_hash SHA-256}, optional",
         "semantic_references (same shape),",
         "expected_revision (0 by default), and idempotency_key.",
-        "Requires verified parent role. Initializes a new workflow; an",
+        "Requires current parent role. Initializes a new workflow; an",
         "identical existing workflow is read back without resetting identity,",
         "while a mismatched locked contract/identity or stale revision fails.",
         "Returns MutationReceipt with operation, payload_hash, result,",
@@ -602,7 +612,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         _PAYLOAD,
         "role must be Primary Output, Change Verification, Context",
         "Bootstrap/Refresh, or Documentation/Comments & Git Operations.",
-        "Supply expected_revision and idempotency_key. Requires verified Root",
+        "Supply expected_revision and idempotency_key. Requires current Root",
         "identity and delegation guards; Single-Agent has no allocations.",
         "A role already reserved or created in this Session cannot be reserved again.",
         "The optional budget_approval object is accepted only when the locked budget",
@@ -623,7 +633,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "Bind a reserved allocation to a verified child session.",
         _PAYLOAD,
         "Supply allocation_id, child_session_id, expected_revision, and idempotency_key.",
-        "Requires verified parent identity and host verification of the",
+        "Requires current parent identity and host verification of the",
         "child; returns receipt with allocation_id and child_session_id.",
         "Unknown or mismatched child binding fails closed.",
         _RECEIPT,
@@ -638,7 +648,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "creation_not_started_reference is a SemanticRef or EvidenceRef with uri and",
         "SHA-256 content_hash.",
         "expected_revision, and idempotency_key.",
-        "Requires verified Root binding, workflow-write capability, and identity/session/path",
+        "Requires current Root binding, workflow-write capability, and identity/session/path",
         "guards.",
         "Only a Multi-Agent allocation in reserved state with no worker_session_id, worker",
         "event, or output can be released.",
@@ -665,7 +675,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "(uri plus SHA-256 content_hash); nonempty authorized_paths and",
         "change_categories (source_code/configuration/tests/skill_instructions);",
         "and write_content_memo.",
-        "Requires verified parent role; this check does not release or mutate",
+        "Requires current parent role; this check does not release or mutate",
         "a slice. Returns SliceCheckResult (eligible, reason, allocation_id,",
         "output_class, input_hash); resolve findings before slice_release.",
     ),
@@ -673,7 +683,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "Persist/release an eligible bounded slice for an allocation.",
         _PAYLOAD,
         "Supply spec, expected_revision, and idempotency_key.",
-        "Requires verified parent role, release guards, and valid allocation.",
+        "Requires current parent role, release guards, and valid allocation.",
         "Single-Agent slices use allocation_id=root; Multi-Agent slices use a",
         "reserved allocation and do not create or bind a child. This grants no",
         "permission outside the declared paths/categories/boundary.",
@@ -692,7 +702,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "adopt_native_pair/retain_sqlite_pair, reviewed_native_revision/epochs,",
         "root_decision_ref, native_freshness_refs, root_quiescence_refs).",
         "Every nested request requires expected_revision and idempotency_key.",
-        "Requires verified parent role and transition guards; returns",
+        "Requires current parent role and transition guards; returns",
         "MutationReceipt with typed result and revisions. Transitions can",
         "change Control or epoch state.",
         _RECEIPT,
@@ -700,7 +710,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     ),
     "parent_get_worker_summary": _description(
         "Read the summary for one parent-owned allocation.",
-        "Payload: allocation_id. Requires verified parent role.",
+        "Payload: allocation_id. Requires current parent role.",
         "Returns WorkerState: allocation_id, worker_session_id, role,",
         "output_class, revision, progress, and blockers. Missing or unbound",
         "allocations fail; use for oversight, not as a Worker write path.",
@@ -712,7 +722,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "revision, allocations, epochs, and evidence_refs. Provide confirm",
         "(false by default), expected_revision, and idempotency_key every call.",
         "An unconfirmed comparison may still be recorded; false is not a dry run.",
-        "Requires verified parent role; returns ReconcileResult status",
+        "Requires current parent role; returns ReconcileResult status",
         "matched/conflict/awaiting_confirmation, differences,",
         "observed/result/current revisions, and native_refs. Review conflicts",
         "and state before confirming.",
@@ -720,7 +730,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     ),
     "worker_get_assignment": _description(
         "Read the calling Worker's current assignment.",
-        "No arguments. Requires verified Worker binding and valid assignment guards.",
+        "No arguments. Requires registered Worker binding and valid assignment guards.",
         "Returns assignment/allocation identity, role, output class, assigned",
         "slice boundary, and current revision; unavailable assignment or",
         "revoked binding fails closed. This grants no permission outside it.",
@@ -738,7 +748,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
             "regenerates content or calls an API."
         ),
         (
-            "Requires a currently verified Worker binding and confirmed assignment, the fixed "
+            "Requires a currently registered Worker binding and confirmed assignment, the fixed "
             "Primary Output assignment with code_configuration or skill_instructions output, "
             "and a separate active operator grant matching "
             "project/root/Worker/allocation/role/class/Slice/assignment hash, pinned roots, exact "
@@ -778,7 +788,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "record.references, plus expected_revision and idempotency_key.",
         "reported_complete records the Worker's report; it is not parent",
         "acceptance.",
-        "Requires verified Worker identity and own-store guards; returns",
+        "Requires registered Worker identity and own-store guards; returns",
         "MutationReceipt operation, payload_hash, result, receipt_revision,",
         "current_revision, and replayed. Reread assignment/state after",
         "conflict.",
@@ -786,7 +796,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     ),
     "worker_get_evidence": _description(
         "Read evidence by identifier.",
-        "Payload: evidence_id. Requires verified Worker identity and own-store guards.",
+        "Payload: evidence_id. Requires registered Worker identity and own-store guards.",
         "Returns matching evidence facts, references, coverage, hashes,",
         "revisions, and stale status visible to that Worker; missing or",
         "out-of-scope identifiers fail closed.",
@@ -796,7 +806,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         _PAYLOAD,
         "Supply blocker.blocker_id, blocker.reason (SemanticRef uri/content_hash),",
         "blocker.references, expected_revision, and idempotency_key.",
-        "Requires verified Worker identity and own-store guards; returns",
+        "Requires registered Worker identity and own-store guards; returns",
         "MutationReceipt operation, payload_hash, result, receipt_revision,",
         "current_revision, and replayed. Reread assignment and state after",
         "conflict.",
@@ -804,7 +814,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     ),
     "worker_get_recovery_context": _description(
         "Read the calling Worker's recovery context; no arguments.",
-        "Requires verified Worker binding and own-store guards.",
+        "Requires registered Worker binding and own-store guards.",
         "Returns exactly assignment (worker_get_assignment result) and state",
         "(worker_get_state JSON). Use those current objects to resume; this",
         "tool generates no recovery plan and cannot bypass guards.",
@@ -813,19 +823,19 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "Read the database schema diagnostic.",
         "No arguments; public and does not inspect caller-selected paths.",
         "Returns schema status, including an unavailable diagnostic when no",
-        "trusted binding exists. Use before state operations to understand",
+        "local session scope exists. Use before state operations to understand",
         "compatibility.",
     ),
     "state_get": _description(
-        "Read state for the verified role.",
+        "Read state for the current role.",
         "Payload may include index_page (collection, optional cursor,",
         "page_size 1–128) for parent pagination; Workers must omit it.",
-        "Requires trusted binding and state-read guards; returns role-scoped",
+        "Requires local session scope and state-read guards; returns role-scoped",
         "state, revision, and pagination metadata. A stale or invalid cursor",
         "requires restarting from the first page.",
     ),
     "record_evidence": _description(
-        "Record evidence in the verified role's authorized store.",
+        "Record evidence in the current role's authorized store.",
         _PAYLOAD,
         "submission includes node_id, nonempty facts (fact_key plus a",
         "judgment: unknown, missing_evidence, not_applicable with reason, or",
@@ -840,7 +850,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     "workflow_get_state": _description(
         "Compatibility embedding alias for parent workflow state read; not",
         "present in fixed profiles.",
-        "Payload may include index_page for pagination; requires verified parent binding.",
+        "Payload may include index_page for pagination; requires current parent binding.",
         "Returns parent-scoped state. Restart pagination after cursor errors.",
     ),
     "workflow_record_evidence": _description(
@@ -850,7 +860,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "submission has node_id, nonempty fact_key/judgment facts, optional",
         "evidence_refs/coverage_dimensions, input_hash, and optional",
         "evidence_request_id; include expected_revision/idempotency_key.",
-        "Requires verified parent identity and evidence-write guards.",
+        "Requires current parent identity and evidence-write guards.",
         "submission uses node_id, facts, evidence_refs, coverage_dimensions,",
         "input_hash, and optional evidence_request_id. Returns MutationReceipt",
         "with operation, payload_hash, result, receipt_revision, current_revision,",
@@ -860,7 +870,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     "worker_get_state": _description(
         "Compatibility embedding alias for the calling Worker's own state",
         "read; not present in fixed profiles.",
-        "No arguments; requires verified Worker binding and own-store guards.",
+        "No arguments; requires registered Worker binding and own-store guards.",
         "Returns only role-scoped state; cross-Worker reads fail closed.",
     ),
     "worker_record_evidence": _description(
@@ -870,7 +880,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "submission has node_id, nonempty fact_key/judgment facts, optional",
         "evidence_refs/coverage_dimensions, input_hash, and optional",
         "evidence_request_id; include expected_revision/idempotency_key.",
-        "Requires verified Worker identity and own-store evidence guards.",
+        "Requires registered Worker identity and own-store evidence guards.",
         "submission uses node_id, facts, evidence_refs, coverage_dimensions,",
         "input_hash, and optional evidence_request_id. Returns MutationReceipt",
         "with operation, payload_hash, result, receipt_revision, current_revision,",
@@ -932,7 +942,7 @@ SERVER_INSTRUCTIONS: dict[str, str] = {
         "budget/user approval, scope, permissions, availability, and mode. Explicit user creation "
         "or executor instructions skip the corresponding API. Suggestions never authorize child "
         "creation, dispatch, or Root execution; a large-output yes requires delegation or waiting. "
-        "Evaluation requires verified Root binding. Five-node semantic "
+        "Evaluation requires current Root binding. Five-node semantic "
         "advice is a separate optional feature, disabled by default. The child-effort selector "
         "makes an API request only for an explicit per-invocation outbound_data_permitted=true "
         "assertion; this assertion is not proof of authority. It never mutates workflow state. "
@@ -1075,8 +1085,8 @@ def server_description(profile: str | None, bound_role: str | None) -> str:
         scope = {
             "workflow": (
                 "public capabilities/rules, startup-directory-scoped Memory tail "
-                "reads/write checks, "
-                "stateless effort selection, and Root-bound "
+                "reads/write checks, Native task plans, candidate compliance, routing, "
+                "stateless context/effort/delegation selection, and Root-bound "
                 "evaluation tools"
             ),
             "root": "parent control, delegation, slice, transition, summary, reconciliation",
@@ -1087,8 +1097,9 @@ def server_description(profile: str | None, bound_role: str | None) -> str:
             raise ValueError(f"missing Agent-facing description for MCP profile: {profile}")
     return (
         f"Codex CLI MCP server (including Codex CLI/app-server use from Desktop and local Work). "
-        f"{scope.capitalize()}. Protected calls require the appropriate verified trusted-host "
-        "binding and current guards. Discovery reports availability, not identity or authority."
+        f"{scope.capitalize()}. State calls require the current local session "
+        "scope and operation authorization. Discovery does not authenticate a caller. "
+        + STANDARD_INSTALL_NOTICE
     )
 
 
@@ -1127,12 +1138,12 @@ def server_instructions(profile: str | None, bound_role: str | None) -> str:
             "Memory project parameter is used. Missing folders/files are unavailable. "
             "Start with workflow_capabilities and rules_get_context. Protected "
             "operations are unavailable; a "
-            "listed or public tool does not create a trusted host binding or grant authority."
+            "listed or public tool does not create a local session scope or grant authority."
         )
     try:
         return (
             "This MCP server serves Codex CLI, including Codex CLI/app-server use from Desktop "
-            "and local Work. " + SERVER_INSTRUCTIONS[profile]
+            "and local Work. " + STANDARD_INSTALL_NOTICE + " " + SERVER_INSTRUCTIONS[profile]
         )
     except KeyError as exc:
         raise ValueError(f"missing Agent-facing instructions for MCP profile: {profile}") from exc

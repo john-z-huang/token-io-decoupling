@@ -24,7 +24,7 @@ def register_shared_tools(
     registrar.register_no_args(
         "database_schema_status",
         lambda: schema_status(service, binding_diagnostic(provider) == "available"),
-        codex_guard=registrar.require_codex_context and registrar.embedded,
+        codex_guard=registrar.require_codex_context,
     )
     if profile != "share":
         return

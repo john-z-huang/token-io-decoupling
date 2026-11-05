@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -45,46 +44,11 @@ def test_profile_is_selected_through_unified_start_command(monkeypatch, profile)
     assert calls[0][1]["server_name"] == PROFILE_SERVER_NAMES[profile]
 
 
-@pytest.mark.parametrize(
-    "argv",
-    [
-        ["token-io-decoupling", "--host-fd", "3", "--codex-context", "start-mcp-server"],
-        ["token-io-decoupling", "start-mcp-server", "--host-fd", "3", "--codex-context"],
-    ],
-)
-def test_start_subcommand_preserves_host_options_in_both_positions(monkeypatch, argv) -> None:
-    class Provider:
-        def close(self):
-            pass
-
-    provider = Provider()
-    calls = []
-    monkeypatch.setattr(sys, "argv", argv)
-    monkeypatch.setattr(
-        cli.HostChannelBindingProvider, "from_fd", staticmethod(lambda _fd: provider)
-    )
-    monkeypatch.setattr(cli, "_trusted_state_root", lambda: Path("/trusted/state"))
-    monkeypatch.setattr(
-        cli,
-        "create_server",
-        lambda *args, **kwargs: (
-            calls.append((args, kwargs)) or SimpleNamespace(run=lambda **_kwargs: None)
-        ),
-    )
-    assert cli.main() == 0
-    assert calls[0][0] == (provider,)
-    assert calls[0][1]["require_bound"] is True
-    assert calls[0][1]["require_codex_context"] is True
-
-
-def test_setup_rejects_host_binding_options(monkeypatch, capsys) -> None:
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        ["token-io-decoupling", "--host-fd", "3", "setup", "codex", "--dry-run"],
-    )
+@pytest.mark.parametrize("flag", ["--host-fd", "--codex-context"])
+def test_removed_privileged_host_options_are_not_supported(monkeypatch, capsys, flag) -> None:
+    monkeypatch.setattr(sys, "argv", ["token-io-decoupling", flag])
     assert cli.main() == 2
-    assert "cannot be used with setup" in capsys.readouterr().err
+    assert "unrecognized arguments" in capsys.readouterr().err
 
 
 def test_setup_rejects_profile_and_all_together(monkeypatch, capsys) -> None:
@@ -136,23 +100,6 @@ def test_legacy_module_cli_keeps_public_only_default(monkeypatch) -> None:
     )
     assert cli.legacy_main() == 0
     assert calls[0][1]["profile"] is None
-
-
-def test_invalid_host_fd_fails_before_server_start(monkeypatch, capsys) -> None:
-    monkeypatch.setattr(sys, "argv", ["token-io-decoupling", "--host-fd", "-1"])
-
-    def unexpected_server(*_args, **_kwargs):
-        raise AssertionError("server must not start")
-
-    monkeypatch.setattr(cli, "create_server", unexpected_server)
-    assert cli.main() == 2
-    assert "authenticated host channel unavailable" in capsys.readouterr().err
-
-
-def test_codex_context_requires_host_fd(monkeypatch, capsys) -> None:
-    monkeypatch.setattr(sys, "argv", ["token-io-decoupling", "--codex-context"])
-    assert cli.main() == 2
-    assert "requires --host-fd" in capsys.readouterr().err
 
 
 def test_unknown_profile_is_rejected(monkeypatch, capsys) -> None:

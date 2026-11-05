@@ -31,8 +31,8 @@ SECTION_ALIASES = {
 }
 OWNER_TERMS = {
     "enhanced-path-selection": {
-        "en": ("optional Enhanced operations", "host identity is trusted and bound", "path selection alone never opens or initializes state"),
-        "zh": ("可选 Enhanced 操作", "当前 host 身份可信且已绑定", "本选择本身不打开或初始化状态"),
+        "en": ("optional Enhanced operations", "current session scope is resolved from the request and recorded allocations", "path selection alone never opens or initializes state"),
+        "zh": ("可选 Enhanced 操作", "当前请求会话范围已通过请求上下文及已有分配解析", "本选择本身不打开或初始化状态"),
     },
     "session-audit-resolution": {
         "en": ("timeout", "pending", "invalid", "balanced/milestone_only", "never repeat the template", "60 seconds", "response_at: null", "no reply was ever observed", "never auto-timeout", "read back values, sources", "original deadline", "if a reply was observed, continue focused correction from it", "reliable clock confirms at least 60 seconds elapsed", "question_reply_after_timeout"),

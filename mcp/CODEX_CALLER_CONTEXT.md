@@ -1,40 +1,28 @@
-# Codex MCP caller matching
+# Codex MCP local session context
 
 [English](CODEX_CALLER_CONTEXT.md) | [简体中文](CODEX_CALLER_CONTEXT_zh_cn.md)
 
-This document owns the implementation contract and development verification of optional Codex request matching. Matching constrains an already verified host binding; it does not authenticate a Session, assign a role, establish a parent relationship, or supply an operation guard.
+This document owns project, thread and role scoping for local stdio requests. These identifiers are not independent authentication or OS isolation.
 
-## Source contract
+## Installation and calls
 
-Read-only inspection of the local Codex source snapshot `bb8f5304fcd9f901d8e0747fccb8c8904cbc504e` established these facts:
+Standard `setup codex` registers four local stdio profiles. No privileged service, inherited host descriptor or external identity provider is required; the old `--host-fd` and `--codex-context` options are removed. Start Codex from the intended project directory. The MCP captures its canonical path at startup and derives the project partition with SHA-256.
 
-- `codex-rs/core/src/mcp_tool_call.rs::with_mcp_tool_call_ids_meta` adds `threadId` and `sessionId` to the tool request's top-level `_meta`. These are distinct fields; neither supplies a Root/Worker role or parent relationship.
-- `augment_mcp_tool_request_meta_with_sandbox_state` and `codex-rs/codex-mcp/src/sandbox_metadata.rs::augment_metadata` can additionally forward opaque sandbox state when a server advertises the relevant capability. State and launcher information are separate. This caller matcher neither requests those capabilities nor interprets or executes launcher information.
+Codex supplies `threadId` and `sessionId` in top-level MCP request `_meta`. State operations require bounded nonempty strings; the thread must also be a safe path component. Do not put these fields in tool payloads. `sessionId` is opaque and a change does not reset thread state. Public capability, rule and configuration diagnostics need no session metadata. Capability details `support.local_stdio` and `runtime.binding` distinguish local support from current request context; reporting does not probe every dependency.
 
-These are source facts, not evidence that the currently connected client runs that revision or supplies a trusted binding. Deployment must verify the actual client's wire behavior and its identity and permission boundaries separately. Codex source remains unmodified by this integration.
+## Allocation and permissions
 
-## Enablement and authority
+Root must register Workers through the existing reserve, slice and `delegation_bind` sequence. Registration is an application record, not host attestation of a real parent-child relationship. Workers resolve their Root from existing allocations and Worker state in the current project and access only their own assignment. Multiple Root registrations, mismatched database identities and unsafe paths reject. A previously unknown thread must explicitly open its own Root workflow before using that state; a profile does not prove a role. ContextVar scopes reset on return/error and do not borrow concurrent request context.
 
-A trusted supervisor can launch `token-io-decoupling start-mcp-server --profile root --host-fd N --codex-context` (or another selected profile executable), using the authenticated inherited channel described in the [development guide](DEVELOPMENT.md#authenticated-host-channel). `--codex-context` requires a usable host channel. The equivalent Python factory option is `require_codex_context=True` on `create_server`, with a verified provider.
+Traversal, derived symlinks, database identity, role, allocation lifecycle, revision, idempotency and independent materialization-grant checks remain enforced. API requests still require configuration and per-call outbound authorization. Capability fields are not user permission.
 
-The MCP SDK's request context supplies the two fields. The matcher requires bounded, nonempty strings and rejects malformed or missing context. `threadId` must exactly equal the verified provider's `current_session_id`. `sessionId` is opaque context; a change does not reset canonical identity, Mode/count, Run, or database state. The provider remains the source of project, Root, current Session, role, capabilities, and guards. Tool payloads, environment variables, and client names cannot replace request context or establish that authority.
+## Trust boundary and verification
 
-Each protected Root/Worker callback and bound schema diagnostic runs inside its own caller scope. Every binding read used by the state service rechecks the current request against a fresh provider result. Scopes are reset on return or error and isolated across concurrent requests. No request may borrow a preceding or concurrent request's identity. A mismatch fails before state paths are inspected or mutated. Public rule and capability reads remain available.
+The same OS user can edit local files or send metadata directly. This service does not defend against that user's malicious processes and does not claim independent process authentication or OS-level Worker isolation. The trust boundary is the user's approved local Codex/MCP configuration and actual OS permissions. Internal Python injection is an embedding/test seam, not a standard-install prerequisite.
 
-Unrelated `_meta` fields are ignored. Caller metadata is not persisted in SQLite or emitted in error bodies. Missing or revoked provider evidence still rejects operations even when the strings match. This option does not provide the missing real-host attestation, sandbox enforcement, or privileged supervisor installation.
-
-## Supported client boundary
-
-The MCP Server supports only Codex and ChatGPT Desktop, as required by the [MCP development instructions](AGENTS.md). This matcher consumes the Codex request contract only when the actual supported client exposes it. Unsupported Code Agents have no adapter or fallback integration here. Client identity, hook input, and environment values alone do not satisfy host authentication or operation guards.
-
-## Development verification
-
-Tests must exercise real MCP SDK request metadata rather than placing these fields inside tool arguments. Cover Root and Worker calls and persistence readback; missing, malformed, and mismatched callers; public-read availability; concurrent isolation; changed opaque `sessionId`; provider identity changes between reads; and rejection before filesystem effects. Retain exact tool-schema and inventory checks: SDK context must not become a user-supplied tool parameter.
-
-Synthetic providers and peer-authentication overrides are test evidence only. They do not verify the actual client's attestation, parent graph, sandbox, or current-session database access. Run the locked checks in the development guide after changes.
+Only local Codex CLI is supported. Source `core/src/mcp_tool_call.rs::with_mcp_tool_call_ids_meta` supplies thread metadata; the [official MCP documentation](https://learn.chatgpt.com/docs/extend/mcp) describes local stdio registration. Local regressions cover missing metadata, role mismatch, unsafe paths and concurrency. Follow the development guide for installed-package and fresh-CLI checks; synthetic identifiers are not authentication evidence.
 
 ## Related concepts
 
-- [MCP development guide](DEVELOPMENT.md)
+- [Development guide](DEVELOPMENT.md)
 - [Enhanced Host Binding](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md)
-- [Enhanced State Store](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store.md)

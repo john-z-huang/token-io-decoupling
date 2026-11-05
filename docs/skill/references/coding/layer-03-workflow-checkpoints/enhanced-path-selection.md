@@ -11,8 +11,8 @@ Use current [Environment](../layer-02-workflow-concepts/entry-and-context/enviro
 
 1. Compare the task's required operation with the optional Enhanced operations supported by the current Environment and capability inventory.
 2. If no required operation needs Enhanced state, record Native and `Not applicable` with the reason; continue without opening or initializing Enhanced state.
-3. If an Enhanced operation is needed, verify that this Session meets the availability owner's eligibility conditions, that the current host identity is trusted and bound, and that every required guard/capability is available. Preserve the evidence source for each check.
-4. Return `Enhanced eligible` with the verified operation, identity, and guard evidence, or return `blocked` with the missing/unknown requirement. The route's subsequent state-resolution action consumes the selected result; path selection alone never opens or initializes state.
+3. If an Enhanced operation is needed, verify that this Session meets the availability owner's eligibility conditions, that current session scope is resolved from the request and recorded allocations, and that every required operation check/capability is available. Preserve the evidence source for each check.
+4. Return `Enhanced eligible` with the verified operation, session-scope and operation-check evidence, or return `blocked` with the missing/unknown requirement. The route's subsequent state-resolution action consumes the selected result; path selection alone never opens or initializes state.
 
 ## Failure boundary
 
