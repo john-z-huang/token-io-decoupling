@@ -11,7 +11,7 @@
 5. Run focused provisional checks that can guide repair without treating them as final acceptance.
 6. Return changed paths, relevant output, remaining issue, and the boundary that was not released.
 
-Apply [Task Plan Memory Lifecycle](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md) before implementation: require the current plan/readback or documented restriction exception, and keep new facts/progress synchronized before reporting or dependent work. A changed requirement must be recorded, analyzed and reflected in the revised plan before affected implementation; only the parent releases that work.
+Apply [Task Plan Memory Lifecycle](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md) before implementation: require current plan evidence and confirmed persistence, any content verification required by that owner, or its documented restriction exception. Record updates at owner-defined boundaries; facts affecting authorization, scope, acceptance, direction, or dependent implementation must be recorded and analyzed before that work. Only the parent releases affected work.
 
 ## Pass condition
 

@@ -151,6 +151,46 @@ class WorkflowCheckpointConsumptionTests(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         self.assertEqual(MODULE.main(), 1)
 
+    def test_planning_requires_conditional_verification_and_phase_updates(self):
+        requirements = {
+            "md": (
+                "content verification only when the lifecycle owner requires it",
+                "Ordinary progress reports do not independently trigger a plan write",
+                "before those actions",
+                "failed owner-required verification blocks dependent work",
+            ),
+            "_zh_cn.md": (
+                "仅在生命周期 owner 要求时核验存储内容",
+                "普通进度汇报本身不触发计划写入",
+                "须在该动作前记录并分析",
+                "owner 要求的核验失败时阻塞依赖工作",
+            ),
+        }
+        for suffix, clauses in requirements.items():
+            filename = "planning-output-selection." + suffix if suffix == "md" else (
+                "planning-output-selection" + suffix)
+            path = MODULE.L3 / filename
+            original = path.read_text(encoding="utf-8")
+            for clause in clauses:
+                with self.subTest(language=suffix, clause=clause):
+                    self.assertIn(clause, original)
+                    path.write_text(original.replace(clause, "removed safeguard", 1), encoding="utf-8")
+                    self.assertEqual(MODULE.main(), 1)
+                    path.write_text(original, encoding="utf-8")
+
+    def test_bounded_evidence_cannot_replace_required_complete_checks(self):
+        for filename, clause in (
+            ("planning-output-selection.md", "does not replace owner-required complete-content checks"),
+            ("planning-output-selection_zh_cn.md", "不能替代 owner 要求的完整内容检查"),
+        ):
+            with self.subTest(filename=filename):
+                path = MODULE.L3 / filename
+                original = path.read_text(encoding="utf-8")
+                self.assertIn(clause, original)
+                path.write_text(original.replace(clause, "removed safeguard", 1), encoding="utf-8")
+                self.assertEqual(MODULE.main(), 1)
+                path.write_text(original, encoding="utf-8")
+
     def test_role_reservation_must_not_release_slice_or_create_child(self):
         path = MODULE.L3 / "role-reservation.md"
         text = path.read_text(encoding="utf-8").replace(

@@ -174,6 +174,132 @@ def test_setup_new_registration_adds_forwarding_after_registration(monkeypatch, 
     assert "# retain this comment" in config.read_text(encoding="utf-8")
 
 
+def test_uv_discovery_preserves_serena_virtualenv_python(monkeypatch, tmp_path) -> None:
+    import sys
+    import types
+
+    project = tmp_path / "target project"
+    project.mkdir()
+    tools = tmp_path / "uv tools"
+    python = tools / "serena-agent/bin/python"
+    python.parent.mkdir(parents=True)
+    python.symlink_to(Path(sys.executable).resolve())
+    observed = []
+
+    class Backend:
+        def __init__(self, root, interpreter):
+            observed.append((root, interpreter))
+
+        def capability(self):
+            return {"status": "configured"}
+
+    runtime = types.ModuleType("token_io_decoupling.serena_memory_runtime")
+    monkeypatch.setattr(runtime, "IsolatedSerenaMemoryService", Backend, raising=False)
+    monkeypatch.setitem(sys.modules, runtime.__name__, runtime)
+    monkeypatch.setattr(setup_codex.shutil, "which", lambda _name: "/tools/uv")
+    commands = []
+
+    def run(argv):
+        commands.append(argv)
+        return subprocess.CompletedProcess(argv, 0, str(tools) + "\n", "")
+
+    monkeypatch.setattr(setup_codex, "_run", run)
+    args = setup_codex._serena_launch_args(project, None, dry_run=False)
+    expected = python.parent.resolve() / "python"
+    assert args == (
+        "--serena-project-root",
+        str(project.resolve()),
+        "--serena-python",
+        str(expected),
+    )
+    assert observed == [(project.resolve(), expected)]
+    assert expected != Path(sys.executable).resolve()
+    assert commands == [["/tools/uv", "tool", "dir"]]
+
+
+def test_memory_setup_dry_run_does_not_probe_uv_or_configuration(
+    monkeypatch, tmp_path, capsys
+) -> None:
+    _install_launcher(monkeypatch, tmp_path)
+
+    def unexpected(*_args, **_kwargs):
+        raise AssertionError("dry-run must not execute or read configuration")
+
+    monkeypatch.setattr(setup_codex, "_run", unexpected)
+    monkeypatch.setattr(setup_codex, "config_path", unexpected)
+    assert setup_codex.setup_codex(serena_project_root="/target project", dry_run=True) == 0
+    output = capsys.readouterr().out
+    assert "<uv-tool-dir>/serena-agent/bin/python" in output
+    assert "SERENA_HOME" in output
+
+
+def test_memory_binding_is_persisted_upgraded_and_preserved(monkeypatch, tmp_path) -> None:
+    executable = _install_launcher(monkeypatch, tmp_path).resolve()
+    config = tmp_path / "config.toml"
+    workflow = PROFILE_SERVER_NAMES["workflow"]
+    initial_args = ["start-mcp-server", "--profile", "workflow"]
+    config.write_text(
+        f'# keep\n[mcp_servers."{workflow}"]\ncommand = "{executable}"\n'
+        'args = ["start-mcp-server", "--profile", "workflow"]\n'
+        'startup_timeout_sec = 73\nenv_vars = ["CUSTOM"]\n',
+        encoding="utf-8",
+    )
+    registered = {workflow: initial_args}
+    suffix = ("--serena-project-root", "/target", "--serena-python", "/uv tools/serena/bin/python")
+    monkeypatch.setattr(
+        setup_codex,
+        "_serena_launch_args",
+        lambda root, _python, **_kw: suffix if root is not None else (),
+    )
+    monkeypatch.setattr(setup_codex, "config_path", lambda: config)
+    monkeypatch.setattr(setup_codex.shutil, "which", lambda _name: "/tools/codex")
+    added = []
+
+    def json_output(argv):
+        if argv[1:3] == ["mcp", "list"]:
+            return [{"name": name} for name in registered]
+        name = argv[3]
+        return {
+            "name": name,
+            "enabled": True,
+            "transport": {
+                "type": "stdio",
+                "command": str(executable),
+                "args": registered[name],
+            },
+        }
+
+    def run(argv):
+        if argv[1:3] == ["mcp", "add"]:
+            name = argv[3]
+            added.append(name)
+            registered[name] = argv[6:]
+            document = tomlkit.parse(config.read_text(encoding="utf-8"))
+            document["mcp_servers"][name] = {"command": str(executable), "args": argv[6:]}
+            config.write_text(tomlkit.dumps(document), encoding="utf-8")
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setattr(setup_codex, "_json_output", json_output)
+    monkeypatch.setattr(setup_codex, "_run", run)
+    assert setup_codex.setup_codex(serena_project_root="/target") == 0
+    parsed = tomlkit.parse(config.read_text(encoding="utf-8"))
+    for profile, name in PROFILE_SERVER_NAMES.items():
+        expected = ["start-mcp-server", "--profile", profile]
+        if profile == "workflow":
+            expected.extend(suffix)
+            assert "SERENA_HOME" in parsed["mcp_servers"][name]["env_vars"]
+        else:
+            assert "SERENA_HOME" not in parsed["mcp_servers"][name]["env_vars"]
+        assert registered[name] == expected
+    assert parsed["mcp_servers"][workflow]["startup_timeout_sec"] == 73
+    assert "CUSTOM" in parsed["mcp_servers"][workflow]["env_vars"]
+    saved = config.read_bytes()
+    assert setup_codex.setup_codex(serena_project_root="/target") == 0
+    assert setup_codex.setup_codex() == 0
+    assert len(added) == 4
+    assert config.read_bytes() == saved
+
+
 def test_setup_replace_repairs_conflicting_http_registration(monkeypatch, tmp_path) -> None:
     executable = _install_launcher(monkeypatch, tmp_path)
     config = tmp_path / "config.toml"

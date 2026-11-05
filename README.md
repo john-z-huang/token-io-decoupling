@@ -29,13 +29,16 @@ Other Code Agents may use the Skill through its documents without this MCP Serve
 
 ## Install the MCP servers in Codex
 
-With `uv`, Bash 3.2 or later, and the Codex CLI available, run one command from any working directory:
+With `uv`, Bash 3.2 or later, the Codex CLI, and Serena already installed using `uv tool`, run this command from any working directory. Select the existing Serena project whose Memories these tools should read:
 
 ```sh
-bash /absolute/path/to/skill/scripts/install-codex-mcp.sh
+bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh \
+  --serena-project-root /absolute/path/to/your-project
 ```
 
-The [installer](scripts/install-codex-mcp.sh) installs or updates this checkout's MCP package, resolves its installed executable automatically, registers all four profiles, and merges the required environment-variable forwarding names. The installed tool's bin directory need not be on `PATH`. Use the same command again after source updates. Add `--dry-run` to preview without installing or changing configuration, `--profile root` to register only one profile, or `--replace` to explicitly replace conflicting registrations. Reload the affected MCP servers afterward. See the [setup guide](mcp/DEVELOPMENT.md#uv-tool-installation-and-codex-setup) for prerequisites, options, and failure handling.
+The [installer](scripts/install-codex-mcp.sh) installs or updates this checkout's MCP package, resolves its executable, registers all four profiles, and merges environment-variable forwarding names. For the workflow profile it discovers `serena-agent/bin/python` under `uv tool dir`, verifies the existing project/backend, and saves the explicit project/interpreter startup arguments plus the `SERENA_HOME` forwarding name. No custom factory module or manual TOML edit is needed. Serena runs in its existing isolated environment; it is not reinstalled or mixed into this MCP's dependencies. The tool bin directory need not be on `PATH`.
+
+Use the same command after source updates. Add `--serena-python /absolute/Serena-env/bin/python` for a nonstandard interpreter, or `--dry-run` to preview without discovery, installation or configuration writes. The project must already have Serena configuration and Memory directories; this installer does not initialize them. An existing bare workflow registration from this tool is upgraded; a different project/interpreter or other conflict requires `--replace`. Other profiles and settings are preserved. Reload the affected MCP servers afterward. Omitting the project option retains the legacy install flow and preserves an existing managed binding, but does not enable Memory reads for a new registration. See the [setup guide](mcp/DEVELOPMENT.md#uv-tool-installation-and-codex-setup) and [Memory tools guide](mcp/SERENA_MEMORY_TOOLS.md).
 
 ## Documentation
 

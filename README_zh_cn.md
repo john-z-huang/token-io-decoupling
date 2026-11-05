@@ -29,13 +29,16 @@ Skill 指令源位于 [docs/skill](docs/skill/SKILL_zh_cn.md)。wheel 和源码�
 
 ## 将 MCP 服务安装到 Codex
 
-准备好 `uv`、Bash 3.2 或更新版本和 Codex CLI 后，从任意工作目录执行一条命令：
+准备好 `uv`、Bash 3.2 或更新版本、Codex CLI 及已经通过 `uv tool` 安装的 Serena 后，从任意工作目录执行下列命令，明确选择工具要读取 Memory 的已有 Serena 项目：
 
 ```sh
-bash /absolute/path/to/skill/scripts/install-codex-mcp.sh
+bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh \
+  --serena-project-root /absolute/path/to/your-project
 ```
 
-[安装脚本](scripts/install-codex-mcp.sh)会安装或更新当前 checkout 的 MCP 包，自动定位安装后的可执行文件，注册全部四个 profile，并合并必需环境变量的转发名称。安装后工具的 bin 目录无需位于 `PATH`。更新源码后再次运行同一命令即可。追加 `--dry-run` 可预览而不安装或修改配置，`--profile root` 可只注册一个 profile，`--replace` 可显式替换冲突注册。完成后重新加载受影响的 MCP 服务。前置条件、选项和失败处理见[安装指南](mcp/DEVELOPMENT_zh_cn.md#uv-tool-安装与-codex-setup)。
+[安装脚本](scripts/install-codex-mcp.sh)会安装或更新当前 checkout 的 MCP 包，自动定位可执行文件，注册全部四个 profile，并合并环境变量转发名称。对 workflow profile，它从 `uv tool dir` 下发现 `serena-agent/bin/python`，核验已有项目/后端，再保存明确的项目及解释器启动参数和 `SERENA_HOME` 转发名称，无需自编 factory 或手动编辑 TOML。Serena 使用原有隔离环境，不会被重装或混入此 MCP 的依赖；工具 bin 目录无需位于 `PATH`。
+
+更新源码后运行同一命令。非标准环境可追加 `--serena-python /absolute/Serena-env/bin/python`；`--dry-run` 只预览，不执行发现、安装或配置写入。目标项目必须已有 Serena 配置及 Memory 目录，安装器不初始化它们。本工具原有的 bare workflow 注册会自动升级；改为另一项目/解释器或其他冲突仍要求 `--replace`，其他 profile 和设置保持不变。完成后重新加载 MCP 服务。省略项目参数仍保留旧安装流程并保留已有受管理绑定，但不会为新注册启用 Memory 读取。详见[安装指南](mcp/DEVELOPMENT_zh_cn.md#uv-tool-安装与-codex-setup)和[Memory 工具指南](mcp/SERENA_MEMORY_TOOLS_zh_cn.md)。
 
 ## 文档入口
 

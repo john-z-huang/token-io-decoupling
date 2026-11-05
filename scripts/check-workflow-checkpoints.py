@@ -51,8 +51,8 @@ OWNER_TERMS = {
         "zh": ("用户明确指令", "来源溯源", "输入 Hash", "政策绑定", "不得发送给下游建议", "已核实事实足够"),
     },
     "planning-output-selection": {
-        "en": ("For every Coding task", "select a shared plan by default", "verified project facts", "verify its stored content", "Not applicable", "explicit user prohibition", "failed persistence are not skip conditions", "update-before-report/action", "Archive remains conditional on completed Acceptance"),
-        "zh": ("每项 Coding 任务", "默认选择共享计划", "已核实项目事实", "核验存储内容", "Not applicable", "用户明确禁止", "持久化失败不是跳过条件", "先更新再汇报/执行", "归档仍以 Acceptance 完成为条件"),
+        "en": ("For every Coding task", "select a shared plan by default", "verified project facts", "confirm the authorized persistence operation", "content verification only when the lifecycle owner requires it", "Not applicable", "explicit user prohibition", "failed persistence are not skip conditions", "before those actions", "Ordinary progress reports do not independently trigger a plan write", "failed owner-required verification blocks dependent work", "does not replace owner-required complete-content checks", "Archive remains conditional on completed Acceptance"),
+        "zh": ("每项 Coding 任务", "默认选择共享计划", "已核实项目事实", "确认获准持久化操作", "仅在生命周期 owner 要求时核验存储内容", "Not applicable", "用户明确禁止", "持久化失败不是跳过条件", "须在该动作前记录并分析", "普通进度汇报本身不触发计划写入", "owner 要求的核验失败时阻塞依赖工作", "不能替代 owner 要求的完整内容检查", "归档仍以 Acceptance 完成为条件"),
     },
     "bootstrap-selection": {
         "en": ("Bootstrap/Refresh", "separately review and authorize", "not applicable", "current task", "role occupancy", "does not reserve"),

@@ -16,9 +16,9 @@ At a declared stage boundary, return only the compressed progress signals needed
 
 When stage evidence shows that the next stage depends on high-value judgment, route the signal to the Decision Gate. The Decision Gate owns solution selection and Contract updates; this module does not restate those policies.
 
-### Shared-plan evidence before feedback
+### Shared-plan evidence for feedback
 
-Before reporting changed progress or newly confirmed project facts, apply [Task Plan Memory Lifecycle](../execution-planning/task-plan-memory-lifecycle.md): persist the bounded delta and verify readback in the shared task plan. This applies to all participating roles, including checks and repairs outside a declared stage boundary. Feedback carries the exact plan identity and relevant evidence pointer; it does not duplicate the full plan or change release authority. Required persistence failure pauses dependent reporting/actions; only a documented persistence restriction permits the owner's exception.
+Apply [Task Plan Memory Lifecycle](../execution-planning/task-plan-memory-lifecycle.md) when feedback uses shared-plan evidence: record material progress and sourced facts at its applicable phase, handoff, pause, or completion boundaries, through the authorized current record writer or released contribution path. Ordinary progress reports and checks or repairs within a phase do not independently trigger persistence or full readback. Record and analyze facts affecting authorization, scope, acceptance, direction, or dependent actions before those actions. Feedback carries the exact plan identity, persistence confirmation, and any owner-required verification evidence; it does not duplicate the full plan or change release authority. A missing required access, failed persistence, or failed required verification pauses the dependent boundary; only a documented persistence restriction permits the owner's exception.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 

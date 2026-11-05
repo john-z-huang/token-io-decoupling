@@ -37,6 +37,7 @@ from token_io_decoupling_workflow.output_materialization import (
     OutputMaterializationService,
     OutputMaterializerConfig,
 )
+from token_io_decoupling_workflow.serena_memory import SerenaMemoryReadService
 from token_io_decoupling_workflow.task_plan_core import TaskPlanService
 from token_io_decoupling_workflow.tools import register_workflow_tools
 
@@ -50,6 +51,7 @@ def create_server(
     decisions_config: DecisionsRuntimeConfig | None = None,
     decisions_client_factory: Callable[[str, str], object] | None = None,
     task_plan_service: TaskPlanService | None = None,
+    serena_memory_service: SerenaMemoryReadService | None = None,
     compliance_service: CompliancePreflightService | None = None,
     output_materializer_config: OutputMaterializerConfig | None = None,
     profile: str | None = None,
@@ -69,6 +71,10 @@ def create_server(
         raise ValueError(f"unknown server profile: {profile}")
     if task_plan_service is not None and not isinstance(task_plan_service, TaskPlanService):
         raise TypeError("task_plan_service must be a TaskPlanService")
+    if serena_memory_service is not None and not isinstance(
+        serena_memory_service, SerenaMemoryReadService
+    ):
+        raise TypeError("serena_memory_service must be a SerenaMemoryReadService")
     if compliance_service is not None and not isinstance(
         compliance_service, CompliancePreflightService
     ):
@@ -135,6 +141,7 @@ def create_server(
         registrar,
         service=service,
         task_plan_service=task_plans,
+        serena_memory_service=serena_memory_service,
         compliance_service=compliance_service,
         rules=rules,
         advisor=advisor,

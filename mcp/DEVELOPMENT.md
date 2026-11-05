@@ -44,7 +44,7 @@ token-io-decoupling start-mcp-server --profile workflow
 
 | Profile / Codex server registration | Tools |
 | --- | --- |
-| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`, `rules_get_context`, `workflow_generate_decision_context`, `workflow_select_child_effort`, `decide_decoupling_workflow`, `validate_decoupling_compliance`, `workflow_select_child_role`, `workflow_select_executor`, `workflow_select_child`, `workflow_assess_output_tokens`, `task_plan_update`, `task_plan_complete`, `task_plan_archive`, `workflow_evaluate`, `evaluate_control_checkpoint` |
+| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`, `rules_get_context`, `workflow_generate_decision_context`, `workflow_select_child_effort`, `decide_decoupling_workflow`, `validate_decoupling_compliance`, `workflow_select_child_role`, `workflow_select_executor`, `workflow_select_child`, `workflow_assess_output_tokens`, `task_plan_update`, `task_plan_complete`, `task_plan_archive`, `serena_memory_tail_read`, `serena_memory_write_check`, `workflow_evaluate`, `evaluate_control_checkpoint` |
 | `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`, `delegation_reserve`, `delegation_unreserve`, `delegation_bind`, `slice_check`, `slice_release`, `workflow_transition`, `parent_get_worker_summary`, `workflow_reconcile` |
 | `worker` / `token-io-decoupling-worker-agent-tools` | `worker_get_assignment`, `worker_record_progress`, `worker_get_evidence`, `worker_report_blocker`, `worker_get_recovery_context`, `materialize_decoupled_output` |
 | `share` / `token-io-decoupling-share-tools` | `database_schema_status`, `state_get`, `record_evidence` |
@@ -60,6 +60,8 @@ A profile controls discovery, not authority. Without a trusted host channel, pub
 The three Native task-plan tools use a separately configured checkout-bound Serena backend, not an Enhanced database. A host can select repository-scoped global storage so the main checkout and linked worktrees share plans while independent repositories remain separate; legacy project-local storage stays compatible. They remain `unavailable` without explicit injection or a trusted startup factory. Their payloads, configuration, identity/path mapping, deterministic checks, tests and protection limits are owned by [Task plan lifecycle tools](TASK_PLAN_TOOLS.md). No automatic Serena configuration loading or model request is involved.
 
 Canonical Python implementations use the independent package names shown in the architecture contract. The renamed `token_io_decoupling_mcp` adapter namespace carries the former facade modules and default factory's public-only behavior; `python -m token_io_decoupling_mcp.cli` remains available. The old `token_io_mcp` import namespace is not exposed as a general API. The two immutable v1 migration sources retain `token_io_mcp.models` in their historical bytes; the state migration loader provides a temporary alias for `DatabaseKind` only while importing those modules, then removes it. Use the renamed adapter paths for direct migration imports; importing frozen state migration modules directly bypasses the scoped loader and is unsupported. Compatibility files are owned by core, state, or launcher without duplicate wheel paths. The old four console scripts and the former `token-io-mcp` console script are not exported by this workspace.
+
+The [Serena Memory tools guide](SERENA_MEMORY_TOOLS.md) owns direct tail-read/write-check arguments, trusted `--serena-memory-factory` configuration, path/policy behavior, line-count evidence and matching limits. This separate read-only backend does not configure task-plan mutations. Without it, both tools report unavailable without probing Memory paths.
 
 ## Capability report diagnostics
 
@@ -119,6 +121,16 @@ The coordinator first runs the complete default MCP test suite, lint, formatting
 
 Every SDK launch requires and explicitly reuses nonblank process `OPENAI_API_KEY` and `OPENAI_BASE_URL`, fixes model `gpt-6-luna` and reasoning effort `medium`, and verifies effective configuration and thread settings. Missing or conflicting settings fail, with no saved-login, credential, endpoint, model, or effort fallback. The key travels only through the child environment; credential values and raw SDK diagnostics are never printed or persisted in auth files.
 
+For Serena installation/configuration changes, enable the real documented-installer check with an existing uv tool Serena interpreter:
+
+```sh
+TOKEN_IO_RUN_SERENA_INSTALLER=1 \
+TOKEN_IO_SERENA_TEST_PYTHON="$(uv tool dir)/serena-agent/bin/python" \
+  uv run --no-sync python tests/support/final_codex_check.py
+```
+
+After ordinary checks and isolated tool installation pass, this opt-in runs the default installer against temporary Codex/uv directories, discovers the existing isolated Serena environment, verifies persisted startup arguments/forwarding and repeat setup, and calls installed Memory tools against temporary data. It runs before SDK inspection, makes no model turn and changes no user installation/configuration. Missing runtime or failed checks stop the sequence. Ordinary pytest does not launch it.
+
 The adapter selects the installed `codex` on `PATH`, or the absolute executable specified by `TOKEN_IO_CODEX_CLI_PATH`, instead of the SDK's bundled CLI. Temporary `HOME`/`CODEX_HOME` isolates configuration. The fresh instance loads only the newly installed MCP command, runs its `--version` through read-only `command/exec`, discovers tools, and calls `workflow_capabilities` plus bilingual `rules_get_context`. It performs no model turn, mutation, arbitrary shell command, or complex task. This compensates for the current session's inability to dynamically reload the updated MCP Server; it does not prove that an existing session has reloaded it. CI installs the test dependency group for policy, static, and type checks without launching this final SDK inspection.
 
 
@@ -155,10 +167,12 @@ Use the actual artifact version in the filename. Subsequent examples assume uv's
 With the Codex CLI available on `PATH`, register the MCP profiles separately:
 
 ```sh
-token-io-decoupling setup codex
+token-io-decoupling setup codex --serena-project-root /absolute/path/to/your-project
 ```
 
 Reload the affected MCP servers after registration or tool updates. Registration forwards the required environment-variable names but does not supply their values or establish a trusted host binding.
+
+For Memory tools, Serena must already be installed with `uv tool`, and the target project must already have its Serena configuration and Memory directories. Setup locates `<uv tool dir>/serena-agent/bin/python`, probes the configured read backend, and persists `--serena-project-root` plus `--serena-python` in the workflow registration. Use `--serena-python /absolute/Serena-env/bin/python` to override discovery. The interpreter retains its virtual-environment path; Serena is neither reinstalled nor co-installed into this tool's incompatible dependency set. Setup forwards the optional `SERENA_HOME` name only to workflow; if Serena uses a custom home, provide the same value in the environment launching Codex. No custom factory file or hand-edited TOML is required. See [Memory tools](SERENA_MEMORY_TOOLS.md).
 
 ### Install and update local Skill instructions
 
@@ -189,7 +203,8 @@ Updating only the executable leaves the previously installed Skill unchanged. `s
 As an alternative to the separate tool-install and `setup codex` commands, use the [installation script](../scripts/install-codex-mcp.sh) to install or update the package and configure Codex in one invocation, from any working directory. Run `skills install` or `skills update` afterward as described above:
 
 ```sh
-bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh
+bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh \
+  --serena-project-root /absolute/path/to/your-project
 ```
 
 Prerequisites are Bash 3.2 or later (including macOS `/bin/bash`), `uv`, and the Codex CLI; `uv` and `codex` must be on `PATH`. The script locates `mcp/` relative to itself, runs `uv tool install --force --reinstall --managed-python --python 3.14` against that source, obtains the bin directory with `uv tool dir --bin`, then calls the absolute installed executable's `setup codex`. uv resolves the declared local workspace dependencies; `--reinstall` refreshes them even when only their source or packaged rules changed. The tool bin directory need not be on `PATH`, and no manual directory change, virtual-environment activation, or separate setup command is required. Repeating the command refreshes this tool from the current checkout; it does not uninstall the legacy `token-io-mcp` tool.
@@ -199,10 +214,12 @@ Each operation is a single script call. Append the relevant options to the comma
 | Option | Operation |
 | --- | --- |
 | `--dry-run` | Print the install and setup plan without running installation/setup commands or reading/writing configuration. The future tool bin path is symbolic until a real run. |
-| `--profile root` | Register only the selected `workflow`, `root`, `worker`, or `share` profile; the installed package still contains all profiles. |
+| `--profile workflow` | Register only one profile. `root`, `worker`, or `share` are also supported when Serena binding options are omitted. The installed package still contains all profiles. |
 | `--all` | Explicitly select the default four profiles; cannot be combined with `--profile`. |
 | `--replace` | Permit setup to replace conflicting or disabled registrations. Omit it to retain conflict rejection. |
 | `--python VERSION` | Choose the uv-managed Python version instead of the default `3.14`. |
+| `--serena-project-root PATH` | Bind Memory reads to this explicit existing absolute project; do not infer it from the installer checkout or working directory. Only workflow/all selections accept it. |
+| `--serena-python PATH` | Override uv tool discovery with an absolute existing Serena environment interpreter; requires the project option. |
 | `--help` | Show usage without installing or configuring anything. |
 
 The script validates arguments and required commands before installation. A failed stage stops subsequent stages and returns a nonzero status. Installation and registration are separate effects: if setup fails after installation, the refreshed tool remains installed; inspect setup's partial-state report before rerunning. Existing registration-preservation and forwarding checks remain in the setup helper. Reload the affected servers after success; the script does not restart the client or supply credential values.
@@ -215,7 +232,7 @@ token-io-decoupling setup codex --profile root
 
 The setup separation follows [Serena's client setup implementation](https://github.com/oraios/serena/blob/main/src/serena/config/client_setup.py). Our launcher resolves its executable from the running installation's scripts directory and exact distribution entry-point metadata. It does not infer a project or identity from the startup directory.
 
-The installed command's `setup codex --dry-run` prints the selected JSON argument vectors and a variable-name forwarding plan, without subprocesses or configuration reads/writes. Real setup validates the local configuration and probes the CLI before registration writes. It reads the listing and nested `transport` data. Enabled registrations with the same resolved command and `start-mcp-server --profile <profile>` arguments skip re-registration but still receive missing forwarding names. Conflicting or disabled entries require `--replace`. Replacement uses the official same-name upsert, without deleting first. A later forwarding failure is reported separately from registrations already applied; inspect the named partial state before retrying. Captured configuration and subprocess output are not printed.
+The installed command's `setup codex --dry-run` prints the selected JSON argument vectors and a variable-name forwarding plan, without subprocesses or configuration reads/writes. Automatic Serena discovery is also deferred and its interpreter path remains a labeled placeholder. Real setup validates the selected Memory backend and local configuration, then probes the CLI before registration writes. It reads listing and nested `transport` data. Matching enabled commands and startup arguments skip re-registration but still receive missing forwarding names. An explicitly requested Memory binding upgrades this tool's old bare workflow registration; another project/interpreter or other conflict still requires `--replace`. A setup call without binding options preserves a recognized existing Memory binding; a new unbound registration remains unavailable and reports how to enable it. Replacement uses same-name upsert without deleting first. Later forwarding failures are reported separately from applied registrations. Captured configuration and subprocess output are not printed.
 
 Because the Codex upsert replaces a registration, setup keeps the previous settings in memory and restores them with forwarding after each successful upsert, before processing the next profile. Stdio replacement preserves additional settings and forwarded names while changing the launcher, profile arguments and intended enabled state. HTTP-to-stdio replacement preserves common tool policies and timeouts, but removes the old transport and authentication fields. If a later profile fails, the report distinguishes completed registrations/forwarding from pending work. Use setup for replacements that must preserve these settings.
 

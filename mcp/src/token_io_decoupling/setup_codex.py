@@ -138,8 +138,10 @@ def _listed_names(value: Any) -> set[str]:
     return names
 
 
-def _same_registration(existing: Registration | None, executable: Path, profile: str) -> bool:
-    expected_args = ("start-mcp-server", "--profile", profile)
+def _same_registration(
+    existing: Registration | None, executable: Path, profile: str, extra_args: tuple[str, ...] = ()
+) -> bool:
+    expected_args = ("start-mcp-server", "--profile", profile, *extra_args)
     if existing is None or not existing.enabled or existing.args != expected_args:
         return False
     try:
@@ -148,18 +150,98 @@ def _same_registration(existing: Registration | None, executable: Path, profile:
         return False
 
 
+def _known_memory_args(arguments: tuple[str, ...]) -> bool:
+    return (
+        len(arguments) == 4
+        and arguments[0] == "--serena-project-root"
+        and arguments[2] == "--serena-python"
+        and Path(arguments[1]).is_absolute()
+        and Path(arguments[3]).is_absolute()
+    )
+
+
+def _serena_launch_args(
+    project_root: Path | str | None,
+    python_executable: Path | str | None,
+    *,
+    dry_run: bool,
+) -> tuple[str, ...]:
+    if project_root is None:
+        if python_executable is not None:
+            raise SetupError("--serena-python requires --serena-project-root")
+        return ()
+    project = Path(project_root).expanduser()
+    if not project.is_absolute():
+        raise SetupError("--serena-project-root must be an absolute project directory")
+    python_path = Path(python_executable).expanduser() if python_executable is not None else None
+    if python_path is not None and not python_path.is_absolute():
+        raise SetupError("--serena-python must be an absolute interpreter path")
+    if dry_run:
+        return (
+            "--serena-project-root",
+            str(project),
+            "--serena-python",
+            str(python_path)
+            if python_path is not None
+            else "<uv-tool-dir>/serena-agent/bin/python",
+        )
+    try:
+        project = project.resolve(strict=True)
+        if not project.is_dir():
+            raise OSError("not a project directory")
+    except OSError as exc:
+        raise SetupError("Serena target project directory is unavailable") from exc
+    if python_path is None:
+        uv = shutil.which("uv")
+        if uv is None:
+            raise SetupError("uv is required to discover Serena; use --serena-python to override")
+        directory = _run([uv, "tool", "dir"]).stdout.strip()
+        if not directory or "\n" in directory or not Path(directory).is_absolute():
+            raise SetupError("uv returned an invalid tool directory")
+        python_path = Path(directory) / "serena-agent" / "bin" / "python"
+    try:
+        # Resolving bin/python itself would select the base interpreter and lose its venv.
+        python_path = python_path.parent.resolve(strict=True) / python_path.name
+        if not python_path.is_file() or not os.access(python_path, os.X_OK):
+            raise OSError("interpreter unavailable")
+    except OSError as exc:
+        raise SetupError("Serena uv tool Python was not found; supply --serena-python") from exc
+    from token_io_decoupling.serena_memory_runtime import IsolatedSerenaMemoryService
+
+    capability = IsolatedSerenaMemoryService(project, python_path).capability()
+    if capability.get("status") != "configured":
+        reason = capability.get("reason_code", "serena_backend_unavailable")
+        if (
+            not isinstance(reason, str)
+            or len(reason) > 96
+            or not all(character in "abcdefghijklmnopqrstuvwxyz0123456789_" for character in reason)
+        ):
+            reason = "serena_backend_unavailable"
+        raise SetupError(
+            f"Serena Memory preflight failed ({reason}); configuration was not written"
+        )
+    return ("--serena-project-root", str(project), "--serena-python", str(python_path))
+
+
 def setup_codex(
     *,
     profile: str | None = None,
     all_profiles: bool = False,
     dry_run: bool = False,
     replace: bool = False,
+    serena_project_root: Path | str | None = None,
+    serena_python: Path | str | None = None,
 ) -> int:
     if profile is not None and profile not in PROFILE_SERVER_NAMES:
         raise SetupError(f"unknown server profile: {profile}")
     if profile is not None and all_profiles:
         raise SetupError("a profile cannot be combined with all_profiles")
     profiles = [profile] if profile is not None else list(PROFILE_SERVER_NAMES)
+    if "workflow" not in profiles and (
+        serena_project_root is not None or serena_python is not None
+    ):
+        raise SetupError("Serena Memory configuration requires the workflow profile")
+    memory_args = _serena_launch_args(serena_project_root, serena_python, dry_run=dry_run)
     executable = _installed_executable()
     add_commands = {
         item: [
@@ -175,12 +257,18 @@ def setup_codex(
         ]
         for item in profiles
     }
+    if memory_args:
+        add_commands["workflow"].extend(memory_args)
     if dry_run:
         print("Dry run: no Codex command or configuration preflight was run.")
         for item in profiles:
             print(json.dumps(add_commands[item]))
         names = [PROFILE_SERVER_NAMES[item] for item in profiles]
         print(f"Would merge env_vars {list(DEFAULT_ENV_VARS)!r} into: {', '.join(names)}")
+        if memory_args:
+            if serena_python is None:
+                print("Would discover Serena Python with uv tool dir; discovery was not run.")
+            print("Would forward the SERENA_HOME variable name to the workflow server.")
         return 0
 
     codex = shutil.which("codex")
@@ -203,11 +291,24 @@ def setup_codex(
             raise SetupError(f"Codex registration preflight failed for {name}: {exc}") from exc
 
     pending: list[str] = []
+    current_workflow = existing.get("workflow")
+    if (
+        not memory_args
+        and current_workflow is not None
+        and current_workflow.args[:3] == ("start-mcp-server", "--profile", "workflow")
+        and _known_memory_args(current_workflow.args[3:])
+    ):
+        memory_args = current_workflow.args[3:]
+        add_commands["workflow"].extend(memory_args)
     for item in profiles:
         current = existing[item]
-        if _same_registration(current, executable, item):
+        suffix = memory_args if item == "workflow" else ()
+        if _same_registration(current, executable, item, suffix):
             continue
-        if current is not None and not replace:
+        managed_memory_upgrade = (
+            bool(suffix) and item == "workflow" and _same_registration(current, executable, item)
+        )
+        if current is not None and not replace and not managed_memory_upgrade:
             raise SetupError(
                 f"Codex server {PROFILE_SERVER_NAMES[item]} has a conflicting configuration; "
                 "use --replace"
@@ -235,6 +336,13 @@ def setup_codex(
     try:
         if stable:
             forwarded.extend(merge_env_vars(config_path(), stable))
+            workflow_name = PROFILE_SERVER_NAMES["workflow"]
+            if memory_args and workflow_name in stable:
+                forwarded.extend(
+                    merge_env_vars(
+                        config_path(), (workflow_name,), (*DEFAULT_ENV_VARS, "SERENA_HOME")
+                    )
+                )
     except CodexEnvError as exc:
         raise SetupError(
             f"registrations unchanged; environment forwarding pending for "
@@ -258,6 +366,9 @@ def setup_codex(
                 merge_env_vars(
                     config_path(),
                     (name,),
+                    (*DEFAULT_ENV_VARS, "SERENA_HOME")
+                    if item == "workflow" and memory_args
+                    else DEFAULT_ENV_VARS,
                     preserved_settings={name: preserved_settings[name]}
                     if name in preserved_settings
                     else None,
@@ -278,7 +389,13 @@ def setup_codex(
     if applied:
         print("configured: " + ", ".join(applied))
     if forwarded:
-        print("updated environment forwarding: " + ", ".join(forwarded))
+        print("updated environment forwarding: " + ", ".join(dict.fromkeys(forwarded)))
     else:
         print("environment forwarding already configured: " + ", ".join(selected_names))
+    if memory_args:
+        print("Serena Memory backend configured for workflow; reload that MCP server.")
+    elif "workflow" in profiles:
+        print(
+            "Serena Memory is not configured; use --serena-project-root to enable its read tools."
+        )
     return 0
