@@ -15,7 +15,7 @@ from mcp import Client
 from mcp.types import TextContent
 from token_io_decoupling_core.models import CodingMode
 from token_io_decoupling_core.rules import RuleLoader
-from token_io_decoupling_core.state_models import AllocationRole
+from token_io_decoupling_core.workflow_models import AllocationRole
 from token_io_decoupling_workflow.child_effort import (
     DECISIONS_MODEL,
     ChildEffortInput,
@@ -332,8 +332,8 @@ def _tool_json(result: Any) -> dict[str, Any]:
     return decoded
 
 
-def _call_workflow_tool(name: str, payload: DecisionInputBase, state_root: Path) -> dict[str, Any]:
-    server = create_workflow_server(state_root=state_root)
+def _call_workflow_tool(name: str, payload: DecisionInputBase) -> dict[str, Any]:
+    server = create_workflow_server()
 
     async def call() -> dict[str, Any]:
         async with Client(server, mode="auto") as client:
@@ -394,7 +394,7 @@ def test_real_api_mcp_generation_to_effort_decision_chain(
             "output_kind": generation_payload.output_kind,
         }
     )
-    server = create_workflow_server(state_root=tmp_path)
+    server = create_workflow_server()
 
     async def call_chain() -> tuple[dict[str, Any], dict[str, Any], ChildEffortInput, str]:
         async with Client(server, mode="auto") as client:
@@ -685,7 +685,7 @@ def test_real_api_mcp_selects_child(
         rules=rules,
     )
 
-    response = _call_workflow_tool("workflow_select_child", payload, tmp_path)
+    response = _call_workflow_tool("workflow_select_child", payload)
     result = DelegationDecisionResult.model_validate(response)
 
     _assert_delegation_result(
@@ -755,7 +755,7 @@ def test_real_api_mcp_assesses_output_tokens(
         rules=rules,
     )
 
-    response = _call_workflow_tool("workflow_assess_output_tokens", payload, tmp_path)
+    response = _call_workflow_tool("workflow_assess_output_tokens", payload)
     result = DelegationDecisionResult.model_validate(response)
 
     _assert_delegation_result(

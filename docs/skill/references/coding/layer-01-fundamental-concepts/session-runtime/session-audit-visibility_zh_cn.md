@@ -2,7 +2,7 @@
 
 [English](session-audit-visibility.md) | [简体中文](session-audit-visibility_zh_cn.md)
 
-本文档定义会话审计可见性预设、推理摘要频率和 Worker 日志可见性。它负责配置值及其可见性语义；适用的工作流决策节点负责提问、计时、恢复、迁移和记录解决流程。
+本文档定义会话审计可见性偏好、推理摘要频率和 Worker 日志可见性。它负责偏好值及其可见性语义；适用的工作流检查点将显式值或缺省值应用于父级控制记录。
 
 ## 通用规范
 
@@ -15,7 +15,6 @@ audit_mode: balanced
 root_reasoning_cadence: milestone_only
 worker_reasoning_cadence: full
 source: {audit_mode: default, root_reasoning_cadence: default, worker_reasoning_cadence: default}
-revision: session-audit/v2
 ```
 
 | 字段 | 合法值 | 默认值 | 含义 |
@@ -24,9 +23,9 @@ revision: session-audit/v2
 | `root_reasoning_cadence` | `full`、`milestone_only`、`off` | `milestone_only` | 选择 Root 可选摘要频率。 |
 | `worker_reasoning_cadence` | `full`、`milestone_only`、`off` | `full` | 独立选择 Worker 可选摘要频率。 |
 | `source.<field>` | 每个可选字段分别为 `explicit`、`default` | `default` | `explicit` 表示用户选择了该字段；`default` 表示由策略提供。 |
-| `revision` | `session-audit/v2` | `session-audit/v2` | schema 与策略语义修订版本；纯文字编辑不改变它。 |
+Root 父级可随时接受用户显式偏好。未提供值时立即应用缺省值；不得将提问、计时器或回复设为 Coding 工作的前置条件。
 
-任务记录结构和配置提问字段由[委派状态记录](../delegation/delegation-state-record_zh_cn.md)定义。所选路线负责收集和更新该记录。
+任务记录结构由[委派状态记录](../delegation/delegation-state-record_zh_cn.md)定义。适用工作流检查点记录生效值及其显式/缺省来源。
 
 ### 可见副本预设
 

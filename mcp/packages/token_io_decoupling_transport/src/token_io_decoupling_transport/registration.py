@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from typing import Annotated, Any
 
 from mcp.server import MCPServer
@@ -12,8 +12,6 @@ from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel, TypeAdapter, ValidationError, WithJsonSchema
 from token_io_decoupling_core.binding import BindingError, BindingProvider
 from token_io_decoupling_core.codex_context import CodexCallerBoundProvider
-from token_io_decoupling_state.local_context import LocalSessionContext
-from token_io_decoupling_state.service import StateServiceError
 
 from token_io_decoupling_transport.payloads import inline_schema
 from token_io_decoupling_transport.tool_metadata import tool_description
@@ -59,7 +57,7 @@ class ToolRegistrar:
             return callback()
         try:
             meta = context.request_context.meta if context is not None else None
-            if not isinstance(self.state_provider, (CodexCallerBoundProvider, LocalSessionContext)):
+            if not isinstance(self.state_provider, CodexCallerBoundProvider):
                 raise BindingError("Codex caller provider is unavailable")
             with self.state_provider.request_scope(meta):
                 return callback()
@@ -75,8 +73,6 @@ class ToolRegistrar:
             raise ToolError(
                 "session binding, role, scope or required authorization is unavailable"
             ) from exc
-        except StateServiceError as exc:
-            raise ToolError(str(exc)) from exc
         except (ValidationError, ValueError, TypeError) as exc:
             raise ToolError("request violates the typed operation contract") from exc
 
@@ -151,16 +147,7 @@ class ToolRegistrar:
         if codex_guard:
 
             def handler(context: MCPContext) -> Any:
-                enforce_role = name not in {"workflow_capabilities", "database_schema_status"}
-                if (
-                    name == "database_schema_status"
-                    and isinstance(self.state_provider, LocalSessionContext)
-                    and (
-                        not isinstance(context.request_context.meta, Mapping)
-                        or "threadId" not in context.request_context.meta
-                    )
-                ):
-                    return self._call_safely(callback)
+                enforce_role = name != "workflow_capabilities"
                 return self.with_codex_context(
                     context,
                     lambda: self._call_safely(
@@ -170,7 +157,7 @@ class ToolRegistrar:
         else:
 
             def handler() -> Any:
-                enforce_role = name not in {"workflow_capabilities", "database_schema_status"}
+                enforce_role = name != "workflow_capabilities"
                 return self._call_safely(
                     lambda: self.check_operation_role(role, callback, enforce=enforce_role)
                 )

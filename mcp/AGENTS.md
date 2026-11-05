@@ -10,7 +10,7 @@ This file owns the client-support boundary for the MCP Server, packages, tests, 
 - When another Agent runs in its own environment with Codex CLI installed and configures this MCP Server there by following this repository's instructions, the supported route is that environment's local Codex CLI only; this does not add an adapter or direct support for the other Agent or a cloud surface. The server does not ask callers to select or classify an environment.
 - When changing code under `mcp/`, consider Codex CLI behavior across those contexts. Do not add compatibility branches, adapters, configuration, examples, tests, or tool instructions for other Code Agents. Repository-wide cross-provider parity checks do not apply to this directory.
 - Remove obsolete unsupported-client paths and claims instead of maintaining fallback routes. Shared protocol or operating-system abstractions do not establish support for additional clients.
-- Use local stdio request scope and recorded allocations. Do not require a privileged host integration or claim independent authentication; preserve application path, role, allocation and operation-authorization checks.
+- Stateless navigation and structural evaluation do not require identity binding or persist allocation state. For protected operations, use local stdio request scope and apply the current role, allocation, application path, and operation-authorization checks. Do not require a privileged host integration or claim independent authentication; protected materialization retains its trusted binding, grant and path checks.
 
 ## Scope and authority
 

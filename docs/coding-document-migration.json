@@ -171,43 +171,55 @@
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-host-binding.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-host-binding_zh_cn.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-rule-context.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-rule-context.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/workflow-navigation/rule-context.md"
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-rule-context_zh_cn.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-rule-context_zh_cn.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/workflow-navigation/rule-context_zh_cn.md"
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-schema-migrations.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-schema-migrations.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-schema-migrations.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-schema-migrations_zh_cn.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-schema-migrations_zh_cn.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-schema-migrations_zh_cn.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-state-store.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-state-store_zh_cn.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store_zh_cn.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store_zh_cn.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-workflow-availability.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/workflow-navigation/navigation-availability.md"
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-workflow-availability_zh_cn.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability_zh_cn.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/workflow-navigation/navigation-availability_zh_cn.md"
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/execution-control.md",
@@ -243,19 +255,27 @@
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/native-authority-transfer.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/native-authority-transfer_zh_cn.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer_zh_cn.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer_zh_cn.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/native-reconciliation.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/native-reconciliation_zh_cn.md",
-      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation_zh_cn.md"
+      "to": "docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation_zh_cn.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
     },
     {
       "from": "docs/skill/references/coding/layer-01-fundamental-concepts/output-token-routing.md",

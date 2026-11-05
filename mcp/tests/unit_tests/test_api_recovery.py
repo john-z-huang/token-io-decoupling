@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from token_io_decoupling_core.state_models import CheckpointNode
+from token_io_decoupling_core.workflow_models import CheckpointNode
 from token_io_decoupling_workflow.api_recovery import (
     classify_provider_failure,
     recovery_for_provider_failure,

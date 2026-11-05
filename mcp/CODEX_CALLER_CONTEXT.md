@@ -2,19 +2,19 @@
 
 [English](CODEX_CALLER_CONTEXT.md) | [简体中文](CODEX_CALLER_CONTEXT_zh_cn.md)
 
-This document owns project, thread and role scoping for local stdio requests. These identifiers are not independent authentication or OS isolation.
+This document owns the local stdio application-scope and request-metadata boundary. These identifiers are not independent authentication or OS isolation.
 
 ## Installation and calls
 
-Standard `setup codex` registers the two current standalone local stdio executables: workflow and tools, each with no startup arguments. No privileged service, inherited host descriptor or external identity provider is required; the old `--host-fd` and `--codex-context` options are removed. Start Codex from the intended project directory. The MCP captures its canonical path at startup and derives the project partition with SHA-256.
+Standard `setup codex` registers the two current standalone local stdio executables: workflow and tools, each with no startup arguments. No privileged service, inherited host descriptor or external identity provider is required; the old `--host-fd` and `--codex-context` options are removed. Start Codex from the intended project directory. The MCP captures its canonical path at startup for project-scoped checks. Stateless rule and workflow calls do not persist a project partition.
 
-Codex supplies `threadId` and `sessionId` in top-level MCP request `_meta`. State operations require bounded nonempty strings; the thread must also be a safe path component. Do not put these fields in tool payloads. `sessionId` is opaque and a change does not reset thread state. Public capability, rule and configuration diagnostics need no session metadata. Capability details `support.local_stdio` and `runtime.binding` distinguish local support from current request context; reporting does not probe every dependency.
+Codex supplies `threadId` and `sessionId` in top-level MCP request `_meta`. Operations that use request metadata require bounded nonempty strings; path-using operations additionally validate the relevant path. Do not put these fields in tool payloads. `sessionId` is opaque and does not authenticate the caller. Public capability, rule and configuration diagnostics need no session metadata. Capability reports describe configured support; they do not prove identity, permission, or every dependency.
 
 ## Allocation and permissions
 
-Root must register Workers through the existing reserve, slice and `delegation_bind` sequence. Registration is an application record, not host attestation of a real parent-child relationship. Workers resolve their Root from existing allocations and Worker state in the current project and access only their own assignment. Multiple Root registrations, mismatched database identities and unsafe paths reject. A previously unknown thread must explicitly open its own Root workflow before using that state; executable or tool discovery does not establish the caller's actual role. ContextVar scopes reset on return/error and do not borrow concurrent request context.
+Stateless navigation and structural evaluation do not store allocation, role, or workflow state. Supplied identities, assignments, evidence pointers, and hashes are caller facts and do not attest a real parent-child relationship or grant permission. Each protected operation must apply its own current role, path, grant, and authorization checks.
 
-Traversal, derived symlinks, database identity, role, allocation lifecycle, revision, idempotency and independent materialization-grant checks remain enforced. API requests still require configuration and per-call outbound authorization. Capability fields are not user permission.
+`materialize_decoupled_output` requires a trusted startup-injected authorization provider, matching per-call Worker binding, independent operator grant, pinned roots, and current preflight. The tool payload cannot choose the provider or supply authority. No standard provider is configured, so the operation is unavailable by default.
 
 ## Trust boundary and verification
 
@@ -25,4 +25,4 @@ Only local Codex CLI is supported. Source `core/src/mcp_tool_call.rs::with_mcp_t
 ## Related concepts
 
 - [Development guide](DEVELOPMENT.md)
-- [Enhanced Host Binding](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md)
+- [Session Role Ownership](../docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/session-role-ownership.md)

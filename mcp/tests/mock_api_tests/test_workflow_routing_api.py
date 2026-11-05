@@ -111,7 +111,10 @@ def test_decisions_call_uses_fixed_model_facts_and_closed_choice_set_over_mock_h
     assert result.model == DECISIONS_MODEL
     assert result.total_tokens == 87
     assert result.advisory_only is True
-    assert result.native_route is not None and result.native_route.route_id == "coding-single-agent"
+    assert (
+        result.route_reference is not None
+        and result.route_reference.route_id == "coding-single-agent"
+    )
     assert len(requests) == 1
     request = requests[0]
     assert request.method == "POST" and request.url.path == "/v1/decisions"

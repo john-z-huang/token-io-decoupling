@@ -8,13 +8,12 @@ from typing import cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from token_io_decoupling_core.binding import BindingError, BindingProvider
-from token_io_decoupling_core.state_models import (
+from token_io_decoupling_core.binding import BindingProvider
+from token_io_decoupling_core.workflow_models import (
     BindingIdentity,
     HostCapability,
     HostGuard,
     SessionRole,
-    VerifiedChildBinding,
 )
 
 from token_io_decoupling.server import create_tools_server
@@ -40,21 +39,6 @@ class TestOnlyBindingProvider:
     def current_binding(self) -> BindingIdentity:
         return self.identity
 
-    def verify_child_binding(
-        self, parent: BindingIdentity, child_session_id: str
-    ) -> VerifiedChildBinding:
-        del parent
-        if self.role is not SessionRole.PARENT or child_session_id != "stdio-test-worker":
-            raise BindingError("test harness has no matching child identity")
-        return VerifiedChildBinding(
-            project_id="test-project",
-            root_session_id="root-session",
-            parent_session_id="root-session",
-            child_session_id=child_session_id,
-            capabilities=frozenset(HostCapability),
-            guards=frozenset(HostGuard),
-        )
-
 
 def main() -> None:
     if (
@@ -72,7 +56,6 @@ def main() -> None:
         materializer = load_output_materializer_config(output_materializer_factory)
         server = create_tools_server(
             provider,
-            state_root=Path(sys.argv[3]),
             require_codex_context=require_codex_context,
             output_materializer_config=materializer,
             compliance_service=load_compliance_service(None),
@@ -82,9 +65,7 @@ def main() -> None:
     if len(sys.argv) != 3 or sys.argv[1] not in {"root", "worker"}:
         raise SystemExit("usage is private to tests")
     role = SessionRole.PARENT if sys.argv[1] == "root" else SessionRole.WORKER
-    server = create_tools_server(
-        cast(BindingProvider, TestOnlyBindingProvider(role)), state_root=Path(sys.argv[2])
-    )
+    server = create_tools_server(cast(BindingProvider, TestOnlyBindingProvider(role)))
     server.run(transport="stdio")
 
 

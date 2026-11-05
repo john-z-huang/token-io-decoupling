@@ -21,11 +21,17 @@ class _GrantProvider:
         return None
 
 
+class _AuthorizationProvider:
+    def current_context(self):
+        return None
+
+
 def _config(tmp_path: Path) -> OutputMaterializerConfig:
     return OutputMaterializerConfig(
         project_root=tmp_path / "project",
         artifact_root=tmp_path / "artifacts",
         grant_provider=_GrantProvider(),
+        authorization_provider=_AuthorizationProvider(),
     )
 
 

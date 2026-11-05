@@ -8,7 +8,7 @@
 
 ### Ownership
 
-根父级负责一份完整宿主 Session 生命周期的模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，不通过编辑 policy 文件保存。Native 运行时，parent context 中的结构化记录是 canonical，并须在每次路线放行前读回；短暂子代理状态不是 canonical。Enhanced 运行时，获授权的 Root store 初始化且身份和 Schema 核验通过后，Root SQLite 记录才是 Enhanced 持久状态的 canonical。此后 parent context 只保留可读快照或引用，不能成为竞争的可写权威。从 Native 到 Enhanced 的对账遵循[Native 对账](../enhanced-native-state/native-reconciliation_zh_cn.md)；回切 Native 遵循[Native 权威转移](../enhanced-native-state/native-authority-transfer_zh_cn.md)。两种转换都不改变本记录的字段归属，也不允许覆盖有效规范记录。
+根父级负责一份完整宿主 Session 生命周期的模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，保存在父级规范对话上下文中；不存入数据库，也不通过编辑 policy 文件保存。每次路线放行前回读当前结构化记录；短暂子代理状态不是规范记录。保留字段归属，绝不能用过时摘要覆盖有效当前记录。
 
 ### 记录结构
 
@@ -31,25 +31,13 @@ session_audit: {audit_mode, root_reasoning_cadence, worker_reasoning_cadence,
                 source: {audit_mode: explicit | default, root_reasoning_cadence: explicit | default,
                         worker_reasoning_cadence: explicit | default},
                 worker_log_visibility: available | unverified | unavailable | Not applicable,
-                worker_log_evidence, audit_config_prompt: {status: unasked | pending | answered |
-                timed_out | unavailable | reused, prompted_at, deadline_at, response_at,
-                resolution: startup_explicit | prior_record | question_reply |
-                question_reply_after_timeout | timeout_default | awaiting_input | unavailable},
-                revision: session-audit/v2}
+                worker_log_evidence}
 lifecycle: pending | running | completed | interrupted
 unavailable_capabilities: [<能力名称>]
 block_reason: <仅 blocked 时必需>
 ```
 
-`audit_config_prompt` 各字段含义如下；此 schema 不定义状态转换：
-
-| 字段 | 合法值/表示 | 含义 |
-| --- | --- | --- |
-| `status` | `unasked`、`pending`、`answered`、`timed_out`、`unavailable`、`reused` | 已记录的配置问题状态。 |
-| `prompted_at`、`deadline_at`、`response_at` | 实际观察到的 ISO-8601 UTC 时间戳或 `null` | 实际提问时间、记录的截止时间、最近观察到的用户答复时间。 |
-| `resolution` | `startup_explicit`、`prior_record`、`question_reply`、`question_reply_after_timeout`、`timeout_default`、`awaiting_input`、`unavailable` | 生效配置的已记录来源或结果。 |
-
-所选工作流路线负责判定和状态更新；该记录作为任务状态保留。
+所选工作流路线记录用户显式偏好或规定的缺省值；该记录继续保留模式/数量、allocations、任务范围和生命周期状态。
 
 | `gate_status` | 模式与数量 | Allocation 和 lifecycle | 其他要求 |
 | --- | --- | --- | --- |
@@ -65,7 +53,7 @@ block_reason: <仅 blocked 时必需>
 
 未经修改的初始 `mode_source: default` 记录必须是 Multi-Agent、`child_count: 1` 且恰好有一个预留 allocation；此预留不会初始化子代理。用户批准增加名额后，记录来源变为 explicit。所有已放行 Multi-Agent 记录都必须满足 `child_count` 等于 allocation 名额数量。当前会话中的每项职责和已绑定子代理身份都唯一；即使子代理已完成、失败、中断、取消或不可用也一样，生命周期变化不会释放职责。Native 导入或恢复必须拒绝重复职责或子代理身份。Fork 只有在重新通过模式/数量门禁后才能创建新记录，不得把来源 Session 的子代理身份导入为当前 allocation。实际子代理创建仍受输出类型和 Slice 门禁约束。
 
-`session_audit` 遵循[会话审计可见性](../session-runtime/session-audit-visibility_zh_cn.md)定义的字段。仅根父级写入。`audit_config_prompt.status` 表示已记录的提问状态；时间戳是实际观察到的 UTC 时间或 `null`，`resolution` 标明记录的来源/结果。所选路线负责收集和更新这些字段。日志证据仅在首次需要 Worker，或出现新的实际能力/访问证据或失败时更新，不逐消息更新。此状态不得改变 `mode`、`child_count`、授权、allocation 或 Slice 放行。不得将完整 Root 审计记录复制到策略文件或 Worker 可控状态中。真实 `pending` 状态在解决前保持 pending；缺少持久化或审计更新失败不能证明用户已答复、已选默认值或已完成。
+`session_audit` 遵循[会话审计可见性](../session-runtime/session-audit-visibility_zh_cn.md)定义的字段。仅根父级写入生效偏好及各字段来源。未提供显式偏好时，立即采用规定的缺省值。Worker 日志证据仅在首次需要或出现新的实际能力/访问证据或失败时更新，不逐消息更新。此状态不得改变 `mode`、`child_count`、授权、allocation 或 Slice 放行。不得将完整 Root 审计记录复制到策略文件或 Worker 可控状态中。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
@@ -89,6 +77,3 @@ Claude Code 的 `/tasks` 显示当前／后台子代理任务状态，`/context`
 - [Coding Execution Control](../execution-control/execution-control_zh_cn.md) — 定位 Interaction Slice 字段归属。
 - [Coding Child Lifecycle](delegation-child-lifecycle_zh_cn.md) — 定位子 Agent 生命周期字段归属。
 - [Coding Session 审计可见性](../session-runtime/session-audit-visibility_zh_cn.md) — 定位会话审计配置归属。
-- [Enhanced 状态存储](../enhanced-native-state/enhanced-state-store_zh_cn.md) — 定位 Native 与 Enhanced 持久记录的权威边界。
-- [Native 对账](../enhanced-native-state/native-reconciliation_zh_cn.md) — 定位显式 Native-to-Enhanced Root 对账。
-- [Native 权威转移](../enhanced-native-state/native-authority-transfer_zh_cn.md) — 定位显式 Enhanced-to-Native Root 权威转移。

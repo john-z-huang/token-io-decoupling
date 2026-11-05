@@ -8,7 +8,7 @@
 2. 检查下一动作是否跨越接口、schema、兼容性、安全、风险、难以逆转修改、范围或外部影响边界。
 3. 需要更多证据时发出 Evidence-on-Demand，并**暂停**放行；取得证据后返回本检查点。这是中间动作，不是第四种最终授权结果。
 4. 最终只选择 `Continue`、`Amend` 或 `Stop`；只有明确的 `Continue` 才放行已批准范围内的下一 Slice，`Amend` 返回 Contract 与 Decision。单代理作为逻辑暂停；多代理由父级控制放行。
-   - [Native 对账](../../layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation_zh_cn.md) owner 建立恢复 Revision floor 后，先前的 `Continue` 不能放行后续 Slice。须在 floor 后依据当前适用状态和证据重新评估 Control；只有当前的 floor 后 `Continue` 才满足该恢复前提。
+   - 任务记录、授权、范围、实施或相关证据发生实质变化时，任何依赖该事实的先前 Control 结果都会失效。释放或恢复 Slice 前，必须依据当前权威事实重新评估 Control。
 
 5. 路线提供建议输出时，仅将其作为输入。核验当前 Root 状态和直接 Control owner，再通过可信转换作出并持久化显式结果；建议本身不产生效果。使用当前直接证据作出决定。建议政策遵循[Decisions 建议](../../layer-01-fundamental-concepts/execution-planning/decisions-advisory_zh_cn.md)。
 

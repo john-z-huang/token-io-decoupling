@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 L3 = ROOT / "docs/skill/references/coding/layer-03-workflow-checkpoints"
 MODULES = ROOT / "docs/skill/references/coding/layer-04-workflows/modules"
 SLUGS = (
-    "route-entry", "enhanced-path-selection", "session-audit-resolution",
+    "route-entry", "workflow-navigation-selection", "session-audit-resolution",
     "session-state-resolution", "context-source-selection", "decision-context-selection",
     "planning-output-selection", "bootstrap-selection", "executor-selection",
     "output-route-selection", "role-reservation", "advisory-selection",
@@ -30,17 +30,17 @@ SECTION_ALIASES = {
     "module-entry-resolution_zh_cn.md": {"## 触发与输入", "## Trigger 和输入"},
 }
 OWNER_TERMS = {
-    "enhanced-path-selection": {
-        "en": ("optional Enhanced operations", "current session scope is resolved from the request and recorded allocations", "path selection alone never opens or initializes state"),
-        "zh": ("可选 Enhanced 操作", "当前请求会话范围已通过请求上下文及已有分配解析", "本选择本身不打开或初始化状态"),
+    "workflow-navigation-selection": {
+        "en": ("bounded workflow navigation", "caller-supplied facts", "does not establish identity, permission"),
+        "zh": ("有界工作流导航", "调用方提供的事实", "不能证明身份、权限"),
     },
     "session-audit-resolution": {
-        "en": ("timeout", "pending", "invalid", "balanced/milestone_only", "never repeat the template", "60 seconds", "response_at: null", "no reply was ever observed", "never auto-timeout", "read back values, sources", "original deadline", "if a reply was observed, continue focused correction from it", "reliable clock confirms at least 60 seconds elapsed", "question_reply_after_timeout"),
-        "zh": ("超时", "pending", "无效", "balanced/milestone_only", "不得重发模板", "60 秒", "response_at: null", "从未观察到任何答复", "绝不自动超时", "读回值、来源", "原截止时间", "已观察到答复时从该答复继续定向更正", "可信时钟确认实际经过至少 60 秒", "question_reply_after_timeout"),
+        "en": ("balanced/milestone_only", "full", "apply the defaults immediately", "do not ask a mandatory first-use question", "do not start a timer"),
+        "zh": ("balanced/milestone_only", "full", "立即应用缺省值", "不得强制首次提问", "不得启动计时器"),
     },
     "session-state-resolution": {
-        "en": ("canonical", "identity", "authority", "read back", "An outage alone never changes authority", "Never recreate", "compatible schema/history", "Native Reconciliation before", "Native Authority Transfer", "before audit configuration is resolved"),
-        "zh": ("规范", "身份", "authority", "回读", "单纯故障绝不改变权威", "不得把重建", "兼容的 schema/history", "普通 Enhanced 打开或依赖写入前完成 Native 对账", "Native 权威转移", "在解决审计配置前"),
+        "en": ("canonical parent-controlled workflow record", "current Session facts", "read back", "does not grant authority", "does not establish cross-call sequencing"),
+        "zh": ("规范的父级控制工作流记录", "当前 Session 事实", "回读", "不授予授权", "不建立跨调用顺序"),
     },
     "context-source-selection": {
         "en": ("source pointers", "freshness", "hash", "Memory", "active plan", "read every match", "read every match for this task", "current instructions take precedence", "plan never grants authorization", "do not substitute filesystem files", "read that authoritative owner directly", "If listing or reading a relevant active plan fails, block work depending on it", "Verify owner, language, source, and hash", "separately read each necessary direct owner omitted from the excerpt"),

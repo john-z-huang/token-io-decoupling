@@ -12,9 +12,9 @@
 
 未观察到的能力标记为未知。不得替换成其他运行环境、模型、参数、Session、工具、权限或推断出的能力。所需能力缺失或未知时，阻塞依赖该能力的切片。
 
-## 可选 Enhanced 宿主能力
+## 受保护操作能力
 
-工作流决策节点选择 Enhanced 操作后，应用[增强工作流可用性](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability_zh_cn.md)和[增强宿主绑定](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md)。记录当前会话范围来源、当前角色及目标操作实际要求的守卫，并附上证据和范围。缺少请求上下文、操作检查未满足或只有公共规则访问时，应记为 `unavailable`，不得推断能力。必需能力缺失时，只阻塞依赖工作；独立且已授权的 Native 工作仍可继续。本清单不初始化状态，也不授权受保护调用。
+针对每项受保护操作，记录当前 Session 和角色事实，以及该操作实际要求的能力和权限检查，并附上证据与范围。应用请求范围或公共规则接口不能认证身份或证明授权。必需能力缺失时，只阻塞依赖工作。本清单不授权受保护调用。
 
 ## 路线消费
 
@@ -30,5 +30,4 @@
 - [Coding Delegation Mode Confirmation](../../layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) — 定位模式门禁能力消费者。
 - [Coding Delegation Count Gate](../../layer-01-fundamental-concepts/delegation/delegation-mode-count-gate_zh_cn.md) — 定位数量门禁能力消费者。
 
-- [增强工作流可用性](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability_zh_cn.md) — 定位可选路线证据和失败处置。
-- [增强宿主绑定](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md) — 定位当前会话范围和守卫证据。
+- [工作流导航可用性](../../layer-01-fundamental-concepts/workflow-navigation/navigation-availability_zh_cn.md) — 定位可选导航失败处置。

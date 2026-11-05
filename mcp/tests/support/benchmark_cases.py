@@ -584,7 +584,7 @@ def _materialization_service(
         MaterializationPrepareRequest,
         SourceFact,
     )
-    from token_io_decoupling_core.state_models import OutputClass
+    from token_io_decoupling_core.workflow_models import OutputClass
 
     fixture_path = repo_root / "mcp" / "tests" / "unit_tests" / "test_output_materialization.py"
     spec = importlib.util.spec_from_file_location(

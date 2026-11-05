@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 STANDARD_INSTALL_NOTICE = (
-    "The fixed local Codex stdio executables use threadId/sessionId request metadata and existing "
-    "allocations for application scope. The workflow executable exposes 17 workflow tools; the "
-    "aggregate tools executable exposes 51 parent, Worker, shared-state, and development tools. "
-    "No privileged host service or external identity provider is required. This is not independent "
-    "process authentication or OS isolation. Discovery does not grant authority; state calls still "
-    "check roles, paths, and explicit operation authorization."
+    "The two fixed local Codex stdio executables expose 17 stateless workflow tools and 34 "
+    "aggregate development tools. Workflow navigation, rule lookup, and checkpoint evaluation do "
+    "not require a database, caller binding, or persisted workflow state. The aggregate tools "
+    "executable also exposes the protected materializer, which requires a trusted current per-call "
+    "Worker binding and assignment plus a separate operator grant; its path, operation, and guard "
+    "checks remain enforced. Discovery grants no authority. Standard executables do not provide "
+    "independent process authentication or OS isolation."
 )
 
 SERVER_DESCRIPTION = (
@@ -74,33 +75,9 @@ _READ_ONLY_TOOLS = {
     "workflow_capabilities",
     "rules_get_context",
     "validate_decoupling_compliance",
-    "parent_get_worker_summary",
-    "worker_get_assignment",
-    "worker_get_evidence",
-    "worker_get_recovery_context",
-    "database_schema_status",
-    "state_get",
-    "workflow_get_state",
-    "worker_get_state",
-}
-_STATE_WRITE_TOOLS = {
     "workflow_evaluate",
     "evaluate_control_checkpoint",
-    "workflow_open",
-    "delegation_reserve",
-    "delegation_bind",
-    "delegation_unreserve",
-    "slice_check",
-    "slice_release",
-    "workflow_transition",
-    "workflow_reconcile",
-    "worker_record_progress",
-    "worker_report_blocker",
-    "record_evidence",
-    "workflow_record_evidence",
-    "worker_record_evidence",
 }
-_STATE_ADVICE_TOOLS = {"workflow_evaluate", "evaluate_control_checkpoint"}
 _STATELESS_API_TOOLS = {
     "workflow_select_child_effort",
     "workflow_generate_decision_context",
@@ -149,34 +126,35 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "an appropriately sized authorized window without claiming the write itself failed.",
     ),
     "workflow_capabilities": _description(
-        "Read public capability summaries and capability_details (schema_version=2). No arguments;",
-        "support.local_stdio describes local request scoping and its limits;",
-        "configuration.public_interfaces describes independent public-tool dependencies.",
-        "no identity or permission prerequisite. agent_runtime is the fixed local Codex CLI",
+        "Read public capability summaries and capability_details (schema_version=3). No arguments;",
+        "support.agent_runtime describes the fixed local Codex CLI scope and",
+        "support.identity_bound_operations describes the protected operation boundary.",
+        "runtime.server_mode distinguishes the default stateless public-only executables from an "
+        "embedded provider; public-only mode has no caller identity or workflow state store and "
+        "is not an execution-readiness signal. The protected materializer remains unavailable "
+        "unless its trusted per-call binding/assignment source and separate operator grant are "
+        "configured.",
+        "configuration.public_interfaces describes public-tool dependencies. No identity or",
+        "permission prerequisite. agent_runtime is the fixed local Codex CLI",
         "product scope, including local Work when it uses that local CLI/app-server path. Cloud",
         "ChatGPT conversations, remote Work, and other Code Agents are not direct clients. When",
         "another Agent installs/configures the CLI in its own environment, only that environment's",
         "local CLI path is supported; no other Agent/cloud adapter or runtime-environment",
         "selection step is provided. This static scope is not identity attestation.",
         "support.agent_runtime describes this static contract,",
-        "configuration describes caller matching and persisted API advice, and runtime describes",
+        "configuration describes caller matching and API advice, and runtime describes",
         "the provider's baseline binding, transport classification, and startup server mode.",
         "Status entries contain status, reason_code, message, source, and next_step; a verified",
         "binding includes its role. Disabled is normal configuration; unknown means the underlying",
-        "cause cannot be determined safely. Legacy top-level fields remain summaries: non-embedded",
-        "enhanced_binding stays unverified; binding_transport stays unavailable",
-        "even after a valid probe.",
-        "At most one provider read; no adapter-state inspection, mutation, or API request. Probes",
+        "cause cannot be determined safely. At most one provider read; no state-store probe,",
+        "mutation, or API request. Probes",
         "may use the host channel. An absent task-plan service triggers no Git or Memory-path",
         "probe. A configured global plan service may revalidate its local Git common-dir identity",
         "and already-bound global root without creating paths. No credential or identity values,",
         "or raw errors are returned.",
         "On missing provider, guard failure, denial, or probe failure, inspect reason_code",
-        "and next_step; use a fixed local stdio executable with valid request metadata.",
-        "A known transport or",
-        "verified",
-        "baseline does not verify caller metadata or operation-specific guards, enable Enhanced,",
-        "change startup admission, or grant authority. No revision or idempotency key is required.",
+        "and next_step. A binding diagnostic never grants authority. No revision or idempotency",
+        "key is required.",
     ),
     "task_plan_update": _description(
         "Append structured records to one task plan in the configured Serena Memory namespace.",
@@ -335,7 +313,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "for out-of-scope, non-effort, or rule-overriding questions;",
         "parent review remains required.",
         "The permission field is a one-call caller assertion, not proof of authority.",
-        "This stateless operation has no Enhanced binding, revision, or idempotency key.",
+        "This stateless operation has no caller binding, revision, or idempotency key.",
         "It does not",
         "bind a Session, mutate workflow state, or authorize child creation.",
         "It validates the runtime/model ceiling locally and offers only its intersection with the",
@@ -373,7 +351,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "A question is limited to 1200 characters; a context paragraph to 6000. Structured",
         "missing_information has at most 8 nonblank items of at most 240 characters each.",
         "Explicit permission is required for each call; false permission blocks before reading",
-        "credentials. No Enhanced binding, persisted state, automatic downstream Decisions call,",
+        "credentials. No caller binding, persisted state, automatic downstream Decisions call,",
         "or authority grant is involved.",
         "Each permitted call reads OPENAI_API_KEY and OPENAI_BASE_URL and explicitly uses them",
         "with the fixed model gpt-6-luna, Responses.parse, reasoning effort medium, no tools,",
@@ -544,482 +522,151 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         _DECISION_RESULT,
     ),
     "workflow_evaluate": _description(
-        "Persist an evaluation for one checkpoint using supplied evidence context.",
-        _PAYLOAD,
-        "Include node_id and expected_revision; branch is optional and uses",
-        "that checkpoint's legal branch enum; input_hash and slice_ids scope",
-        "reviewed input; idempotency_key prevents duplicate writes.",
-        "Evaluation outcome is ready, incomplete, blocked, or evidence_on_demand;",
-        "it records a gate result and does not itself authorize execution.",
-        "Requires current Root identity and guards; returns evaluation outcome",
-        "(ready, incomplete, blocked, or evidence_on_demand), branch, rule/input",
-        "hashes, basis/result revisions, missing facts/evidence, and stale status.",
-        "Optional semantic_input is a node_id-discriminated object for",
-        "task_intent, output_class, contract_change, verification_impact, or",
-        "control, and typed facts must match node_id.",
-        "Facts are requested_outcome/deliverables/task_signal for task_intent",
-        "(coding/not_coding/mixed/unclear); requested_output/deliverables/",
-        "delegation_boundary (root_only/worker_eligible/mixed/unclear) for",
-        "output_class; change_summary/objective_or_scope_changed/",
-        "new_user_direction_present for contract_change; change_summary and",
-        "changed_dimensions/affected_coverage for verification_impact; and",
-        "progress_signal/slice_outcome/evidence_request_status/boundary_summary",
-        "for control. With semantic_input the JSON result has separate core and",
-        "advice objects; advice.status is available, fallback, or stale. It may",
-        "use API only when enabled and outbound data is permitted; it never",
-        "selects a branch. advice.recovery is informational and never authorizes resubmitting this",
-        "state mutation to retry advice. Same-key replay returns the stored evaluation and",
-        "does not",
-        "call Decisions again; continue without advice or review the existing result.",
-        _RETRY,
+        "Stateless structural checkpoint check. Payload has node_id, submission, optional "
+        "language (en or zh_cn, default en), optional expected_rule_hash, optional node-matched "
+        "semantic_input, and current_facts. expected_rule_hash must be the full registered-node "
+        "rules_get_context result for that language, with no context_version; version-1 fragment "
+        "bundle hashes and index_sha256 are different values and are rejected as stale. Submission "
+        "facts contain 1–128 unique typed fact keys; top-level evidence references are limited to "
+        "128, coverage dimensions to 3, evidence references per determined fact to 16, and named "
+        "missing-evidence items to 16. Checkpoint reference URIs are at most 512 characters; "
+        "evidence IDs and evidence_request_id are at most 128 characters. The canonical UTF-8 "
+        "serialized submission is limited to 32 KiB. input_hash is optional; when present, it is "
+        "a consistency assertion. The server normalizes submission.model_dump(mode='json', "
+        "exclude={'input_hash'}), serializes with json.dumps(ensure_ascii=False, sort_keys=True, "
+        "separators=(',', ':')), encodes as UTF-8, then computes SHA-256. The server always "
+        "returns "
+        "the computed source_input_hash. A supplied mismatch or stale expected_rule_hash returns "
+        "blocked_input. The full evaluation request, including semantic_input and current_facts, "
+        "is limited to 32 KiB of canonical UTF-8 JSON; oversize or invalid input is rejected, "
+        "never truncated. current_facts is a flat map of at most 16 string pairs with keys of "
+        "1–64 and values of 1–1,024 characters; blank strings and nested/non-string values are "
+        "invalid. Returns ready_for_agent_review, incomplete_for_agent_review, or blocked_input "
+        "with missing requirements, reason, source_input_hash, and current rule_hash. Optional "
+        "Decisions advice may issue one configured API request; it is separate and never changes "
+        "the structural result or authorizes execution. Facts are not authenticated; no workflow "
+        "state is persisted or cross-call sequencing enforced."
     ),
     "evaluate_control_checkpoint": _description(
-        "Persist the Control checkpoint evaluation.",
-        _PAYLOAD,
-        "Provide expected_revision and idempotency_key; optional branch,",
-        "input_hash, slice_ids, and semantic_input follow the Control",
-        "contract.",
-        "Requires current Root identity and guards; returns evaluation outcome",
-        "(ready, incomplete, blocked, or evidence_on_demand), branch, rule/input",
-        "hashes, basis/result revisions, missing facts/evidence, and stale status.",
-        "Without semantic_input the JSON result is the evaluation; with it,",
-        "the result separates core evaluation and advice. Control evaluation is",
-        "not the Control transition or evidence-on-demand confirmation.",
-        "semantic_input fields are progress_signal",
-        "(continue/amend/stop/evidence-on-demand), slice_outcome",
-        "(ready/incomplete/blocked/returned), evidence_request_status",
-        "(not_requested/pending/returned), and boundary_summary. Advice can use",
-        "API only under explicit",
-        "enablement and outbound permission. The caller judges suggested_choice;",
-        "advice does not set/replace core.branch or authorize a transition.",
-        _RETRY,
-    ),
-    "workflow_open": _description(
-        "Create the root workflow from a typed workflow-open request.",
-        _PAYLOAD,
-        "mode_count.mode is Single-Agent Coding or Multi-Agent Coding;",
-        "child_count is 0 for Single-Agent and positive for Multi-Agent.",
-        "Also include mode_source (explicit/default),",
-        "source as SemanticRef {uri, content_hash SHA-256}, optional",
-        "semantic_references (same shape),",
-        "expected_revision (0 by default), and idempotency_key.",
-        "Requires current parent role. Initializes a new workflow; an",
-        "identical existing workflow is read back without resetting identity,",
-        "while a mismatched locked contract/identity or stale revision fails.",
-        "Returns MutationReceipt with operation, payload_hash, result,",
-        "receipt_revision, current_revision, and replayed.",
-        _RETRY,
-    ),
-    "delegation_reserve": _description(
-        "Reserve one child allocation for a maintained role under the current Root workflow.",
-        _PAYLOAD,
-        "role must be Primary Output, Change Verification, Context",
-        "Bootstrap/Refresh, or Documentation/Comments & Git Operations.",
-        "Supply expected_revision and idempotency_key. Requires current Root",
-        "identity and delegation guards; Single-Agent has no allocations.",
-        "A role already reserved or created in this Session cannot be reserved again.",
-        "The optional budget_approval object is accepted only when the locked budget",
-        "has no unassigned slot. It contains requested_child_count (exactly current count + 1)",
-        "and user_approval (SemanticRef or EvidenceRef to the actual explicit user approval).",
-        "Call only after Root reviews that evidence; the reference is a trusted Root",
-        "attestation, not cryptographic host proof. The transaction changes the count source",
-        "to that approval, retains the prior source, adds one slot, and reserves the",
-        "requested different role atomically. Approval cannot authorize a duplicate role.",
-        "Returns MutationReceipt whose result contains allocation_id, slot,",
-        "normalized role, and (for an approved increase) an audit record; reservation does not",
-        "create or bind a child. Replaying the same key and request does not increase",
-        "the count twice.",
-        _RECEIPT,
-        _RETRY,
-    ),
-    "delegation_bind": _description(
-        "Bind a reserved allocation to a verified child session.",
-        _PAYLOAD,
-        "Supply allocation_id, child_session_id, expected_revision, and idempotency_key.",
-        "Requires current parent identity and host verification of the",
-        "child; returns receipt with allocation_id and child_session_id.",
-        "Unknown or mismatched child binding fails closed.",
-        _RECEIPT,
-        _RETRY,
-    ),
-    "delegation_unreserve": _description(
-        "Protected Root operation to clear one role reservation only when child creation",
-        "has not started.",
-        _PAYLOAD,
-        "The payload is DelegationUnreserveRequest and all fields are required: allocation_id,",
-        "creation_not_started (literal JSON true; false, 1, and string values are invalid),",
-        "creation_not_started_reference is a SemanticRef or EvidenceRef with uri and",
-        "SHA-256 content_hash.",
-        "expected_revision, and idempotency_key.",
-        "Requires current Root binding, workflow-write capability, and identity/session/path",
-        "guards.",
-        "Only a Multi-Agent allocation in reserved state with no worker_session_id, worker",
-        "event, or output can be released.",
-        "Any Slice, Root outbox, dispatch event, delegation-bind receipt, or matching Worker",
-        "identity, or unknown/corrupt/missing identity blocks.",
-        "Existing subagents worker.sqlite3 files are inspected read-only; this operation",
-        "creates no Worker database and runs no migrations.",
-        "Symlinked paths, WAL/SHM/journal sidecars, or directory/database changes during",
-        "inspection fail closed. Do not remove/checkpoint files to force a release.",
-        "After confirming creation is still unstarted and the Worker store is stable, refresh",
-        "current state/revision; use a new key if the request content changed.",
-        "Success changes only role to null and status to unassigned; slot and child_count stay",
-        "fixed. The MutationReceipt result includes the proof and a Root attestation whose",
-        "authority limit states it is not host proof.",
-        "This operation does not create, bind, or dispatch a child and makes no API request.",
-        _RECEIPT,
-        _RETRY,
-    ),
-    "slice_check": _description(
-        "Check whether a typed slice spec meets current release requirements.",
-        "Payload spec contains allocation_id; output_class (code_configuration,",
-        "skill_instructions, ordinary_documentation, other, or unknown);",
-        "objective, return_conditions, and unreleased_boundary SemanticRefs",
-        "(uri plus SHA-256 content_hash); nonempty authorized_paths and",
-        "change_categories (source_code/configuration/tests/skill_instructions);",
-        "and write_content_memo.",
-        "Requires current parent role; this check does not release or mutate",
-        "a slice. Returns SliceCheckResult (eligible, reason, allocation_id,",
-        "output_class, input_hash); resolve findings before slice_release.",
-    ),
-    "slice_release": _description(
-        "Persist/release an eligible bounded slice for an allocation.",
-        _PAYLOAD,
-        "Supply spec, expected_revision, and idempotency_key.",
-        "Requires current parent role, release guards, and valid allocation.",
-        "Single-Agent slices use allocation_id=root; Multi-Agent slices use a",
-        "reserved allocation and do not create or bind a child. This grants no",
-        "permission outside the declared paths/categories/boundary.",
-        "Failed checks or stale state block release; returns a mutation receipt.",
-        _RECEIPT,
-        _RETRY,
-    ),
-    "workflow_transition": _description(
-        "Apply one typed workflow transition.",
-        _PAYLOAD,
-        "request.kind selects control (evaluation_id, outcome",
-        "continue/amend/stop), advance_epoch (dimension), confirm_checkpoint",
-        "(evaluation_id), session_audit (full session_audit contract),",
-        "confirm_native_reconcile (snapshot), or resolve_native_reconcile",
-        "(canonical_reconcile_id, snapshot_hash, unresolved_set_hash, choice",
-        "adopt_native_pair/retain_sqlite_pair, reviewed_native_revision/epochs,",
-        "root_decision_ref, native_freshness_refs, root_quiescence_refs).",
-        "Every nested request requires expected_revision and idempotency_key.",
-        "Requires current parent role and transition guards; returns",
-        "MutationReceipt with typed result and revisions. Transitions can",
-        "change Control or epoch state.",
-        _RECEIPT,
-        _RETRY,
-    ),
-    "parent_get_worker_summary": _description(
-        "Read the summary for one parent-owned allocation.",
-        "Payload: allocation_id. Requires current parent role.",
-        "Returns WorkerState: allocation_id, worker_session_id, role,",
-        "output_class, revision, progress, and blockers. Missing or unbound",
-        "allocations fail; use for oversight, not as a Worker write path.",
-    ),
-    "workflow_reconcile": _description(
-        "Compare and, when confirmed, reconcile a supplied native snapshot.",
-        _PAYLOAD,
-        "snapshot has project/root ids, mode and lifecycle, source/references,",
-        "revision, allocations, epochs, and evidence_refs. Provide confirm",
-        "(false by default), expected_revision, and idempotency_key every call.",
-        "An unconfirmed comparison may still be recorded; false is not a dry run.",
-        "Requires current parent role; returns ReconcileResult status",
-        "matched/conflict/awaiting_confirmation, differences,",
-        "observed/result/current revisions, and native_refs. Review conflicts",
-        "and state before confirming.",
-        _RETRY,
-    ),
-    "worker_get_assignment": _description(
-        "Read the calling Worker's current assignment.",
-        "No arguments. Requires registered Worker binding and valid assignment guards.",
-        "Returns assignment/allocation identity, role, output class, assigned",
-        "slice boundary, and current revision; unavailable assignment or",
-        "revoked binding fails closed. This grants no permission outside it.",
+        "Stateless structural check for the Control checkpoint. Payload has submission, optional "
+        "language (en or zh_cn, default en), optional expected_rule_hash, optional Control "
+        "semantic_input, "
+        "and current_facts. expected_rule_hash must be the full Control rules_get_context result "
+        "for that language, with no context_version; version-1 fragment bundle hashes and "
+        "index_sha256 are distinct and rejected as stale. It uses the same "
+        "1–128 facts, 128 top-level evidence references, 3 coverage dimensions, 16 nested "
+        "evidence references, 16 missing-evidence items, 512-character URI, and 128-character "
+        "ID/request-ID limits as workflow_evaluate. Canonical submission and full request budgets "
+        "are each 32 KiB UTF-8 JSON. input_hash is optional; when supplied it must match the "
+        "server-computed SHA-256 of normalized submission JSON excluding input_hash, using "
+        "ensure_ascii=False, sort_keys=True, and separators=(',', ':'). expected_rule_hash is an "
+        "independent staleness assertion. current_facts is a flat map of at most 16 string pairs, "
+        "with 1–64 character keys and 1–1,024 character values. Oversize, blank, nested, or "
+        "non-string facts are rejected without truncation. Returns ready_for_agent_review, "
+        "incomplete_for_agent_review, or blocked_input with the selected Control branch when "
+        "present, missing requirements, source_input_hash, and current rule_hash. Optional "
+        "Decisions advice may issue one configured API request and never authorizes a transition; "
+        "the structural result does not authenticate facts, persist state, or sequence calls."
     ),
     "materialize_decoupled_output": _description(
-        "Prepare, inspect, or apply a bounded file output for the calling Worker.",
-        (
-            "Input envelope: payload.request.action is prepare, inspect, or apply. Prepare accepts "
-            "1–16 files; each has an exact normalized repo-relative leaf path, create/replace "
-            "operation, absent or SHA-256 baseline, and one finite template: literal_text, "
-            "json_document supplied as strict bounded JSON text, or fact_markdown containing at "
-            "most 8 headings and 64 source facts. Inspect requires prepared_id, "
-            "expected_manifest_hash, file_index, offset, and max_chars (default 2048, maximum "
-            "8192). Apply accepts only prepared_id and expected_manifest_hash; it never "
-            "regenerates content or calls an API."
-        ),
-        (
-            "Requires a currently registered Worker binding and confirmed assignment, the fixed "
-            "Primary Output assignment with code_configuration or skill_instructions output, "
-            "and a separate active operator grant matching "
-            "project/root/Worker/allocation/role/class/Slice/assignment hash, pinned roots, exact "
-            "paths, operations, templates, policy, and revision. Recheck occurs for every action "
-            "and before each file write. Payloads cannot select roots, role, grant, or authority. "
-            "A Native coding-task role or an Agent Session's Primary Output label is not a "
-            "verified MCP Worker binding. State-store guards do not grant project-file write "
-            "permission."
-        ),
-        (
-            "Without an explicitly loaded --output-materializer-factory, trusted grant, secure "
-            "configured roots, or the same configured 185 preflight root, the operation is "
-            "unavailable and probes no default paths. Apply requires a fresh whole-batch 185 "
-            "result with policy_version=1 and status=pass. Responses ordering is optional, "
-            "requires the independent grant plus outbound_data_permitted=true on prepare, reads "
-            "both nonblank process environment values, sends at most 48,000 characters across "
-            "fixed instructions and serialized fact input (excluding fixed schema/framing), uses "
-            "only gpt-6-luna with zero retries, and returns only orderings of supplied fact IDs; "
-            "local code renders the original facts."
-        ),
-        (
-            "Prepare writes immutable candidates and a manifest only inside the configured "
-            "artifact root, returning an opaque ID, hash, sizes, bounded previews, and inspect "
-            "instructions. Inspect reads one bounded artifact slice. Apply rechecks exact "
-            "baselines and atomically publishes each file with no-clobber create or verified "
-            "replace; missing parent directories are not created. Results distinguish applied, "
-            "already_identical, conflict, not_attempted, uncertain, and partial. Same-service "
-            "cooperative locking does not stop external writers; multiple files are not an "
-            "atomic set and are not automatically rolled back."
-        ),
-    ),
-    "worker_record_progress": _description(
-        "Record progress for the calling Worker's own assignment.",
-        _PAYLOAD,
-        "Supply record.status (started, in_progress, or reported_complete),",
-        "record.milestone (SemanticRef {uri, content_hash}) and",
-        "record.references, plus expected_revision and idempotency_key.",
-        "reported_complete records the Worker's report; it is not parent",
-        "acceptance.",
-        "Requires registered Worker identity and own-store guards; returns",
-        "MutationReceipt operation, payload_hash, result, receipt_revision,",
-        "current_revision, and replayed. Reread assignment/state after",
-        "conflict.",
-        _RETRY,
-    ),
-    "worker_get_evidence": _description(
-        "Read evidence by identifier.",
-        "Payload: evidence_id. Requires registered Worker identity and own-store guards.",
-        "Returns matching evidence facts, references, coverage, hashes,",
-        "revisions, and stale status visible to that Worker; missing or",
-        "out-of-scope identifiers fail closed.",
-    ),
-    "worker_report_blocker": _description(
-        "Record a blocker for the calling Worker's own assignment.",
-        _PAYLOAD,
-        "Supply blocker.blocker_id, blocker.reason (SemanticRef uri/content_hash),",
-        "blocker.references, expected_revision, and idempotency_key.",
-        "Requires registered Worker identity and own-store guards; returns",
-        "MutationReceipt operation, payload_hash, result, receipt_revision,",
-        "current_revision, and replayed. Reread assignment and state after",
-        "conflict.",
-        _RETRY,
-    ),
-    "worker_get_recovery_context": _description(
-        "Read the calling Worker's recovery context; no arguments.",
-        "Requires registered Worker binding and own-store guards.",
-        "Returns exactly assignment (worker_get_assignment result) and state",
-        "(worker_get_state JSON). Use those current objects to resume; this",
-        "tool generates no recovery plan and cannot bypass guards.",
-    ),
-    "database_schema_status": _description(
-        "Read the database schema diagnostic.",
-        "No arguments; public and does not inspect caller-selected paths.",
-        "Returns schema status, including an unavailable diagnostic when no",
-        "local session scope exists. Use before state operations to understand",
-        "compatibility.",
-    ),
-    "state_get": _description(
-        "Read state for the current role.",
-        "Payload may include index_page (collection, optional cursor,",
-        "page_size 1–128) for parent pagination; Workers must omit it.",
-        "Requires local session scope and state-read guards; returns role-scoped",
-        "state, revision, and pagination metadata. A stale or invalid cursor",
-        "requires restarting from the first page.",
-    ),
-    "record_evidence": _description(
-        "Record evidence in the current role's authorized store.",
-        _PAYLOAD,
-        "submission includes node_id, nonempty facts (fact_key plus a",
-        "judgment: unknown, missing_evidence, not_applicable with reason, or",
-        "determined with value/evidence), evidence_refs and coverage_dimensions",
-        "(both default empty), input_hash, and optional evidence_request_id.",
-        "Provide expected_revision and idempotency_key.",
-        "Requires trusted role binding and evidence-write guards; returns",
-        "MutationReceipt with evidence result and revisions. Evidence is not",
-        "itself a checkpoint decision.",
-        _RETRY,
-    ),
-    "workflow_get_state": _description(
-        "Compatibility embedding alias for parent workflow state read; not",
-        "not exposed by either standard local server.",
-        "Payload may include index_page for pagination; requires current parent binding.",
-        "Returns parent-scoped state. Restart pagination after cursor errors.",
-    ),
-    "workflow_record_evidence": _description(
-        "Compatibility embedding alias for parent evidence submission; not",
-        "not exposed by either standard local server.",
-        _PAYLOAD,
-        "submission has node_id, nonempty fact_key/judgment facts, optional",
-        "evidence_refs/coverage_dimensions, input_hash, and optional",
-        "evidence_request_id; include expected_revision/idempotency_key.",
-        "Requires current parent identity and evidence-write guards.",
-        "submission uses node_id, facts, evidence_refs, coverage_dimensions,",
-        "input_hash, and optional evidence_request_id. Returns MutationReceipt",
-        "with operation, payload_hash, result, receipt_revision, current_revision,",
-        "and replayed; evidence is not a decision.",
-        _RETRY,
-    ),
-    "worker_get_state": _description(
-        "Compatibility embedding alias for the calling Worker's own state",
-        "read; not exposed by either standard local server.",
-        "No arguments; requires registered Worker binding and own-store guards.",
-        "Returns only role-scoped state; cross-Worker reads fail closed.",
-    ),
-    "worker_record_evidence": _description(
-        "Compatibility embedding alias for the calling Worker's evidence",
-        "submission; not exposed by either standard local server.",
-        _PAYLOAD,
-        "submission has node_id, nonempty fact_key/judgment facts, optional",
-        "evidence_refs/coverage_dimensions, input_hash, and optional",
-        "evidence_request_id; include expected_revision/idempotency_key.",
-        "Requires registered Worker identity and own-store evidence guards.",
-        "submission uses node_id, facts, evidence_refs, coverage_dimensions,",
-        "input_hash, and optional evidence_request_id. Returns MutationReceipt",
-        "with operation, payload_hash, result, receipt_revision, current_revision,",
-        "and replayed.",
-        _RETRY,
+        "Prepare, inspect, or apply 1–16 files per request using an explicitly configured trusted "
+        "output-materializer factory. The typed payload has an action (prepare/inspect/apply), a "
+        "bounded batch of file specifications, and action-specific manifest or receipt hashes; "
+        "it cannot supply caller identity, assignment, grant, or authorized=true. Each file is "
+        "limited to an authorized project-relative path, operation, template, and bounded content, "
+        "and prepare also enforces the batch byte limit. The server requires the current bound "
+        "Worker role, passes the per-call binding to the materializer, and independently verifies "
+        "the startup-injected authorization provider's current assignment and hash plus a separate "
+        "operator grant. It rechecks authority between phases and enforces pinned roots, allowed "
+        "paths/operations/templates, a fresh whole-batch 185 result before writes, candidate "
+        "baselines, receipts, and Same-service cooperative locking. Without both trusted providers "
+        "the tool is unavailable or denied before writes."
     ),
 }
 
 
 def tool_description(name: str) -> str:
-    """Return the required description or fail closed on an uncatalogued wire name."""
+    """Return complete metadata for every registered local tool."""
     try:
         description = TOOL_DESCRIPTIONS[name]
-        if name in _READ_ONLY_TOOLS:
-            recovery = (
-                "Recovery class: read-only lookup with no state mutation. Only an observed "
-                "transient "
-                "transport failure or explicit 5xx can justify repeating the same read; "
-                "validation, permission, and guard errors are not transient."
-            )
-        elif name in _STATE_WRITE_TOOLS:
-            recovery = (
-                "Recovery class: state mutation. On unknown completion, read back state/receipt; "
-                "replay only the identical payload with the same idempotency key. Changed content "
-                "requires current state/revision and a new key. Validation, permission, and guard "
-                "errors must be resolved first."
-            )
-            if name in _STATE_ADVICE_TOOLS:
-                recovery += (
-                    " Same-key replay does not call optional Decisions advice again; never "
-                    "resubmit "
-                    "the state mutation to retry advice."
-                )
-        elif name in _STATELESS_API_TOOLS:
-            recovery = (
-                "Recovery class: stateless, one API request per invocation with no SDK retry. Read "
-                "the structured recovery object; only a transient candidate permits considering "
-                "an explicit repeat under still-valid authorization after checking current input "
-                "hash and policy. The caller tracks at most three total calls including the first. "
-                "Other failures require correction or stop; this tool does not count attempts."
-            )
-        elif name in {"task_plan_update", "task_plan_complete", "task_plan_archive"}:
-            if name == "task_plan_archive":
-                recovery = (
-                    "Recovery class: task-plan archive mutation. On unknown completion, inspect "
-                    "the task plan, fixed archive target, receipt, and readback first. "
-                    "This archive "
-                    "has no request ID; retry only the same completed revision to the same fixed "
-                    "archive target. If the source is absent, treat it as replay success "
-                    "only after "
-                    "archived bytes match the expected revision and completed history/identity "
-                    "validate. On revision conflict, refresh and review the completed plan; "
-                    "reconcile active/archive state before considering a retry. Never blindly "
-                    "resubmit or overwrite. This operation makes no model/API request and is not a "
-                    "stateless API retry."
-                )
-            else:
-                recovery = (
-                    "Recovery class: task-plan mutation. On unknown completion, first read back "
-                    "the task plan and inspect its receipt/reconciliation status. Replay only the "
-                    "same logical update/complete request with its stable request_id, unchanged "
-                    "expected_revision, and identical records/criterion evidence. On revision "
-                    "conflict, refresh the current plan and revision, review the change, and "
-                    "form a new request only if the changed content is still authorized and "
-                    "intended; use a new request_id and the current reviewed revision as "
-                    "expected_revision. Reconcile by checking the "
-                    "plan, receipt, and readback first; never blindly resubmit. "
-                    "These tools make no "
-                    "model/API request and are not stateless API retries."
-                )
-        elif name == "materialize_decoupled_output":
-            recovery = (
-                "Recovery class: prepared output materialization. On an uncertain prepare, do not "
-                "blindly prepare again; retain the returned opaque identity/hash when available "
-                "and reconcile the configured artifact receipt. For inspect, repeat only the same "
-                "bounded read after verifying the current grant and manifest hash. For an "
-                "uncertain "
-                "apply, inspect the same prepared ID/hash and read current target hashes before "
-                "considering a repeat. A repeat must use the same prepared ID and manifest hash; "
-                "the tool never regenerates content during apply. Conflict, revocation, changed "
-                "assignment/grant, unknown preflight, or unsafe path is not transient and must be "
-                "resolved before a new prepare. Partial application is reported per file; do not "
-                "assume rollback or retry files reported uncertain without readback. This tool may "
-                "write the explicitly configured artifact store during prepare and project files "
-                "during apply; it is not a stateless API retry."
-            )
-        else:
-            raise ValueError(f"missing recovery classification for MCP tool: {name}")
-        result = (
-            "Codex CLI MCP tool, including Codex CLI/app-server use from Desktop and local Work. "
-            + description
-            + " "
-            + recovery
-        )
-        if name in _STATELESS_API_TOOLS | _STATE_ADVICE_TOOLS | {"materialize_decoupled_output"}:
-            result += " " + _PROXY_DESCRIPTION
-        return result
     except KeyError as exc:
         raise ValueError(f"missing Agent-facing metadata for MCP tool: {name}") from exc
+    if name in _READ_ONLY_TOOLS:
+        recovery = (
+            "This is a stateless structural check. It does not authenticate submitted facts, "
+            "authorize execution, persist workflow state, sequence calls, or establish Agent "
+            "acceptance. Missing or uncertain requirements remain incomplete or blocked."
+        )
+    elif name in _STATELESS_API_TOOLS:
+        recovery = (
+            "This is a bounded stateless API suggestion. Inspect hashes and recovery guidance; "
+            "the result cannot grant permissions or cause an action. Correct inputs or stop on "
+            "non-retryable failures."
+        )
+    elif name in {"task_plan_update", "task_plan_complete", "task_plan_archive"}:
+        recovery = (
+            "This operates on the separately configured task-plan backend. On an uncertain "
+            "result, read the plan and receipt before considering a retry; never overwrite or "
+            "blindly resubmit a changed request."
+        )
+    elif name == "materialize_decoupled_output":
+        recovery = (
+            "Writes are possible only with an injected trusted per-call binding/assignment "
+            "provider and a separate current operator grant. Missing or mismatched caller scope, "
+            "revocation, stale baseline, failed preflight, or unsafe paths deny the operation. "
+            "On uncertain apply, inspect the same prepared identity and read current file hashes."
+        )
+    else:
+        recovery = (
+            "No persistent workflow state is created by this tool. Correct input or stop "
+            "on failure."
+        )
+    return (
+        "Codex CLI MCP tool, including local Codex CLI/app-server use. "
+        + description
+        + " "
+        + recovery
+        + (
+            " " + _PROXY_DESCRIPTION
+            if name in _STATELESS_API_TOOLS | {"materialize_decoupled_output"}
+            else ""
+        )
+    )
 
 
 def workflow_server_description() -> str:
     return (
-        "Codex CLI MCP server for workflow capabilities, task plans, rules, decision support, "
-        "and compliance tools. State calls require the current local session scope and "
-        "operation authorization. Discovery does not authenticate a caller. "
+        "Fixed local Codex CLI MCP server for stateless workflow navigation, bounded rule "
+        "context, supplied-fact structural checks, task plans, and compliance preflight. "
+        "Checkpoint results are non-authoritative and do not persist or sequence workflow state. "
         + STANDARD_INSTALL_NOTICE
     )
 
 
 def tools_server_description() -> str:
     return (
-        "Codex CLI MCP server for aggregated parent, worker, shared state/evidence, and "
-        "development workflow tools. Each operation retains its own role, path, and "
-        "authorization checks. Discovery does not authenticate a caller. " + STANDARD_INSTALL_NOTICE
+        "Fixed local Codex CLI aggregate server for development tools and optional protected "
+        "output materialization. Materialization is unavailable unless a trusted current "
+        "binding/assignment provider and a separate operator grant are injected. "
+        + STANDARD_INSTALL_NOTICE
     )
 
 
 def workflow_server_instructions() -> str:
     return (
-        "This server exposes workflow capabilities, task-plan, rule, decision-support, and "
-        "compliance tools. Start with workflow_capabilities and rules_get_context. Each "
-        "operation follows its published scope and authorization checks. Discovery grants no "
-        "authority. " + STANDARD_INSTALL_NOTICE
+        "Start with workflow_capabilities, then load the exact rule context with "
+        "rules_get_context. "
+        "Workflow routing and checkpoint checks are stateless suggestions/checks: they do not "
+        "authenticate supplied facts, authorize execution, persist workflow state, or establish "
+        "Agent acceptance. Continue to apply current user authorization and project instructions. "
+        + STANDARD_INSTALL_NOTICE
     )
 
 
 def tools_server_instructions() -> str:
     return (
-        "Local Codex CLI aggregate tools server. Workflow capabilities and rules remain on "
-        "token-io-decoupling-workflow. Begin state diagnostics with database_schema_status; "
-        "Root starts with workflow_open, Workers with worker_get_assignment. Root and Worker "
-        "tools are discoverable together, with role checks on every call. Shared state and "
-        "evidence operations route by the current bound role; Worker reads cannot paginate "
-        "Root state. Mutations require current revisions, idempotency keys, and independent "
-        "authorization. Materialization remains Worker-only and requires its configured "
-        "service, operator grant, pinned root, and current preflight. Discovery grants no "
-        "authority. " + STANDARD_INSTALL_NOTICE
+        "Use the fixed aggregate development tools as described by each tool. "
+        "materialize_decoupled_output remains unavailable without an injected trusted per-call "
+        "binding/assignment provider and independent operator grant. Discovery grants no identity "
+        "or authority. " + STANDARD_INSTALL_NOTICE
     )

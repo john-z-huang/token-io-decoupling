@@ -9,7 +9,7 @@
 3. 复用缓存或文件上下文前，检查其范围、所有者、来源路径、新鲜度和最终状态 epoch。
 4. 将过期、不完整或互相冲突的上下文视为不可用。只刷新受影响的上下文，并记录发生了什么变化。
 5. 保持上下文以事实和路由信息为主；不能用它替代 Contract、源文档或验证。
-6. 对适用工作流决策节点选择的规则查询，应用[增强规则上下文](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-rule-context_zh_cn.md)：核对请求节点、owner、语言和来源/Hash，并单独读取摘录未包含的必需直接 owner。保持返回上下文有界，并在依赖前确认必需 owner 内容。
+6. 对适用工作流决策节点选择的规则查询，应用[工作流规则上下文](../../layer-01-fundamental-concepts/workflow-navigation/rule-context_zh_cn.md)：核对请求节点、owner、语言和来源/Hash，并单独读取摘录未包含的必需直接 owner。保持返回上下文有界，并在依赖前确认必需 owner 内容。
 7. 已放行 Worker 需要持久化 memo 或交换记录时，必须确认具名持久 Memory 能力可用；memo 与跨 Worker 交换仍是独立触发条件。逻辑归属遵循所链接的 Layer-01 owner。能力不可用时报告并阻塞依赖工作；不得回退为文件存储。
 8. 已放行任务要求复用先前 Agent 项目知识时，使用[项目 Memory 与代码结构能力](../../layer-01-fundamental-concepts/session-runtime/LSP-MCP-Tools_zh_cn.md)访问获准 Memory，并对照权威项目文件核验来源指针和新鲜度。能力不可用时报告限制并返回获准的权威项目文件；仅当必需事实无法从其他获准方式确认时才暂停。Memory 不能替代获准路径中的权威项目文件。
 

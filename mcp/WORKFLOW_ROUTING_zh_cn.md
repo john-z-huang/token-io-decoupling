@@ -42,7 +42,7 @@
 | `documentation` | SM06 | MM06 |
 | `delivery_acceptance` | SM07 | MM07 |
 
-原生路由引用指向匹配语言和模式的路由。Multi-Agent 执行阶段可能包含职责与权限门禁、任务授权与 memo 条件、以及子代理生命周期前先放行 Slice 的条件提醒。验证、文档和交付阶段可能返回适用的条件检查，包括仅在验证发现问题后修复、变更 epoch 后重新验证，以及仅在既有授权下执行 Git。这些提醒不能替代路由 owner，也不授权任何操作。
+`route_reference` 指向匹配语言和模式的路由。Multi-Agent 执行阶段可能包含职责与权限门禁、任务授权与 memo 条件、以及子代理生命周期前先放行 Slice 的条件提醒。验证、文档和交付阶段可能返回适用的条件检查，包括仅在验证发现问题后修复、变更 epoch 后重新验证，以及仅在既有授权下执行 Git。这些提醒不能替代路由 owner，也不授权任何操作。
 
 ## 哈希与规则上下文
 
@@ -52,7 +52,7 @@
 
 ## 结果与复核
 
-每个结果都包含 `advisory_only: true`、`status`、`reason`、`source_facts_hash` 和 `input_hash`。模式已锁定时还会提供 `native_route` 引用。选定阶段可能包含 `module_id` 和 `conditional_checks`。结果还可能包括 `rule_hash`、`index_sha256`、`rule_evidence`、`missing_facts` 和 `capability_evidence`；API 结果也可能附带 `failure_class`、`provider_error_code`、`recovery`、固定模型 ID 与 token 使用量。证据是精简引用和哈希，不能替代阅读当前路由 owner。
+每个结果都包含 `advisory_only: true`、`status`、`reason`、`source_facts_hash` 和 `input_hash`。模式已锁定时还会提供 `route_reference` 引用。选定阶段可能包含 `module_id` 和 `conditional_checks`。结果还可能包括 `rule_hash`、`index_sha256`、`rule_evidence`、`missing_facts` 和 `capability_evidence`；API 结果也可能附带 `failure_class`、`provider_error_code`、`recovery`、固定模型 ID 与 token 使用量。证据是精简引用和哈希，不能替代阅读当前路由 owner。
 
 | 状态 | 含义 |
 | --- | --- |
@@ -67,7 +67,7 @@
 
 只有 `auto` 能发起 Decisions 请求。请求前，服务器从进程环境读取非空白的 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，并将二者显式传给客户端。固定使用 `gpt-6-luna`，关闭自动重试。拒绝、不完整或无效的选项、返回模型错误、缺少配置、服务方失败、缺少外发许可、Decisions 配置禁用、规则不完整或规则哈希变化，都不能产生 `available` 建议。不使用 API 后备路径或模型替换。
 
-该工具无状态：不写入工作流状态，不执行 Git、文件、代理创建或派发操作。工具发现不能证明身份或授予权限。原生路由仍负责阶段顺序、检查点操作、分支条件、证据和验收。
+该工具无状态：不写入工作流状态，不执行 Git、文件、代理创建或派发操作。工具发现不能证明身份或授予权限。链接的路由仍负责阶段顺序、检查点操作、分支条件、证据和验收。
 
 ## 相关概念
 

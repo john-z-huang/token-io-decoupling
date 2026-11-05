@@ -2,13 +2,13 @@
 
 [English](DEVELOPMENT.md) | [简体中文](DEVELOPMENT_zh_cn.md)
 
-This guide owns development, artifact checks, uv tool installation, and Codex setup for the Python workspace. The [architecture contract](../docs/skill/ENHANCED_ARCHITECTURE.md#implementation-packages) owns package responsibilities and dependency direction; the [Skill entry](../docs/skill/SKILL.md) and its linked owners remain the workflow authority.
+This guide owns development, artifact checks, uv tool installation, and Codex setup for the Python workspace. The [architecture contract](../docs/skill/WORKFLOW_ARCHITECTURE.md#implementation-packages) owns package responsibilities and dependency direction; the [Skill entry](../docs/skill/SKILL.md) and its linked owners remain the workflow authority.
 
 The MCP Server targets a locally available Codex CLI, including the local Codex CLI/app-server path used by local Work. Cloud ChatGPT conversations, remote Work, and other Code Agents are not direct clients. If another Agent runs in its own environment with Codex CLI installed and configures the server by following this repository's instructions, only that environment's local Codex CLI path is supported; no other Agent or cloud-surface adapter is maintained. The server does not add a runtime-environment selection step. Follow the [directory instructions](AGENTS.md). This fixed client scope does not establish a verified host integration; actual capabilities, trusted identity, guards, and permissions remain checked by the existing operations.
 
 ## Environment and checks
 
-The workspace contains eight independently buildable distributions, each with its own `pyproject.toml`, and one shared `uv.lock`. The root distribution, `token-io-decoupling`, exports the administrative `token-io-decoupling` command and the two MCP executables `token-io-decoupling-workflow` and `token-io-decoupling-tools`. Run these commands from `mcp/` using managed Python and locked dependencies:
+The workspace contains the root distribution and three independently buildable member distributions (`core`, `transport`, and `workflow`), plus one shared `uv.lock`. The root distribution, `token-io-decoupling`, exports the administrative `token-io-decoupling` command and the two MCP executables `token-io-decoupling-workflow` and `token-io-decoupling-tools`. Run these commands from `mcp/` using managed Python and locked dependencies:
 
 ```sh
 uv sync --managed-python --locked --all-packages --group dev
@@ -18,7 +18,7 @@ uv run --managed-python --locked -- ruff format --check .
 uv run --managed-python --locked -- ty check
 ```
 
-`ty` covers root sources, tests, library packages, and the core build hook. Set `UV_PROJECT_ENVIRONMENT` to an absolute temporary directory to keep the environment outside the checkout. The default suite uses temporary databases and offline transport; live API tests require explicit opt-in. Run the documentation checks required by [repository instructions](../AGENTS.md) from the repository root.
+`ty` covers root sources, tests, library packages, and the core build hook. Set `UV_PROJECT_ENVIRONMENT` to an absolute temporary directory to keep the environment outside the checkout. The default suite is local and offline; live API tests require explicit opt-in. Run the documentation checks required by [repository instructions](../AGENTS.md) from the repository root.
 
 ### Test organization
 
@@ -38,8 +38,8 @@ The MCP runtime consists of two installed executables. Each starts its own stdio
 
 | MCP executable / Codex registration | Tools |
 | --- | --- |
-| `token-io-decoupling-workflow` | The unchanged 17 workflow capability, rule, planning, routing, and evaluation tools. |
-| `token-io-decoupling-tools` | 51 tools: 9 Root, 6 Worker, 3 shared, and 33 development workflow tools; see [Two MCP executables and Codex registration](TOOLS_REGISTRATION.md). |
+| `token-io-decoupling-workflow` | 17 stateless workflow capability, rule, planning, routing, and evaluation tools. |
+| `token-io-decoupling-tools` | 34 tools: 33 development workflow tools and `materialize_decoupled_output`; see [Two MCP executables and Codex registration](TOOLS_REGISTRATION.md). |
 
 The one-call registration command adds both executables:
 
@@ -60,17 +60,17 @@ The read-only `validate_decoupling_compliance` tool checks a bounded candidate o
 
 The Worker-only `materialize_decoupled_output` tool prepares and inspects bounded output artifacts, then applies them through an independently granted operator service. Its request, templates, grant and preflight requirements, startup option `--output-materializer-factory MODULE:CALLABLE`, result, and recovery boundaries are documented in [Worker output materialization](OUTPUT_MATERIALIZATION.md). The trusted factory returns `OutputMaterializerConfig`; absent configuration leaves the tool unavailable without probing default paths.
 
-Each executable has a fixed discovery inventory; discovery does not grant authority. Without a trusted host channel, public capability/rule reads succeed, schema status reports unavailable without inspecting state paths, and protected calls reject the missing binding. Workflow/Control evaluation requires a verified Root. Shared reads and evidence writes resolve the verified role on every invocation; Worker reads reject a non-null Root `index_page` cursor.
+Each executable has a fixed discovery inventory; discovery does not grant authority. The rule/workflow path is stateless and does not require a database or host binding. `workflow_evaluate` and `evaluate_control_checkpoint` check only the supplied typed facts and declared input structure; their results do not authenticate, authorize, pass a checkpoint, persist state, or sequence later calls. Output materialization remains unavailable without its trusted startup-injected authorization provider and separate grant.
 
-The three Native task-plan tools use a separately configured checkout-bound Serena backend, not an Enhanced database. A host can select repository-scoped global storage so the main checkout and linked worktrees share plans while independent repositories remain separate; legacy project-local storage stays compatible. They remain `unavailable` without explicit injection or a trusted startup factory. Their payloads, configuration, identity/path mapping, deterministic checks, tests and protection limits are owned by [Task plan lifecycle tools](TASK_PLAN_TOOLS.md). No automatic Serena configuration loading or model request is involved.
+The three task-plan tools use a separately configured, checkout-bound Serena MemoryManager backend. Its capability result reports `project_root`, `storage_scope`, `repository_id`, `namespace`, and `archive_namespace`; the default project scope can be configured as global storage so linked worktrees share plans while independent repositories remain separate. The tools remain `unavailable` unless a trusted startup factory explicitly injects the service. Their payloads, configuration, identity/path mapping, deterministic checks, tests, and protection limits are owned by [Task plan lifecycle tools](TASK_PLAN_TOOLS.md). No automatic Serena configuration loading or model request is involved.
 
-Canonical Python implementations use the independent package names shown in the architecture contract. The `token_io_decoupling_mcp` namespace remains only for core/state adapter modules used by compatibility imports; it does not expose a CLI or default server factory. The old `token_io_mcp` import namespace is not exposed as a general API. The two immutable v1 migration sources retain `token_io_mcp.models` in their historical bytes; the state migration loader provides a temporary alias for `DatabaseKind` only while importing those modules, then removes it. Use the renamed core/state adapter paths for direct migration imports; importing frozen state migration modules directly bypasses the scoped loader and is unsupported. Compatibility files are owned by core and state without duplicate wheel paths.
+Canonical Python implementations use the independent package names shown in the architecture contract. The two MCP executables remain separately installed and expose their fixed manifests.
 
 The [Memory tools guide](SERENA_MEMORY_TOOLS.md) owns direct tail-read/write-check arguments, local path resolution, bounded-read results and matching limits. These tools read the current project's `.serena/memories/` files with Python's standard library; they do not use the separately configured task-plan backend.
 
 ## Capability report diagnostics
 
-`workflow_capabilities({})` is public and takes no arguments. `capability_details.schema_version=2` retains existing summaries and reports `support.local_stdio=available/local_stdio_request_scoping`. `runtime.server_mode=local_stdio` means each named MCP executable uses local request scope; without state-call metadata, `runtime.binding=request_required/local_codex_context_required`. These results are not authentication or operation authorization. Configuration details separately report plan backend, Memory paths, compliance reader, API and materialization conditions; unprobed dependencies are not readiness evidence. Legacy summaries `enhanced_binding=not_applicable` and `binding_transport=stdio` no longer claim host authentication.
+`workflow_capabilities({})` is public and takes no arguments. `capability_details.schema_version=3` reports static support and configured dependencies without probing API readiness. The top-level `trusted_binding` is `unverified` for the standard executable and reflects the injected provider for embedded use. `capability_details.runtime.server_mode` reports `public_only` or `embedded`; `binding_transport` is `unavailable` without an injected provider and `unverified` when embedded. These diagnostics do not authenticate callers or authorize operations. Configuration details separately report plan backend, Memory paths, compliance reader, API and materialization conditions; unprobed dependencies are not readiness evidence.
 
 ### Installed client runtime checks
 
@@ -110,7 +110,7 @@ The child-effort, decision-context, and delegation selectors make one API reques
 
 Authentication, authorization, configuration, quota, unknown errors, refusal, malformed/incomplete responses, and insufficient evidence are not retry candidates. Resolve the cause, refresh and re-hash stale facts/policy, or stop. Recovery guidance never changes the existing result status, reason, hash, fallback, or authority. Only a successful `available` selector result can be considered for later work after the usual gates pass.
 
-`DecisionAdvice` is returned inside state-changing evaluation operations. Its recovery guidance never authorizes repeating the enclosing mutation to retry advice: an identical idempotency-key replay returns the stored result and does not call Decisions again. Continue without advice or review the existing result. For other tools, metadata distinguishes read-only lookups, stateless API calls, idempotent writes, and guard/validation failures. Unknown mutation completion requires readback; replay only the exact payload and key. Permission, guard, and validation failures are not transient retries.
+Optional advice is a separate stateless API operation; structural checkpoint evaluations neither call Decisions nor persist an advice result. Recovery metadata applies to the API operation that returned it and never changes that operation's result status, reason, hash, fallback, or authority. Retry only a qualifying transient failure within the caller-tracked attempt limit, after rechecking current authorization and input. No state-changing replay or stored-result behavior is part of checkpoint evaluation.
 
 ## uv tool installation and Codex setup
 
@@ -136,7 +136,7 @@ Use the actual artifact version in the filename. Subsequent examples assume uv's
 
 ### Standard installation availability
 
-Standard installation directly supports local stdio state operations without a privileged service or external provider. Reload servers and start a fresh Codex CLI session from the intended project root. State calls require valid thread metadata; Root must register Workers first. Path, role, allocation and per-operation authorization checks remain. Public tools retain independent dependencies: existing project files for Memory, a configured plan backend, a configured compliance reader, both nonblank API environment variables plus per-call outbound authorization for API tools, and a registered Worker, pinned roots, fresh preflight and independent operator grant for materialization. Discovery is neither configuration nor permission.
+Standard installation exposes bounded, stateless rule navigation and supplied-fact structural checks over local stdio, alongside the separately configured task-plan service and other tools with their documented dependencies. These public rule/navigation operations do not require thread metadata, Root/Worker registration, or persisted workflow state. Read-only Memory helpers are scoped to the startup project's existing `.serena/memories/` files. The output materializer remains unavailable unless its trusted provider and independent per-call authorization are configured. API tools require both nonblank API environment variables and per-call outbound authorization. Discovery is neither configuration nor permission.
 
 With the Codex CLI available on `PATH`, register both MCP executables in one operation:
 
@@ -253,11 +253,11 @@ When a terminal invocation works but an MCP request reports missing configuratio
 
 
 
-## Local stdio session context
+## Local stdio workflow navigation
 
-The CLI derives `.local/state/token-io-decoupling` from the process's OS account home, ignoring caller-modified `HOME`. Startup cwd fixes the project; state is partitioned by project hash and thread. No UID 0, inherited socket or provider factory is needed; the old host-channel implementation and command options are removed. Internal Python provider arguments remain only as compatible embedding/test seams.
+The standard local stdio tools provide bounded, stateless workflow-rule navigation and structural checks over caller-supplied facts. They do not maintain thread, project, Root, Worker, allocation, or checkpoint state between calls. The startup working directory scopes project-local read-only Memory helpers; it does not establish caller identity or authorization.
 
-[Local session context](CODEX_CALLER_CONTEXT.md) owns metadata, Root/Worker registration, role/path checks and the same-user trust boundary. There is no independent process-authentication or OS-level Worker-isolation claim. Installed-package checks verify real stdio behavior. The final SDK inspection remains limited to version, discovery, capabilities and rules, with no model turns or state mutations.
+The separate output materializer is unavailable by default and requires trusted startup context, an independent operator grant, and matching per-call binding. See [Output materialization](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/output-materialization.md) and [caller context](CODEX_CALLER_CONTEXT.md) for the actual guard boundaries. Installed-package checks verify stdio discovery and bounded behavior; the final SDK inspection remains limited to version, discovery, capabilities, and rules, with no model turns or mutations.
 
 ## Required configuration for real API requests
 
@@ -271,9 +271,9 @@ Do not substitute a hardcoded key or endpoint, caller-supplied replacement, or t
 
 Optional checkpoint advice remains disabled by default. Its real requests additionally require explicit enablement and authorization for outbound data; this document alone grants neither. The ordinary test suite uses mocks, while a real smoke test requires a separate explicit opt-in and must obey the same two-variable requirement.
 
-An authorized embedding enables advice with `DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True)` through the factory's `decisions_config` argument. Optional `semantic_input` on the two evaluation tools is limited to task intent, output class, Contract change, verification impact, and Control. The response keeps the Core result separate from advice. With no semantic input, the original Core response is retained. Advice never selects or confirms a Gate branch; stale, invalid, refused, unavailable, or replayed advice returns to document judgment.
+The checkpoint tools perform deterministic structural checks on bounded, caller-supplied facts. Optional decision advice is a separate operation and is not embedded in, or persisted by, those evaluations. Any advice request requires explicit outbound-data authorization and current-input review; advice cannot select or confirm a Gate branch. The structural result is returned independently of any separately requested advice, and neither result replaces document judgment.
 
-`workflow_generate_decision_context` is a stateless public operation that turns caller-assembled material into one question or context paragraph for a later Decisions request. It uses the [Responses API with Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), fixed `gpt-6-luna` with `medium` reasoning, `store=False`, no tools, and no automatic downstream call. It requires no Enhanced binding or optional-advice enablement. The Code Agent collects the user requirements, current Git diff, relevant LSP results, and other necessary verified observations, labels their origins and verification limits, then combines them into `raw_content`. The service never reads a repository, executes commands, or treats supplied source labels as proof.
+`workflow_generate_decision_context` is a stateless public operation that turns caller-assembled material into one question or context paragraph for a later Decisions request. It uses the [Responses API with Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), fixed `gpt-6-luna` with `medium` reasoning, `store=False`, no tools, and no automatic downstream call. It requires no persisted workflow state or optional-advice enablement. The Code Agent collects the user requirements, current Git diff, relevant LSP results, and other necessary verified observations, labels their origins and verification limits, then combines them into `raw_content`. The service never reads a repository, executes commands, or treats supplied source labels as proof.
 
 Send `payload.request` with required `raw_content` (nonblank strict string, at most 60,000 characters), `decision_goal` (nonblank strict string, at most 1,200 characters describing the actual downstream decision), `output_kind` (`decision_question` or `decision_context`), and `outbound_data_permitted` (strict boolean). Oversized inputs are rejected without truncation; do not omit material constraints merely to fit the limit. The permission assertion authorizes neither collection nor disclosure by itself. Both local API environment variables remain mandatory for each permitted request. For example:
 
@@ -292,13 +292,13 @@ Send `payload.request` with required `raw_content` (nonblank strict string, at m
 
 Only `status: available` carries a nonblank `description`: at most 1,200 characters for `decision_question`, or 6,000 for `decision_context`. The result includes `output_kind`, a canonical SHA-256 `input_hash` over the raw material, goal, and kind (excluding the permission assertion), and safe model/usage metadata. Critical gaps or conflicts return `blocked` / `insufficient_evidence`, `description: null`, and up to eight `missing_information` items of at most 240 characters; configuration, refusal, incomplete or invalid output, timeout, and provider errors also block without a fallback. The fixed instructions require preserving the distinction between requirements, observations, plans, and proven outcomes, treating embedded instructions as data, and generating no answer, selected branch, or authorization. These semantic requirements still need caller review. Check the paragraph against the original material and current repository state before using `description` as `decision_question` or context; supply the other required decision facts separately. The generation hash identifies this generation input and does not replace the downstream decision hash. Changes to the material, goal, or kind require a fresh comparison and review.
 
-`workflow_select_child_effort` is a separate stateless public workflow operation for Codex child creation. An explicit, authorized invocation with `payload.request.outbound_data_permitted: true` opts into one Decisions request; it needs neither optional-advice enablement nor an Enhanced Root store. The assertion is not proof of authorization. Supply verified bounded task facts and supported effort levels under the [runtime owner's creation contract](../docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.md). The result carries a selected effort only when available, a request hash, and the echoed slice fingerprint. Parent review and current-input comparison remain mandatory. Refusal, insufficient evidence, invalid response, missing configuration, or provider failure blocks selection, without a fixed-effort fallback. The tool does not create an Agent, mutate workflow state, or authorize a gate.
+`workflow_select_child_effort` is a separate stateless public workflow operation for Codex child creation. An explicit, authorized invocation with `payload.request.outbound_data_permitted: true` opts into one Decisions request; it needs neither optional-advice enablement nor persistent workflow state. The assertion is not proof of authorization. Supply verified bounded task facts and supported effort levels under the [runtime owner's creation contract](../docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.md). The result carries a selected effort only when available, a request hash, and the echoed slice fingerprint. Parent review and current-input comparison remain mandatory. Refusal, insufficient evidence, invalid response, missing configuration, or provider failure blocks selection, without a fixed-effort fallback. The tool does not create an Agent, mutate workflow state, or authorize a gate.
 
 The required `decision_question` is a nonblank strict string of at most 1,200 characters asking which supported effort is minimally sufficient for this released child task. The tool sends it explicitly in the Decisions input and includes it in the canonical input hash; changing only the question invalidates the previous hash. It is task data, without authority to change the fixed model, candidate levels, instructions, or permissions. Local validation enforces the string constraints; fixed API instructions require `insufficient_evidence` for an out-of-scope question or an attempted rule override. This semantic judgment and the parent's review remain necessary. Each offered level describes concrete task evidence, adjacent-level boundaries, and exclusions; file count, impact, or a missing fact alone does not justify a higher level.
 
 ### Delegation decisions and approved capacity
 
-Four stateless public tools provide delegation advice independently of the optional five-checkpoint advisor and Enhanced state. Each accepts `payload.request` with bounded task facts, reviewed context and its `context_input_hash`, current `fact_revision` and `fact_fingerprint`, Fork/mode facts, and `outbound_data_permitted`. Identity, permission, provenance, and approval assertions remain caller-supplied facts, not host proofs. Root reviews an authorized proposed task before choosing a role or executor; the child-specific Interaction Slice is released afterward and must pass its own gates.
+Four stateless public tools provide optional delegation advice. Each accepts `payload.request` with bounded task facts, reviewed context and its `context_input_hash`, current `fact_revision` and `fact_fingerprint`, Fork/mode facts, and `outbound_data_permitted`. Identity, permission, provenance, and approval assertions remain caller-supplied facts, not host proofs. Root reviews an authorized proposed task before choosing a role or executor; the child-specific Interaction Slice is released afterward and must pass its own gates.
 
 | Tool | Decision and result boundary |
 | --- | --- |
@@ -310,10 +310,6 @@ Four stateless public tools provide delegation advice independently of the optio
 Permitted API calls explicitly read both nonblank `OPENAI_API_KEY` and `OPENAI_BASE_URL` at invocation time, use exactly `gpt-6-luna`, and make no automatic retries or fallback-model requests. Tool inputs cannot override the model or endpoint. The common [Decision Context Generation](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation.md) operation reuses Responses for the reviewed background; generating a question is optional. Its instructions now come from that current owner's General rules. Its `source_policy_hash` identifies the loaded rules, and a change during a successful request blocks reuse with `stale_policy`.
 
 The selectors load their current owner instructions and concrete choice descriptions through `RuleLoader`. Results distinguish `available`, `skipped`, `fallback`, `blocked`, and `stale`, with request/context/fact and source-policy hashes. Root must recheck them against current evidence before any effect. Missing configuration or required policy blocks before a request; stale rules require refresh rather than fallback. No selector creates a child, dispatches work, changes a budget, or establishes trusted binding. These tools accept one already bounded task; they do not decompose an instruction into multiple tasks.
-
-The protected Root `delegation_reserve` accepts optional `budget_approval` only after current unassigned capacity is exhausted. Root must reference actual explicit user approval through `user_approval` and request exactly the current count plus one for a different unoccupied role. Existing binding, guards, revision, and idempotency requirements still apply. The transaction retains the prior source, records the approval, adds one slot, and reserves that role atomically; replay cannot add it twice. Existing unassigned capacity needs no increase. Approval never permits a repeated role or replacement child; see [Delegation Count Gate](../docs/skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.md).
-
-Before creation begins, protected Root `delegation_unreserve` can cancel a role reservation so that the same unused slot can be planned again. It requires explicit evidence that creation has not started, current revision and idempotency, and the existing Root binding/guards. It rejects bound or ambiguous identities and any allocation with Slice, dispatch or Worker history. The evidence is a Root attestation, not independent host proof. Cancellation clears only the unused reservation: it neither reduces the locked count nor releases a role or identity after child creation. Refresh allocation facts before selecting or reserving a new role.
 
 ### Component optimization measurement
 
@@ -336,14 +332,6 @@ source ~/.zshrc
 TOKEN_IO_RUN_OFFICIAL_API=1 uv run --managed-python --locked -- pytest tests/real_api_tests/test_official_httpx2.py -q -s --tb=no
 ```
 
-The older task-intent advisor smoke remains separate and uses its own opt-in. After explicit authorization for that real synthetic request, run from `mcp/` with both local environment variables configured:
-
-```sh
-TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/real_api_tests/decisions_real_smoke.py
-```
-
-Without the opt-in, the script makes no request. It uses a temporary Root database and a synthetic trusted provider, calls `DecisionsAdvisor` directly, and reports only safe status, reason, classification metadata, choice, and usage. It does not prove a real host binding or a real API call through the MCP handler. MCP handler/protocol tests instead use mocked API transport. The advisor reads both required local variables at invocation time; neither the script nor the project supplies replacement credentials or a default endpoint.
-
 ## Build, rule resources, and installed checks
 
 Build all eight wheels and source distributions from `mcp/`:
@@ -362,23 +350,8 @@ The build also packages General rules in both languages for eight allowlisted ow
 
 The launcher build regenerates its Skill snapshot zip when the Skill source markers and canonical compliance helper are present, so a matching old helper cannot hide changed documentation. A detached build without those sources requires a bundled snapshot with unique safe entry paths, valid CRCs, and all six required Skill/metadata/helper/loader/checker text entries containing non-whitespace UTF-8. It also checks helper parity when the canonical helper is available. This validates those required entries, not every document's semantics or completeness. Missing or invalid snapshots fail the build. Regression tests exercise fresh-source rebuilding, valid detached fallback, and CRC-valid snapshots with empty required entries.
 
-Released migration files belong to the state package and remain byte-for-byte unchanged because database history records source checksums. The state loader temporarily supplies the historical `token_io_mcp.models.DatabaseKind` import required by the two v1 files; it removes the alias after importing them. Directly importing frozen state migration modules bypasses this scoped loader and is unsupported; use the renamed adapter migration path for direct imports. Namespace relocation does not authorize rewriting history, checksum verification, or schema versions. Tests cover legacy history and upgrades as well as fresh databases.
-
 The [MCP CI workflow](../.github/workflows/mcp.yml) runs locked checks on managed Python 3.11 and 3.14 and a separate installed-wheel job. Export third-party build/runtime constraints with `uv export --no-emit-workspace` (plus `--all-groups` for builds or `--no-dev` for runtime). Workspace members are supplied by the local artifacts, not editable requirements. To install from the detached wheel set, use its directory as `--find-links` and install the root `token_io_decoupling-0.1.0-py3-none-any.whl`; retain the configured index for locked third-party dependencies. See CI for the complete commands.
 
 For temporary installation, set command-local `UV_TOOL_DIR` and `UV_TOOL_BIN_DIR` to absolute temporary directories. Run `tests/support/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-decoupling` with the locked workspace interpreter. It starts the two separate MCP executables outside the checkout with an empty `PYTHONPATH`, verifies their exact inventories and binding rejection, checks both rule languages, and runs setup dry-run with an empty `PATH`. Source-root tool installation is checked separately. These results prove packaging and stdio behavior, not actual host binding or a GitHub Actions run.
 
 The [documentation workflow](../.github/workflows/multilingual-docs.yml) retains multilingual/link/route validators and scanner regressions; it prunes generated resources and environments while checking authored workspace documentation.
-
-## Native recovery development checks
-
-The [Native Authority Transfer](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer.md) and [Native Reconciliation](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation.md) owners define the workflow boundaries. The checks below verify the implemented service cases; they do not establish a full export or host-stop capability.
-
-Use temporary databases and synthetic bindings for recovery development. The focused state-service cases exercise explicit full-set adjudication, preserved comparison history, recovery Revision/Epoch freshness, outstanding evidence requests, and blocked dispatch side effects. They also cover exact confirmation without hiding older conflicts, fresh Control before the first post-recovery Slice, effect-free confirmed dispatch replay, and bounded readback of oversized legacy snapshots. Migration tests distinguish proven legacy confirmation pairs from malformed or nonadjacent records. Run them from `mcp/` before the complete suite:
-
-```sh
-uv run --managed-python --locked -- pytest tests/mock_api_tests/test_state_service.py -k native
-uv run --managed-python --locked -- pytest tests/unit_tests/test_migrations.py
-```
-
-These checks do not prove a host can stop a Worker. The supported material-recovery path has existing Root control state and no bound Worker, active Worker Slice, or pending dispatch. It adjudicates the Contract source and semantic-reference pair; it does not reconstruct missing identity, dispatch, lifecycle, or acceptance history. Keep unsupported states blocked and preserve their records. Evidence references and request hashes provide review pointers and integrity binding; neither authenticates a caller or independently establishes freshness or quiescence.

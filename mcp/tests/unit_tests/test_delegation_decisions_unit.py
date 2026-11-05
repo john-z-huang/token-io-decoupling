@@ -4,14 +4,10 @@ from pathlib import Path
 from typing import Any, Literal
 
 import pytest
-from token_io_decoupling_core.models import CodingMode, ModeCount, SemanticRef
+from token_io_decoupling_core.models import CodingMode
 from token_io_decoupling_core.rules import RuleLoader
-from token_io_decoupling_core.state_models import (
+from token_io_decoupling_core.workflow_models import (
     AllocationRole,
-    AllocationStatus,
-    EpochSnapshot,
-    NativeAllocation,
-    NativeWorkflowSnapshot,
 )
 from token_io_decoupling_workflow.delegation_decisions import (
     ChildCandidate,
@@ -175,54 +171,16 @@ def test_role_selection_outbound_permission_blocks_before_decisions() -> None:
     assert calls == []
 
 
-def test_native_snapshot_rejects_duplicate_role_and_child_identities() -> None:
-    def snapshot(allocations: list[NativeAllocation]) -> NativeWorkflowSnapshot:
-        return NativeWorkflowSnapshot(
-            project_id="project",
-            root_session_id="root",
-            run_id="run",
-            mode_count=ModeCount(mode=CodingMode.MULTI_AGENT, child_count=len(allocations)),
-            mode_source="explicit",
-            lifecycle="pending",
-            source=SemanticRef(uri="memory://contract", content_hash="a" * 64),
-            revision=0,
-            allocations=allocations,
-            epochs=EpochSnapshot(implementation_content=0, documentation=0, git_metadata=0),
+def test_selection_inputs_reject_duplicate_current_session_identity_facts() -> None:
+    with pytest.raises(ValueError, match="created and reserved role facts must be unique"):
+        _role_payload(
+            created_roles=[AllocationRole.PRIMARY_OUTPUT],
+            reserved_roles=[AllocationRole.PRIMARY_OUTPUT],
         )
 
-    duplicate_role = [
-        NativeAllocation(
-            allocation_id="slot-1",
-            role=AllocationRole.PRIMARY_OUTPUT,
-            worker_session_id=None,
-            status=AllocationStatus.RESERVED,
-        ),
-        NativeAllocation(
-            allocation_id="slot-2",
-            role=AllocationRole.PRIMARY_OUTPUT,
-            worker_session_id=None,
-            status=AllocationStatus.RESERVED,
-        ),
-    ]
-    with pytest.raises(ValueError, match="roles must be unique"):
-        snapshot(duplicate_role)
-
-    duplicate_child = [
-        NativeAllocation(
-            allocation_id="slot-1",
-            role=AllocationRole.PRIMARY_OUTPUT,
-            worker_session_id="child-session",
-            status=AllocationStatus.BOUND,
-        ),
-        NativeAllocation(
-            allocation_id="slot-2",
-            role=AllocationRole.CONTEXT_BOOTSTRAP_REFRESH,
-            worker_session_id="child-session",
-            status=AllocationStatus.BOUND,
-        ),
-    ]
-    with pytest.raises(ValueError, match="Session IDs must be unique"):
-        snapshot(duplicate_child)
+    candidate = _candidate("child-a", AllocationRole.PRIMARY_OUTPUT)
+    with pytest.raises(ValueError, match="candidate_ref values must be unique"):
+        _child_payload(candidate, candidate)
 
 
 @pytest.mark.parametrize("mode", [CodingMode.SINGLE_AGENT, CodingMode.MULTI_AGENT])

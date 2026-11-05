@@ -8,10 +8,10 @@
 
 | 字段 | 要求 |
 | --- | --- |
-| 必需输入 | 当前任务范围与 Contract、已释放的入口/路线/模式证据、当前 Session 身份/角色事实、所选 Native/Enhanced 路径证据，以及已知恢复/效果状态。规范记录是本模块的输出，不是入口前置条件。 |
-| 允许效果 | 核验当前状态；仅执行直接 owner 允许且本任务已有授权的 state 打开/恢复或 audit 记录效果。没有现有的操作级授权，不得转移 authority、写入迁移或执行其他修改。 |
-| 结果 | 本模块以规范 authority、有守卫的状态读回、owner 已完成的审计结果和适用的 Multi-Agent 容量证据返回 `complete`；否则返回带暂停位置的 `needs_prerequisite` 或 `blocked`。条件子步骤可记录带原因的 `not_applicable`；必需的 Session 模块本身不得整体跳过为不适用。 |
-| 新鲜度 | 将记录证据绑定到当前 Session 身份、规范 revision、审计 revision/status/deadline、allocation revision、来源和相关 epoch。任何实质恢复变化都会使受影响事实失效；在审计或容量结果被消费前，须重核恢复事实并重新读回 state。 |
+| 必需输入 | 当前任务范围和 Contract、已释放入口/路线/模式证据、当前 Session 身份/角色事实及父级控制记录来源。此处核验该记录，但它不是入口前置条件。 |
+| 允许效果 | 读取并核实当前 Session 事实和父级控制记录；在其 owner 授权下将审计偏好应用于该记录。 |
+| 结果 | 适用时，模块返回含当前 Session 事实、规范 parent-context 记录回读、生效审计偏好和 Multi-Agent 容量证据的 `complete`；否则返回带暂停位置的 `needs_prerequisite` 或 `blocked`。条件子步骤可记录有原因的 `not_applicable`；Session 模块本身不可跳过。 |
+| 新鲜度 | 将证据绑定至当前 Session 身份/角色、最新 parent-context 回读、显式/缺省审计值、分配状态、来源及相关 epoch。实质变化会使受影响事实失效；消费依赖结果前重新读取父级控制记录。 |
 
 ## 工作流路线图
 
@@ -51,10 +51,10 @@ flowchart TD
 ## 有序模块清单
 
 1. **SR00 — 解析入口。** 提供本声明、当前任务范围、已释放的入口/路线/模式证据、Session 身份/角色事实、所选路径、epoch 和 continuation/效果状态，调用[模块入口解析](../../layer-03-workflow-checkpoints/module-entry-resolution_zh_cn.md)。规范记录由本模块建立，不是入口前置条件。从记录的子步骤恢复。缺少前置条件时，以 owner 和暂停位置返回 `needs_prerequisite`；状态不安全或无法恢复时返回 `blocked`。
-2. **SR01 — 仅重核实质恢复事实。** 进入时使用已有的当前恢复信号。若[Session 状态解析](../../layer-03-workflow-checkpoints/session-state-resolution_zh_cn.md)随后发现对账或转移实质改变当前事实或授权决策，则在审计前暂停，并返回此处。只根据直接证据重核当前[Contract](../../layer-02-workflow-concepts/entry-and-context/contract_zh_cn.md)、[Context](../../layer-02-workflow-concepts/entry-and-context/context_zh_cn.md)和[Decision](../../layer-02-workflow-concepts/decision-and-execution/decision_zh_cn.md)。不得重做规划、请求建议、重开 Mode、重复已完成的提问或启动下游效果。没有实质恢复需要复核时，记录 `not_applicable` 及观察到的原因。当前事实缺失时返回 `needs_prerequisite`；事实冲突或状态不安全时返回 `blocked`。触发重核后恢复 SR02，以建立并读回当前规范状态。
-3. **SR02 — 解析规范状态并完成读回。** 应用[Session 状态解析](../../layer-03-workflow-checkpoints/session-state-resolution_zh_cn.md)，并仅按触发条件应用其直接链接的 Session、角色、Context Firewall、authority、schema、迁移、对账和转移 owners。执行状态操作前核验当前身份、角色、规范 authority、必需守卫/schema 及打开/恢复条件。保留现有记录；故障不等于 authority 转移，状态缺失也不允许重建。通过读回确认当前规范记录、身份、revision 和适用的 allocation 状态。若对账/转移发现实质变化，返回 SR01，不进入审计；SR01 重核事实后重新执行本步骤并确认当前读回。前置证据缺失时返回 `needs_prerequisite`；authority、守卫或读回未解决的失败返回 `blocked`。
-4. **SR03 — 解决并确认审计结果。** 仅在 SR02 读回后，应用[Session 审计解决](../../layer-03-workflow-checkpoints/session-audit-resolution_zh_cn.md)、[Session 审计可见性](../../layer-01-fundamental-concepts/session-runtime/session-audit-visibility_zh_cn.md)、[推理摘要可见性](../../layer-01-fundamental-concepts/session-runtime/reasoning-summary-visibility_zh_cn.md)及相关状态记录 owner。按配置的 cadence，在完成或实质边界输出简短且安全的进度摘要；履行必需的进度/报告职责，同时不暴露私有推理。复用有效且已完成的审计结果，并核验其规范读回。审计状态为 `pending` 时，按原 deadline 恢复，并保留已观察的提问/答复状态；不得重复提问，也不得把 pending 计为完成。必需输入/解决仍待处理时返回 `needs_prerequisite`；owner 无法安全提问、等待或读回时返回 `blocked`。只有 owner 定义的完成证据和读回均通过后才继续。
-5. **SR04 — 仅在适用 Multi-Agent 时核验容量。** 在已释放的 Multi-Agent 模式下，任何实质恢复后重新读取当前有界 allocation。应用[委派数量门禁](../../layer-01-fundamental-concepts/delegation/delegation-mode-count-gate_zh_cn.md)、[委派状态记录](../../layer-01-fundamental-concepts/delegation/delegation-state-record_zh_cn.md)、所选路径适用时的[Enhanced State Store](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store_zh_cn.md)，以及条件适用的[子代理职责分配](../../layer-01-fundamental-concepts/delegation/delegation-child-role-allocation_zh_cn.md)，核实锁定容量、已占角色和真实未分配名额。这里只读确认：不得选择/预留角色、释放 Slice、创建子代理或回收名额。Single-Agent 模式下，将容量记录为 `not_applicable` 并说明原因；不加载子代理专属 owners。以当前 Session、审计和适用 allocation 证据返回 `complete`；不得暗示子代理角色或任务已获授权。此条件性容量结果不使必需的 Session/state/audit 模块整体 `not_applicable`。
+2. **SR01 — 复核实质变化。** 若当前 Contract、Context 或 Decision 发生实质变化，在依赖它们前审阅当前直接证据。不得重做规划、请求建议、重开 Mode 或启动下游效果。无实质变化时，记录有原因的 `not_applicable`。事实缺失时返回 `needs_prerequisite`；冲突或不安全事实返回 `blocked`。
+3. **SR02 — 核验规范 parent-context 记录。** 应用[Session 状态解决](../../layer-03-workflow-checkpoints/session-state-resolution_zh_cn.md)及其直接链接的 Session、角色和 Context Firewall owner。核实已释放的 mode/count、当前身份和角色、逐操作所需权限以及记录一致性。回读规范记录和适用的 allocation 状态。结构工具结果或应用请求范围不能证明身份或授权。证据缺失时返回 `needs_prerequisite`；未解决冲突或必需 owner 不可用时返回 `blocked`。
+4. **SR03 — 应用审计偏好。** 应用[Session 审计解决](../../layer-03-workflow-checkpoints/session-audit-resolution_zh_cn.md)、[Session Audit Visibility](../../layer-01-fundamental-concepts/session-runtime/session-audit-visibility_zh_cn.md)、[Reasoning Summary Visibility](../../layer-01-fundamental-concepts/session-runtime/reasoning-summary-visibility_zh_cn.md)和[委派状态记录](../../layer-01-fundamental-concepts/delegation/delegation-state-record_zh_cn.md)。保留必需进度/报告义务和保密规则。立即应用显式偏好或缺省值；不得将提示、计时器、迁移或审计偏好设为前置条件。Worker 日志可见性只依据实际访问证据记录；仅当必需日志证据不可用或未验证时，才阻塞依赖它的判断。
+5. **SR04 — 仅在 Multi-Agent 适用时核验容量。** 在已放行 Multi-Agent 模式下，读取当前父级控制分配。应用[委派数量门禁](../../layer-01-fundamental-concepts/delegation/delegation-mode-count-gate_zh_cn.md)、[委派状态记录](../../layer-01-fundamental-concepts/delegation/delegation-state-record_zh_cn.md)，并按条件应用[子代理职责分配](../../layer-01-fundamental-concepts/delegation/delegation-child-role-allocation_zh_cn.md)，核实锁定容量、已占用角色和未分配名额。这只是只读核验：不得选择/预留角色、释放 Slice、创建子代理或回收名额。Single-Agent 模式记录附有理由的 `not_applicable`。返回 `complete`，并附上当前父级记录读回、生效的审计偏好和适用的容量证据；这些证据均不授权子代理任务。
 
 ## 相关概念
 

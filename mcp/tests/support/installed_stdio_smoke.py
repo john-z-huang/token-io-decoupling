@@ -12,81 +12,9 @@ import tempfile
 from pathlib import Path
 
 from mcp import Client, StdioServerParameters
+from token_io_decoupling_core.server_tools import TOOLS_SERVER_TOOLS, WORKFLOW_TOOLS
 
-EXPECTED_TOOLS = {
-    "workflow": {
-        "workflow_capabilities",
-        "task_plan_update",
-        "task_plan_complete",
-        "task_plan_archive",
-        "serena_memory_tail_read",
-        "serena_memory_write_check",
-        "rules_get_context",
-        "validate_decoupling_compliance",
-        "decide_decoupling_workflow",
-        "workflow_select_child_effort",
-        "workflow_generate_decision_context",
-        "workflow_select_child_role",
-        "workflow_select_executor",
-        "workflow_select_child",
-        "workflow_assess_output_tokens",
-        "workflow_evaluate",
-        "evaluate_control_checkpoint",
-    },
-    "tools": {
-        "workflow_open",
-        "delegation_reserve",
-        "delegation_unreserve",
-        "delegation_bind",
-        "slice_check",
-        "slice_release",
-        "workflow_transition",
-        "parent_get_worker_summary",
-        "workflow_reconcile",
-        "worker_get_assignment",
-        "materialize_decoupled_output",
-        "worker_record_progress",
-        "worker_get_evidence",
-        "worker_report_blocker",
-        "worker_get_recovery_context",
-        "database_schema_status",
-        "state_get",
-        "record_evidence",
-        "check_branch_names",
-        "check_commit_message",
-        "check_staged_changes",
-        "stage_repository_paths",
-        "commit_repository_changes",
-        "list_repository_worktrees",
-        "switch_repository_branch",
-        "create_repository_branch",
-        "pull_origin_branch_fast_forward",
-        "fetch_upstream_branch",
-        "merge_upstream_branch_fast_forward",
-        "rebase_repository_branch",
-        "remove_repository_worktree",
-        "create_repository_worktree",
-        "capture_untracked_file_manifest",
-        "copy_untracked_files_to_worktree",
-        "configure_project_hooks_path",
-        "audit_issue_pr_policy",
-        "cleanup_merged_pr_local_branch",
-        "audit_repository_state",
-        "list_github_issue_labels",
-        "create_github_issue",
-        "push_issue_branch_to_origin",
-        "create_github_pull_request",
-        "merge_github_pull_request",
-        "push_fork_main_fast_forward",
-        "get_codex_session_summary_guidance",
-        "order_codex_session_sources",
-        "prepare_codex_session_memory",
-        "decide_skill_workflow",
-        "decide_codex_session_action",
-        "generate_skill_content",
-        "check_api_input",
-    },
-}
+EXPECTED_TOOLS = {"workflow": WORKFLOW_TOOLS, "tools": TOOLS_SERVER_TOOLS}
 SERVER_NAMES = {
     "workflow": "token-io-decoupling-workflow",
     "tools": "token-io-decoupling-tools",
@@ -143,10 +71,10 @@ async def _exercise(
             ):
                 raise AssertionError(f"installed {server_kind} server omitted discovery metadata")
             tools = await client.list_tools()
-            if "threadId/sessionId" not in client.instructions:
-                raise AssertionError("server discovery omitted the standard-install limitation")
-            if "threadId/sessionId" not in client.server_info.description:
-                raise AssertionError("server description omitted the standard-install limitation")
+            if "persisted workflow state" not in client.instructions:
+                raise AssertionError("server discovery omitted the stateless workflow limitation")
+            if "persisted workflow state" not in client.server_info.description:
+                raise AssertionError("server description omitted the stateless workflow limitation")
             names = {tool.name for tool in tools.tools}
             if names != EXPECTED_TOOLS[server_kind]:
                 raise AssertionError(
@@ -179,17 +107,18 @@ async def _exercise(
                         )
                 capabilities = await client.call_tool("workflow_capabilities", {})
                 capability_data = json.loads(_text(capabilities))
-                if capabilities.is_error or capability_data.get("mode_fallback") != "Native":
-                    raise AssertionError("installed unbound CLI did not report Native fallback")
+                if capabilities.is_error:
+                    raise AssertionError("installed unbound CLI did not return capability data")
                 details = capability_data["capability_details"]
                 if (
-                    details["support"]["local_stdio"]["status"] != "available"
-                    or details["runtime"]["binding"]["reason_code"]
-                    != "local_codex_context_required"
+                    details["schema_version"] != 3
+                    or details["support"]["agent_runtime"]["status"] != "available"
+                    or details["runtime"]["binding"]["reason_code"] != "provider_not_configured"
+                    or details["runtime"]["server_mode"]["status"] != "public_only"
                     or details["configuration"]["public_interfaces"]["reason_code"]
                     != "tool_dependencies_not_probed"
                 ):
-                    raise AssertionError("installed CLI misstated binding/readiness boundaries")
+                    raise AssertionError("installed CLI misstated capability boundaries")
                 denied_context = await client.call_tool(
                     "workflow_generate_decision_context",
                     {
@@ -371,51 +300,6 @@ async def _exercise(
                         raise AssertionError(
                             f"installed wheel returned incomplete {language} Contract Actions"
                         )
-                denied = await client.call_tool(
-                    "workflow_evaluate",
-                    {
-                        "payload": {
-                            "node_id": "contract",
-                            "expected_revision": 0,
-                            "idempotency_key": "unbound-smoke-evaluation",
-                        }
-                    },
-                )
-                if not denied.is_error or "context" not in _text(denied).casefold():
-                    raise AssertionError("unbound workflow evaluation escaped its binding gate")
-            else:
-                protected_calls = (
-                    (
-                        "workflow_open",
-                        {
-                            "payload": {
-                                "mode_count": {"mode": "Multi-Agent Coding", "child_count": 1},
-                                "mode_source": "explicit",
-                                "source": {
-                                    "uri": "memory://unbound-smoke",
-                                    "content_hash": "a" * 64,
-                                },
-                                "semantic_references": [],
-                                "expected_revision": 0,
-                                "idempotency_key": "unbound-smoke-open",
-                            }
-                        },
-                    ),
-                    ("worker_get_assignment", {}),
-                    ("state_get", {"payload": {}}),
-                )
-                for protected_tool, arguments in protected_calls:
-                    rejected = await client.call_tool(protected_tool, arguments)
-                    if not rejected.is_error or "context" not in _text(rejected).casefold():
-                        raise AssertionError(f"unbound call to {protected_tool} escaped its guard")
-                status = await client.call_tool("database_schema_status", {})
-                status_text = _text(status)
-                if (
-                    status.is_error
-                    or '"available": false' not in status_text
-                    or "no state path was inspected" not in status_text
-                ):
-                    raise AssertionError("unbound schema status inspected a state path")
             expected_entries = {".serena"} if memory_content is not None else set()
             if {entry.name for entry in cwd.iterdir()} != expected_entries:
                 raise AssertionError(
@@ -461,9 +345,9 @@ def _exercise_codex_dry_run(cli_path: Path, repo_root: Path) -> None:
                 raise AssertionError(f"setup dry-run omitted the installed {name} command")
         if (
             "OPENAI_TIMEOUT_MAX_RETRIES" not in result.stdout
-            or "application scope" not in lines[-1]
+            or "independent process authentication" not in result.stdout
         ):
-            raise AssertionError("setup dry-run omitted forwarding or binding guidance")
+            raise AssertionError("setup dry-run omitted environment forwarding or install limits")
 
 
 def main() -> None:

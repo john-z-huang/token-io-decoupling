@@ -7,11 +7,11 @@ import os
 import threading
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, Literal, cast
 
 import pytest
 from mcp import Client
 from pydantic import ValidationError
-from token_io_decoupling_core.binding import BindingError
 from token_io_decoupling_core.materialization_models import (
     AbsentBaseline,
     DirectoryIdentity,
@@ -29,37 +29,25 @@ from token_io_decoupling_core.materialization_models import (
     PreparedMaterializationManifest,
     SourceFact,
 )
-from token_io_decoupling_core.models import CodingMode, EvidenceRef, ModeCount, SemanticRef
-from token_io_decoupling_core.rules import RuleLoader
-from token_io_decoupling_core.state_models import (
+from token_io_decoupling_core.workflow_models import (
     BindingIdentity,
-    ChangeCategory,
-    CheckpointFact,
-    CheckpointNode,
-    EvidenceKind,
-    EvidenceSubmission,
-    FactDetermined,
-    FactKey,
     OutputClass,
-    ReferenceFactValue,
     SessionRole,
-    SliceSpec,
-    TypedEvidenceReference,
-    VerifiedChildBinding,
-    WorkflowOpenRequest,
 )
-from token_io_decoupling_core.state_models import (
+from token_io_decoupling_core.workflow_models import (
     HostCapability as Cap,
 )
-from token_io_decoupling_core.state_models import (
+from token_io_decoupling_core.workflow_models import (
     HostGuard as Guard,
 )
-from token_io_decoupling_state.service import StateService
 from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
 from token_io_decoupling_workflow.materialization_storage import MaterializationStorageError
 from token_io_decoupling_workflow.output_materialization import (
+    MaterializationAssignment,
+    MaterializationAuthorizationContext,
     OutputMaterializationService,
     OutputMaterializerConfig,
+    materialization_assignment_hash,
 )
 
 from token_io_decoupling.server import create_tools_server
@@ -71,141 +59,19 @@ def _result_text(result) -> str:
 
 PARENT_CAPS = frozenset(
     {
-        Cap.WORKFLOW_READ,
-        Cap.WORKFLOW_WRITE,
-        Cap.CHILD_IDENTITY_CHECK,
-        Cap.WORKER_STORE_CREATE,
-        Cap.PARENT_SUMMARY_READ,
+        Cap.WORKER_WRITE,
     }
 )
 PARENT_GUARDS = frozenset({Guard.IDENTITY_BOUND, Guard.SESSION_BOUND, Guard.PATH_BOUNDARY})
-CHILD_CAPS = frozenset(
-    {Cap.WORKER_READ, Cap.WORKER_WRITE, Cap.WORKER_STORE_CREATE, Cap.PARENT_SUMMARY_READ}
-)
+CHILD_CAPS = frozenset({Cap.WORKER_WRITE})
 CHILD_GUARDS = frozenset(
     {
         Guard.IDENTITY_BOUND,
         Guard.SESSION_BOUND,
         Guard.PATH_BOUNDARY,
         Guard.PARENT_CHILD_RELATION,
-        Guard.WORKER_STORE_ISOLATION,
     }
 )
-
-
-class _FakeBindings:
-    def __init__(self) -> None:
-        self.parent = BindingIdentity(
-            project_id="project-a",
-            root_session_id="root-a",
-            current_session_id="root-a",
-            role=SessionRole.PARENT,
-            capabilities=PARENT_CAPS,
-            guards=PARENT_GUARDS,
-        )
-        self.current = self.parent
-        self.children: dict[str, VerifiedChildBinding] = {}
-
-    def current_binding(self) -> BindingIdentity:
-        return self.current
-
-    def verify_child_binding(
-        self, parent: BindingIdentity, child_session_id: str
-    ) -> VerifiedChildBinding:
-        child = self.children.get(child_session_id)
-        if child is None or parent != self.parent:
-            raise BindingError("fake child is not registered")
-        return child
-
-    def add_child(self, session_id: str) -> None:
-        self.children[session_id] = VerifiedChildBinding(
-            project_id=self.parent.project_id,
-            root_session_id=self.parent.root_session_id,
-            parent_session_id=self.parent.current_session_id,
-            child_session_id=session_id,
-            capabilities=CHILD_CAPS,
-            guards=CHILD_GUARDS,
-        )
-
-    def become_worker(self, session_id: str) -> None:
-        self.current = BindingIdentity(
-            project_id=self.parent.project_id,
-            root_session_id=self.parent.root_session_id,
-            current_session_id=session_id,
-            parent_session_id=self.parent.root_session_id,
-            role=SessionRole.WORKER,
-            capabilities=CHILD_CAPS,
-            guards=CHILD_GUARDS,
-        )
-
-
-def ref(name: str) -> SemanticRef:
-    return SemanticRef(uri=f"test://{name}", content_hash="a" * 64)
-
-
-def setup(tmp_path: Path):
-    provider = _FakeBindings()
-    service = StateService(
-        provider,
-        state_root=tmp_path / "state",
-        rule_loader=RuleLoader(repository_root=Path(__file__).resolve().parents[3]),
-    )
-    service.workflow_open(
-        WorkflowOpenRequest(
-            mode_count=ModeCount(mode=CodingMode.MULTI_AGENT, child_count=1),
-            mode_source="explicit",
-            source=ref("materialization-plan"),
-            semantic_references=[],
-            idempotency_key="open-materialization-workflow",
-        )
-    )
-    return service, provider
-
-
-def prime_slice(service: StateService, spec: SliceSpec) -> None:
-    input_hash = service.slice_check(spec).input_hash
-    facts = {
-        FactKey.SLICE_OBJECTIVE: spec.objective,
-        FactKey.SLICE_AUTHORIZED_SCOPE: ref(f"slice-spec://{input_hash}"),
-        FactKey.RETURN_CONDITIONS: spec.return_conditions,
-        FactKey.UNRELEASED_BOUNDARY: spec.unreleased_boundary,
-    }
-    submission = EvidenceSubmission(
-        node_id=CheckpointNode.SLICE,
-        facts=[
-            CheckpointFact(
-                fact_key=key,
-                judgment=FactDetermined(
-                    status="determined",
-                    value=ReferenceFactValue(kind="semantic_ref", value=value),
-                ),
-            )
-            for key, value in facts.items()
-        ],
-        evidence_refs=[
-            TypedEvidenceReference(
-                kind=EvidenceKind.PARENT_SLICE_RELEASE,
-                reference=EvidenceRef(
-                    uri="test://materialization-slice-release", content_hash="b" * 64
-                ),
-            )
-        ],
-        input_hash=input_hash,
-    )
-    revision = service.workflow_get_state().revision
-    service.workflow_record_evidence(
-        submission,
-        expected_revision=revision,
-        idempotency_key=f"materialization-slice-evidence-{revision}",
-    )
-    revision = service.workflow_get_state().revision
-    service.workflow_evaluate(
-        CheckpointNode.SLICE,
-        branch="released",
-        input_hash=input_hash,
-        expected_revision=revision,
-        idempotency_key=f"materialization-slice-evaluation-{revision}",
-    )
 
 
 class _GrantProvider:
@@ -232,46 +98,36 @@ def _workspace(
         if parent != ".":
             (project / parent).mkdir(parents=True, exist_ok=True)
 
-    state, provider = setup(tmp_path)
-    allocation_id = state.workflow_get_state().allocations[0].allocation_id
-    revision = state.workflow_get_state().revision
-    state.delegation_reserve(
-        "Primary Output",
-        expected_revision=revision,
-        idempotency_key="reserve-materialization-role",
-    )
-    spec = SliceSpec(
-        allocation_id=allocation_id,
-        output_class=output_class,
-        objective=ref("materialization-objective"),
-        return_conditions=ref("materialization-returns"),
-        unreleased_boundary=ref("materialization-boundary"),
-        authorized_paths=paths,
-        change_categories=[
-            ChangeCategory.SKILL_INSTRUCTIONS
-            if output_class == OutputClass.SKILL_INSTRUCTIONS
-            else ChangeCategory.SOURCE_CODE
-        ],
-        write_content_memo=False,
-    )
-    prime_slice(state, spec)
-    revision = state.workflow_get_state().revision
-    state.slice_release(
-        spec,
-        expected_revision=revision,
-        idempotency_key="release-materialization-slice",
-    )
     worker_id = "worker-materialization"
-    provider.add_child(worker_id)
-    revision = state.workflow_get_state().revision
-    state.delegation_bind(
-        allocation_id,
-        worker_id,
-        expected_revision=revision,
-        idempotency_key="bind-materialization-worker",
+    binding = BindingIdentity(
+        project_id="project-a",
+        root_session_id="root-a",
+        current_session_id=worker_id,
+        parent_session_id="root-a",
+        role=SessionRole.WORKER,
+        capabilities=CHILD_CAPS,
+        guards=CHILD_GUARDS,
     )
-    provider.become_worker(worker_id)
-    binding, assignment, assignment_hash = state.worker_get_materialization_context()
+    assignment = MaterializationAssignment(
+        project_id="project-a",
+        root_session_id="root-a",
+        worker_session_id=worker_id,
+        allocation_id="allocation-a",
+        role="Primary Output",
+        output_class=cast(Literal["code_configuration", "skill_instructions"], output_class.value),
+        slice_id="slice-a",
+        authorized_paths=tuple(paths),
+    )
+    assignment_dict = assignment.model_dump(mode="json")
+    assignment_hash = materialization_assignment_hash(assignment)
+
+    class AuthorizationProvider:
+        def current_context(self):
+            return MaterializationAuthorizationContext(binding, assignment, assignment_hash)
+
+        def current_binding(self):
+            return binding
+
     preflight = CompliancePreflightService(project, {"generic_project"})
     project_stat = project.stat()
     artifact_stat = artifacts.stat()
@@ -281,13 +137,13 @@ def _workspace(
         revision=1,
         active=True,
         policy_version=1,
-        project_id=assignment["project_id"],
-        root_session_id=assignment["root_session_id"],
-        worker_session_id=assignment["worker_session_id"],
-        allocation_id=assignment["allocation_id"],
-        role=assignment["role"],
-        output_class=assignment["output_class"],
-        slice_id=assignment["slice_id"],
+        project_id=assignment_dict["project_id"],
+        root_session_id=assignment_dict["root_session_id"],
+        worker_session_id=assignment_dict["worker_session_id"],
+        allocation_id=assignment_dict["allocation_id"],
+        role=assignment_dict["role"],
+        output_class=assignment_dict["output_class"],
+        slice_id=assignment_dict["slice_id"],
         assignment_hash=assignment_hash,
         project_root=DirectoryIdentity(device=project_stat.st_dev, inode=project_stat.st_ino),
         artifact_root=DirectoryIdentity(device=artifact_stat.st_dev, inode=artifact_stat.st_ino),
@@ -297,14 +153,21 @@ def _workspace(
         allowed_templates=["literal_text", "json_document", "fact_markdown"],
         allow_responses_ordering=True,
     )
-    config = OutputMaterializerConfig(project, artifacts, grant_provider)
+    provider = AuthorizationProvider()
+    config = OutputMaterializerConfig(project, artifacts, grant_provider, provider)
     materializer = OutputMaterializationService(
-        state_service=state,
+        authorization_provider=provider,
         compliance_service=preflight,
         config=config,
     )
     assert binding.current_session_id == worker_id
-    return project, artifacts, state, provider, preflight, grant_provider, config, materializer
+    original_execute = materializer.execute
+
+    def scoped_execute(request, *, expected_binding=None):
+        return original_execute(request, expected_binding=expected_binding or binding)
+
+    cast(Any, materializer).execute = scoped_execute
+    return project, artifacts, binding, provider, preflight, grant_provider, config, materializer
 
 
 def _literal_file(path: str, content: str) -> MaterializationFileSpec:
@@ -326,13 +189,19 @@ def _string_field(result: dict[str, object], key: str) -> str:
     return value
 
 
-def _apply(materializer: OutputMaterializationService, prepared: dict[str, object]):
+def _apply(
+    materializer: OutputMaterializationService,
+    prepared: dict[str, object],
+    *,
+    expected_binding=None,
+):
     return materializer.execute(
         MaterializationApplyRequest(
             action="apply",
             prepared_id=_string_field(prepared, "prepared_id"),
             expected_manifest_hash=_string_field(prepared, "manifest_sha256"),
-        )
+        ),
+        expected_binding=expected_binding,
     )
 
 
@@ -393,9 +262,9 @@ def test_primary_output_skill_instructions_materialize_with_real_confirmed_assig
         )
     )
     try:
-        assignment = state.worker_get_materialization_context()[1]
-        assert assignment["role"] == "Primary Output"
-        assert assignment["output_class"] == "skill_instructions"
+        assignment = _provider.current_context().assignment
+        assert assignment.role == "Primary Output"
+        assert assignment.output_class == "skill_instructions"
         prepared = materializer.execute(_literal_prepare(path, "approved skill text\n"))
         assert prepared["status"] == "prepared"
         assert not (project / path).exists()
@@ -975,6 +844,82 @@ def test_revoked_grant_blocks_inspect_and_changed_assignment_hash_does_not_autho
         preflight.close()
 
 
+@pytest.mark.parametrize("caller_binding", [None, "different_worker"])
+def test_materialization_requires_matching_current_caller_binding(
+    tmp_path, caller_binding: str | None
+) -> None:
+    path = "src/output.txt"
+    project, artifacts, binding, _provider, preflight, _grant_provider, _config, materializer = (
+        _workspace(tmp_path, [path])
+    )
+    materializer.execute = OutputMaterializationService.execute.__get__(materializer)
+    try:
+        expected = (
+            binding.model_copy(update={"current_session_id": "another-worker"})
+            if caller_binding == "different_worker"
+            else None
+        )
+        result = materializer.execute(
+            _literal_prepare(path, "candidate\n"), expected_binding=expected
+        )
+        assert result["status"] == "blocked"
+        assert result["reason_code"] == "caller_binding_assignment_mismatch"
+        assert not (project / path).exists()
+        assert not list(artifacts.iterdir())
+    finally:
+        materializer.close()
+        preflight.close()
+
+
+@pytest.mark.parametrize(
+    ("binding_change", "expected_reason"),
+    [
+        ("missing_write", "worker_write_capability_missing"),
+        ("missing_identity_guard", "worker_binding_guards_missing"),
+        ("missing_session_guard", "worker_binding_guards_missing"),
+        ("missing_path_guard", "worker_binding_guards_missing"),
+    ],
+)
+def test_materialization_requires_write_capability_and_identity_session_path_guards(
+    tmp_path, binding_change: str, expected_reason: str
+) -> None:
+    path = "src/output.txt"
+    project, artifacts, binding, provider, preflight, _grant, _config, materializer = _workspace(
+        tmp_path, [path]
+    )
+    materializer.execute = OutputMaterializationService.execute.__get__(materializer)
+    original_context = provider.current_context
+    if binding_change == "missing_write":
+        altered_binding = binding.model_copy(update={"capabilities": frozenset()})
+    else:
+        missing_guard = {
+            "missing_identity_guard": Guard.IDENTITY_BOUND,
+            "missing_session_guard": Guard.SESSION_BOUND,
+            "missing_path_guard": Guard.PATH_BOUNDARY,
+        }[binding_change]
+        altered_binding = binding.model_copy(
+            update={
+                "guards": frozenset(guard for guard in binding.guards if guard != missing_guard)
+            }
+        )
+    provider.current_context = lambda: MaterializationAuthorizationContext(
+        altered_binding,
+        original_context().assignment,
+        original_context().assignment_hash,
+    )
+    try:
+        result = materializer.execute(
+            _literal_prepare(path, "candidate\n"), expected_binding=altered_binding
+        )
+        assert result["status"] == "blocked"
+        assert result["reason_code"] == expected_reason
+        assert not (project / path).exists()
+        assert not list(artifacts.iterdir())
+    finally:
+        materializer.close()
+        preflight.close()
+
+
 def test_responses_ordering_is_fake_api_only_and_materializes_source_facts(
     tmp_path, monkeypatch
 ) -> None:
@@ -1018,6 +963,7 @@ def test_responses_ordering_is_fake_api_only_and_materializes_source_facts(
             config.project_root,
             config.artifact_root,
             config.grant_provider,
+            config.authorization_provider,
         )
         materializer.close()
         from token_io_decoupling_workflow.output_materialization import (
@@ -1025,7 +971,7 @@ def test_responses_ordering_is_fake_api_only_and_materializes_source_facts(
         )
 
         materializer = Service(
-            state_service=_state,
+            authorization_provider=config.authorization_provider,
             compliance_service=preflight,
             config=config,
         )
@@ -1053,14 +999,14 @@ def test_responses_ordering_is_fake_api_only_and_materializes_source_facts(
                 )
             ],
         )
-        prepared = materializer.execute(request)
+        prepared = materializer.execute(request, expected_binding=_state)
         assert prepared["status"] == "prepared"
         assert factory_calls == [("fake-key", "https://mock.invalid/v1")]
         assert client.closed
         assert client.calls[0]["model"] == "gpt-6-luna"
         assert client.calls[0]["max_output_tokens"] == 4_000
         assert client.calls[0]["tools"] == []
-        apply = _apply(materializer, prepared)
+        apply = _apply(materializer, prepared, expected_binding=_state)
         assert apply["status"] == "applied"
         result = (project / path).read_text()
         assert result.index("second source") < result.index("first source")
@@ -1135,7 +1081,6 @@ def test_worker_stdio_exposes_bounded_action_schema_and_applies_only_with_factor
     materializer.close()
     server = create_tools_server(
         provider,
-        state_root=tmp_path / "state",
         compliance_service=preflight,
         output_materializer_config=config,
     )

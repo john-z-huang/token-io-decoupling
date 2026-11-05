@@ -126,10 +126,10 @@ def test_explicit_stage_maps_locked_mode_locally_without_api_or_credentials(
     assert result.advisory_only is True
     assert result.module_id == module_id
     assert result.selected_stage == stage
-    assert result.native_route is not None
-    assert result.native_route.route_id == route_id
-    assert result.native_route.route_path.endswith(route_path)
-    assert result.native_route.mode_count == request.mode_count
+    assert result.route_reference is not None
+    assert result.route_reference.route_id == route_id
+    assert result.route_reference.route_path.endswith(route_path)
+    assert result.route_reference.mode_count == request.mode_count
     assert result.rule_hash and result.index_sha256
     assert result.rule_evidence
     assert not result.model
@@ -139,7 +139,7 @@ def test_explicit_stage_maps_locked_mode_locally_without_api_or_credentials(
 def test_mode_must_be_locked_and_missing_capabilities_remain_unknown() -> None:
     result = _router().decide(_request(mode_locked=False))
     assert (result.status, result.reason) == ("blocked", "mode_not_locked")
-    assert result.native_route is None
+    assert result.route_reference is None
     assert result.module_id is None
     assert all(item.status == "unknown" for item in result.capability_evidence)
 

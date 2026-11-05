@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from mcp.server import MCPServer
-from token_io_decoupling_core.binding import BindingError, BindingProvider
+from token_io_decoupling_core.binding import BindingError, BindingProvider, DenyingBindingProvider
 from token_io_decoupling_core.codex_context import CodexCallerBoundProvider
 from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.server_tools import (
@@ -17,22 +17,11 @@ from token_io_decoupling_core.server_tools import (
     WORKFLOW_SERVER_NAME,
     WORKFLOW_TOOLS,
 )
-from token_io_decoupling_root.tools import register_root_tools
-from token_io_decoupling_shared.tools import register_shared_tools
-from token_io_decoupling_state.local_context import LocalSessionContext
-from token_io_decoupling_state.service import StateService
-from token_io_decoupling_state.state.common import DEFAULT_STATE_ROOT
 from token_io_decoupling_transport.identity import (
     binding_details as _binding_details,
 )
 from token_io_decoupling_transport.identity import (
-    binding_diagnostic as _binding_diagnostic,
-)
-from token_io_decoupling_transport.identity import (
     bound_role as _bound_role,
-)
-from token_io_decoupling_transport.identity import (
-    schema_status as _schema_status,
 )
 from token_io_decoupling_transport.registration import ToolRegistrar
 from token_io_decoupling_transport.tool_metadata import (
@@ -41,7 +30,6 @@ from token_io_decoupling_transport.tool_metadata import (
     workflow_server_description,
     workflow_server_instructions,
 )
-from token_io_decoupling_worker.tools import register_worker_tools
 from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
 from token_io_decoupling_workflow.decisions import DecisionsAdvisor, DecisionsRuntimeConfig
 from token_io_decoupling_workflow.output_materialization import (
@@ -61,7 +49,6 @@ def _build_server(
     binding_provider: BindingProvider | None = None,
     require_bound: bool = False,
     require_codex_context: bool = False,
-    state_root: Path | str | None = None,
     decisions_config: DecisionsRuntimeConfig | None = None,
     decisions_client_factory: Callable[[str, str], object] | None = None,
     task_plan_service: TaskPlanService | None = None,
@@ -70,9 +57,7 @@ def _build_server(
     output_materializer_config: OutputMaterializerConfig | None = None,
 ) -> MCPServer[Any]:
     local = binding_provider is None
-    provider = binding_provider or LocalSessionContext(
-        Path.cwd(), Path(state_root) if state_root else DEFAULT_STATE_ROOT
-    )
+    provider = binding_provider or DenyingBindingProvider()
     registry_resource = resources.files("token_io_decoupling_core").joinpath(
         "_resources", "registry.json"
     )
@@ -116,19 +101,13 @@ def _build_server(
         instructions=instructions,
     )
 
-    state_provider = (
-        CodexCallerBoundProvider(provider) if require_codex_context and not local else provider
-    )
-    require_codex_context = require_codex_context or local
-    service = StateService(
-        binding_provider=state_provider, state_root=state_root, rule_loader=rules
-    )
+    state_provider = CodexCallerBoundProvider(provider) if require_codex_context else provider
     config = decisions_config or DecisionsRuntimeConfig()
-    advisor = DecisionsAdvisor(service, rules, config, client_factory=decisions_client_factory)
+    advisor = DecisionsAdvisor(rules, config, client_factory=decisions_client_factory)
     task_plans = task_plan_service if task_plan_service is not None else TaskPlanService()
     output_materializer = (
         OutputMaterializationService(
-            state_service=service,
+            authorization_provider=output_materializer_config.authorization_provider,
             compliance_service=compliance_service,
             config=output_materializer_config,
         )
@@ -161,7 +140,6 @@ def _build_server(
     )
     register_workflow_tools(
         registrar,
-        service=service,
         task_plan_service=task_plans,
         serena_memory_service=serena_memory_service,
         compliance_service=compliance_service,
@@ -173,18 +151,9 @@ def _build_server(
         require_codex_context=require_codex_context,
         binding_details=_binding_details,
         output_materialization_details=output_materialization_details,
-    )
-    register_shared_tools(
-        registrar,
-        service=service,
-        provider=provider,
-        schema_status=_schema_status,
-        binding_diagnostic=_binding_diagnostic,
-        bound_role_for=_bound_role,
+        output_materializer=output_materializer,
     )
     if development is not None:
-        register_root_tools(registrar, service)
-        register_worker_tools(registrar, service, output_materializer)
         for register in (
             development.register_git_tools,
             development.register_repository_tools,
@@ -210,7 +179,6 @@ def create_workflow_server(
     *,
     require_bound: bool = False,
     require_codex_context: bool = False,
-    state_root: Path | str | None = None,
     decisions_config: DecisionsRuntimeConfig | None = None,
     decisions_client_factory: Callable[[str, str], object] | None = None,
     task_plan_service: TaskPlanService | None = None,
@@ -225,7 +193,6 @@ def create_workflow_server(
         binding_provider=binding_provider,
         require_bound=require_bound,
         require_codex_context=require_codex_context,
-        state_root=state_root,
         decisions_config=decisions_config,
         decisions_client_factory=decisions_client_factory,
         task_plan_service=task_plan_service,
@@ -239,7 +206,6 @@ def create_tools_server(
     *,
     require_bound: bool = False,
     require_codex_context: bool = False,
-    state_root: Path | str | None = None,
     compliance_service: CompliancePreflightService | None = None,
     output_materializer_config: OutputMaterializerConfig | None = None,
 ) -> MCPServer[Any]:
@@ -251,7 +217,6 @@ def create_tools_server(
         binding_provider=binding_provider,
         require_bound=require_bound,
         require_codex_context=require_codex_context,
-        state_root=state_root,
         compliance_service=compliance_service,
         output_materializer_config=output_materializer_config,
     )

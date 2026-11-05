@@ -6,7 +6,6 @@ from collections.abc import Callable
 from typing import Any
 
 from token_io_decoupling_core.binding import BindingProvider, DenyingBindingProvider
-from token_io_decoupling_state.local_context import LocalSessionContext
 
 from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
 from token_io_decoupling_workflow.serena_memory import SerenaMemoryReadService
@@ -72,44 +71,39 @@ def capability_report(
         "reason_code": "output_materializer_not_configured",
     }
     # Never serialize provider attributes: even transport labels can contain secrets or raise.
-    local = isinstance(provider, LocalSessionContext)
-    transport = "stdio" if local else "embedded_provider"
+    transport = "stdio" if not embedded else "embedded_provider"
     transport_detail = _detail(
-        "available" if local else "unverified",
-        "local_stdio" if local else "transport_not_reported",
-        "Local Codex stdio uses application request scoping, not privileged host authentication."
-        if local
+        "unavailable" if not embedded else "unverified",
+        "stdio_without_identity_provider" if not embedded else "transport_not_reported",
+        "The standard stdio executable does not establish caller identity."
+        if not embedded
         else "Injected context is not independently authenticated by this diagnostic.",
-        "server.local_stdio" if local else "provider_type",
-        "Supply Codex request metadata for state calls; configuration and authorization "
-        "remain separate."
-        if local
+        "server.default_provider" if not embedded else "provider_type",
+        "Identity-bound operations remain unavailable without a trusted provider."
+        if not embedded
         else "Check the configured context; a transport label is not authority.",
     )
     if type(provider) is DenyingBindingProvider:
         transport_detail = _detail(
             "unavailable",
             "provider_not_configured",
-            "No local request context is configured.",
+            "No trusted request identity provider is configured.",
             "server.default_provider",
-            "Start the workflow or tools executable from the intended project root.",
+            "Use stateless rule tools, or inject a trusted provider for identity-bound operations.",
         )
     return {
         "subsystem": "token-io-mcp",
         "supported_transports": ["stdio"],
         "agent_runtime": "codex_cli",
-        "enhanced_binding": (
-            "not_applicable"
-            if local
-            else "unverified"
+        "trusted_binding": (
+            "unverified"
             if not embedded
             else "available"
             if binding["status"] == "available"
             else "unavailable"
         ),
-        "binding_transport": transport if local or embedded else "unavailable",
+        "binding_transport": transport if embedded else "unavailable",
         "caller_match": caller_match,
-        "mode_fallback": "Native",
         "api_decisions": api_decisions,
         "workflow_routing": "available_per_invocation",
         "child_effort_decisions": "available_per_invocation",
@@ -123,7 +117,7 @@ def capability_report(
         "output_materialization": output_details.get("status", "unavailable"),
         "protocol_target": "2026-07-28",
         "capability_details": {
-            "schema_version": 2,
+            "schema_version": 3,
             "support": {
                 "agent_runtime": _detail(
                     "available",
@@ -133,36 +127,40 @@ def capability_report(
                     "static_support.agent_runtime",
                     "Use Codex CLI; verify host identity, caller context, and guards separately.",
                 ),
-                "local_stdio": _detail(
-                    "available",
-                    "local_stdio_request_scoping",
-                    "The workflow and aggregate tools executables use local Codex stdio without a "
-                    "privileged host, "
-                    "inherited host descriptor or external identity provider. Metadata and "
-                    "recorded allocations scope state; they do not authenticate other "
-                    "same-user processes.",
-                    "static_support.local_stdio",
-                    "Start Codex from the intended project root. State calls require "
-                    "threadId/sessionId request metadata and operation-specific authorization.",
+                "identity_bound_operations": _detail(
+                    "unavailable" if not embedded else binding.get("status", "unverified"),
+                    "trusted_provider_not_configured"
+                    if not embedded
+                    else binding.get("reason_code", "binding_unavailable"),
+                    "The standard executable does not establish caller identity or workflow "
+                    "allocations. Stateless rule/navigation tools do not depend on identity; "
+                    "protected materialization "
+                    "requires a trusted per-call binding and assignment provider.",
+                    "server.binding_provider",
+                    "Inject a trusted binding and assignment source for protected operations; "
+                    "without one, "
+                    "they remain unavailable.",
                 ),
             },
             "configuration": {
                 "public_interfaces": _detail(
                     "unverified",
                     "tool_dependencies_not_probed",
-                    "Public means no Enhanced binding requirement, not configured or authorized. "
-                    "Capability/rule/schema diagnostics, local Memory reads, Native task plans, "
+                    "Public means no caller-identity binding requirement, not configured or "
+                    "authorized. "
+                    "Capability/rule diagnostics, local Memory reads, task plans, "
                     "candidate compliance, workflow routing and stateless selection/context "
-                    "tools are public. Schema diagnostics do not inspect unbound state paths. "
-                    "Workflow/Control evaluation and Root/Worker/state operations require local "
-                    "request scope, recorded roles, permissions and current operation checks.",
+                    "tools are public. Stateless checkpoint checks validate caller-supplied "
+                    "evidence shape and "
+                    "current rule hashes; they do not authenticate facts, persist workflow state, "
+                    "authorize execution, sequence calls or establish acceptance.",
                     "workflow.public_tool_contracts",
                     "Check each tool: Memory requires existing startup-project files; plans "
                     "require an injected backend; compliance requires an operator-configured "
                     "reader/root/policy. API-backed selection/context and automatic routing "
                     "require nonblank OPENAI_API_KEY and OPENAI_BASE_URL and per-call outbound "
                     "authorization; explicit-stage routing is local. Materialization additionally "
-                    "requires a registered Worker, configured service and independent "
+                    "requires a trusted per-call binding/assignment provider and independent "
                     "operator grant. "
                     "No API or execution-readiness probe was made.",
                 ),
@@ -205,13 +203,13 @@ def capability_report(
                 "output_materialization": _detail(
                     output_details.get("status", "unavailable"),
                     output_details.get("reason_code", "output_materializer_not_configured"),
-                    "Worker output materialization requires an explicit trusted factory, the same "
-                    "pinned read-only preflight root, and a fresh operator grant per action. "
-                    "A Native coding-task role or an Agent Session's Primary Output label is not "
-                    "a verified MCP Worker binding. Capability reporting does not probe paths "
-                    "or assert current Worker authority.",
+                    "Output materialization requires an explicit trusted factory with a per-call "
+                    "binding/assignment provider, the same pinned read-only preflight root, and a "
+                    "fresh operator grant per action. "
+                    "Caller role labels do not establish a verified binding. Capability reporting "
+                    "does not probe paths or assert current authority.",
                     "server.output_materializer_config",
-                    "Use the Worker-only tool only for a confirmed Primary Output assignment "
+                    "Use the tool only for a confirmed Primary Output assignment "
                     "with code_configuration or skill_instructions output and a matching "
                     "operator grant, pinned roots, and fresh passing preflight; inspect any "
                     "unavailable result.",
@@ -226,7 +224,7 @@ def capability_report(
                 "api_decisions": _detail(
                     api_decisions,
                     "configured_enabled" if api_decisions_enabled else "configured_disabled",
-                    "Persisted API advice is configured separately from per-invocation tools.",
+                    "API advice is configured separately from stateless per-invocation checks.",
                     "server.decisions_config.enabled",
                     "No API probe; per-call tools require permission and configuration.",
                 ),
@@ -245,14 +243,10 @@ def capability_report(
                 "binding": binding,
                 "binding_transport": transport_detail,
                 "server_mode": _detail(
-                    "local_stdio" if local else "embedded" if embedded else "public_only",
-                    "local_request_scoping"
-                    if local
-                    else "startup_binding_accepted"
-                    if embedded
-                    else "startup_binding_unverified",
-                    "The fixed workflow and tools executables select their own inventories; "
-                    "each state call resolves its current local scope.",
+                    "embedded" if embedded else "public_only",
+                    "startup_binding_accepted" if embedded else "startup_binding_unverified",
+                    "The fixed workflow and tools executables select their own inventories. "
+                    "The standard executable has no caller identity or workflow state store.",
                     "server.create_workflow_server/create_tools_server",
                     "Use the current request role, path scope and explicit operation "
                     "authorization.",

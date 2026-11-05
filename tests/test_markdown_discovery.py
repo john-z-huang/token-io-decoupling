@@ -91,10 +91,18 @@ class MarkdownDiscoveryTests(unittest.TestCase):
         self.assertIn("mcp/DEVELOPMENT_zh_cn.md", output)
 
     def test_cross_language_dependency_fails(self) -> None:
+        authored_architecture = "docs/skill/WORKFLOW_ARCHITECTURE.md"
         self._write(
-            "docs/skill/ENHANCED_ARCHITECTURE.md",
-            "[English](ENHANCED_ARCHITECTURE.md) | [简体中文](../../mcp/DEVELOPMENT_zh_cn.md)\n",
+            authored_architecture,
+            "[English](WORKFLOW_ARCHITECTURE.md) | "
+            "[简体中文](WORKFLOW_ARCHITECTURE_zh_cn.md)\n\n"
+            "This ordinary dependency crosses languages: "
+            "[Chinese MCP guide](../../mcp/DEVELOPMENT_zh_cn.md).\n",
         )
+        discovered_paths = {
+            path.relative_to(self.root).as_posix() for path in discovery.discover_markdown(self.root)
+        }
+        self.assertIn(authored_architecture, discovered_paths)
         result, output = self._run(multilingual)
         self.assertEqual(result, 1)
         self.assertIn("cross-language Markdown link", output)

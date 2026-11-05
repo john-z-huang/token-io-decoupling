@@ -7,12 +7,12 @@ from typing import Any
 
 from token_io_decoupling_core.binding import BindingProvider
 from token_io_decoupling_core.rules import DEFAULT_CONTEXT_TEXT_BUDGET, RuleLoader
-from token_io_decoupling_core.state_models import CheckpointNode
-from token_io_decoupling_state.service import StateService
+from token_io_decoupling_core.workflow_models import CheckpointNode
 from token_io_decoupling_transport.payloads import _RULE_CONTEXT
 from token_io_decoupling_transport.registration import ToolRegistrar
 
 from token_io_decoupling_workflow.capabilities import capability_report
+from token_io_decoupling_workflow.checkpoint_evaluation import evaluate_checkpoint
 from token_io_decoupling_workflow.child_effort import (
     ChildEffortPayload,
     ChildEffortSelector,
@@ -25,13 +25,7 @@ from token_io_decoupling_workflow.decision_context import (
     DecisionContextGenerator,
     DecisionContextPayload,
 )
-from token_io_decoupling_workflow.decisions import (
-    DecisionAdvice,
-    DecisionAdvisoryInput,
-    DecisionsAdvisor,
-    DecisionsRuntimeConfig,
-    EvaluationWithAdvice,
-)
+from token_io_decoupling_workflow.decisions import DecisionsAdvisor, DecisionsRuntimeConfig
 from token_io_decoupling_workflow.delegation_decisions import (
     ChildCandidateSelectionPayload,
     ChildRoleSelectionPayload,
@@ -39,6 +33,7 @@ from token_io_decoupling_workflow.delegation_decisions import (
     ExecutorSelectionPayload,
     OutputTokenRoutingPayload,
 )
+from token_io_decoupling_workflow.output_materialization import OutputMaterializationService
 from token_io_decoupling_workflow.payloads import (
     _COMPLIANCE_PREFLIGHT,
     _CONTROL_EVALUATE,
@@ -58,40 +53,9 @@ from token_io_decoupling_workflow.workflow_routing import (
 )
 
 
-def _evaluate_with_advice(
-    evaluation: Any,
-    advisory_input: DecisionAdvisoryInput | None,
-    advisor: DecisionsAdvisor,
-    *,
-    replayed: bool = False,
-) -> Any:
-    if advisory_input is None:
-        return evaluation
-    if advisory_input.node_id is not evaluation.node_id:
-        return EvaluationWithAdvice(
-            evaluation=evaluation,
-            advice=DecisionAdvice(
-                status="fallback",
-                reason="invalid_response",
-                node_id=advisory_input.node_id,
-            ),
-        )
-    advice = (
-        DecisionAdvice(
-            status="fallback",
-            reason="idempotent_replay",
-            node_id=advisory_input.node_id,
-        )
-        if replayed
-        else advisor.advise(advisory_input, core_evaluation=evaluation)
-    )
-    return EvaluationWithAdvice(evaluation=evaluation, advice=advice)
-
-
 def register_workflow_tools(
     registrar: ToolRegistrar,
     *,
-    service: StateService,
     task_plan_service: TaskPlanService,
     compliance_service: CompliancePreflightService | None,
     rules: RuleLoader,
@@ -103,6 +67,7 @@ def register_workflow_tools(
     binding_details: Callable[[BindingProvider], dict[str, str]],
     output_materialization_details: dict[str, str] | None = None,
     serena_memory_service: SerenaMemoryReadService | None = None,
+    output_materializer: OutputMaterializationService | None = None,
 ) -> None:
     memory_reads = serena_memory_service or SerenaMemoryReadService()
     register_serena_memory_tools(registrar, memory_reads)
@@ -209,48 +174,69 @@ def register_workflow_tools(
     )
 
     def evaluate_node(payload: Any) -> Any:
-        if payload.semantic_input is None:
-            return service.workflow_evaluate(
-                payload.node_id,
-                expected_revision=payload.expected_revision,
-                idempotency_key=payload.idempotency_key,
-                branch=payload.branch.value if payload.branch else None,
-                input_hash=payload.input_hash,
-                slice_ids=payload.slice_ids,
-            )
-        if payload.semantic_input.node_id is not payload.node_id:
-            raise ValueError("semantic input node must match the evaluated checkpoint")
-        evaluation, replayed = service.workflow_evaluate_with_replay(
-            payload.node_id,
-            expected_revision=payload.expected_revision,
-            idempotency_key=payload.idempotency_key,
-            branch=payload.branch.value if payload.branch else None,
-            input_hash=payload.input_hash,
-            slice_ids=payload.slice_ids,
+        if payload.submission.node_id is not payload.node_id:
+            raise ValueError("submission node must match the evaluated checkpoint")
+        result = evaluate_checkpoint(
+            payload.submission,
+            rules=rules,
+            language=payload.language,
+            expected_rule_hash=payload.expected_rule_hash,
         )
-        return _evaluate_with_advice(evaluation, payload.semantic_input, advisor, replayed=replayed)
+        output = result.model_dump(mode="json")
+        if payload.semantic_input is not None:
+            if payload.semantic_input.node_id is not payload.node_id:
+                raise ValueError("semantic input node must match the evaluated checkpoint")
+            output["advice"] = advisor.advise(
+                payload.semantic_input,
+                current_facts=payload.current_facts,
+                checkpoint_source_input_hash=result.source_input_hash,
+                language=payload.language,
+                expected_rule_hash=result.rule_hash,
+            ).model_dump(mode="json")
+        return output
 
     def evaluate_control(payload: Any) -> Any:
-        if payload.semantic_input is None:
-            return service.evaluate_control_checkpoint(
-                expected_revision=payload.expected_revision,
-                idempotency_key=payload.idempotency_key,
-                branch=payload.branch.value if payload.branch else None,
-                input_hash=payload.input_hash,
-                slice_ids=payload.slice_ids,
-            )
-        if payload.semantic_input.node_id is not CheckpointNode.CONTROL:
-            raise ValueError("control evaluation requires Control semantic input")
-        evaluation, replayed = service.evaluate_control_checkpoint_with_replay(
-            expected_revision=payload.expected_revision,
-            idempotency_key=payload.idempotency_key,
-            branch=payload.branch.value if payload.branch else None,
-            input_hash=payload.input_hash,
-            slice_ids=payload.slice_ids,
+        if payload.submission.node_id is not CheckpointNode.CONTROL:
+            raise ValueError("control evaluation requires Control evidence")
+        result = evaluate_checkpoint(
+            payload.submission,
+            rules=rules,
+            language=payload.language,
+            expected_rule_hash=payload.expected_rule_hash,
         )
-        return _evaluate_with_advice(evaluation, payload.semantic_input, advisor, replayed=replayed)
+        output = result.model_dump(mode="json")
+        if payload.semantic_input is not None:
+            if payload.semantic_input.node_id is not CheckpointNode.CONTROL:
+                raise ValueError("control evaluation requires Control semantic input")
+            output["advice"] = advisor.advise(
+                payload.semantic_input,
+                current_facts=payload.current_facts,
+                checkpoint_source_input_hash=result.source_input_hash,
+                language=payload.language,
+                expected_rule_hash=result.rule_hash,
+            ).model_dump(mode="json")
+        return output
 
-    registrar.register("workflow_evaluate", _EVALUATE, evaluate_node, role="parent")
+    registrar.register("workflow_evaluate", _EVALUATE, evaluate_node, enhanced=False)
     registrar.register(
-        "evaluate_control_checkpoint", _CONTROL_EVALUATE, evaluate_control, role="parent"
+        "evaluate_control_checkpoint", _CONTROL_EVALUATE, evaluate_control, enhanced=False
+    )
+
+    def materialize_output(payload: Any) -> Any:
+        if output_materializer is None:
+            return {
+                "status": "unavailable",
+                "reason_code": "trusted_authorization_context_unavailable",
+            }
+        return output_materializer.execute(
+            payload.request, expected_binding=provider.current_binding()
+        )
+
+    from token_io_decoupling_core.materialization_models import MaterializeDecoupledOutputPayload
+
+    registrar.register(
+        "materialize_decoupled_output",
+        MaterializeDecoupledOutputPayload,
+        materialize_output,
+        role="worker",
     )

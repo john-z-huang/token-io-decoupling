@@ -46,10 +46,10 @@ bash scripts/install-codex-mcp.sh
 - [Skill 入口](docs/skill/SKILL_zh_cn.md)：主要路由入口。
 - [Coding reference](docs/skill/references)：由工作流组合使用的独立 Coding 模块和共享协议模块。
 - [多语言规则](MULTI_LINGUAL_zh_cn.md)：双语文档规则。
-- [增强架构](docs/skill/ENHANCED_ARCHITECTURE_zh_cn.md)：可选 MCP 状态、规则上下文、语义建议及经核验的宿主边界；Native 仍为默认路径。
+- [工作流架构](docs/skill/WORKFLOW_ARCHITECTURE_zh_cn.md)：无状态规则导航与结构检查，以及单独守卫的可选输出物化能力。
 - [MCP 开发指南](mcp/DEVELOPMENT_zh_cn.md)：本地 Python 检查与包构建。
 
-可选的持久化 Decisions 集成默认关闭。每次真实请求（包括测试请求）必须读取本地 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，缺少任一项就不得请求。显式启用与测试方法见开发指南。公共接口还包括本地 Memory 读取、Native 任务计划、合规预检、路由及无状态上下文/选择工具。它们不要求 Enhanced binding，但保留各自的配置与授权条件；工具发现本身不能证明任何一项已满足。状态操作要求有效的本地请求范围、已登记角色与操作授权。
+无状态规则与工作流路径无需数据库、API 凭据或网络请求。可选语义建议默认关闭；每次真实 API 请求都必须读取本地 `OPENAI_API_KEY` 与 `OPENAI_BASE_URL`，缺失时不得请求。显式启用与测试方法见开发指南。公共接口包括本地 Memory 读取、任务计划生命周期、合规预检、路由及无状态上下文/选择工具。发现工具不证明能力或授权。未配置可信启动注入式授权 provider 和独立 grant 时，可选输出物化仍不可用。
 
 OpenAI API 工具共用显式设置 `trust_env=True` 的 HTTPX2 客户端，从 MCP 进程环境读取 `HTTP_PROXY`、`HTTPS_PROXY`、`ALL_PROXY` 和 `NO_PROXY`，包括对应的小写形式。`NO_PROXY` 可使指定目标绕过代理；未配置代理时使用客户端正常的直连路径。代理无效或不可达时返回现有的安全 API 错误结果，不会改为直连重试。
 

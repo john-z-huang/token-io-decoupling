@@ -9,4 +9,4 @@
 - [context-exchange/](context-exchange/INDEX.md)
 - [execution-planning/](execution-planning/INDEX.md)
 - [execution-control/](execution-control/INDEX.md)
-- [enhanced-native-state/](enhanced-native-state/INDEX.md)
+- [workflow-navigation/](workflow-navigation/INDEX.md)

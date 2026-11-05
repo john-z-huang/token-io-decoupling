@@ -323,7 +323,7 @@ def test_installed_discovery_checks_both_distinct_no_argument_programs(
     executables = setup_codex._installed_servers()
     assert executables == paths
     assert len(WORKFLOW_TOOLS) == 17
-    assert len(TOOLS_SERVER_TOOLS) == 51
+    assert len(TOOLS_SERVER_TOOLS) == 34
     calls = []
     expected_by_path = {
         str(paths["token-io-decoupling-workflow"]): WORKFLOW_TOOLS,

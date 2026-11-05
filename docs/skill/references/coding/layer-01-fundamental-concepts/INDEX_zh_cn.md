@@ -9,4 +9,4 @@
 - [context-exchange/](context-exchange/INDEX_zh_cn.md)
 - [execution-planning/](execution-planning/INDEX_zh_cn.md)
 - [execution-control/](execution-control/INDEX_zh_cn.md)
-- [enhanced-native-state/](enhanced-native-state/INDEX_zh_cn.md)
+- [workflow-navigation/](workflow-navigation/INDEX_zh_cn.md)

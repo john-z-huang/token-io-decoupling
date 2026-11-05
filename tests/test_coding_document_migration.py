@@ -222,7 +222,10 @@ class CodingDocumentMigrationTests(unittest.TestCase):
         path = root / "docs/coding-document-migration.json"
         migration = json.loads(path.read_text(encoding="utf-8"))
         for old, new in MODULE.OWNER_RENAMES.items():
+            if "planning-intent-plan-memory-lifecycle" not in old:
+                continue
             target = root / new
+            target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("Task plan owner", encoding="utf-8")
             self.write_index(destination, [target.name], [], zh=target.name.endswith("_zh_cn.md"))
             migration["document_moves"].append({"from": old, "to": new})
@@ -252,6 +255,65 @@ class CodingDocumentMigrationTests(unittest.TestCase):
         path = root / "docs/coding-document-migration.json"
         path.write_text(json.dumps({"schema_version": 1, "document_moves": []}), encoding="utf-8")
         self.assertEqual(MODULE.validate(root), [])
+
+    def test_retired_owner_requires_reason_and_absent_target(self):
+        root = self.make_valid_root()
+        path = root / "docs/coding-document-migration.json"
+        migration = json.loads(path.read_text(encoding="utf-8"))
+        item = migration["document_moves"][0]
+        item["status"] = "retired"
+        item["reason"] = "Removed with the retired persistence architecture."
+        target = root / item["to"]
+        target.unlink(missing_ok=True)
+        mirror = migration["document_moves"][1]
+        mirror["status"] = "retired"
+        mirror["reason"] = item["reason"]
+        (root / mirror["to"]).unlink(missing_ok=True)
+        path.write_text(json.dumps(migration), encoding="utf-8")
+        self.assertEqual(MODULE.validate(root), [])
+        item.pop("reason")
+        path.write_text(json.dumps(migration), encoding="utf-8")
+        self.assertTrue(any("retired migration must explain" in e for e in MODULE.validate(root)))
+
+    def test_active_owner_requires_existing_target(self):
+        root = self.make_valid_root()
+        path = root / "docs/coding-document-migration.json"
+        migration = json.loads(path.read_text(encoding="utf-8"))
+        target = root / migration["document_moves"][0]["to"]
+        target.unlink()
+        path.write_text(json.dumps(migration), encoding="utf-8")
+        self.assertTrue(any("mapped target is missing" in e for e in MODULE.validate(root)))
+
+    def test_migration_requires_language_pair_counterpart(self):
+        root = self.make_valid_root()
+        path = root / "docs/coding-document-migration.json"
+        migration = json.loads(path.read_text(encoding="utf-8"))
+        migration["document_moves"].pop(1)
+        path.write_text(json.dumps(migration), encoding="utf-8")
+        self.assertTrue(any("migration is missing language counterpart" in e for e in MODULE.validate(root)))
+
+    def test_language_pair_must_match_retirement_status(self):
+        root = self.make_valid_root()
+        path = root / "docs/coding-document-migration.json"
+        migration = json.loads(path.read_text(encoding="utf-8"))
+        migration["document_moves"][0].update(
+            status="retired", reason="Removed with the retired persistence architecture."
+        )
+        (root / migration["document_moves"][0]["to"]).unlink()
+        path.write_text(json.dumps(migration), encoding="utf-8")
+        self.assertTrue(any("language-pair migration statuses differ" in e for e in MODULE.validate(root)))
+
+    def test_retired_language_pair_must_match_rationale(self):
+        root = self.make_valid_root()
+        path = root / "docs/coding-document-migration.json"
+        migration = json.loads(path.read_text(encoding="utf-8"))
+        reason = "Removed with the retired persistence architecture."
+        for item in migration["document_moves"][:2]:
+            item.update(status="retired", reason=reason)
+            (root / item["to"]).unlink()
+        migration["document_moves"][1]["reason"] = "Removed because the owner is obsolete."
+        path.write_text(json.dumps(migration), encoding="utf-8")
+        self.assertTrue(any("language-pair retirement reasons differ" in e for e in MODULE.validate(root)))
 
 
 if __name__ == "__main__":

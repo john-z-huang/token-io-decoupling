@@ -2,35 +2,57 @@
 
 from __future__ import annotations
 
+import json
 from typing import Annotated, Literal
 
-from pydantic import Field, StringConstraints, model_validator
+from pydantic import Field, StrictStr, StringConstraints, field_validator, model_validator
 from token_io_decoupling_core.compliance_core import validate_candidate_list
-from token_io_decoupling_core.models import NonEmptyString, StrictModel
-from token_io_decoupling_core.state_models import ActiveCheckpointNode, LegalBranch
+from token_io_decoupling_core.models import Sha256, StrictModel
+from token_io_decoupling_core.workflow_models import ActiveCheckpointNode, EvidenceSubmission
 from token_io_decoupling_transport.payloads import payload_model
 
 from token_io_decoupling_workflow.decisions import DecisionAdvisoryInput
 
-_EVALUATE = payload_model(
-    "EvaluatePayload",
-    node_id=(ActiveCheckpointNode, ...),
-    expected_revision=(int, ...),
-    idempotency_key=(NonEmptyString, ...),
-    branch=(LegalBranch | None, None),
-    input_hash=(str | None, None),
-    slice_ids=(list[NonEmptyString] | None, None),
-    semantic_input=(DecisionAdvisoryInput | None, None),
-)
-_CONTROL_EVALUATE = payload_model(
-    "ControlEvaluatePayload",
-    expected_revision=(int, ...),
-    idempotency_key=(NonEmptyString, ...),
-    branch=(LegalBranch | None, None),
-    input_hash=(str | None, None),
-    slice_ids=(list[NonEmptyString] | None, None),
-    semantic_input=(DecisionAdvisoryInput | None, None),
-)
+MAX_CHECKPOINT_EVALUATION_REQUEST_BYTES = 32 * 1024
+CheckpointFactKey = Annotated[StrictStr, StringConstraints(min_length=1, max_length=64)]
+CheckpointFactText = Annotated[StrictStr, StringConstraints(min_length=1, max_length=1_024)]
+CurrentFacts = Annotated[dict[CheckpointFactKey, CheckpointFactText], Field(max_length=16)]
+
+
+class _CheckpointEvaluationPayload(StrictModel):
+    submission: EvidenceSubmission
+    language: Literal["en", "zh_cn"] = "en"
+    expected_rule_hash: Sha256 | None = None
+    semantic_input: DecisionAdvisoryInput | None = None
+    current_facts: CurrentFacts = Field(default_factory=dict)
+
+    @field_validator("current_facts")
+    @classmethod
+    def current_fact_strings_are_not_blank(cls, value: dict[str, str]) -> dict[str, str]:
+        if any(not key.strip() or not fact.strip() for key, fact in value.items()):
+            raise ValueError("current_facts keys and values must not be blank")
+        return value
+
+    @model_validator(mode="after")
+    def total_request_is_bounded(self) -> _CheckpointEvaluationPayload:
+        encoded = json.dumps(
+            self.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        if len(encoded) > MAX_CHECKPOINT_EVALUATION_REQUEST_BYTES:
+            raise ValueError("checkpoint_evaluation_request_exceeds_32_kib")
+        return self
+
+
+class EvaluatePayload(_CheckpointEvaluationPayload):
+    node_id: ActiveCheckpointNode
+
+
+class ControlEvaluatePayload(_CheckpointEvaluationPayload):
+    pass
+
+
+_EVALUATE = EvaluatePayload
+_CONTROL_EVALUATE = ControlEvaluatePayload
 
 
 class _AbsentBaseline(StrictModel):

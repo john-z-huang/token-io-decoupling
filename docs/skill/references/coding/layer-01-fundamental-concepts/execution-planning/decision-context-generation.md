@@ -37,6 +37,6 @@ There are currently no concept-specific optimizations for this concept; follow t
 ## Related concepts
 
 - [Decisions Advisory](decisions-advisory.md) — owns optional semantic advice after current facts and owners are loaded.
-- [Enhanced Rule Context](../enhanced-native-state/enhanced-rule-context.md) — owns source and hash boundaries for current Skill rules.
+- [Workflow Rule Context](../workflow-navigation/rule-context.md) — owns source and hash boundaries for current Skill rules.
 - [Child Role Selection](../delegation/child-role-selection.md) — owns the child-role suggestion that may consume reviewed decision context.
 - [Task Assignment](task-assignment.md) — owns executor and existing-child suggestions that may consume reviewed decision context.

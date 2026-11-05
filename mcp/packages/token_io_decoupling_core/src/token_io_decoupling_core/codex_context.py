@@ -9,7 +9,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 
 from token_io_decoupling_core.binding import BindingError, BindingProvider
-from token_io_decoupling_core.state_models import BindingIdentity, VerifiedChildBinding
+from token_io_decoupling_core.workflow_models import BindingIdentity
 
 _MAX_CONTEXT_VALUE = 256
 
@@ -32,7 +32,7 @@ def parse_codex_request_context(meta: object) -> CodexRequestContext:
 
 
 class CodexCallerBoundProvider:
-    """Apply request-thread matching to every identity read made by a state service."""
+    """Apply request-thread matching to every protected operation binding read."""
 
     def __init__(self, provider: BindingProvider) -> None:
         self._provider = provider
@@ -58,14 +58,6 @@ class CodexCallerBoundProvider:
         if request_thread_id is None or request_thread_id != binding.current_session_id:
             raise BindingError("Codex request context is unavailable or mismatched")
         return binding
-
-    def verify_child_binding(
-        self, parent: BindingIdentity, child_session_id: str
-    ) -> VerifiedChildBinding:
-        binding = self.current_binding()
-        if parent != binding:
-            raise BindingError("requested parent does not match the verified session")
-        return self._provider.verify_child_binding(binding, child_session_id)
 
 
 def _context_value(meta: Mapping[object, object], key: str) -> str:

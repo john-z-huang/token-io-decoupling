@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 from token_io_decoupling_core.binding import BindingError, BindingProvider, DenyingBindingProvider
-from token_io_decoupling_core.state_models import BindingIdentity, HostGuard, SessionRole
-from token_io_decoupling_state.local_context import LocalSessionContext
-from token_io_decoupling_state.service import StateService
+from token_io_decoupling_core.workflow_models import BindingIdentity, HostGuard, SessionRole
 
 
 def binding_details(provider: BindingProvider) -> dict[str, str]:
@@ -20,36 +18,13 @@ def binding_details(provider: BindingProvider) -> dict[str, str]:
             "next_step": next_step,
         }
 
-    if isinstance(provider, LocalSessionContext):
-        try:
-            binding = provider.current_binding()
-        except BindingError:
-            return result(
-                "request_required",
-                "local_codex_context_required",
-                "Local stdio state uses request metadata and recorded allocations, not "
-                "host authentication.",
-                "Invoke state tools from Codex with threadId/sessionId metadata; "
-                "register Workers before use.",
-            )
-        diagnostic = result(
-            "available",
-            "local_session_scoped",
-            "Local request scope resolved; this is not independent identity "
-            "authentication or OS isolation.",
-            "Use only the current role and allocated scope; per-operation authorization "
-            "still applies.",
-        )
-        diagnostic["role"] = binding.role.value
-        return diagnostic
     if type(provider) is DenyingBindingProvider:
         diagnostic = result(
             "unverified",
             "provider_not_configured",
             "No trusted host binding provider is configured; no probe was attempted.",
-            "Use Native. Standard setup ships no production host integration; reinstalling, "
-            "environment forwarding, and server-entrypoint selection cannot establish one. See "
-            "support.standard_install_enhanced for the remaining integration prerequisites.",
+            "Stateless rule navigation remains available; identity-bound operations are "
+            "unavailable until a trusted provider is injected.",
         )
         diagnostic["source"] = "server.default_provider"
         return diagnostic
@@ -84,8 +59,6 @@ def binding_details(provider: BindingProvider) -> dict[str, str]:
             "Repair the provider's typed binding response; continue on Native.",
         )
     baseline = {HostGuard.IDENTITY_BOUND, HostGuard.SESSION_BOUND, HostGuard.PATH_BOUNDARY}
-    if binding.role is SessionRole.WORKER:
-        baseline.add(HostGuard.WORKER_STORE_ISOLATION)
     relationship_valid = (
         binding.role is SessionRole.PARENT and binding.current_session_id == binding.root_session_id
     ) or (
@@ -121,12 +94,3 @@ def bound_role(provider: BindingProvider) -> str | None:
 
 def binding_diagnostic(provider: BindingProvider) -> str:
     return "available" if bound_role(provider) is not None else "unavailable"
-
-
-def schema_status(service: StateService, trusted_role: bool) -> dict[str, object]:
-    if not trusted_role:
-        return {
-            "available": False,
-            "reason": "trusted session binding unavailable; no state path was inspected",
-        }
-    return service.database_schema_status().model_dump(mode="json")

@@ -250,7 +250,7 @@ async def _discover(path: Path, expected: frozenset[str], name: str) -> None:
 
 
 def _validate_installed_discovery(paths: dict[str, Path]) -> None:
-    if len(WORKFLOW_TOOLS) != 17 or len(TOOLS_SERVER_TOOLS) != 51:
+    if len(WORKFLOW_TOOLS) != 17 or len(TOOLS_SERVER_TOOLS) != 34:
         raise SetupError("fixed MCP tool manifests do not match the required inventory")
     asyncio.run(_discover(paths[WORKFLOW_SERVER_NAME], WORKFLOW_TOOLS, WORKFLOW_SERVER_NAME))
     asyncio.run(_discover(paths[TOOLS_SERVER_NAME], TOOLS_SERVER_TOOLS, TOOLS_SERVER_NAME))

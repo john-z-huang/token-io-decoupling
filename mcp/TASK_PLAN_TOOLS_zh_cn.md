@@ -6,7 +6,7 @@
 
 ## 配置与发现
 
-`task_plan_update`、`task_plan_complete`、`task_plan_archive` 属于 `token-io-decoupling-workflow` 可执行程序的固定清单。它们是 Native 操作，不以 Enhanced 数据库或已验证 Root 绑定作为存储机制。仍须具备既有宿主权限和任务授权。
+`task_plan_update`、`task_plan_complete`、`task_plan_archive` 属于 `token-io-decoupling-workflow` 可执行程序的固定清单。其后端是显式配置的 Serena `MemoryManager`；工具不会选择或初始化该后端。服务受配置的项目根目录和存储范围约束，请求必须匹配绑定的 checkout。仍须具备既有宿主权限和任务授权。
 
 后端必须显式配置实际已初始化的 Serena `MemoryManager` 及获准项目根目录。`create_workflow_server(task_plan_service=...)` 支持嵌入。组件如下：
 

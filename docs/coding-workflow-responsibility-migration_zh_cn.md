@@ -7,9 +7,9 @@
 | 原职责来源 | 新 owner | 路线消费位置 | 保留边界 |
 | --- | --- | --- | --- |
 | `workflows/coding.md` Entry/Routes：预检组合和唯一路线选择 | [路线入口](skill/references/coding/layer-03-workflow-checkpoints/route-entry_zh_cn.md) | 入口调用，在 S03/M03 核对 | Mode 菜单/默认/无效输入政策仍由 Mode owners 负责；入口链接所选路线。 |
-| Layer-02 Environment/Capability Inventory：可选 Enhanced 资格选择 | [Enhanced 路径选择](skill/references/coding/layer-03-workflow-checkpoints/enhanced-path-selection_zh_cn.md) | S02/M02 | 通用能力证据和 Enhanced 可用性/state 政策仍由原 owner 负责。 |
-| Layer-04 Session 步骤：规范 store authority、对账/转移、有守卫的打开/恢复、迁移资格和回读路由 | [Session 状态解决](skill/references/coding/layer-03-workflow-checkpoints/session-state-resolution_zh_cn.md) | S04/M04，在审计解决前 | authority、身份、角色、firewall、schema、迁移机制和类型化 state 政策仍由其 L1 owner 负责；故障不等于 authority 转移。 |
-| Layer-04 Session 步骤：审计记录复用、固定提问、答复/澄清、超时和审计字段回读 | [Session 审计解决](skill/references/coding/layer-03-workflow-checkpoints/session-audit-resolution_zh_cn.md) | S04/M04，在状态解决后 | 审计字段/默认/显示语义仍归 Session Audit Visibility；state authority/schema 流程由 Session 状态解决及其 L1 引用负责。 |
+| Layer-02 Environment/Capability Inventory：可选工作流导航选择 | [工作流导航选择](skill/references/coding/layer-03-workflow-checkpoints/workflow-navigation-selection_zh_cn.md) | S02/M02 | 调用方提供的事实和当前 owner 文档仍为权威依据；直接读取 owner 是回退路径。 |
+| Layer-04 Session 步骤：当前 Session 事实与父级控制任务记录读回 | [Session 状态解决](skill/references/coding/layer-03-workflow-checkpoints/session-state-resolution_zh_cn.md) | S04/M04，在审计解决前 | 身份、角色和 firewall 核验仍由其 L1 owner 负责；读回不授权工作，也不建立跨调用顺序。 |
+| Layer-04 Session 步骤：显式/默认审计偏好与可见性证据 | [Session 审计解决](skill/references/coding/layer-03-workflow-checkpoints/session-audit-resolution_zh_cn.md) | S04/M04，在状态解决后 | 审计字段/默认/显示语义仍归 Session Audit Visibility；无需提示或计时器门槛即可应用默认值。 |
 | Layer-04 Context 步骤：决策背景生成触发、审阅、Hash/当前性及直接判断证据充足性 | [决策上下文选择](skill/references/coding/layer-03-workflow-checkpoints/decision-context-selection_zh_cn.md) | S05/M06，在下游建议/决策使用前 | 上下文生成机制和建议政策仍由其 L1 owner 负责；不替代建议选择。 |
 | Layer-02 Context：有界规则查询和项目记忆检索流程选择 | [上下文来源选择](skill/references/coding/layer-03-workflow-checkpoints/context-source-selection_zh_cn.md) | S05/M06 | 范围、新鲜度、必需 Memory 能力和 memo 授权仍由原 owner 负责；始终检查活动计划，并明确来源检索的回退/阻塞结果。 |
 | Layer-01 Execution Planning 通用分支：计划记忆生命周期调用 | [规划输出选择](skill/references/coding/layer-03-workflow-checkpoints/planning-output-selection_zh_cn.md) | S06/M07 | 计划记忆 owner 保留触发语义、持久化、回读、归档、不可变及失败政策。 |
