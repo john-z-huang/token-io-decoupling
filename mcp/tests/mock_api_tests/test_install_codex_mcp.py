@@ -33,6 +33,8 @@ def harness(tmp_path: Path) -> dict[str, Path | dict[str, str]]:
     sentinel = tmp_path / "codex-config.toml"
     sentinel.write_text('mcp_servers = "unchanged"\n', encoding="utf-8")
     launcher = tool_bin / "token-io-decoupling"
+    workflow_launcher = tool_bin / "token-io-decoupling-workflow"
+    tools_launcher = tool_bin / "token-io-decoupling-tools"
     py = os.fspath(Path(sys.executable))
     launcher_source = tmp_path / "launcher.py"
     launcher_source.write_text(
@@ -56,6 +58,11 @@ def harness(tmp_path: Path) -> dict[str, Path | dict[str, str]]:
         "  else:\n"
         "    p.write_bytes(pathlib.Path(os.environ['LAUNCHER_SOURCE']).read_bytes())\n"
         "    p.chmod(0o644 if os.environ.get('NONEXEC_LAUNCHER') else 0o755)\n"
+        "  for key in ('WORKFLOW_LAUNCHER','TOOLS_LAUNCHER'):\n"
+        "    if not os.environ.get('MISSING_'+key):\n"
+        "      q=pathlib.Path(os.environ[key])\n"
+        "      q.write_bytes(pathlib.Path(os.environ['LAUNCHER_SOURCE']).read_bytes())\n"
+        "      q.chmod(0o755)\n"
         "elif args == ['tool','dir','--bin']:\n"
         "  if os.environ.get('BIN_FAIL'): raise SystemExit(int(os.environ['BIN_FAIL']))\n"
         "  print('' if os.environ.get('EMPTY_BIN') else os.environ['TOOL_BIN'])\n",
@@ -66,6 +73,8 @@ def harness(tmp_path: Path) -> dict[str, Path | dict[str, str]]:
         PATH=os.fspath(tools),
         CALL_LOG=os.fspath(log),
         LAUNCHER=os.fspath(launcher),
+        WORKFLOW_LAUNCHER=os.fspath(workflow_launcher),
+        TOOLS_LAUNCHER=os.fspath(tools_launcher),
         LAUNCHER_SOURCE=os.fspath(launcher_source),
         TOOL_BIN=os.fspath(tool_bin),
         CONFIG_SENTINEL=os.fspath(sentinel),
@@ -105,7 +114,7 @@ def _calls(harness: dict[str, Path | dict[str, str]]) -> list[list[str]]:
 
 
 def test_installs_and_invokes_absolute_launcher_from_unrelated_cwd(harness):
-    result = _run(harness, "--profile", "worker", "--replace")
+    result = _run(harness)
     assert result.returncode == 0, result.stderr
     calls = _calls(harness)
     assert calls == [
@@ -121,7 +130,7 @@ def test_installs_and_invokes_absolute_launcher_from_unrelated_cwd(harness):
             os.fspath(REPO / "mcp"),
         ],
         ["uv", "tool", "dir", "--bin"],
-        ["setup", "setup", "codex", "--profile", "worker", "--replace"],
+        ["setup", "setup", "codex"],
     ]
     assert "Reload the affected MCP servers" in result.stdout
     sentinel = harness["sentinel"]
@@ -129,22 +138,23 @@ def test_installs_and_invokes_absolute_launcher_from_unrelated_cwd(harness):
     assert sentinel.read_text(encoding="utf-8") == 'mcp_servers = "unchanged"\n'
 
 
-@pytest.mark.parametrize("selection", [(), ("--all",)])
-def test_default_and_explicit_all_configure_all_profiles(harness, selection):
-    result = _run(harness, *selection)
+def test_default_setup_registers_both_fixed_servers(harness):
+    result = _run(harness)
     assert result.returncode == 0, result.stderr
-    assert _calls(harness)[-1] == ["setup", "setup", "codex", "--all"]
+    assert _calls(harness)[-1] == ["setup", "setup", "codex"]
 
 
 def test_custom_python_and_dry_run_options(harness):
     env = harness["env"]
     assert isinstance(env, dict)
     env["PATH"] = "/nonexistent"
-    result = _run(harness, "--python", "3.12", "--profile", "root", "--dry-run")
+    result = _run(harness, "--python", "3.12", "--dry-run")
     assert result.returncode == 0
     assert "--python 3.12" in result.stdout
     assert "--force --reinstall" in result.stdout
-    assert "setup codex --profile root" in result.stdout
+    assert "setup codex --dry-run" in result.stdout
+    assert "<uv-tool-bin>/token-io-decoupling-workflow" in result.stdout
+    assert "<uv-tool-bin>/token-io-decoupling-tools" in result.stdout
     assert _calls(harness) == []
 
 
@@ -161,12 +171,12 @@ def test_dry_run_and_help_need_no_tools_or_config(harness):
 @pytest.mark.parametrize(
     "args",
     [
+        ("--profile", "worker"),
+        ("--all",),
+        ("--replace",),
+        ("--migrate-tools",),
         ("--profile",),
         ("--profile", ""),
-        ("--profile", "bad"),
-        ("--all", "--profile", "root"),
-        ("--profile", "root", "--all"),
-        ("--profile", "root", "--profile", "worker"),
         ("--python",),
         ("--python", ""),
         ("--python", "--dry-run"),
@@ -230,6 +240,8 @@ def test_failures_stop_and_preserve_status(harness, env_key, value, expected_sta
         ("EMPTY_BIN", "empty tool bin directory"),
         ("MISSING_LAUNCHER", "missing or not executable"),
         ("NONEXEC_LAUNCHER", "missing or not executable"),
+        ("MISSING_WORKFLOW_LAUNCHER", "missing or not executable"),
+        ("MISSING_TOOLS_LAUNCHER", "missing or not executable"),
     ],
 )
 def test_unusable_installed_command_stops_before_setup(harness, env_key, message):
@@ -239,7 +251,8 @@ def test_unusable_installed_command_stops_before_setup(harness, env_key, message
     result = _run(harness)
     assert result.returncode == 1
     assert message in result.stderr
-    assert [call[0] for call in _calls(harness)] == ["uv", "uv"]
+    calls = _calls(harness)
+    assert [call[0] for call in calls] == ["uv", "uv"]
 
 
 def test_script_finds_repo_when_repo_and_cwd_paths_contain_spaces(harness, tmp_path):

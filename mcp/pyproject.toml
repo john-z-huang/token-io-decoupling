@@ -5,9 +5,10 @@ build-backend = "hatchling.build"
 [project]
 name = "token-io-decoupling"
 version = "0.1.0"
-description = "Unified launcher for the Token I/O MCP role profiles"
+description = "Local workflow and tools MCP servers"
 requires-python = ">=3.11"
 dependencies = [
+  "dev-workflow-standards-tools @ git+https://github.com/john-z-huang/dev-workflow-standards.git@ba5ecc95d9f9da77aca22c17e712d6c8d2a05987#subdirectory=mcp-server",
   "token-io-decoupling-core==0.1.0",
   "token-io-decoupling-state==0.1.0",
   "token-io-decoupling-transport==0.1.0",
@@ -20,6 +21,11 @@ dependencies = [
 
 [project.scripts]
 token-io-decoupling = "token_io_decoupling.cli:main"
+token-io-decoupling-workflow = "token_io_decoupling.cli:workflow_main"
+token-io-decoupling-tools = "token_io_decoupling.cli:tools_main"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [dependency-groups]
 codex-test = [
@@ -28,7 +34,7 @@ codex-test = [
 dev = ["hatchling>=1.27,<2", "pytest>=8,<9", "ruff>=0.14,<1", "ty>=0.0.1a0"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/token_io_decoupling", "src/token_io_decoupling_mcp"]
+packages = ["src/token_io_decoupling"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/pyproject.toml", "/src/**", "/tests/**", "/hatch_build.py"]

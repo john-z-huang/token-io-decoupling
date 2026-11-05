@@ -10,7 +10,7 @@ from typing import Any, cast
 import pytest
 from mcp import Client
 from mcp.types import TextContent
-from token_io_decoupling_core.binding import BindingError
+from token_io_decoupling_core.binding import BindingError, DenyingBindingProvider
 from token_io_decoupling_core.state_models import (
     BindingIdentity,
     HostCapability,
@@ -21,7 +21,7 @@ from token_io_decoupling_core.state_models import (
 from token_io_decoupling_transport.identity import binding_details, bound_role
 from token_io_decoupling_workflow.decisions import DecisionsRuntimeConfig
 
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_workflow_server
 
 SECRET = "sensitive-exception-provider-identity-path-marker"
 
@@ -92,7 +92,9 @@ def _assert_safe_details(report: dict[str, Any]) -> None:
 def test_default_report_distinguishes_support_configuration_and_unprobed_runtime(
     tmp_path: Path,
 ) -> None:
-    report = _capabilities(create_server(state_root=tmp_path / "untouched"))
+    report = _capabilities(
+        create_workflow_server(DenyingBindingProvider(), state_root=tmp_path / "untouched")
+    )
     _assert_safe_details(report)
     assert report["enhanced_binding"] == "unverified"
     assert report["binding_transport"] == "unavailable"
@@ -132,7 +134,7 @@ def test_embedded_report_probes_once_and_keeps_runtime_scope_separate_from_bindi
     tmp_path: Path,
 ) -> None:
     provider = ControlledProvider(_identity(role))
-    server = create_server(provider, state_root=tmp_path / "untouched")
+    server = create_workflow_server(provider, state_root=tmp_path / "untouched")
     provider.reads = 0
     report = _capabilities(server)
     assert provider.reads == 1
@@ -190,7 +192,7 @@ def test_initial_and_later_provider_failures_are_safe_and_fail_closed(
     tmp_path: Path,
 ) -> None:
     provider = ControlledProvider(_identity() if initially_embedded else outcome)
-    server = create_server(provider, profile="workflow", state_root=tmp_path / "untouched")
+    server = create_workflow_server(provider, state_root=tmp_path / "untouched")
     provider.outcome = outcome
     provider.reads = 0
     report = _capabilities(server)
@@ -216,7 +218,7 @@ def test_initial_and_later_provider_failures_are_safe_and_fail_closed(
 
 def test_later_valid_probe_never_promotes_startup_public_scope() -> None:
     provider = ControlledProvider(BindingError(SECRET))
-    server = create_server(provider)
+    server = create_workflow_server(provider)
     original_tools = {tool.name for tool in server._tool_manager.list_tools()}
     provider.outcome = _identity()
     report = _capabilities(server)
@@ -234,7 +236,7 @@ def test_enabled_configuration_does_not_probe_api_or_verify_request_context(tmp_
         raise AssertionError("capability discovery must not create an API client")
 
     report = _capabilities(
-        create_server(
+        create_workflow_server(
             ControlledProvider(_identity()),
             require_codex_context=True,
             decisions_config=DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True),

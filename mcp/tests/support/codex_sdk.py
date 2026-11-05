@@ -8,18 +8,25 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
+from token_io_decoupling_core.server_tools import (
+    TOOLS_SERVER_NAME,
+    TOOLS_SERVER_TOOLS,
+    WORKFLOW_SERVER_NAME,
+    WORKFLOW_TOOLS,
+)
+
 MODEL = "gpt-6-luna"
 EFFORT = "medium"
 PROVIDER = "token_io_test"
 _FINAL_INSPECTION = object()
-SERVER = "token-io-sdk-test"
+INVENTORIES = {WORKFLOW_SERVER_NAME: WORKFLOW_TOOLS, TOOLS_SERVER_NAME: TOOLS_SERVER_TOOLS}
 
 
 class CodexTestError(RuntimeError):
     """Safe failure without SDK stderr, configuration values or credential data."""
 
 
-def launch_settings(executable: Path, directory: Path, mcp_command: list[str]):
+def launch_settings(executable: Path, directory: Path, bin_dir: Path):
     key = os.environ.get("OPENAI_API_KEY", "")
     base_url = os.environ.get("OPENAI_BASE_URL", "")
     for name, value in (("OPENAI_API_KEY", key), ("OPENAI_BASE_URL", base_url)):
@@ -45,12 +52,12 @@ def launch_settings(executable: Path, directory: Path, mcp_command: list[str]):
             }
         ).replace(": ", " = "),
         "mcp_servers={"
-        + json.dumps(SERVER)
-        + "={command="
-        + json.dumps(mcp_command[0])
-        + ",args="
-        + json.dumps(mcp_command[1:])
-        + ",env_vars=[],startup_timeout_sec=30}}",
+        + ",".join(
+            f"{name}={{command={json.dumps(str(bin_dir / name))},"
+            "args=[],env_vars=[],startup_timeout_sec=30}"
+            for name in INVENTORIES
+        )
+        + "}",
     )
     # SDK merges this into its process environment; isolate config/auth/plugin state.
     environment = {
@@ -84,13 +91,13 @@ def _sdk():
 
 
 class FixedCodexSession:
-    def __init__(self, client, types, directory, base_url, mcp_command=None):
+    def __init__(self, client, types, directory, base_url, bin_dir=None):
         self._client = client
         self._types = types
         self._directory = directory
         self._base_url = base_url
         self._thread_id = None
-        self._mcp_command = mcp_command
+        self._bin_dir = bin_dir
 
     def verify_configuration(self):
         config = self._client.request(
@@ -133,21 +140,18 @@ class FixedCodexSession:
             raise CodexTestError("thread model/provider/effort violates test policy")
         self._thread_id = started.thread.id
 
-    def check_mcp(self):
-        self.verify_configuration()
-        if self._mcp_command is None:
-            raise CodexTestError("newly installed MCP command is required")
+    def _check_version(self, executable):
         command = self._client.request(
             "command/exec",
             {
-                "command": self._mcp_command + ["--version"],
+                "command": [str(executable), "--version"],
                 "cwd": str(self._directory),
                 "sandboxPolicy": {"type": "readOnly"},
                 "timeoutMs": 10000,
             },
             response_model=self._types[3],
         )
-        if command.exit_code != 0 or "token-io-" not in command.stdout:
+        if command.exit_code != 0 or not command.stdout.startswith(f"{executable.name} "):
             # Report only fixed classifications; SDK stdout/stderr can contain secrets.
             diagnostic = (command.stderr or "").lower()
             permission_denied = (
@@ -161,24 +165,32 @@ class FixedCodexSession:
                 f"missing_file={'no such file' in diagnostic}, "
                 f"import_error={import_error})"
             )
+
+    def check_mcp(self):
+        self.verify_configuration()
+        if self._bin_dir is None:
+            raise CodexTestError("newly installed MCP bin directory is required")
+        for name in INVENTORIES:
+            self._check_version(self._bin_dir / name)
         self.start_thread()
-        status = self._client.request(
-            "mcpServerStatus/list",
-            {
-                "threadId": self._thread_id,
-                "serverName": SERVER,
-                "detail": "toolsAndAuthOnly",
-            },
-            response_model=self._types[1],
-        )
-        servers = [s for s in status.data if s.name == SERVER]
-        if len(servers) != 1 or "workflow_capabilities" not in servers[0].tools:
-            raise CodexTestError("expected MCP server/tools unavailable")
+        for name, expected in INVENTORIES.items():
+            status = self._client.request(
+                "mcpServerStatus/list",
+                {
+                    "threadId": self._thread_id,
+                    "serverName": name,
+                    "detail": "toolsAndAuthOnly",
+                },
+                response_model=self._types[1],
+            )
+            servers = [server for server in status.data if server.name == name]
+            if len(servers) != 1 or set(servers[0].tools) != expected:
+                raise CodexTestError(f"installed MCP inventory mismatch: {name}")
         result = self._client.request(
             "mcpServer/tool/call",
             {
                 "threadId": self._thread_id,
-                "server": SERVER,
+                "server": WORKFLOW_SERVER_NAME,
                 "tool": "workflow_capabilities",
                 "arguments": {},
             },
@@ -204,7 +216,7 @@ class FixedCodexSession:
                 "mcpServer/tool/call",
                 {
                     "threadId": self._thread_id,
-                    "server": SERVER,
+                    "server": WORKFLOW_SERVER_NAME,
                     "tool": "rules_get_context",
                     "arguments": {"payload": {"node_id": "contract", "language": language}},
                 },
@@ -224,6 +236,7 @@ class FixedCodexSession:
             "model": MODEL,
             "effort": EFFORT,
             "mcp": "passed",
+            "inventories": {name: len(tools) for name, tools in INVENTORIES.items()},
             "model_turns": 0,
             "local_stdio": "available",
             "binding_reason": "local_codex_context_required",
@@ -231,13 +244,13 @@ class FixedCodexSession:
 
 
 @contextmanager
-def fixed_codex_session(executable: Path, mcp_command: list[str], *, phase=None):
+def fixed_codex_session(executable: Path, bin_dir: Path, *, phase=None):
     if phase is not _FINAL_INSPECTION:
         raise CodexTestError("SDK launch is restricted to the final post-install inspection phase")
     # No SDK launch or dependency import until both existing values are verified.
     with tempfile.TemporaryDirectory(prefix="token-io-sdk-test-") as temporary:
         directory = Path(temporary)
-        overrides, environment = launch_settings(executable, directory, mcp_command)
+        overrides, environment = launch_settings(executable, directory, bin_dir)
         # Codex requires an explicitly configured CODEX_HOME to already exist.
         Path(environment["CODEX_HOME"]).mkdir()
         client = None
@@ -258,7 +271,7 @@ def fixed_codex_session(executable: Path, mcp_command: list[str], *, phase=None)
             phase = "initialization"
             client.initialize()
             session = FixedCodexSession(
-                client, types, directory, environment["OPENAI_BASE_URL"], mcp_command
+                client, types, directory, environment["OPENAI_BASE_URL"], bin_dir
             )
             session.verify_configuration()
             phase = "test operation"

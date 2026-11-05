@@ -8,7 +8,7 @@ The MCP Server targets a locally available Codex CLI, including the local Codex 
 
 ## Environment and checks
 
-The workspace contains eight independently buildable distributions, each with its own `pyproject.toml`, and one shared `uv.lock`. Only the root distribution, `token-io-decoupling`, exports a console script. Run these commands from `mcp/` using managed Python and locked dependencies:
+The workspace contains eight independently buildable distributions, each with its own `pyproject.toml`, and one shared `uv.lock`. The root distribution, `token-io-decoupling`, exports the administrative `token-io-decoupling` command and the two MCP executables `token-io-decoupling-workflow` and `token-io-decoupling-tools`. Run these commands from `mcp/` using managed Python and locked dependencies:
 
 ```sh
 uv sync --managed-python --locked --all-packages --group dev
@@ -32,22 +32,27 @@ Classify every new or changed test by its actual dependencies and behavior:
 
 Split mixed modules by test case; a marker or filename does not replace correct placement. Shared fixtures and subprocess helpers may live outside these three case directories, but must not become an unclassified home for test cases. Preserve assertions, parametrization and collection coverage when moving tests, and update imports, repository-root discovery and CI/script references together. Ordinary pytest must collect and skip live cases without reading credentials or sending requests. The same placement rules apply to future tests.
 
-## Unified launcher and profile tools
+## Separate MCP executables
 
-The installed command is `token-io-decoupling`. Select a profile at startup:
+The MCP runtime consists of two installed executables. Each starts its own stdio server without startup arguments. The `token-io-decoupling` executable is an administrative CLI for setup, Skill installation, and environment-forwarding repair. It is not an MCP runtime and has no bare-server default.
+
+| MCP executable / Codex registration | Tools |
+| --- | --- |
+| `token-io-decoupling-workflow` | The unchanged 17 workflow capability, rule, planning, routing, and evaluation tools. |
+| `token-io-decoupling-tools` | 51 tools: 9 Root, 6 Worker, 3 shared, and 33 development workflow tools; see [Two MCP executables and Codex registration](TOOLS_REGISTRATION.md). |
+
+The one-call registration command adds both executables:
 
 ```sh
-token-io-decoupling start-mcp-server --profile workflow
+token-io-decoupling setup codex
 ```
 
-`--profile` accepts `workflow`, `root`, `worker`, or `share`. Omitting the subcommand starts stdio with the workflow profile; `--version` prints the launcher version. Each profile has a fixed, disjoint inventory:
+To register them separately, use the executable paths from the installed tool bin directory:
 
-| Profile / Codex server registration | Tools |
-| --- | --- |
-| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`, `rules_get_context`, `workflow_generate_decision_context`, `workflow_select_child_effort`, `decide_decoupling_workflow`, `validate_decoupling_compliance`, `workflow_select_child_role`, `workflow_select_executor`, `workflow_select_child`, `workflow_assess_output_tokens`, `task_plan_update`, `task_plan_complete`, `task_plan_archive`, `serena_memory_tail_read`, `serena_memory_write_check`, `workflow_evaluate`, `evaluate_control_checkpoint` |
-| `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`, `delegation_reserve`, `delegation_unreserve`, `delegation_bind`, `slice_check`, `slice_release`, `workflow_transition`, `parent_get_worker_summary`, `workflow_reconcile` |
-| `worker` / `token-io-decoupling-worker-agent-tools` | `worker_get_assignment`, `worker_record_progress`, `worker_get_evidence`, `worker_report_blocker`, `worker_get_recovery_context`, `materialize_decoupled_output` |
-| `share` / `token-io-decoupling-share-tools` | `database_schema_status`, `state_get`, `record_evidence` |
+```sh
+codex mcp add token-io-decoupling-workflow -- /absolute/path/to/token-io-decoupling-workflow
+codex mcp add token-io-decoupling-tools -- /absolute/path/to/token-io-decoupling-tools
+```
 
 The bounded request, route selection, hash, and result contract for `decide_decoupling_workflow` is documented in [Decoupling workflow routing](WORKFLOW_ROUTING.md).
 
@@ -55,17 +60,17 @@ The read-only `validate_decoupling_compliance` tool checks a bounded candidate o
 
 The Worker-only `materialize_decoupled_output` tool prepares and inspects bounded output artifacts, then applies them through an independently granted operator service. Its request, templates, grant and preflight requirements, startup option `--output-materializer-factory MODULE:CALLABLE`, result, and recovery boundaries are documented in [Worker output materialization](OUTPUT_MATERIALIZATION.md). The trusted factory returns `OutputMaterializerConfig`; absent configuration leaves the tool unavailable without probing default paths.
 
-A profile controls discovery, not authority. Without a trusted host channel, public capability/rule reads succeed, schema status reports unavailable without inspecting state paths, and protected calls reject the missing binding. Workflow/Control evaluation requires a verified Root. Shared reads and evidence writes resolve the verified role on every invocation; Worker reads reject a non-null Root `index_page` cursor.
+Each executable has a fixed discovery inventory; discovery does not grant authority. Without a trusted host channel, public capability/rule reads succeed, schema status reports unavailable without inspecting state paths, and protected calls reject the missing binding. Workflow/Control evaluation requires a verified Root. Shared reads and evidence writes resolve the verified role on every invocation; Worker reads reject a non-null Root `index_page` cursor.
 
 The three Native task-plan tools use a separately configured checkout-bound Serena backend, not an Enhanced database. A host can select repository-scoped global storage so the main checkout and linked worktrees share plans while independent repositories remain separate; legacy project-local storage stays compatible. They remain `unavailable` without explicit injection or a trusted startup factory. Their payloads, configuration, identity/path mapping, deterministic checks, tests and protection limits are owned by [Task plan lifecycle tools](TASK_PLAN_TOOLS.md). No automatic Serena configuration loading or model request is involved.
 
-Canonical Python implementations use the independent package names shown in the architecture contract. The renamed `token_io_decoupling_mcp` adapter namespace carries the former facade modules and default factory's public-only behavior; `python -m token_io_decoupling_mcp.cli` remains available. The old `token_io_mcp` import namespace is not exposed as a general API. The two immutable v1 migration sources retain `token_io_mcp.models` in their historical bytes; the state migration loader provides a temporary alias for `DatabaseKind` only while importing those modules, then removes it. Use the renamed adapter paths for direct migration imports; importing frozen state migration modules directly bypasses the scoped loader and is unsupported. Compatibility files are owned by core, state, or launcher without duplicate wheel paths. The old four console scripts and the former `token-io-mcp` console script are not exported by this workspace.
+Canonical Python implementations use the independent package names shown in the architecture contract. The `token_io_decoupling_mcp` namespace remains only for core/state adapter modules used by compatibility imports; it does not expose a CLI or default server factory. The old `token_io_mcp` import namespace is not exposed as a general API. The two immutable v1 migration sources retain `token_io_mcp.models` in their historical bytes; the state migration loader provides a temporary alias for `DatabaseKind` only while importing those modules, then removes it. Use the renamed core/state adapter paths for direct migration imports; importing frozen state migration modules directly bypasses the scoped loader and is unsupported. Compatibility files are owned by core and state without duplicate wheel paths.
 
 The [Memory tools guide](SERENA_MEMORY_TOOLS.md) owns direct tail-read/write-check arguments, local path resolution, bounded-read results and matching limits. These tools read the current project's `.serena/memories/` files with Python's standard library; they do not use the separately configured task-plan backend.
 
 ## Capability report diagnostics
 
-`workflow_capabilities({})` is public and takes no arguments. `capability_details.schema_version=2` retains existing summaries and reports `support.local_stdio=available/local_stdio_request_scoping`. `runtime.server_mode=local_stdio` means named profiles use local request scope; without state-call metadata, `runtime.binding=request_required/local_codex_context_required`. These results are not authentication or operation authorization. Configuration details separately report plan backend, Memory paths, compliance reader, API and materialization conditions; unprobed dependencies are not readiness evidence. Legacy summaries `enhanced_binding=not_applicable` and `binding_transport=stdio` no longer claim host authentication.
+`workflow_capabilities({})` is public and takes no arguments. `capability_details.schema_version=2` retains existing summaries and reports `support.local_stdio=available/local_stdio_request_scoping`. `runtime.server_mode=local_stdio` means each named MCP executable uses local request scope; without state-call metadata, `runtime.binding=request_required/local_codex_context_required`. These results are not authentication or operation authorization. Configuration details separately report plan backend, Memory paths, compliance reader, API and materialization conditions; unprobed dependencies are not readiness evidence. Legacy summaries `enhanced_binding=not_applicable` and `binding_transport=stdio` no longer claim host authentication.
 
 ### Installed client runtime checks
 
@@ -96,7 +101,7 @@ The coordinator first runs the complete default MCP test suite, lint, formatting
 
 Every SDK launch requires and explicitly reuses nonblank process `OPENAI_API_KEY` and `OPENAI_BASE_URL`, fixes model `gpt-6-luna` and reasoning effort `medium`, and verifies effective configuration and thread settings. Missing or conflicting settings fail, with no saved-login, credential, endpoint, model, or effort fallback. The key travels only through the child environment; credential values and raw SDK diagnostics are never printed or persisted in auth files.
 
-The adapter selects the installed `codex` on `PATH`, or the absolute executable specified by `TOKEN_IO_CODEX_CLI_PATH`, instead of the SDK's bundled CLI. Temporary `HOME`/`CODEX_HOME` isolates configuration. The fresh instance loads only the newly installed MCP command, runs its `--version` through read-only `command/exec`, discovers tools, and calls `workflow_capabilities` plus bilingual `rules_get_context`. It performs no model turn, mutation, arbitrary shell command, or complex task. This compensates for the current session's inability to dynamically reload the updated MCP Server; it does not prove that an existing session has reloaded it. CI installs the test dependency group for policy, static, and type checks without launching this final SDK inspection.
+The adapter selects the installed `codex` on `PATH`, or the absolute executable specified by `TOKEN_IO_CODEX_CLI_PATH`, instead of the SDK's bundled CLI. Temporary `HOME`/`CODEX_HOME` isolates configuration. The fresh instance loads the two separately installed MCP executables with no startup arguments, checks each executable's version through read-only `command/exec`, discovers both inventories, and calls `workflow_capabilities` plus bilingual `rules_get_context`. It performs no model turn, mutation, arbitrary shell command, or complex task. This compensates for the current session's inability to dynamically reload the updated MCP Server; it does not prove that an existing session has reloaded it. CI installs the test dependency group for policy, static, and type checks without launching this final SDK inspection.
 
 
 ## API and tool recovery guidance
@@ -133,23 +138,15 @@ Use the actual artifact version in the filename. Subsequent examples assume uv's
 
 Standard installation directly supports local stdio state operations without a privileged service or external provider. Reload servers and start a fresh Codex CLI session from the intended project root. State calls require valid thread metadata; Root must register Workers first. Path, role, allocation and per-operation authorization checks remain. Public tools retain independent dependencies: existing project files for Memory, a configured plan backend, a configured compliance reader, both nonblank API environment variables plus per-call outbound authorization for API tools, and a registered Worker, pinned roots, fresh preflight and independent operator grant for materialization. Discovery is neither configuration nor permission.
 
-With the Codex CLI available on `PATH`, register the MCP profiles separately:
+With the Codex CLI available on `PATH`, register both MCP executables in one operation:
 
 ```sh
 token-io-decoupling setup codex
 ```
 
-Reload the affected MCP servers after registration or tool updates. Registration forwards the required environment-variable names but does not supply their values or establish a local session context.
+Setup resolves and verifies the current workflow and tools executables, then registers those two targets with empty argument lists. It preserves other settings in either target table and leaves unrelated configuration untouched. It does not inspect, classify, remove, or migrate other registrations. `--dry-run` reads the configuration and preflights only the two current target sections, but starts no MCP subprocess and writes nothing. Reload the affected MCP servers after registration or tool updates. Forwarding declarations contain variable names only; they do not supply values or establish a local session context.
 
 The Memory tools need no additional installation options or Serena packages. Start Codex from the target project root; the MCP uses its startup working directory as the project root and reads only files under `.serena/memories/`. It does not search parent or sibling projects. The Memory directory and requested file must already exist; missing paths return a non-success result without creating anything. The local file operations use Python's standard library. See [Memory tools](SERENA_MEMORY_TOOLS.md).
-
-Older workflow registrations containing Serena-specific startup arguments or a fixed working directory are not migrated automatically. To replace that workflow registration with the current arguments, run this from the target project root:
-
-```sh
-token-io-decoupling setup codex --profile workflow --replace
-```
-
-This replaces only the workflow registration and preserves other profiles and unrelated settings.
 
 ### Install and update local Skill instructions
 
@@ -191,52 +188,45 @@ bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh
 
 Run `skills install` or `skills update` afterward as described above.
 
-Prerequisites are Bash 3.2 or later (including macOS `/bin/bash`), `uv`, and the Codex CLI; `uv` and `codex` must be on `PATH`. The script locates `mcp/` relative to itself, runs `uv tool install --force --reinstall --managed-python --python 3.14` against that source, obtains the bin directory with `uv tool dir --bin`, then calls the absolute installed executable's `setup codex`. uv resolves the declared local workspace dependencies; `--reinstall` refreshes them even when only their source or packaged rules changed. The tool bin directory need not be on `PATH`, and virtual-environment activation or a separate setup command is not required. Repeating the command refreshes this tool from the current checkout; it does not uninstall the legacy `token-io-mcp` tool.
+Prerequisites are Bash 3.2 or later (including macOS `/bin/bash`), `uv`, and the Codex CLI; `uv` and `codex` must be on `PATH`. The script locates `mcp/` relative to itself, runs `uv tool install --force --reinstall --managed-python --python 3.14` against that source, obtains the bin directory with `uv tool dir --bin`, then calls the absolute installed administrative executable's `setup codex`. uv resolves the declared dependencies; `--reinstall` refreshes them even when only their source or packaged rules changed. The tool bin directory need not be on `PATH`, and virtual-environment activation or a separate setup command is not required. Repeating the command refreshes this tool from the current checkout.
 
-Each operation is a single script call. Append the relevant options to the command above:
+Each operation is a single script call. The installer runs `setup codex` to register both MCP executables. Append the relevant options to the command above:
 
 | Option | Operation |
 | --- | --- |
-| `--dry-run` | Print the install and setup plan without running installation/setup commands or reading/writing configuration. The future tool bin path is symbolic until a real run. |
-| `--profile workflow` | Register only one profile. `root`, `worker`, or `share` can also be selected. The installed package still contains all profiles. |
-| `--all` | Explicitly select the default four profiles; cannot be combined with `--profile`. |
-| `--replace` | Permit setup to replace conflicting or disabled registrations. Omit it to retain conflict rejection. |
+| `--dry-run` | Print the installer plan without installing or invoking setup. The future tool bin path is symbolic until a real run. Direct `setup codex --dry-run` reads configuration and preflights only the two target sections; it starts no MCP subprocess and writes nothing. |
 | `--python VERSION` | Choose the uv-managed Python version instead of the default `3.14`. |
 | `--help` | Show usage without installing or configuring anything. |
 
 The script validates arguments and required commands before installation. A failed stage stops subsequent stages and returns a nonzero status. Installation and registration are separate effects: if setup fails after installation, the refreshed tool remains installed; inspect setup's partial-state report before rerunning. Existing registration-preservation and forwarding checks remain in the setup helper. Reload the affected servers after success; the script does not restart the client or supply credential values.
 
-Setup registers all four server names above using one verified absolute executable path and profile-specific arguments, and automatically merges the required API and optional proxy environment-variable names into their `env_vars`. Users who already manage tool installation separately can still invoke `token-io-decoupling setup codex` directly. For example, register and repair forwarding for only the root profile with one installed-command call:
+Setup registers both executable names above with verified absolute executable paths and empty argument lists. It merges the required API and optional proxy environment-variable names; the tools executable also forwards `OPENAI_TIMEOUT_MAX_RETRIES`. It updates only these two target tables, preserving their other settings and unrelated configuration. It does not inspect or migrate other registrations. See [Two MCP executables and Codex registration](TOOLS_REGISTRATION.md). Users who prefer separate registration can use the two direct commands above.
 
-```sh
-token-io-decoupling setup codex --profile root
-```
+The administrative command resolves its own path from the running installation's scripts directory and exact distribution entry-point metadata. Each MCP executable uses its startup working directory as the project root; this does not establish host identity.
 
-The launcher resolves its executable from the running installation's scripts directory and exact distribution entry-point metadata. Memory tools use the server process's startup working directory as the project root; this does not establish host identity.
+The installed command's `setup codex --dry-run` reports the planned paths and empty argument lists for the two target registrations without writing configuration. Real setup resolves the current installed executables, verifies their `tools/list` inventories, and atomically upserts only their two target tables. It preserves other settings in those tables and unrelated configuration. The update preserves file mode, rejects unsupported TOML layouts, and checks that the input file has not changed before replacement. Avoid concurrent configuration writers; this check is not a global lock. Captured configuration and subprocess output are not printed.
 
-The installed command's `setup codex --dry-run` prints the selected JSON argument vectors and a variable-name forwarding plan, without running setup subprocesses or reading/writing configuration. Real setup probes the Codex CLI before registration writes and reads listing and nested `transport` data. Matching enabled commands and startup arguments skip re-registration but still receive missing forwarding names. Replacement uses same-name upsert without deleting first. Later forwarding failures are reported separately from applied registrations. Captured configuration and subprocess output are not printed.
-
-Because the Codex upsert replaces a registration, setup keeps the previous settings in memory and restores them with forwarding after each successful upsert, before processing the next profile. Stdio replacement preserves additional settings and forwarded names while changing the launcher, profile arguments and intended enabled state. HTTP-to-stdio replacement preserves common tool policies and timeouts, but removes the old transport and authentication fields. If a later profile fails, the report distinguishes completed registrations/forwarding from pending work. Use setup for replacements that must preserve these settings.
-
-After the new launcher and registrations are verified, a migration from this repository's old four-command tool can remove that old distribution with `uv tool uninstall token-io-mcp`. Preserve unrelated tools, servers and settings, and reconnect the MCP client to load the new launch command. Setup does not establish a local session context.
+If both target tables already match, setup is a no-op. It does not rewrite unrelated entries or manage other server registrations. It never prints configuration values or subprocess output.
 
 The protocol target remains `2026-07-28`. SDK subprocess tests verify negotiation and calls; actual trusted host integration remains separate evidence.
 
 ### Codex stdio environment forwarding
 
-The installer already handles forwarding through setup. For a forwarding-only repair of existing registrations, run the [standalone repair script](../scripts/configure-codex-mcp-env.py) once from any working directory:
+The installer already handles forwarding through setup. For a forwarding-only repair of the two executable registrations, run the [standalone repair script](../scripts/configure-codex-mcp-env.py) once from any working directory:
 
 ```sh
-uv run --managed-python -- /absolute/path/to/skill/scripts/configure-codex-mcp-env.py --server dev-workflow-standards-tools
+uv run --managed-python -- /absolute/path/to/skill/scripts/configure-codex-mcp-env.py --server token-io-decoupling-tools
 ```
+
+Repeat `--server token-io-decoupling-workflow` to update the workflow registration in the same file operation.
 
 Add `--dry-run` to preview instead of writing. Alternatively, an existing installation offers the same operation as `token-io-decoupling setup codex-env --server NAME`; these are alternatives, not sequential steps. Repeat `--server NAME` to update multiple existing stdio registrations in one file operation. The default names to merge are `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` and the four lowercase proxy forms; repeat `--env-var NAME` to supply a custom name list instead. `--config /absolute/path/config.toml` selects a file explicitly; otherwise the target is `$CODEX_HOME/config.toml`, or `~/.codex/config.toml` when `CODEX_HOME` is unset. The script uses PEP 723 metadata to obtain TOML Kit through uv and imports the helper from this checkout, so it does not require an installed MCP package or Codex CLI. The installed command uses the same helper.
 
-The helper merges only selected `env_vars`, preserving other names, comments, settings, and file mode. Repeated successful runs with no missing names leave file bytes and modification time unchanged. It writes through a temporary file in the same directory and detects changes to its input before replacement; avoid concurrent configuration writers, since this is not a cross-client transaction. Missing files or server entries, non-stdio servers, invalid TOML/field types, symlink targets, conflicting remote sources for requested variables, and write failures return safe errors. It creates no server entries, prints no configuration values, and makes no API request. `--dry-run` for this repair reads and validates the selected file but writes nothing; the registration dry-run above deliberately does not inspect configuration.
+The helper merges only selected `env_vars`, preserving other names, comments, settings, and file mode. Repeated successful runs with no missing names leave file bytes and modification time unchanged. It writes through a temporary file in the same directory and detects changes to its input before replacement; avoid concurrent configuration writers, since this is not a cross-client transaction. Missing files or server entries, non-stdio servers, invalid TOML/field types, symlink targets, conflicting remote sources for requested variables, and write failures return safe errors. It creates no server entries, prints no configuration values, and makes no API request. `--dry-run` for this repair reads and validates the selected file but writes nothing; the setup dry-run above reads configuration and preflights only the two target sections, without starting an MCP subprocess or writing.
 
-TOML Kit documents a formatting exception for out-of-order subtables that extend an array of tables. The locked version also normalizes that layout. Before a planned repair write, the helper checks that the unmodified document round-trips byte-for-byte; unsupported layouts are rejected without writing, rather than silently moving unrelated content. Registration setup applies the same check during preflight, before upserts. An already-complete standalone repair remains a no-op even on such a layout.
+TOML Kit documents a formatting exception for out-of-order subtables that extend an array of tables. The locked version also normalizes that layout. Before a planned repair write, the helper checks that the unmodified document round-trips byte-for-byte; unsupported layouts are rejected without writing, rather than silently moving unrelated content. Registration setup applies the same check before its atomic configuration update. An already-complete standalone repair remains a no-op even on such a layout.
 
-The following partial example illustrates the resulting settings. Preserve existing `command`, `args`, approvals and additional forwarded names when editing manually:
+The following partial example illustrates the two default registrations. Preserve existing `command`, `args`, approvals and additional forwarded names when editing manually; the `tools` entry also needs its `OPENAI_TIMEOUT_MAX_RETRIES` forwarding declaration:
 
 ```toml
 [mcp_servers.token-io-decoupling-workflow]
@@ -246,31 +236,18 @@ env_vars = [
   "http_proxy", "https_proxy", "all_proxy", "no_proxy",
 ]
 
-[mcp_servers.token-io-decoupling-root-agent-tools]
+[mcp_servers.token-io-decoupling-tools]
 env_vars = [
   "OPENAI_API_KEY", "OPENAI_BASE_URL",
   "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
   "http_proxy", "https_proxy", "all_proxy", "no_proxy",
-]
-
-[mcp_servers.token-io-decoupling-worker-agent-tools]
-env_vars = [
-  "OPENAI_API_KEY", "OPENAI_BASE_URL",
-  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
-  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
-]
-
-[mcp_servers.token-io-decoupling-share-tools]
-env_vars = [
-  "OPENAI_API_KEY", "OPENAI_BASE_URL",
-  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
-  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+  "OPENAI_TIMEOUT_MAX_RETRIES",
 ]
 ```
 
 Codex must itself have both nonblank API variables and any desired proxy variables in its environment. `env_vars` allows and forwards the corresponding values to each separately launched MCP process; it neither loads Shell configuration or `.env` files nor copies another terminal's environment. Store no actual values in repository files, setup arguments, logs, or examples. See the [Codex MCP configuration reference](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 
-Both new and matching registrations receive the forwarding merge during setup; `--replace` is followed by the same merge. The installation script includes setup automatically; a bare `uv tool install` still does not register servers or supply credentials. Reload the affected MCP servers after configuration changes; if the client has no reload mechanism, quit and reopen it so new service processes are created. Running processes do not automatically receive changed configuration.
+Both MCP registrations receive the forwarding merge during setup. The installation script includes setup automatically; a bare `uv tool install` still does not register servers or supply credentials. Reload the affected MCP servers after configuration changes; if the client has no reload mechanism, quit and reopen it so new service processes are created. Running processes do not automatically receive changed configuration.
 
 When a terminal invocation works but an MCP request reports missing configuration, check the client process environment, each registration's forwarding names, and whether the service was recreated. Record only variable presence/nonblank status. The current Decisions advisor returns `fallback` with reason `missing_credentials` before creating the SDK client when either required value is absent or blank; do not assume another service's `missing_api_key` error name applies here. Forwarding does not enable API requests, grant outbound-data authorization, or establish a local session context; the separate requirements below still apply.
 
@@ -286,7 +263,7 @@ The CLI derives `.local/state/token-io-decoupling` from the process's OS account
 
 All six OpenAI client construction paths use the shared HTTPX2 client builder with explicit `trust_env=True`, preserving the SDK's connection limits and redirect defaults, each operation's timeout, and `max_retries=0`. It reads `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY`, including their lowercase forms, from the MCP process environment when creating a client. [HTTPX2 environment rules](https://pydantic.dev/docs/httpx2/api/environment_variables/) determine proxy selection and bypasses. `NO_PROXY` can allow a direct route; without proxy configuration, normal direct routing remains available. Invalid or unreachable proxies follow the existing safe API failure results; the server does not retry them through a direct route. Closing the SDK client also closes its HTTPX2 client, and an SDK construction failure closes the newly created HTTP client.
 
-For an existing installation, update the tool, run `token-io-decoupling setup codex` to merge the new forwarding names, and reload its MCP servers. Proxy variables must be present in the launching Codex process, not just an unrelated terminal. Setup persists names only and requires no proxy values as arguments. No system proxy or user configuration is changed merely by calling an API tool.
+For an existing installation, update the tool, run `token-io-decoupling setup codex` to register/update both MCP executables and merge their forwarding names, then reload the MCP servers. Proxy variables must be present in the launching Codex process, not just an unrelated terminal. Setup persists names only and requires no proxy values as arguments. No system proxy or user configuration is changed merely by calling an API tool.
 
 Root and every delegated Agent must follow this constraint in both project functionality and test/smoke code: immediately before any real API request, read both `OPENAI_API_KEY` and `OPENAI_BASE_URL` from the local process environment. Both values must be present and nonempty; whitespace-only values are invalid too. If either is missing or invalid, do not create the SDK client or send a real request; return to the documented fallback instead.
 
@@ -389,7 +366,7 @@ Released migration files belong to the state package and remain byte-for-byte un
 
 The [MCP CI workflow](../.github/workflows/mcp.yml) runs locked checks on managed Python 3.11 and 3.14 and a separate installed-wheel job. Export third-party build/runtime constraints with `uv export --no-emit-workspace` (plus `--all-groups` for builds or `--no-dev` for runtime). Workspace members are supplied by the local artifacts, not editable requirements. To install from the detached wheel set, use its directory as `--find-links` and install the root `token_io_decoupling-0.1.0-py3-none-any.whl`; retain the configured index for locked third-party dependencies. See CI for the complete commands.
 
-For temporary installation, set command-local `UV_TOOL_DIR` and `UV_TOOL_BIN_DIR` to absolute temporary directories. Run `tests/support/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-decoupling` with the locked workspace interpreter. It starts four profile subprocesses outside the checkout with an empty `PYTHONPATH`, verifies exact inventories and binding rejection, checks both rule languages, and runs setup dry-run with an empty `PATH`. Source-root tool installation is checked separately. These results prove packaging and stdio behavior, not actual host binding or a GitHub Actions run.
+For temporary installation, set command-local `UV_TOOL_DIR` and `UV_TOOL_BIN_DIR` to absolute temporary directories. Run `tests/support/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-decoupling` with the locked workspace interpreter. It starts the two separate MCP executables outside the checkout with an empty `PYTHONPATH`, verifies their exact inventories and binding rejection, checks both rule languages, and runs setup dry-run with an empty `PATH`. Source-root tool installation is checked separately. These results prove packaging and stdio behavior, not actual host binding or a GitHub Actions run.
 
 The [documentation workflow](../.github/workflows/multilingual-docs.yml) retains multilingual/link/route validators and scanner regressions; it prunes generated resources and environments while checking authored workspace documentation.
 

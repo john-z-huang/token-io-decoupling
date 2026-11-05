@@ -71,7 +71,8 @@ The tool is stateless: it writes no workflow state and performs no Git, file, ag
 
 ## Related concepts
 
-- [MCP workspace development guide](DEVELOPMENT.md) — owns workspace tooling and the public profile inventory.
+- [MCP workspace development guide](DEVELOPMENT.md) — owns workspace tooling and installation.
+- [MCP executable and registration guide](TOOLS_REGISTRATION.md) — owns the current executable inventories and Codex registration.
 - [Single-Agent Coding workflow](../docs/skill/references/coding/layer-04-workflows/coding-single-agent.md) — owns the Single-Agent route.
 - [Multi-Agent Coding workflow](../docs/skill/references/coding/layer-04-workflows/coding-multi-agent.md) — owns the Multi-Agent route.
 - [Task Assignment](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment.md) — owns execution-subject decisions.

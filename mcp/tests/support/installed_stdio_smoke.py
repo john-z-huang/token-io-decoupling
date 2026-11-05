@@ -1,4 +1,4 @@
-"""Smoke-test the unified installed launcher through real stdio subprocesses."""
+"""Smoke-test the two installed MCP executables through real stdio subprocesses."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ EXPECTED_TOOLS = {
         "workflow_evaluate",
         "evaluate_control_checkpoint",
     },
-    "root": {
+    "tools": {
         "workflow_open",
         "delegation_reserve",
         "delegation_unreserve",
@@ -43,22 +43,53 @@ EXPECTED_TOOLS = {
         "workflow_transition",
         "parent_get_worker_summary",
         "workflow_reconcile",
-    },
-    "worker": {
         "worker_get_assignment",
         "materialize_decoupled_output",
         "worker_record_progress",
         "worker_get_evidence",
         "worker_report_blocker",
         "worker_get_recovery_context",
+        "database_schema_status",
+        "state_get",
+        "record_evidence",
+        "check_branch_names",
+        "check_commit_message",
+        "check_staged_changes",
+        "stage_repository_paths",
+        "commit_repository_changes",
+        "list_repository_worktrees",
+        "switch_repository_branch",
+        "create_repository_branch",
+        "pull_origin_branch_fast_forward",
+        "fetch_upstream_branch",
+        "merge_upstream_branch_fast_forward",
+        "rebase_repository_branch",
+        "remove_repository_worktree",
+        "create_repository_worktree",
+        "capture_untracked_file_manifest",
+        "copy_untracked_files_to_worktree",
+        "configure_project_hooks_path",
+        "audit_issue_pr_policy",
+        "cleanup_merged_pr_local_branch",
+        "audit_repository_state",
+        "list_github_issue_labels",
+        "create_github_issue",
+        "push_issue_branch_to_origin",
+        "create_github_pull_request",
+        "merge_github_pull_request",
+        "push_fork_main_fast_forward",
+        "get_codex_session_summary_guidance",
+        "order_codex_session_sources",
+        "prepare_codex_session_memory",
+        "decide_skill_workflow",
+        "decide_codex_session_action",
+        "generate_skill_content",
+        "check_api_input",
     },
-    "share": {"database_schema_status", "state_get", "record_evidence"},
 }
 SERVER_NAMES = {
     "workflow": "token-io-decoupling-workflow",
-    "root": "token-io-decoupling-root-agent-tools",
-    "worker": "token-io-decoupling-worker-agent-tools",
-    "share": "token-io-decoupling-share-tools",
+    "tools": "token-io-decoupling-tools",
 }
 
 
@@ -71,9 +102,8 @@ def _text(result: object) -> str:
 
 async def _exercise(
     cli_path: Path,
-    profile: str,
+    server_kind: str,
     repo_root: Path,
-    output_materializer_factory: str | None = None,
     memory_content: str | None = None,
 ) -> None:
     if not cli_path.is_absolute():
@@ -90,12 +120,9 @@ async def _exercise(
             memory_file = cwd / ".serena" / "memories" / "notes.md"
             memory_file.parent.mkdir(parents=True)
             memory_file.write_text(memory_content, encoding="utf-8")
-        args = ["start-mcp-server", "--profile", profile]
-        if output_materializer_factory is not None:
-            args.extend(["--output-materializer-factory", output_materializer_factory])
         parameters = StdioServerParameters(
             command=str(cli_path),
-            args=args,
+            args=[],
             cwd=str(cwd),
             env={
                 "PATH": "" if memory_content is not None else os.defpath,
@@ -112,20 +139,22 @@ async def _exercise(
                 client.server_info is None
                 or not client.server_info.description
                 or not client.instructions
-                or profile not in client.instructions
+                or client.server_info.name != SERVER_NAMES[server_kind]
             ):
-                raise AssertionError(f"installed {profile} profile omitted discovery metadata")
+                raise AssertionError(f"installed {server_kind} server omitted discovery metadata")
             tools = await client.list_tools()
-            if "Standard local Codex stdio" not in client.instructions:
-                raise AssertionError("profile discovery omitted the standard-install limitation")
-            if "Standard local Codex stdio" not in client.server_info.description:
+            if "threadId/sessionId" not in client.instructions:
+                raise AssertionError("server discovery omitted the standard-install limitation")
+            if "threadId/sessionId" not in client.server_info.description:
                 raise AssertionError("server description omitted the standard-install limitation")
             names = {tool.name for tool in tools.tools}
-            if names != EXPECTED_TOOLS[profile]:
-                raise AssertionError(f"unbound {profile} profile exposed unexpected tools: {names}")
+            if names != EXPECTED_TOOLS[server_kind]:
+                raise AssertionError(
+                    f"unbound {server_kind} server exposed unexpected tools: {names}"
+                )
             if any(not tool.description for tool in tools.tools):
-                raise AssertionError(f"installed {profile} profile has an undescribed tool")
-            if profile == "workflow":
+                raise AssertionError(f"installed {server_kind} server has an undescribed tool")
+            if server_kind == "workflow":
                 if memory_content is not None:
                     tail = await client.call_tool(
                         "serena_memory_tail_read", {"memory_path": "notes", "tail_lines": 1}
@@ -352,9 +381,11 @@ async def _exercise(
                         }
                     },
                 )
+                if not denied.is_error or "context" not in _text(denied).casefold():
+                    raise AssertionError("unbound workflow evaluation escaped its binding gate")
             else:
-                protected_calls = {
-                    "root": (
+                protected_calls = (
+                    (
                         "workflow_open",
                         {
                             "payload": {
@@ -370,14 +401,13 @@ async def _exercise(
                             }
                         },
                     ),
-                    "worker": ("worker_get_assignment", {}),
-                    "share": ("state_get", {"payload": {}}),
-                }
-                protected_tool, arguments = protected_calls[profile]
-                denied = await client.call_tool(protected_tool, arguments)
-            if not denied.is_error or "context" not in _text(denied).casefold():
-                raise AssertionError("unbound profile operation was not denied by its binding gate")
-            if profile == "share":
+                    ("worker_get_assignment", {}),
+                    ("state_get", {"payload": {}}),
+                )
+                for protected_tool, arguments in protected_calls:
+                    rejected = await client.call_tool(protected_tool, arguments)
+                    if not rejected.is_error or "context" not in _text(rejected).casefold():
+                        raise AssertionError(f"unbound call to {protected_tool} escaped its guard")
                 status = await client.call_tool("database_schema_status", {})
                 status_text = _text(status)
                 if (
@@ -405,9 +435,14 @@ def _exercise_codex_dry_run(cli_path: Path, repo_root: Path) -> None:
         empty_path = temporary_path / "empty-path"
         empty_path.mkdir()
         result = subprocess.run(
-            [str(cli_path), "setup", "codex", "--all", "--dry-run"],
+            [str(cli_path), "setup", "codex", "--dry-run"],
             cwd=temporary_path,
-            env={"PATH": str(empty_path), "PYTHONDONTWRITEBYTECODE": "1", "PYTHONPATH": ""},
+            env={
+                "CODEX_HOME": str(temporary_path),
+                "PATH": str(empty_path),
+                "PYTHONDONTWRITEBYTECODE": "1",
+                "PYTHONPATH": "",
+            },
             capture_output=True,
             text=True,
             check=False,
@@ -418,72 +453,32 @@ def _exercise_codex_dry_run(cli_path: Path, repo_root: Path) -> None:
                 f"installed setup dry-run failed ({result.returncode}): {result.stderr.strip()}"
             )
         lines = result.stdout.splitlines()
-        if not lines or lines[0] != "Dry run: no Codex command or configuration preflight was run.":
-            raise AssertionError("installed setup dry-run performed or claimed a preflight")
-        forwarding_names = [
-            "OPENAI_API_KEY",
-            "OPENAI_BASE_URL",
-            "HTTP_PROXY",
-            "HTTPS_PROXY",
-            "ALL_PROXY",
-            "NO_PROXY",
-            "http_proxy",
-            "https_proxy",
-            "all_proxy",
-            "no_proxy",
-        ]
-        plan = f"Would merge env_vars {forwarding_names!r} into: " + ", ".join(
-            name for _profile, name in SERVER_NAMES.items()
-        )
-        if not lines or lines[-2] != plan:
-            raise AssertionError("installed setup dry-run omitted the forwarding plan")
-        if "Standard local Codex stdio" not in lines[-1] or "application scope" not in lines[-1]:
-            raise AssertionError("installed setup omitted the standard-install limitation")
-        try:
-            commands = [json.loads(line) for line in lines[1:-2]]
-        except json.JSONDecodeError as exc:
-            raise AssertionError("installed setup dry-run printed invalid command JSON") from exc
-        expected = [
-            [
-                "codex",
-                "mcp",
-                "add",
-                name,
-                "--",
-                str(cli_path.resolve()),
-                "start-mcp-server",
-                "--profile",
-                profile,
-            ]
-            for profile, name in SERVER_NAMES.items()
-        ]
-        if commands != expected:
-            raise AssertionError(f"installed setup dry-run commands differ: {commands}")
+        if (temporary_path / "config.toml").exists():
+            raise AssertionError("setup dry-run wrote a Codex configuration")
+        for name in SERVER_NAMES.values():
+            command = cli_path.with_name(name).resolve(strict=True)
+            if f"Would configure {name}: {command} (args=[])" not in lines:
+                raise AssertionError(f"setup dry-run omitted the installed {name} command")
+        if (
+            "OPENAI_TIMEOUT_MAX_RETRIES" not in result.stdout
+            or "application scope" not in lines[-1]
+        ):
+            raise AssertionError("setup dry-run omitted forwarding or binding guidance")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cli", required=True, type=Path)
-    parser.add_argument("--output-materializer-factory", metavar="MODULE:CALLABLE")
     args = parser.parse_args()
     repo_root = Path(__file__).resolve().parents[3]
     cli_path = args.cli.resolve(strict=True)
-    for profile in EXPECTED_TOOLS:
-        if profile == "workflow":
-            for content in ("synthetic project A\n", "synthetic project B\n"):
-                asyncio.run(
-                    _exercise(
-                        cli_path,
-                        profile,
-                        repo_root,
-                        args.output_materializer_factory,
-                        content,
-                    )
-                )
-        else:
-            asyncio.run(_exercise(cli_path, profile, repo_root, args.output_materializer_factory))
+    for content in ("synthetic project A\n", "synthetic project B\n"):
+        workflow = cli_path.with_name(SERVER_NAMES["workflow"])
+        asyncio.run(_exercise(workflow, "workflow", repo_root, content))
+    tools = cli_path.with_name(SERVER_NAMES["tools"])
+    asyncio.run(_exercise(tools, "tools", repo_root))
     _exercise_codex_dry_run(cli_path, repo_root)
-    print("installed unified launcher profile discovery: ok")
+    print("installed workflow and tools discovery: ok")
 
 
 if __name__ == "__main__":

@@ -39,7 +39,7 @@ from token_io_decoupling_workflow.delegation_decisions import (
     OutputTokenRoutingInput,
 )
 
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_workflow_server
 
 _OPT_IN_NAME = "TOKEN_IO_RUN_REAL_API"
 _OPTED_IN = os.environ.get(_OPT_IN_NAME) == "1"
@@ -333,7 +333,7 @@ def _tool_json(result: Any) -> dict[str, Any]:
 
 
 def _call_workflow_tool(name: str, payload: DecisionInputBase, state_root: Path) -> dict[str, Any]:
-    server = create_server(profile="workflow", state_root=state_root)
+    server = create_workflow_server(state_root=state_root)
 
     async def call() -> dict[str, Any]:
         async with Client(server, mode="auto") as client:
@@ -394,7 +394,7 @@ def test_real_api_mcp_generation_to_effort_decision_chain(
             "output_kind": generation_payload.output_kind,
         }
     )
-    server = create_server(profile="workflow", state_root=tmp_path)
+    server = create_workflow_server(state_root=tmp_path)
 
     async def call_chain() -> tuple[dict[str, Any], dict[str, Any], ChildEffortInput, str]:
         async with Client(server, mode="auto") as client:

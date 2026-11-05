@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-import sys
+import sysconfig
 from pathlib import Path
 from typing import Any, cast
 
@@ -14,27 +14,15 @@ from token_io_decoupling_core.project_identity import (
     ProjectIdentityError,
     project_id_from_git_common_dir,
 )
+from token_io_decoupling_core.server_tools import (
+    DEV_WORKFLOW_TOOLS,
+    TOOLS_SERVER_NAME,
+    TOOLS_SERVER_TOOLS,
+    WORKFLOW_SERVER_NAME,
+    WORKFLOW_TOOLS,
+)
 
-from token_io_decoupling.server import create_server
-
-PUBLIC_TOOLS = {
-    "workflow_capabilities",
-    "task_plan_update",
-    "task_plan_complete",
-    "task_plan_archive",
-    "serena_memory_tail_read",
-    "serena_memory_write_check",
-    "rules_get_context",
-    "validate_decoupling_compliance",
-    "decide_decoupling_workflow",
-    "workflow_select_child_effort",
-    "workflow_generate_decision_context",
-    "workflow_select_child_role",
-    "workflow_select_executor",
-    "workflow_select_child",
-    "workflow_assess_output_tokens",
-    "database_schema_status",
-}
+from token_io_decoupling.server import create_tools_server, create_workflow_server
 
 
 def _tool_names(server: MCPServer[Any]) -> set[str]:
@@ -45,60 +33,18 @@ def _result_text(result: Any) -> str:
     return cast(TextContent, result.content[0]).text
 
 
-def test_profiles_have_fixed_disjoint_inventories_and_fail_closed() -> None:
-    expected = {
-        "workflow": {
-            "workflow_capabilities",
-            "task_plan_update",
-            "task_plan_complete",
-            "task_plan_archive",
-            "serena_memory_tail_read",
-            "serena_memory_write_check",
-            "rules_get_context",
-            "validate_decoupling_compliance",
-            "decide_decoupling_workflow",
-            "workflow_select_child_effort",
-            "workflow_generate_decision_context",
-            "workflow_select_child_role",
-            "workflow_select_executor",
-            "workflow_select_child",
-            "workflow_assess_output_tokens",
-            "workflow_evaluate",
-            "evaluate_control_checkpoint",
-        },
-        "root": {
-            "workflow_open",
-            "delegation_reserve",
-            "delegation_unreserve",
-            "delegation_bind",
-            "slice_check",
-            "slice_release",
-            "workflow_transition",
-            "parent_get_worker_summary",
-            "workflow_reconcile",
-        },
-        "worker": {
-            "worker_get_assignment",
-            "materialize_decoupled_output",
-            "worker_record_progress",
-            "worker_get_evidence",
-            "worker_report_blocker",
-            "worker_get_recovery_context",
-        },
-        "share": {"database_schema_status", "state_get", "record_evidence"},
-    }
-    servers = {name: create_server(profile=name) for name in expected}
-    inventories = {name: _tool_names(server) for name, server in servers.items()}
-    assert inventories == expected
-    assert all(
-        inventories[left].isdisjoint(inventories[right])
-        for left in expected
-        for right in expected
-        if left != right
-    )
+def test_two_fixed_servers_have_exact_inventories_and_fail_closed() -> None:
+    workflow = create_workflow_server()
+    tools = create_tools_server()
+    assert _tool_names(workflow) == WORKFLOW_TOOLS
+    assert _tool_names(tools) == TOOLS_SERVER_TOOLS
+    assert len(WORKFLOW_TOOLS) == 17
+    assert len(TOOLS_SERVER_TOOLS) == 51
+    assert WORKFLOW_TOOLS.isdisjoint(TOOLS_SERVER_TOOLS)
+    assert DEV_WORKFLOW_TOOLS <= TOOLS_SERVER_TOOLS
 
-    async def denied() -> None:
-        async with Client(servers["workflow"], mode="auto") as client:
+    async def inspect() -> None:
+        async with Client(workflow, mode="auto") as client:
             capabilities = await client.call_tool("workflow_capabilities", {})
             assert not capabilities.is_error
             rules = await client.call_tool(
@@ -114,87 +60,75 @@ def test_profiles_have_fixed_disjoint_inventories_and_fail_closed() -> None:
             assert parsed_bundle["schema_version"] == 1
             assert parsed_bundle["complete"] is True
             assert "owner_text" not in parsed_bundle["node_metadata"]
-        for profile, tool, payload in (
-            ("root", "workflow_transition", {"payload": {"request": {}}}),
-            ("worker", "worker_get_assignment", {}),
-            ("share", "state_get", {"payload": {}}),
-        ):
-            async with Client(servers[profile], mode="auto") as client:
+
+        async with Client(tools, mode="auto") as client:
+            for tool, payload in (
+                ("workflow_open", {"payload": {"request": {}}}),
+                ("worker_get_assignment", {}),
+                ("state_get", {"payload": {}}),
+            ):
                 result = await client.call_tool(tool, payload)
                 assert result.is_error
-        async with Client(servers["share"], mode="auto") as client:
             diagnostics = await client.call_tool("database_schema_status", {})
             assert not diagnostics.is_error
             assert '"available": false' in _result_text(diagnostics)
             assert "no state path was inspected" in _result_text(diagnostics)
 
-    asyncio.run(denied())
+    asyncio.run(inspect())
 
 
-def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
-    from token_io_decoupling_transport.tool_metadata import server_instructions
+def test_aggregate_tools_matches_all_pinned_upstream_tool_metadata() -> None:
+    from dev_workflow_standards_tools import server as upstream
 
-    expected = {
-        "workflow": {
-            "workflow_capabilities",
-            "task_plan_update",
-            "task_plan_complete",
-            "task_plan_archive",
-            "serena_memory_tail_read",
-            "serena_memory_write_check",
-            "rules_get_context",
-            "validate_decoupling_compliance",
-            "decide_decoupling_workflow",
-            "workflow_select_child_effort",
-            "workflow_generate_decision_context",
-            "workflow_select_child_role",
-            "workflow_select_executor",
-            "workflow_select_child",
-            "workflow_assess_output_tokens",
-            "workflow_evaluate",
-            "evaluate_control_checkpoint",
-        },
-        "root": {
-            "workflow_open",
-            "delegation_reserve",
-            "delegation_unreserve",
-            "delegation_bind",
-            "slice_check",
-            "slice_release",
-            "workflow_transition",
-            "parent_get_worker_summary",
-            "workflow_reconcile",
-        },
-        "worker": {
-            "worker_get_assignment",
-            "materialize_decoupled_output",
-            "worker_record_progress",
-            "worker_get_evidence",
-            "worker_report_blocker",
-            "worker_get_recovery_context",
-        },
-        "share": {"database_schema_status", "state_get", "record_evidence"},
-    }
-    role_worker_instructions = server_instructions(None, "worker")
-    assert "materialize_decoupled_output" in role_worker_instructions
-    assert "Native coding-task role" in role_worker_instructions
-    assert "fresh passing preflight" in role_worker_instructions
+    async def read_tool_metadata() -> tuple[dict[str, Any], dict[str, Any]]:
+        expected_tools = await upstream.mcp.list_tools()
+        actual_tools = await create_tools_server().list_tools()
+        expected = {
+            tool.name: tool.model_dump(mode="json", by_alias=True) for tool in expected_tools
+        }
+        actual = {
+            tool.name: tool.model_dump(mode="json", by_alias=True)
+            for tool in actual_tools
+            if tool.name in DEV_WORKFLOW_TOOLS
+        }
+        return expected, actual
 
-    async def check_profile(profile: str, mode: str) -> None:
-        server = create_server(profile=profile)
+    expected, actual = asyncio.run(read_tool_metadata())
+    assert len(expected) == 33
+    assert set(expected) == DEV_WORKFLOW_TOOLS
+    assert actual == expected
+
+
+def test_server_discovery_and_tool_metadata_for_fixed_servers() -> None:
+    from token_io_decoupling_transport.tool_metadata import (
+        tools_server_instructions,
+        workflow_server_instructions,
+    )
+
+    expected = {"workflow": WORKFLOW_TOOLS, "tools": TOOLS_SERVER_TOOLS}
+    assert "workflow_capabilities" in workflow_server_instructions()
+    assert "Root starts with workflow_open" in tools_server_instructions()
+    assert "role checks on every call" in tools_server_instructions()
+
+    async def check_server(server_kind: str, mode: str) -> None:
+        server = create_workflow_server() if server_kind == "workflow" else create_tools_server()
         async with Client(server, mode=mode) as client:
             assert client.protocol_version == ("2026-07-28" if mode == "auto" else "2025-11-25")
             assert client.server_info is not None
             assert client.server_info.description
             assert client.instructions
-            assert profile in client.instructions
-            if profile == "worker":
-                assert "materialize_decoupled_output" in client.instructions
-                assert "Native coding-task role" in client.instructions
-                assert "fresh passing preflight" in client.instructions
+            expected_name = WORKFLOW_SERVER_NAME if server_kind == "workflow" else TOOLS_SERVER_NAME
+            assert client.server_info.name == expected_name
+            assert "profile" not in client.instructions.casefold()
+            if server_kind == "tools":
+                from dev_workflow_standards_tools.server import (
+                    SERVER_INSTRUCTIONS as development_instructions,
+                )
+
+                assert development_instructions in client.instructions
             listed = await client.list_tools()
             by_name = {tool.name: tool for tool in listed.tools}
-            assert set(by_name) == expected[profile]
+            assert set(by_name) == expected[server_kind]
             assert all(tool.description for tool in by_name.values())
             if "materialize_decoupled_output" in by_name:
                 description = by_name["materialize_decoupled_output"].description or ""
@@ -338,25 +272,31 @@ def test_server_discovery_and_tool_metadata_for_each_profile() -> None:
                 assert "payload" in by_name["state_get"].input_schema["properties"]
 
     async def run() -> None:
-        for profile in expected:
-            await check_profile(profile, "auto")
-            await check_profile(profile, "legacy")
+        for server_kind in expected:
+            await check_server(server_kind, "auto")
+            await check_server(server_kind, "legacy")
 
     asyncio.run(run())
 
 
-def test_real_stdio_sdk_discovery_and_public_wire_calls_are_fail_closed(tmp_path: Path) -> None:
+def test_real_workflow_stdio_discovery_and_public_wire_calls_are_fail_closed(
+    tmp_path: Path,
+) -> None:
     async def run() -> None:
+        workflow_cli = Path(sysconfig.get_path("scripts")) / "token-io-decoupling-workflow"
+        tools_cli = Path(sysconfig.get_path("scripts")) / "token-io-decoupling-tools"
+        assert workflow_cli.is_file()
+        assert tools_cli.is_file()
         parameters = StdioServerParameters(
-            command=sys.executable,
-            args=["-m", "token_io_decoupling.cli"],
+            command=str(workflow_cli),
+            args=[],
             cwd=Path(__file__).parents[2],
             env={"PYTHONDONTWRITEBYTECODE": "1"},
         )
         async with Client(parameters, mode="auto") as client:
             assert client.protocol_version == "2026-07-28"
             result = await client.list_tools()
-            assert {tool.name for tool in result.tools} == PUBLIC_TOOLS
+            assert {tool.name for tool in result.tools} == WORKFLOW_TOOLS
             context = await client.call_tool(
                 "rules_get_context",
                 {"payload": {"node_id": "contract", "language": "zh_cn"}},
@@ -404,15 +344,12 @@ def test_real_stdio_sdk_discovery_and_public_wire_calls_are_fail_closed(tmp_path
             ):
                 invalid_context = await client.call_tool("rules_get_context", {"payload": payload})
                 assert invalid_context.is_error
-            diagnostics = await client.call_tool("database_schema_status", {})
-            assert not diagnostics.is_error
-            assert '"available": false' in _result_text(diagnostics)
-            assert "no state path was inspected" in _result_text(diagnostics)
             extra = await client.call_tool(
                 "rules_get_context",
                 {"payload": {"node_id": "contract", "language": "en", "path": "/tmp"}},
             )
             assert extra.is_error
+
             compliance = await client.call_tool(
                 "validate_decoupling_compliance",
                 {
@@ -439,6 +376,20 @@ def test_real_stdio_sdk_discovery_and_public_wire_calls_are_fail_closed(tmp_path
                 for check in compliance_result["checks"]
                 if check["rule_id"] == "candidate_baseline"
             )
+
+        tools_parameters = StdioServerParameters(
+            command=str(tools_cli),
+            args=[],
+            cwd=Path(__file__).parents[2],
+            env={"PYTHONDONTWRITEBYTECODE": "1"},
+        )
+        async with Client(tools_parameters, mode="auto") as tools_client:
+            listed = await tools_client.list_tools()
+            assert {tool.name for tool in listed.tools} == TOOLS_SERVER_TOOLS
+            diagnostics = await tools_client.call_tool("database_schema_status", {})
+            assert not diagnostics.is_error
+            assert '"available": false' in _result_text(diagnostics)
+            assert "no state path was inspected" in _result_text(diagnostics)
 
     asyncio.run(run())
 

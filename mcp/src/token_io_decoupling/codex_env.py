@@ -8,6 +8,7 @@ import re
 import stat
 import tempfile
 from copy import deepcopy
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -26,10 +27,17 @@ DEFAULT_ENV_VARS = (
     "all_proxy",
     "no_proxy",
 )
+TOOLS_ENV_VARS = (*DEFAULT_ENV_VARS, "OPENAI_TIMEOUT_MAX_RETRIES")
 
 
 class CodexEnvError(RuntimeError):
     """A safe, user-displayable Codex configuration error."""
+
+
+@dataclass(frozen=True)
+class ConfigSnapshot:
+    raw: bytes
+    info: os.stat_result | None
 
 
 def config_path(explicit: Path | None = None) -> Path:
@@ -78,6 +86,62 @@ def _read_target(path: Path, *, allow_missing: bool) -> tuple[bytes, os.stat_res
         os.close(descriptor)
 
 
+def read_config_snapshot(path: Path) -> ConfigSnapshot:
+    snapshot = _read_target(path, allow_missing=True)
+    if snapshot is None:
+        return ConfigSnapshot(b"", None)
+    raw, info = snapshot
+    return ConfigSnapshot(raw, info)
+
+
+def atomic_write_config(path: Path, snapshot: ConfigSnapshot, rendered: bytes) -> None:
+    """Atomically replace a config only when its original identity and bytes still match."""
+    original, info = snapshot.raw, snapshot.info
+
+    def unchanged() -> bool:
+        current = _read_target(path, allow_missing=True)
+        if info is None:
+            return current is None
+        if current is None:
+            return False
+        current_bytes, current_info = current
+        return (
+            (current_info.st_dev, current_info.st_ino) == (info.st_dev, info.st_ino)
+            and stat.S_IMODE(current_info.st_mode) == stat.S_IMODE(info.st_mode)
+            and current_bytes == original
+        )
+
+    if not unchanged():
+        raise CodexEnvError("Codex config changed during update; retry after reviewing it")
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            dir=path.parent, prefix=f".{path.name}.", delete=False
+        ) as f:
+            temp_path = Path(f.name)
+            f.write(rendered)
+            f.flush()
+            os.fsync(f.fileno())
+        if info is not None:
+            os.chmod(temp_path, stat.S_IMODE(info.st_mode))
+        else:
+            os.chmod(temp_path, 0o600)
+        if not unchanged():
+            raise CodexEnvError("Codex config changed during update; retry after reviewing it")
+        os.replace(temp_path, path)
+        temp_path = None
+    except CodexEnvError:
+        raise
+    except OSError:
+        raise CodexEnvError("Codex config could not be updated") from None
+    finally:
+        if temp_path is not None:
+            try:
+                temp_path.unlink()
+            except OSError:
+                pass
+
+
 def _parse(raw: bytes) -> tomlkit.TOMLDocument:
     try:
         return tomlkit.parse(raw.decode("utf-8"))
@@ -85,22 +149,18 @@ def _parse(raw: bytes) -> tomlkit.TOMLDocument:
         raise CodexEnvError("Codex config is not valid UTF-8 TOML") from None
 
 
-def _server_table(document: Any, name: str, *, allow_missing: bool) -> Any | None:
+def _server_table(document: Any, name: str) -> Any:
     servers = document.get("mcp_servers")
     if servers is None:
-        if allow_missing:
-            return None
         raise CodexEnvError("Codex config has no mcp_servers table")
     if not isinstance(servers, dict):
         raise CodexEnvError("Codex mcp_servers setting must be a table")
     server = servers.get(name)
     if server is None:
-        if allow_missing:
-            return None
         raise CodexEnvError(f"Codex server section is missing: {name}")
     if not isinstance(server, dict):
         raise CodexEnvError(f"Codex server section is malformed: {name}")
-    if "url" in server or "http_headers" in server:
+    if any(key in server for key in ("url", "http_headers", "env_http_headers")):
         raise CodexEnvError(f"Codex server is not stdio: {name}")
     command = server.get("command")
     args = server.get("args", [])
@@ -126,89 +186,6 @@ def _server_table(document: Any, name: str, *, allow_missing: bool) -> Any | Non
     return server
 
 
-def validate_setup_config(
-    path: Path, server_names: tuple[str, ...], *, allow_replaced_conflicts: bool = False
-) -> None:
-    """Preflight a Codex config before registration, allowing new sections."""
-    snapshot = _read_target(path, allow_missing=True)
-    if snapshot is None:
-        return
-    document = _parse(snapshot[0])
-    servers = document.get("mcp_servers")
-    if servers is not None and not isinstance(servers, dict):
-        raise CodexEnvError("Codex mcp_servers setting must be a table")
-    for name in server_names:
-        server = servers.get(name) if isinstance(servers, dict) else None
-        if server is None:
-            continue
-        if not isinstance(server, dict):
-            raise CodexEnvError(f"Codex server section is malformed: {name}")
-        if allow_replaced_conflicts:
-            continue
-        _server_table(document, name, allow_missing=True)
-
-
-_HTTP_POLICY_FIELDS = (
-    "default_tools_approval_mode",
-    "tools",
-    "enabled_tools",
-    "disabled_tools",
-    "startup_timeout_sec",
-    "tool_timeout_sec",
-    "required",
-)
-
-
-def capture_replacement_settings(
-    path: Path,
-    server_names: tuple[str, ...],
-    pending_names: tuple[str, ...] = (),
-    env_names: tuple[str, ...] = DEFAULT_ENV_VARS,
-) -> dict[str, dict[str, Any]]:
-    """Snapshot user settings that Codex's registration upsert would discard."""
-    if not server_names:
-        return {}
-    snapshot = _read_target(path, allow_missing=True)
-    if snapshot is None:
-        return {}
-    document = _parse(snapshot[0])
-    if pending_names and tomlkit.dumps(document).encode("utf-8") != snapshot[0]:
-        raise CodexEnvError(
-            "Codex config uses a TOML layout that cannot be safely rewritten without reformatting"
-        )
-    servers = document.get("mcp_servers")
-    if servers is None:
-        return {}
-    if not isinstance(servers, dict):
-        raise CodexEnvError("Codex mcp_servers setting must be a table")
-    preserved: dict[str, dict[str, Any]] = {}
-    for name in server_names:
-        server = servers.get(name)
-        if server is None:
-            if name not in pending_names:
-                raise CodexEnvError(f"Codex server section is missing: {name}")
-            continue
-        if not isinstance(server, dict):
-            raise CodexEnvError(f"Codex server section is malformed: {name}")
-        replacing = name in pending_names
-        if "url" in server or "http_headers" in server:
-            if not replacing:
-                raise CodexEnvError(f"Codex server is not stdio: {name}")
-            preserved[name] = {
-                key: deepcopy(server[key]) for key in _HTTP_POLICY_FIELDS if key in server
-            }
-            continue
-        _server_table(document, name, allow_missing=False)
-        _check_forwarding_sources(server, name, env_names)
-        if replacing:
-            preserved[name] = {
-                key: deepcopy(value)
-                for key, value in server.items()
-                if key not in {"command", "args", "enabled"}
-            }
-    return preserved
-
-
 def _check_forwarding_sources(server: Any, server_name: str, env_names: tuple[str, ...]) -> None:
     current = server.get("env_vars", [])
     sources: dict[str, set[str]] = {}
@@ -222,14 +199,6 @@ def _check_forwarding_sources(server: Any, server_name: str, env_names: tuple[st
             raise CodexEnvError(
                 f"Codex env_vars marks {name} as remote for {server_name}; refusing to override"
             )
-
-
-def _restore_settings(server: Any, values: dict[str, Any]) -> bool:
-    if not values:
-        return False
-    for key, value in values.items():
-        server[key] = deepcopy(value)
-    return True
 
 
 def _merge_names(server: Any, server_name: str, env_names: tuple[str, ...]) -> bool:
@@ -271,7 +240,6 @@ def merge_env_vars(
     env_names: tuple[str, ...] = DEFAULT_ENV_VARS,
     *,
     dry_run: bool = False,
-    preserved_settings: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[str, ...]:
     """Atomically merge names into existing selected stdio registrations."""
     if not server_names or len(set(server_names)) != len(server_names):
@@ -293,21 +261,11 @@ def merge_env_vars(
     servers = document.get("mcp_servers")
     if not isinstance(servers, dict):
         raise CodexEnvError("Codex config has no valid mcp_servers table")
-    selected = {name: _server_table(document, name, allow_missing=False) for name in server_names}
-    expected_baseline = deepcopy(document)
-    expected_servers = expected_baseline.get("mcp_servers", {})
-    for name, values in (preserved_settings or {}).items():
-        if name not in selected:
-            raise CodexEnvError(f"preserved settings do not match a selected server: {name}")
-        for key, value in values.items():
-            expected_servers[name][key] = deepcopy(value)
-    expected_without_targets = _without_target_env_vars(expected_baseline, server_names)
-    changed = set()
-    for name, values in (preserved_settings or {}).items():
-        if _restore_settings(selected[name], values):
-            changed.add(name)
-    changed.update(name for name in server_names if _merge_names(selected[name], name, env_names))
-    changed_names = tuple(name for name in server_names if name in changed)
+    selected = {name: _server_table(document, name) for name in server_names}
+    expected_without_targets = _without_target_env_vars(deepcopy(document), server_names)
+    changed_names = tuple(
+        name for name in server_names if _merge_names(selected[name], name, env_names)
+    )
     if not changed_names:
         return ()
     if original_roundtrip != original:
@@ -320,47 +278,5 @@ def merge_env_vars(
         raise CodexEnvError("Codex config validation failed; no changes were written")
     if dry_run:
         return changed_names
-    try:
-        current = _read_target(path, allow_missing=False)
-        assert current is not None
-        current_bytes, current_info = current
-        if (
-            (current_info.st_dev, current_info.st_ino) != (info.st_dev, info.st_ino)
-            or stat.S_IMODE(current_info.st_mode) != stat.S_IMODE(info.st_mode)
-            or current_bytes != original
-        ):
-            raise CodexEnvError("Codex config changed during update; retry after reviewing it")
-    except OSError:
-        raise CodexEnvError("Codex config could not be rechecked before update") from None
-    temp_path: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            dir=path.parent, prefix=f".{path.name}.", delete=False
-        ) as f:
-            temp_path = Path(f.name)
-            f.write(rendered)
-            f.flush()
-            os.fsync(f.fileno())
-        os.chmod(temp_path, stat.S_IMODE(info.st_mode))
-        current = _read_target(path, allow_missing=False)
-        assert current is not None
-        current_bytes, current_info = current
-        if (
-            (current_info.st_dev, current_info.st_ino) != (info.st_dev, info.st_ino)
-            or stat.S_IMODE(current_info.st_mode) != stat.S_IMODE(info.st_mode)
-            or current_bytes != original
-        ):
-            raise CodexEnvError("Codex config changed during update; retry after reviewing it")
-        os.replace(temp_path, path)
-        temp_path = None
-    except CodexEnvError:
-        raise
-    except OSError:
-        raise CodexEnvError("Codex config could not be updated") from None
-    finally:
-        if temp_path is not None:
-            try:
-                temp_path.unlink()
-            except OSError:
-                pass
+    atomic_write_config(path, ConfigSnapshot(original, info), rendered)
     return changed_names

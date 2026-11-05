@@ -92,7 +92,7 @@ def capability_report(
             "provider_not_configured",
             "No local request context is configured.",
             "server.default_provider",
-            "Start a named local stdio profile through Codex.",
+            "Start the workflow or tools executable from the intended project root.",
         )
     return {
         "subsystem": "token-io-mcp",
@@ -136,7 +136,8 @@ def capability_report(
                 "local_stdio": _detail(
                     "available",
                     "local_stdio_request_scoping",
-                    "Standard named profiles use local Codex stdio without a privileged host, "
+                    "The workflow and aggregate tools executables use local Codex stdio without a "
+                    "privileged host, "
                     "inherited host descriptor or external identity provider. Metadata and "
                     "recorded allocations scope state; they do not authenticate other "
                     "same-user processes.",
@@ -250,9 +251,9 @@ def capability_report(
                     else "startup_binding_accepted"
                     if embedded
                     else "startup_binding_unverified",
-                    "Profile fixes tool exposure; each state call resolves its current "
-                    "local scope.",
-                    "server.create_server",
+                    "The fixed workflow and tools executables select their own inventories; "
+                    "each state call resolves its current local scope.",
+                    "server.create_workflow_server/create_tools_server",
                     "Use the current request role, path scope and explicit operation "
                     "authorization.",
                 ),

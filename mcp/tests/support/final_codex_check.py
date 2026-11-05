@@ -136,9 +136,8 @@ def main():
         with tempfile.TemporaryDirectory(prefix="token-io-final-tool-") as temporary:
 
             def inspect(installed):
-                command = [str(installed), "start-mcp-server", "--profile", "workflow"]
                 with fixed_codex_session(
-                    Path(executable).resolve(), command, phase=_FINAL_INSPECTION
+                    Path(executable).resolve(), installed.parent, phase=_FINAL_INSPECTION
                 ) as session:
                     return session.check_mcp()
 

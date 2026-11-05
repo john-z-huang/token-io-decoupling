@@ -6,7 +6,7 @@ This guide owns the two read-only Memory tools' inputs, local path rules, result
 
 ## Tools
 
-Both tools are in the `workflow` profile and take direct arguments.
+Both tools are exposed by the `token-io-decoupling-workflow` executable and take direct arguments.
 
 | Tool | Arguments | Result |
 | --- | --- | --- |
@@ -40,5 +40,6 @@ Windows execution has not yet been independently verified.
 
 ## Related documents
 
-- [MCP development guide](DEVELOPMENT.md) — installation and profile setup.
+- [MCP development guide](DEVELOPMENT.md) — installation and workspace tooling.
+- [MCP executable and registration guide](TOOLS_REGISTRATION.md) — current executable inventory and Codex registration.
 - [Task Plan Memory Lifecycle](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md) — preservation and archive requirements.

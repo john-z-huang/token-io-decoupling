@@ -29,7 +29,7 @@ from token_io_decoupling_state.local_context import LocalSessionContext
 from token_io_decoupling_state.service import StateService
 from token_io_decoupling_state.state.errors import WorkflowNotOpenError
 
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_tools_server
 
 
 def prepared(tmp_path):
@@ -187,7 +187,7 @@ def test_worker_mapping_rechecks_symlinks_and_current_allocation(tmp_path):
 
 
 def test_standard_named_server_opens_state_using_only_mcp_metadata(tmp_path):
-    server = create_server(profile="root", state_root=tmp_path / "state")
+    server = create_tools_server(state_root=tmp_path / "state")
     payload = {
         "payload": {
             "mode_count": {"mode": "Single-Agent Coding", "child_count": 0},

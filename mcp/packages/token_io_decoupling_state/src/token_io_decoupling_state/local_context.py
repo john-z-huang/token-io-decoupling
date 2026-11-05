@@ -27,8 +27,9 @@ from token_io_decoupling_state.state.identity import (
 class LocalSessionContext:
     """Use startup cwd and request metadata to scope existing local state.
 
-    Root explicitly registers children with delegation_bind. Profiles restrict tools;
-    they do not prove a role. Same-user code can impersonate metadata or edit local
+    Root explicitly registers children with delegation_bind. Fixed server executables
+    determine discovery inventories; per-call role and operation guards authorize use.
+    They do not prove a role. Same-user code can impersonate metadata or edit local
     files: this is application scoping, not an OS isolation or authentication service.
     """
 

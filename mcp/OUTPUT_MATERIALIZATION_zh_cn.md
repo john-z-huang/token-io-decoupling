@@ -2,11 +2,11 @@
 
 [English](OUTPUT_MATERIALIZATION.md) | [简体中文](OUTPUT_MATERIALIZATION_zh_cn.md)
 
-本文负责 `materialize_decoupled_output` Worker 工具契约：prepare、inspect、apply 生命周期，可信操作员授权，有界模板，结果解释与恢复边界。[MCP workspace 开发指南](DEVELOPMENT_zh_cn.md)负责 profile 清单与启动 factory 索引。
+本文负责 `materialize_decoupled_output` Worker 工具契约：prepare、inspect、apply 生命周期，可信操作员授权，有界模板，结果解释与恢复边界。[MCP 可执行程序与注册指南](TOOLS_REGISTRATION_zh_cn.md)负责当前可执行程序清单与 Codex 注册；[MCP workspace 开发指南](DEVELOPMENT_zh_cn.md)负责安装和启动 factory 索引。
 
 ## 目的与权限
 
-该工具允许符合条件的 Worker 在项目之外准备有界输出产物、检查产物，并通过已配置项目根目录应用明确授权的文件集合。它仅供 Worker 使用，不新增 profile。工具发现、已验证的 Worker 绑定、Worker 状态存储守卫、`WORKER_WRITE` 和 assignment 本身都不能授予项目文件写权限。
+该工具允许符合条件的 Worker 在项目之外准备有界输出产物、检查产物，并通过已配置项目根目录应用明确授权的文件集合。它仅供 Worker 使用，由 `token-io-decoupling-tools` 可执行程序暴露。工具发现、已验证的 Worker 绑定、Worker 状态存储守卫、`WORKER_WRITE` 和 assignment 本身都不能授予项目文件写权限。
 
 每次操作都重新读取已验证的 Worker 材料化上下文及独立的可信操作员授权。上下文必须标识当前 Worker、Root、项目、allocation、角色、输出类别、已释放 slice 和已确认 assignment hash。授权必须有效，并与该绑定、固定项目和产物目录身份、policy 版本、精确路径、操作及允许模板相符。授权变化或撤销、assignment 变化、上下文缺失或安全能力不可用时必须失败关闭。授权来自可信操作员代码，绝不来自请求 payload。
 

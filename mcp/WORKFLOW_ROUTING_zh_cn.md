@@ -71,7 +71,8 @@
 
 ## 相关概念
 
-- [MCP workspace 开发指南](DEVELOPMENT_zh_cn.md) — 负责 workspace 工具及公开 profile 清单。
+- [MCP workspace 开发指南](DEVELOPMENT_zh_cn.md) — 负责 workspace 工具与安装。
+- [MCP 可执行程序与注册指南](TOOLS_REGISTRATION_zh_cn.md) — 负责当前可执行程序清单和 Codex 注册。
 - [Single-Agent Coding 工作流](../docs/skill/references/coding/layer-04-workflows/coding-single-agent_zh_cn.md) — 负责 Single-Agent 路由。
 - [Multi-Agent Coding 工作流](../docs/skill/references/coding/layer-04-workflows/coding-multi-agent_zh_cn.md) — 负责 Multi-Agent 路由。
 - [任务执行主体分配](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment_zh_cn.md) — 负责执行主体决策。

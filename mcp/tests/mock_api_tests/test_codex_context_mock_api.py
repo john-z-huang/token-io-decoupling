@@ -17,7 +17,7 @@ from token_io_decoupling_core.state_models import (
     VerifiedChildBinding,
 )
 
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_tools_server, create_workflow_server
 
 
 class SyntheticContextProvider:
@@ -68,7 +68,7 @@ def test_real_sdk_meta_guards_protected_tools_and_is_request_scoped(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     provider = SyntheticContextProvider()
-    server = create_server(
+    server = create_tools_server(
         provider,
         require_codex_context=True,
         state_root=tmp_path / "state",
@@ -78,7 +78,10 @@ def test_real_sdk_meta_guards_protected_tools_and_is_request_scoped(
     assert schemas["database_schema_status"]["properties"] == {}
 
     async def run() -> None:
-        async with Client(server, mode="auto") as client:
+        workflow = create_workflow_server(
+            provider, require_codex_context=True, state_root=tmp_path / "state"
+        )
+        async with Client(workflow, mode="auto") as client:
             public = await client.call_tool("workflow_capabilities", {})
             assert not public.is_error
             assert json.loads(_text(public))["caller_match"] == "required"
@@ -87,6 +90,7 @@ def test_real_sdk_meta_guards_protected_tools_and_is_request_scoped(
             )
             assert not rules.is_error
 
+        async with Client(server, mode="auto") as client:
             wrong_open = await client.call_tool(
                 "workflow_open",
                 _open_arguments(),
@@ -113,7 +117,7 @@ def test_real_sdk_meta_guards_protected_tools_and_is_request_scoped(
             )
             assert not opened.is_error
 
-            missing = await client.call_tool("workflow_get_state", {"payload": {}})
+            missing = await client.call_tool("state_get", {"payload": {}})
             assert missing.is_error
             malformed = await client.call_tool(
                 "database_schema_status", {}, meta=_meta("codex-context-test-thread", 7)
@@ -126,7 +130,7 @@ def test_real_sdk_meta_guards_protected_tools_and_is_request_scoped(
             assert "Codex request context" in _text(mismatched_status)
 
             mismatched = await client.call_tool(
-                "workflow_get_state",
+                "state_get",
                 {"payload": {}},
                 meta=_meta("wrong-thread", "opaque-session-b"),
             )
@@ -140,7 +144,7 @@ def test_real_sdk_meta_guards_protected_tools_and_is_request_scoped(
             assert not ok_status.is_error
 
             async def read_with(meta: RequestParamsMeta):
-                return await client.call_tool("workflow_get_state", {"payload": {}}, meta=meta)
+                return await client.call_tool("state_get", {"payload": {}}, meta=meta)
 
             concurrent = await asyncio.gather(
                 read_with(_meta("codex-context-test-thread", "opaque-session-e")),
@@ -155,19 +159,17 @@ def test_real_sdk_meta_guards_protected_tools_and_is_request_scoped(
     asyncio.run(run())
 
 
-def test_profile_sdk_meta_guards_root_and_shared_operations(tmp_path: Path) -> None:
+def test_tools_sdk_meta_guards_root_and_shared_operations(tmp_path: Path) -> None:
     provider = SyntheticContextProvider()
-    root = create_server(
+    root = create_tools_server(
         provider,
-        profile="root",
         require_codex_context=True,
-        state_root=tmp_path / "profile-state",
+        state_root=tmp_path / "tools-state",
     )
-    share = create_server(
+    share = create_tools_server(
         provider,
-        profile="share",
         require_codex_context=True,
-        state_root=tmp_path / "profile-state",
+        state_root=tmp_path / "tools-state",
     )
 
     async def run() -> None:
@@ -176,7 +178,7 @@ def test_profile_sdk_meta_guards_root_and_shared_operations(tmp_path: Path) -> N
                 "workflow_open", _open_arguments(), meta=_meta("wrong-thread")
             )
             assert denied.is_error and "Codex request context" in _text(denied)
-            assert not (tmp_path / "profile-state").exists()
+            assert not (tmp_path / "tools-state").exists()
             opened = await client.call_tool(
                 "workflow_open",
                 _open_arguments(),
@@ -215,7 +217,7 @@ def test_request_scope_rechecks_provider_identity_before_state_access(tmp_path: 
 
     provider = ChangingProvider()
     state_root = tmp_path / "changing-provider-state"
-    server = create_server(
+    server = create_tools_server(
         provider,
         require_codex_context=True,
         state_root=state_root,

@@ -6,25 +6,25 @@
 
 ## 配置与发现
 
-`task_plan_update`、`task_plan_complete`、`task_plan_archive` 属于 `workflow` profile 和默认公开清单。它们是 Native 操作，不以 Enhanced 数据库或已验证 Root 绑定作为存储机制。仍须具备既有宿主权限和任务授权。
+`task_plan_update`、`task_plan_complete`、`task_plan_archive` 属于 `token-io-decoupling-workflow` 可执行程序的固定清单。它们是 Native 操作，不以 Enhanced 数据库或已验证 Root 绑定作为存储机制。仍须具备既有宿主权限和任务授权。
 
-后端必须显式配置实际已初始化的 Serena `MemoryManager` 及获准项目根目录。`create_server(task_plan_service=...)` 支持嵌入。组件如下：
+后端必须显式配置实际已初始化的 Serena `MemoryManager` 及获准项目根目录。`create_workflow_server(task_plan_service=...)` 支持嵌入。组件如下：
 
 ```python
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_workflow_server
 from token_io_decoupling_workflow.task_plan_core import SerenaMemoryStore, TaskPlanService
 
 
 def make_server(project_root, memory_manager):
     # 两个参数均来自宿主已经获准的 Serena 项目。
     store = SerenaMemoryStore(memory_manager, project_root, storage_scope="global")
-    return create_server(profile="workflow", task_plan_service=TaskPlanService(store))
+    return create_workflow_server(task_plan_service=TaskPlanService(store))
 ```
 
 操作者自己的 launcher 集成可用 `--task-plan-factory module:callable` 加载无参数 callable，返回已配置的 `TaskPlanService`。例如：
 
 ```sh
-token-io-decoupling start-mcp-server --profile workflow --task-plan-factory trusted_adapter:make_service
+token-io-decoupling-workflow --task-plan-factory trusted_adapter:make_service
 ```
 
 `trusted_adapter` 是操作者提供并审查的模块，不是内置适配器或工具参数。其环境须已具备兼容 Serena 依赖及获准项目对象。工具包不会安装 Serena、加载/迁移其配置、创建项目、猜测 `.serena` 目录或另开 Memory 存储。不得执行虚构 factory 以获得可用状态。未配置服务返回 `unavailable` 且不检查 Memory 路径；显式配置无效时失败，不静默降级。

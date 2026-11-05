@@ -277,6 +277,8 @@ def test_workspace_builds_eight_wheels_with_disjoint_files(tmp_path: Path) -> No
     assert "token_io_decoupling_transport/registration.py" in owners
     assert "token_io_decoupling/cli.py" in owners
     assert "token_io_decoupling_mcp/__init__.py" in owners
+    for facade in ("cli", "cli_commands", "decisions", "server", "setup_codex"):
+        assert f"token_io_decoupling_mcp/{facade}.py" not in owners
     assert not any(name.startswith("token_io_mcp/") for name in owners)
     launcher_wheel = next(path for path in wheels if path.name.startswith("token_io_decoupling-"))
     canonical_core = (
@@ -284,6 +286,13 @@ def test_workspace_builds_eight_wheels_with_disjoint_files(tmp_path: Path) -> No
         / "packages/token_io_decoupling_core/src/token_io_decoupling_core/compliance_core.py"
     ).read_bytes()
     with zipfile.ZipFile(launcher_wheel) as wheel:
+        entries = wheel.read("token_io_decoupling-0.1.0.dist-info/entry_points.txt").decode()
+        assert set(entries.splitlines()) == {
+            "[console_scripts]",
+            "token-io-decoupling = token_io_decoupling.cli:main",
+            "token-io-decoupling-workflow = token_io_decoupling.cli:workflow_main",
+            "token-io-decoupling-tools = token_io_decoupling.cli:tools_main",
+        }
         skill_bundle = wheel.read("token_io_decoupling/skill_bundle.zip")
     with zipfile.ZipFile(io.BytesIO(skill_bundle)) as bundle:
         helper_path = "_project/scripts/_compliance_core.py"

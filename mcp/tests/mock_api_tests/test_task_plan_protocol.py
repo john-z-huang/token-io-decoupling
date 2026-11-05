@@ -11,7 +11,7 @@ from mcp import Client
 from mcp.types import TextContent
 from token_io_decoupling_workflow.task_plan_core import SerenaMemoryStore, TaskPlanService
 
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_workflow_server
 
 
 class _ProtocolStore(SerenaMemoryStore):
@@ -97,7 +97,7 @@ def test_task_plan_tools_negotiate_schema_default_and_configured_protocol(tmp_pa
     project_root = str(tmp_path.resolve())
 
     async def run() -> None:
-        default_server = create_server()
+        default_server = create_workflow_server()
         async with Client(default_server, mode="auto") as client:
             listed = await client.list_tools()
             tools = {tool.name: tool for tool in listed.tools}
@@ -142,7 +142,7 @@ def test_task_plan_tools_negotiate_schema_default_and_configured_protocol(tmp_pa
             assert unavailable["repository_id"] is None
 
         store = _ProtocolStore(project_root)
-        configured_server = create_server(task_plan_service=TaskPlanService(store))
+        configured_server = create_workflow_server(task_plan_service=TaskPlanService(store))
         async with Client(configured_server, mode="auto") as client:
             update = _receipt(
                 await client.call_tool(

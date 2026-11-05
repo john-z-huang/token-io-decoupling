@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 STANDARD_INSTALL_NOTICE = (
-    "Standard local Codex stdio profiles use threadId/sessionId request metadata and existing "
-    "allocations for application scope. No privileged host service or external identity provider "
-    "is required. This is not independent process authentication or OS isolation. Profiles "
-    "restrict tools; state calls still check roles, paths and explicit operation authorization."
+    "The fixed local Codex stdio executables use threadId/sessionId request metadata and existing "
+    "allocations for application scope. The workflow executable exposes 17 workflow tools; the "
+    "aggregate tools executable exposes 51 parent, Worker, shared-state, and development tools. "
+    "No privileged host service or external identity provider is required. This is not independent "
+    "process authentication or OS isolation. Discovery does not grant authority; state calls still "
+    "check roles, paths, and explicit operation authorization."
 )
 
 SERVER_DESCRIPTION = (
@@ -15,8 +17,9 @@ SERVER_DESCRIPTION = (
     "are not direct clients. If another Agent installs and configures Codex CLI in its own "
     "environment, only that local CLI path is supported; no other Agent or cloud adapter is "
     "provided. No runtime-environment selection step is exposed. Bounded Token I/O tools. The "
-    "active profile and current role determine exposed operations. Discovery reports "
-    "availability, not identity or authority."
+    "workflow and aggregate tools executables expose fixed inventories. Current bound roles and "
+    "operation guards determine which calls may proceed. Discovery reports availability, not "
+    "identity or authority."
 )
 
 
@@ -169,7 +172,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "and already-bound global root without creating paths. No credential or identity values,",
         "or raw errors are returned.",
         "On missing provider, guard failure, denial, or probe failure, inspect reason_code",
-        "and next_step; use local stdio profiles with valid request metadata.",
+        "and next_step; use a fixed local stdio executable with valid request metadata.",
         "A known transport or",
         "verified",
         "baseline does not verify caller metadata or operation-specific guards, enable Enhanced,",
@@ -849,13 +852,13 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     ),
     "workflow_get_state": _description(
         "Compatibility embedding alias for parent workflow state read; not",
-        "present in fixed profiles.",
+        "not exposed by either standard local server.",
         "Payload may include index_page for pagination; requires current parent binding.",
         "Returns parent-scoped state. Restart pagination after cursor errors.",
     ),
     "workflow_record_evidence": _description(
         "Compatibility embedding alias for parent evidence submission; not",
-        "present in fixed profiles.",
+        "not exposed by either standard local server.",
         _PAYLOAD,
         "submission has node_id, nonempty fact_key/judgment facts, optional",
         "evidence_refs/coverage_dimensions, input_hash, and optional",
@@ -869,13 +872,13 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     ),
     "worker_get_state": _description(
         "Compatibility embedding alias for the calling Worker's own state",
-        "read; not present in fixed profiles.",
+        "read; not exposed by either standard local server.",
         "No arguments; requires registered Worker binding and own-store guards.",
         "Returns only role-scoped state; cross-Worker reads fail closed.",
     ),
     "worker_record_evidence": _description(
         "Compatibility embedding alias for the calling Worker's evidence",
-        "submission; not present in fixed profiles.",
+        "submission; not exposed by either standard local server.",
         _PAYLOAD,
         "submission has node_id, nonempty fact_key/judgment facts, optional",
         "evidence_refs/coverage_dimensions, input_hash, and optional",
@@ -886,91 +889,6 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "with operation, payload_hash, result, receipt_revision, current_revision,",
         "and replayed.",
         _RETRY,
-    ),
-}
-
-SERVER_INSTRUCTIONS: dict[str, str] = {
-    "workflow": (
-        "Profile workflow exposes capabilities, rules, stateless decision-context generation, "
-        "child-effort selection, and delegation decisions, plus "
-        "Root-bound persisted evaluations and task-plan update, "
-        "completion, and archive operations. "
-        "Task-plan writes require an explicitly injected TaskPlanService; the CLI loads trusted "
-        "operator code only when --task-plan-factory MODULE:CALLABLE is supplied. "
-        "Read-only serena_memory_tail_read and serena_memory_write_check use Python standard "
-        "library operations on files under the workflow server's actual startup directory "
-        "at .serena/memories. Project scope is fixed once at server startup; registrations "
-        "never store a project path or cwd. No Serena-Agent, extra interpreter, project "
-        "pre-registration, factory, or local helper program is required. "
-        "Inspect capability_details.configuration.serena_memory_reads "
-        "and serena_memory_binding before use. "
-        "Missing project directories/files return unavailable without falling back to another "
-        "project. These tools perform only local "
-        "tail reads/literal matching, never writes or API calls. "
-        "A tail match or line-count difference cannot establish preservation, recent write "
-        "execution or append-only history, and cannot replace required full-content checks. "
-        "No task-plan factory means "
-        "task-plan tools return unavailable without probing paths, loading config, or importing "
-        "Serena. A configured task-plan capability diagnostic may revalidate a global store's "
-        "local Git identity and existing global root without creating paths. The factory is never "
-        "loaded from a tool payload or capability request. Each plan request must name the "
-        "configured project_root exactly. Inspect task-plan storage_scope, repository_id, and "
-        "namespace before "
-        "use. These operations make no model/API "
-        "request; raw Serena write paths may bypass their cooperative lock. "
-        "Start with workflow_capabilities and rules_get_context; "
-        "use validate_decoupling_compliance for a bounded read-only candidate overlay when Skill "
-        "maintenance is in scope; its operator-configured reader never writes candidate files "
-        "or executes repository scripts. "
-        "call workflow_generate_decision_context only with caller-composed, provenance-labeled "
-        "source material and explicit outbound_data_permitted=true when a question or context "
-        "description is needed. It does not read files, make the downstream decision, call another "
-        "tool automatically, or authorize an action. Review its description and "
-        "missing-information "
-        "result against the supplied facts. "
-        "invoke workflow_select_child_effort only for an authorized child-creation decision with "
-        "explicit outbound_data_permitted=true and bounded current slice facts, then compare its "
-        "input_hash and selected effort with verified runtime facts before creation. The selector "
-        "does not authorize creation. "
-        "Use decide_decoupling_workflow for local explicit-stage navigation or bounded auto-stage "
-        "advice, then follow the current linked route owners; it never grants permission. "
-        "Use workflow_select_child_role, workflow_select_executor, workflow_select_child, and "
-        "workflow_assess_output_tokens only with current bounded facts and current owner policy. "
-        "These stateless Decisions suggestions require per-call outbound permission, read both "
-        "configured environment values explicitly, and use fixed model gpt-6-luna. Compare fact, "
-        "context, and policy hashes before acting; recheck Root identity, role uniqueness, locked "
-        "budget/user approval, scope, permissions, availability, and mode. Explicit user creation "
-        "or executor instructions skip the corresponding API. Suggestions never authorize child "
-        "creation, dispatch, or Root execution; a large-output yes requires delegation or waiting. "
-        "Evaluation requires current Root binding. Five-node semantic "
-        "advice is a separate optional feature, disabled by default. The child-effort selector "
-        "makes an API request only for an explicit per-invocation outbound_data_permitted=true "
-        "assertion; this assertion is not proof of authority. It never mutates workflow state. "
-        "Tool discovery does not prove host identity or grant authority."
-    ),
-    "root": (
-        "Profile root exposes parent control, delegation, slice, transition, summary, and "
-        "reconciliation tools only; public workflow/rule tools are on the separate "
-        "workflow profile. "
-        "It requires trusted parent binding and current guards. Start or read back the workflow "
-        "with workflow_open, then check a slice before release. Mutations use revision/idempotency "
-        "contracts; discovery grants no authority."
-    ),
-    "worker": (
-        "Profile worker exposes a bound MCP Worker's assignment, own progress/evidence, blocker, "
-        "recovery context, and materialize_decoupled_output. A Native coding-task role or an "
-        "Agent Session's Primary Output label is not a verified MCP Worker binding. It requires "
-        "trusted Worker binding and own-store guards; cross-Worker access is rejected. Start with "
-        "worker_get_assignment and worker_get_recovery_context. Use materialize_decoupled_output "
-        "only when configured and available, with a confirmed Primary Output assignment, a "
-        "matching independent operator grant, pinned roots, and fresh passing preflight. Writes "
-        "require current revision/idempotency data. Discovery grants no authority."
-    ),
-    "share": (
-        "Profile share exposes schema status and role-routed state/evidence operations. Calls "
-        "resolve trusted role binding and enforce role-specific guards; Worker state reads cannot "
-        "paginate. Start with database_schema_status, then read state before writing evidence. "
-        "Mutations require current revision/idempotency data. Discovery grants no authority."
     ),
 }
 
@@ -1067,83 +985,41 @@ def tool_description(name: str) -> str:
         raise ValueError(f"missing Agent-facing metadata for MCP tool: {name}") from exc
 
 
-def server_description(profile: str | None, bound_role: str | None) -> str:
-    """Describe only the operations registered for this profile and embedding role."""
-    if profile is None:
-        if bound_role == "parent":
-            scope = (
-                "public tools and parent-bound workflow/delegation operations, including aliases"
-            )
-        elif bound_role == "worker":
-            scope = "public tools and Worker assignment/progress operations, including aliases"
-        else:
-            scope = (
-                "public workflow/rules, startup-directory-scoped local Memory tools, "
-                "and schema diagnostics"
-            )
-    else:
-        scope = {
-            "workflow": (
-                "public capabilities/rules, startup-directory-scoped Memory tail "
-                "reads/write checks, Native task plans, candidate compliance, routing, "
-                "stateless context/effort/delegation selection, and Root-bound "
-                "evaluation tools"
-            ),
-            "root": "parent control, delegation, slice, transition, summary, reconciliation",
-            "worker": "Worker assignment, progress, evidence lookup, blocker, and recovery tools",
-            "share": "schema status and role-routed state/evidence tools",
-        }.get(profile)
-        if scope is None:
-            raise ValueError(f"missing Agent-facing description for MCP profile: {profile}")
+def workflow_server_description() -> str:
     return (
-        f"Codex CLI MCP server (including Codex CLI/app-server use from Desktop and local Work). "
-        f"{scope.capitalize()}. State calls require the current local session "
-        "scope and operation authorization. Discovery does not authenticate a caller. "
+        "Codex CLI MCP server for workflow capabilities, task plans, rules, decision support, "
+        "and compliance tools. State calls require the current local session scope and "
+        "operation authorization. Discovery does not authenticate a caller. "
         + STANDARD_INSTALL_NOTICE
     )
 
 
-def server_instructions(profile: str | None, bound_role: str | None) -> str:
-    """Return instructions scoped to the registered tools and embedding role."""
-    if profile is None:
-        if bound_role == "parent":
-            return (
-                "This MCP server serves Codex CLI, including Codex CLI/app-server use from Desktop "
-                "and local Work. "
-                "Parent-bound embedding exposes public tools and parent operations with "
-                "compatibility aliases. Start with workflow_capabilities and rules_get_context, "
-                "then use parent workflow/delegation operations. No Worker operations are exposed. "
-                "Mutations require current revision/idempotency data; discovery grants "
-                "no authority."
-            )
-        if bound_role == "worker":
-            return (
-                "This MCP server serves Codex CLI, including Codex CLI/app-server use from Desktop "
-                "and local Work. "
-                "Worker-bound embedding exposes public tools and this Worker's own assignment, "
-                "state, progress, evidence, blocker, recovery, and materialize_decoupled_output "
-                "operations. A Native coding-task role or an Agent Session's Primary Output label "
-                "is not a verified MCP Worker binding. Start with worker_get_assignment and "
-                "worker_get_recovery_context. Materialization requires a confirmed Primary Output "
-                "assignment, matching independent operator grant, pinned roots, and fresh passing "
-                "preflight. No parent operations are exposed. Writes require current "
-                "revision/idempotency data; discovery grants no authority."
-            )
-        return (
-            "This MCP server serves Codex CLI, including Codex CLI/app-server use from Desktop "
-            "and local Work. "
-            "This public-only server exposes workflow/rule tools, local Memory tail reads/write "
-            "checks, and schema diagnostics. Memory scope is fixed to this server's startup "
-            "directory at .serena/memories; no parent discovery, project registration, or "
-            "Memory project parameter is used. Missing folders/files are unavailable. "
-            "Start with workflow_capabilities and rules_get_context. Protected "
-            "operations are unavailable; a "
-            "listed or public tool does not create a local session scope or grant authority."
-        )
-    try:
-        return (
-            "This MCP server serves Codex CLI, including Codex CLI/app-server use from Desktop "
-            "and local Work. " + STANDARD_INSTALL_NOTICE + " " + SERVER_INSTRUCTIONS[profile]
-        )
-    except KeyError as exc:
-        raise ValueError(f"missing Agent-facing instructions for MCP profile: {profile}") from exc
+def tools_server_description() -> str:
+    return (
+        "Codex CLI MCP server for aggregated parent, worker, shared state/evidence, and "
+        "development workflow tools. Each operation retains its own role, path, and "
+        "authorization checks. Discovery does not authenticate a caller. " + STANDARD_INSTALL_NOTICE
+    )
+
+
+def workflow_server_instructions() -> str:
+    return (
+        "This server exposes workflow capabilities, task-plan, rule, decision-support, and "
+        "compliance tools. Start with workflow_capabilities and rules_get_context. Each "
+        "operation follows its published scope and authorization checks. Discovery grants no "
+        "authority. " + STANDARD_INSTALL_NOTICE
+    )
+
+
+def tools_server_instructions() -> str:
+    return (
+        "Local Codex CLI aggregate tools server. Workflow capabilities and rules remain on "
+        "token-io-decoupling-workflow. Begin state diagnostics with database_schema_status; "
+        "Root starts with workflow_open, Workers with worker_get_assignment. Root and Worker "
+        "tools are discoverable together, with role checks on every call. Shared state and "
+        "evidence operations route by the current bound role; Worker reads cannot paginate "
+        "Root state. Mutations require current revisions, idempotency keys, and independent "
+        "authorization. Materialization remains Worker-only and requires its configured "
+        "service, operator grant, pinned root, and current preflight. Discovery grants no "
+        "authority. " + STANDARD_INSTALL_NOTICE
+    )
