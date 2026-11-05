@@ -11,7 +11,6 @@ import pytest
 from mcp import Client
 from mcp.types import TextContent
 from token_io_decoupling_core.binding import BindingError
-from token_io_decoupling_core.host_binding import HostChannelBindingProvider
 from token_io_decoupling_core.state_models import (
     BindingIdentity,
     HostCapability,
@@ -75,7 +74,11 @@ def _assert_safe_details(report: dict[str, Any]) -> None:
     details = report["capability_details"]
     assert details["schema_version"] == 2
     assert report["agent_runtime"] == "codex_cli"
-    assert set(details["support"]) == {"agent_runtime"}
+    assert set(details["support"]) == {"agent_runtime", "local_stdio"}
+    installation = details["support"]["local_stdio"]
+    assert installation["status"] == "available"
+    assert installation["reason_code"] == "local_stdio_request_scoping"
+    assert "threadId/sessionId" in installation["next_step"]
     entries = (
         list(details["support"].values())
         + list(details["configuration"].values())
@@ -102,6 +105,12 @@ def test_default_report_distinguishes_support_configuration_and_unprobed_runtime
     assert details["support"]["agent_runtime"]["reason_code"] == "fixed_codex_cli"
     assert "runtime" not in report
     configuration = details["configuration"]
+    public = configuration["public_interfaces"]
+    assert public["status"] == "unverified"
+    assert public["reason_code"] == "tool_dependencies_not_probed"
+    assert "no Enhanced binding requirement" in public["message"]
+    for requirement in ("backend", "reader/root/policy", "OPENAI_BASE_URL", "operator grant"):
+        assert requirement in public["next_step"]
     for name in ("caller_match", "api_decisions"):
         assert configuration[name]["reason_code"] == "configured_disabled"
     assert configuration["task_plan_tools"]["status"] == "unavailable"
@@ -198,7 +207,7 @@ def test_initial_and_later_provider_failures_are_safe_and_fail_closed(
             result = await client.call_tool("workflow_evaluate", {"payload": {}})
             assert result.is_error
             text = cast(TextContent, result.content[0]).text
-            assert "trusted host binding or required guard is unavailable" in text
+            assert "session binding, role, scope or required authorization is unavailable" in text
             assert SECRET not in text
 
     asyncio.run(protected_call())
@@ -248,17 +257,3 @@ def test_role_and_diagnostic_use_the_same_baseline_predicate() -> None:
     provider.outcome = _identity().model_copy(update={"guards": frozenset()})
     assert binding_details(provider)["status"] == "unavailable"
     assert bound_role(provider) is None
-
-
-def test_known_transport_is_classified_without_serializing_provider_attributes(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    # Only exercise type-based reporting; this is not a real host attestation.
-    provider = object.__new__(HostChannelBindingProvider)
-    monkeypatch.setattr(HostChannelBindingProvider, "current_binding", lambda self: _identity())
-    monkeypatch.setattr(HostChannelBindingProvider, "transport", SECRET)
-    report = _capabilities(create_server(provider))
-    assert report["binding_transport"] == "authenticated_inherited_unix_socket"
-    detail = report["capability_details"]["runtime"]["binding_transport"]
-    assert (detail["status"], detail["reason_code"]) == ("available", "known_transport")
-    _assert_safe_details(report)

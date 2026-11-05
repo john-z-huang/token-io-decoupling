@@ -50,14 +50,15 @@ def _parent_binding(
 ) -> BindingIdentity:
     binding = self._binding_provider.current_binding()
     if binding.role is not SessionRole.PARENT:
-        raise BindingError("operation requires the trusted Root parent Session")
+        raise BindingError("operation requires the current Root parent Session")
     if binding.current_session_id != binding.root_session_id:
         raise BindingError("Root operations must run in the bound root Session")
     _require_capabilities(binding, capabilities)
-    _require_guards(
-        binding,
-        guards | {HostGuard.IDENTITY_BOUND, HostGuard.SESSION_BOUND, HostGuard.PATH_BOUNDARY},
-    )
+    if self._host_guard_checks:
+        _require_guards(
+            binding,
+            guards | {HostGuard.IDENTITY_BOUND, HostGuard.SESSION_BOUND, HostGuard.PATH_BOUNDARY},
+        )
     _safe_component(binding.project_id, "project_id")
     _safe_component(binding.root_session_id, "root_session_id")
     return binding
@@ -98,19 +99,20 @@ def _record_binding_snapshot(
 def _worker_binding(self: StateService, capabilities: set[HostCapability]) -> BindingIdentity:
     binding = self._binding_provider.current_binding()
     if binding.role is not SessionRole.WORKER:
-        raise BindingError("operation requires a verified Worker Session")
+        raise BindingError("operation requires a registered Worker Session")
     if not binding.parent_session_id or binding.parent_session_id != binding.root_session_id:
         raise BindingError("Worker binding does not match its Root parent")
     _require_capabilities(binding, capabilities)
-    _require_guards(
-        binding,
-        {
-            HostGuard.IDENTITY_BOUND,
-            HostGuard.SESSION_BOUND,
-            HostGuard.PATH_BOUNDARY,
-            HostGuard.WORKER_STORE_ISOLATION,
-        },
-    )
+    if self._host_guard_checks:
+        _require_guards(
+            binding,
+            {
+                HostGuard.IDENTITY_BOUND,
+                HostGuard.SESSION_BOUND,
+                HostGuard.PATH_BOUNDARY,
+                HostGuard.WORKER_STORE_ISOLATION,
+            },
+        )
     _safe_component(binding.project_id, "project_id")
     _safe_component(binding.root_session_id, "root_session_id")
     _safe_component(binding.current_session_id, "worker_session_id")

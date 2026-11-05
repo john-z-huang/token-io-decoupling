@@ -354,7 +354,7 @@ def test_default_and_embedded_discovery_metadata_matches_bound_role() -> None:
                     for required in (
                         "literal JSON true",
                         "SemanticRef or EvidenceRef",
-                        "verified Root binding",
+                        "current Root binding",
                         "reserved state",
                         "unknown/corrupt/missing identity blocks",
                         "worker.sqlite3",
@@ -646,7 +646,7 @@ def test_bound_wire_parses_enum_json_and_revocation_is_checked_per_call(tmp_path
             provider.revoked = True
             denied = await client.call_tool("workflow_get_state", {"payload": {}})
             assert denied.is_error
-            assert "trusted host binding" in _result_text(denied)
+            assert "session binding" in _result_text(denied)
 
     asyncio.run(run())
 
@@ -995,7 +995,7 @@ def test_bound_stdio_subprocess_root_and_worker_protocols(tmp_path: Path, bridge
                     meta={"threadId": "another-thread", "sessionId": "opaque-session"},
                 )
                 assert rejected_progress.is_error
-                assert "Codex caller context" in _result_text(rejected_progress)
+                assert "Codex request context" in _result_text(rejected_progress)
                 unchanged_worker_state = await worker_client.call_tool("worker_get_state", {})
                 assert not unchanged_worker_state.is_error
                 assert json.loads(_result_text(unchanged_worker_state))["revision"] == 2
@@ -1021,7 +1021,7 @@ def test_root_worker_tool_isolation_and_per_operation_capability_checks(tmp_path
                 },
             )
             assert forged.is_error
-            assert "trusted host binding" in _result_text(forged)
+            assert "session binding" in _result_text(forged)
         assert list(tmp_path.iterdir()) == []
 
         worker = create_server(FakeBindingProvider(SessionRole.WORKER), state_root=tmp_path)
@@ -1054,7 +1054,7 @@ def test_root_worker_tool_isolation_and_per_operation_capability_checks(tmp_path
                 },
             )
             assert denied.is_error
-            assert "trusted host binding" in _result_text(denied)
+            assert "session binding" in _result_text(denied)
         assert list(tmp_path.iterdir()) == []
 
     asyncio.run(run())

@@ -26,4 +26,4 @@ This checkpoint does not choose an execution mode, bind a model to a role, autho
 - [Coding Context Exchange Workspace Boundary](../../layer-01-fundamental-concepts/context-exchange/context-exchange-workspace-boundary.md) — locate filesystem and worktree capability ownership.
 - [Coding Delegation Mode Confirmation](../../layer-01-fundamental-concepts/delegation/delegation-mode-confirmation.md) — locate mode-gate capability consumers.
 - [Enhanced Workflow Availability](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md) — locate optional path selection and unavailable disposition.
-- [Enhanced Host Binding](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md) — locate trusted identity and operation-guard evidence.
+- [Enhanced Host Binding](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md) — locate current session scope and operation-guard evidence.

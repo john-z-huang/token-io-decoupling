@@ -36,6 +36,19 @@ class WorkflowCheckpointConsumptionTests(unittest.TestCase):
     def test_repository_has_real_consumption_for_all_l3_owners(self):
         self.assertEqual(MODULE.main(), 0)
 
+    def test_local_session_scope_cannot_be_replaced_by_profile_selection(self):
+        for name, required in (
+            ("enhanced-path-selection.md", "current session scope is resolved from the request and recorded allocations"),
+            ("enhanced-path-selection_zh_cn.md", "当前请求会话范围已通过请求上下文及已有分配解析"),
+        ):
+            with self.subTest(name=name):
+                path = MODULE.L3 / name
+                original = path.read_text(encoding="utf-8")
+                self.assertIn(required, original)
+                path.write_text(original.replace(required, "profile selected", 1), encoding="utf-8")
+                self.assertEqual(MODULE.main(), 1)
+                path.write_text(original, encoding="utf-8")
+
     def test_link_only_in_related_concepts_does_not_count(self):
         path = MODULE.MODULES / "documentation.md"
         text = path.read_text(encoding="utf-8")

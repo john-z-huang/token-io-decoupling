@@ -42,6 +42,7 @@ from token_io_decoupling_core.state_models import (
     WorkflowTransitionRequest,
 )
 
+from token_io_decoupling_state.local_context import LocalSessionContext
 from token_io_decoupling_state.migrations.runner import (
     DEFAULT_LOCK_TIMEOUT_SECONDS,
 )
@@ -230,6 +231,7 @@ class StateService:
 
             binding_provider = DenyingBindingProvider()
         self._binding_provider = binding_provider
+        self._host_guard_checks = not isinstance(binding_provider, LocalSessionContext)
         self._state_root = Path(state_root) if state_root is not None else DEFAULT_STATE_ROOT
         self._rule_loader = rule_loader or RuleLoader()
         if lock_timeout_seconds <= 0:

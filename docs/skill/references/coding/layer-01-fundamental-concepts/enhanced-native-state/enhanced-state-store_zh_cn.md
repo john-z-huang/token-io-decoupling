@@ -18,7 +18,7 @@ Session Audit 的值、提问文本、时序、resolution 和 Root-only 权限�
 
 Root 独占工作流控制状态和 Root-only 元数据。只有真实子 Agent 已创建、身份核验且绑定到已释放 Allocation 后，才可初始化 Worker store。Worker 只能读取自身不可变任务快照，并写入自己的进度、证据和阻塞记录。它不能选择其他 Worker/路径、写 Root 控制状态、修改任务快照或读取其他 Worker 的 store。既有记录形状及子 Agent 生命周期政策仍为权威。
 
-只保存结构化状态、语义引用及 Hash、证据引用和有界恢复索引。完整语义正文继续归其既有文档或 Memory owner。可信能力快照是对观测绑定的证据，本身不构成授权。
+只保存结构化状态、语义引用及 Hash、证据引用和有界恢复索引。完整语义正文继续归其既有文档或 Memory owner。能力快照记录应用范围，不表示独立身份认证或授权。
 
 ### 读取、写入与恢复索引
 
@@ -30,11 +30,11 @@ Root 独占工作流控制状态和 Root-only 元数据。只有真实子 Agent 
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-只有当前 Session 暴露可信绑定且具备该操作所需守卫时，才能使用状态服务。生产在缺少该 Provider 时默认拒绝受保护状态操作。SDK 或 fake 绑定测试只证明受测服务/协议契约，不能证明真实宿主身份或 OS 隔离。未选择 Enhanced 或其不可用时，若 Native 前提仍满足，则沿用既有 Native 记录。
+标准本地 stdio 使用当前线程元数据和已有分配；保留数据库身份、派生路径、角色及写操作门禁。不要求特权 provider；不声称 OS 隔离。按[绑定 owner](enhanced-host-binding_zh_cn.md)检查当前范围。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-当前没有 Claude 专属的状态存储优化。遵循通用规范，受保护访问必须有直接暴露且可信的身份和守卫。
+此 MCP 优化不适用；无直接客户端支持。继续遵循通用规范和独立已授权的 Native 流程。
 
 ## 相关概念
 

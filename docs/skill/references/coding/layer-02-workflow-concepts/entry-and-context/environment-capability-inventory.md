@@ -14,7 +14,7 @@ Mark an unobserved capability as unknown. Do not substitute another runtime envi
 
 ## Optional Enhanced host capability
 
-For an Enhanced operation selected by the workflow decision node, apply [Enhanced Workflow Availability](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md) and [Enhanced Host Binding](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md). Record the trusted identity source, current role, and the actual guards required by the intended operation, with evidence and scope. An absent provider, unverified guard, or public rules-only surface is `unavailable`, not an inferred capability. Missing required capability blocks only dependent work; keep independently authorized Native work available. This inventory does not initialize state or authorize a protected call.
+For an Enhanced operation selected by the workflow decision node, apply [Enhanced Workflow Availability](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md) and [Enhanced Host Binding](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md). Record the current session-scope source, current role, and the actual guards required by the intended operation, with evidence and scope. Missing request context, an unmet operation check, or a public rules-only surface is `unavailable`, not an inferred capability. Missing required capability blocks only dependent work; keep independently authorized Native work available. This inventory does not initialize state or authorize a protected call.
 
 ## Route consumption
 
@@ -31,4 +31,4 @@ A profile required by a route is a capability requirement, not a product-wide av
 - [Coding Delegation Count Gate](../../layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.md) — locate count-gate capability consumers.
 
 - [Enhanced Workflow Availability](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md) — locate optional-path evidence and failure disposition.
-- [Enhanced Host Binding](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md) — locate trusted identity and guard evidence.
+- [Enhanced Host Binding](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md) — locate current session scope and guard evidence.

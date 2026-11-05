@@ -2,11 +2,11 @@
 
 [English](ENHANCED_ARCHITECTURE.md) | [简体中文](ENHANCED_ARCHITECTURE_zh_cn.md)
 
-本文档负责可选 Enhanced 工作流架构的组件与接口契约。它将稳定规则节点映射到既有 owner，不复制其政策正文。本仓库已实现并测试核心 Python、SQLite、规则注册表加载、MCP stdio 和 Decisions 建议组件。这些实现证据不能证明生产宿主绑定可信，也不能证明真实 Codex/ChatGPT Desktop Enhanced 可用；在真实宿主提供经证明的身份和实际操作守卫前，该能力仍为不可用/未验证。
+本文档负责可选 Enhanced 架构的组件与接口契约，不复制规则 owner。实现采用本地 Codex CLI stdio 和应用级会话范围；不要求生产宿主认证服务，也不声明独立进程认证或 OS 级 Worker 隔离。
 
 ## 组件与权威数据
 
-实现采用 `mcp/` 下含八个包的 uv workspace，使用 Pydantic、`sqlite3`、官方 MCP SDK v2 和 OpenAI SDK。stdio 子进程 SDK 测试通过仅用于测试的可信嵌入 harness 验证了发现和受保护调用，并协商到协议修订 `2026-07-28`。这验证的是实现和 wire 契约，不是生产桌面宿主的身份 attestation 或 OS 权限执行。统一生产入口的四个 MCP profile 即使未绑定也暴露固定且互不重复的工具清单；受保护调用仍拒绝缺失或不充分的绑定。[MCP 开发指南](../../mcp/DEVELOPMENT_zh_cn.md)负责可执行程序名称、工具归属、按角色分派的共享适配器及安装/注册说明。工具发现不建立身份或操作守卫。
+实现采用 `mcp/` 下的八包 uv workspace、Pydantic、sqlite3、官方 MCP SDK v2 与 OpenAI SDK。四个本地 stdio profile 暴露固定互不重复的工具清单；状态调用自动解析请求线程与现有分配，不需要特权通道或外部 identity provider。[MCP 开发指南](../../mcp/DEVELOPMENT_zh_cn.md)负责安装、能力与验证。测试证明所测行为，不构成宿主认证证据。
 
 Markdown owner 文档仍是政策文本的唯一权威。JSON 注册表 [`mcp/rule-registry.json`](../../mcp/rule-registry.json) 将稳定节点 ID 映射到 owner 标题、事实、证据、分支、判断方式、失败处理和后续检查点，不得复制 owner 正文。独立的片段索引 v1 不修改该注册表的 v2 节点或数据库 Schema；它将有界片段 ID 和依赖映射到权威 owner 章节，不复制政策正文。旧版规则上下文调用保留现有契约；片段 bundle 必须显式选择版本 1。源码和打包资源使用相同的 fence-aware parser 与规范化，因此片段正文及其 Hash 一致。源码开发须显式选择仓库根目录；已安装运行时读取打包快照。实现加载时读取当前 owner 文本并计算 Hash；不维护第二份人工编写的政策正文或持久化节点 Hash。普通正文变化通过动态重读生效。节点结构、分支枚举或硬约束变化时，必须使用变化后的 `contract_version` 同步兼容实现与测试。
 
@@ -53,7 +53,7 @@ Core 不向上导入实现。State 独立于 transport 和 launcher；transport 
 
 Root 数据库是根控制状态的逻辑 Owner。Worker 数据库只包含只读任务快照，以及该 Worker 自身的进度、里程碑、局部检查、证据、阻塞项和恢复上下文。Root 仅通过授权接口读取摘要和证据，核验后执行根级状态迁移；Worker 自报不等于 Root 确认完成。
 
-预期目录为 `~/.local/state/token-io-decoupling/<project-id>/<root-session-id>/workflow.sqlite3`，Worker 数据库位于 `subagents/<subagent-session-id>/worker.sqlite3`。Project 和 Session 绑定必须来自可信运行时上下文。调用方提供的身份、路径或 `authorized=true` 不足以建立信任。只有真实子 Agent 身份经过验证并绑定到预留 Allocation 后，才初始化 Worker 数据库。路径由可信绑定生成，并拒绝目录穿越及越界符号链接。
+状态目录为 `~/.local/state/token-io-decoupling/<project-id>/<root-session-id>/workflow.sqlite3`，Worker 位于 `subagents/<worker-session-id>/worker.sqlite3`。project-id 是固定启动 cwd canonical path 的哈希，线程取自 MCP 元数据，父子范围来自已有分配记录。初始化 Worker 仍需角色预留和释放 Slice；路径、数据库身份、revision、幂等与独立授权检查保持生效。同用户进程或本地文件不在独立认证保证范围内。
 
 模式/数量、Allocation、状态 Revision、规则/Schema 兼容版本，以及 implementation/content、documentation、Git metadata 三类 Verification Epoch 是彼此独立的维度，不得互相替代。其约束政策仍由既有 owner 负责，见“相关概念”一节。
 
@@ -69,7 +69,7 @@ Schema 状态检查受角色绑定、只读且仅限调用者自己的 Root 或 
 
 ## Native 与 Enhanced 可用性
 
-Native 是默认运行方式：Agent 阅读权威文档，并按其 owner 维护既有结构化记录和语义正文。[增强工作流可用性](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability_zh_cn.md) owner 负责路线选择和不可用处置；[增强宿主绑定](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md) owner 负责可信身份和每次调用的守卫证据。公共规则访问不能证明 Enhanced 状态或权限访问。当前 SDK 与测试 harness 证据不能证明真实桌面宿主绑定，因此真实 Codex/ChatGPT Desktop Enhanced 可用性仍未验证。保留 Native 作为降级路径，只阻塞依赖缺失 Enhanced 能力的操作。Mode/count 和 Native 对账仍由各自既有 owner 负责。
+Native 仍是默认文档路线。标准本地 stdio 可使用 Enhanced 状态操作；按[绑定 owner](references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md)确认当前线程、已登记角色、路径及操作授权，不再增加宿主认证前置条件。缺少所需能力只阻塞依赖操作；canonical 状态与 Native 对账/转移继续遵循既有 owner。
 
 Decisions API 默认关闭，普通测试使用 Mock。真实请求必须具备显式启用及出站数据授权，架构契约本身不授予这些权限。Root 和每个受委派的 Agent 都必须在项目功能代码及真实测试/smoke 代码中执行同一前置条件：在实际调用时读取本地进程环境中的 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，要求两项都非空，并显式传给 SDK。缺少任一项时，不得创建 client 或发送真实请求。禁止硬编码或调用方提供的替代值，也禁止使用 SDK 默认端点；不得打印或持久化其值。合成值仅用于不发送网络请求的 Mock。执行限制见[开发指南](../../mcp/DEVELOPMENT_zh_cn.md#真实-api-请求的必需配置)。
 

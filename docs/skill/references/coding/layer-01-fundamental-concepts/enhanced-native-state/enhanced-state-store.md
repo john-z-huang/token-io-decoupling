@@ -16,9 +16,9 @@ Session Audit values, prompt wording, timing, resolution, and Root-only ownershi
 
 ### Root and Worker boundaries
 
-Root alone owns workflow control state and Root-only metadata. A Worker store may be initialized only after a real child has been created, its identity verified, and its released allocation bound. A Worker reads its own immutable assignment snapshot and may write only its own progress, evidence, and blocker records. It cannot choose another Worker/path, write Root control state, change its assignment, or read another Worker’s store. Existing record shape and child lifecycle policies remain authoritative.
+Root alone owns workflow control state and Root-only metadata. A Worker store may be initialized only after a real child has been created, Root has confirmed its runtime identity and registered its released allocation. A Worker reads its own immutable assignment snapshot and may write only its own progress, evidence, and blocker records. It cannot choose another Worker/path, write Root control state, change its assignment, or read another Worker’s store. Existing record shape and child lifecycle policies remain authoritative.
 
-Store only structured state, semantic references and hashes, evidence references, and bounded recovery indexes. Keep full semantic bodies in their existing document or memory owners. Trusted capability snapshots are evidence about the observed binding, not authority by themselves.
+Store only structured state, semantic references and hashes, evidence references, and bounded recovery indexes. Keep full semantic bodies in their existing document or memory owners. Capability snapshots record application scope, not independent authentication or authority.
 
 ### Reads, writes, and recovery indexes
 
@@ -30,11 +30,11 @@ Recovery indexes are bounded and ordered. A page cursor is bound to its collecti
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-Use the state service only when the current Session exposes a trusted binding with the operation’s required guards. Production defaults deny protected state operations without that provider. An SDK or fake-binding test demonstrates only the tested service/protocol contract, not a real host’s identity or OS isolation. Use the existing Native record when Enhanced state is not selected or unavailable and Native prerequisites remain satisfied.
+Standard local stdio uses current thread metadata and existing allocations. Preserve database identity, derived-path, role and write-operation gates. No privileged provider is required and no OS isolation is claimed. Check current scope under the [binding owner](enhanced-host-binding.md).
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-There is currently no Claude-specific state-store optimization. Follow the general rules and require directly exposed trusted identity and guards before protected access.
+This MCP optimization is not applicable; no direct client support is provided. Follow general rules and independently authorized Native workflows.
 
 ## Related concepts
 

@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Any
 
 from token_io_decoupling_core.binding import BindingProvider, DenyingBindingProvider
-from token_io_decoupling_core.host_binding import HostChannelBindingProvider
+from token_io_decoupling_state.local_context import LocalSessionContext
 
 from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
 from token_io_decoupling_workflow.serena_memory import SerenaMemoryReadService
@@ -72,47 +72,42 @@ def capability_report(
         "reason_code": "output_materializer_not_configured",
     }
     # Never serialize provider attributes: even transport labels can contain secrets or raise.
-    transport = (
-        "authenticated_inherited_unix_socket"
-        if isinstance(provider, HostChannelBindingProvider)
-        else "embedded_provider"
+    local = isinstance(provider, LocalSessionContext)
+    transport = "stdio" if local else "embedded_provider"
+    transport_detail = _detail(
+        "available" if local else "unverified",
+        "local_stdio" if local else "transport_not_reported",
+        "Local Codex stdio uses application request scoping, not privileged host authentication."
+        if local
+        else "Injected context is not independently authenticated by this diagnostic.",
+        "server.local_stdio" if local else "provider_type",
+        "Supply Codex request metadata for state calls; configuration and authorization "
+        "remain separate."
+        if local
+        else "Check the configured context; a transport label is not authority.",
     )
     if type(provider) is DenyingBindingProvider:
         transport_detail = _detail(
             "unavailable",
             "provider_not_configured",
-            "No host binding transport is configured.",
+            "No local request context is configured.",
             "server.default_provider",
-            "Use Native or configure a trusted host integration.",
-        )
-    elif isinstance(provider, HostChannelBindingProvider):
-        transport_detail = _detail(
-            "available",
-            "known_transport",
-            "The provider uses an authenticated inherited Unix socket.",
-            "provider_type",
-            "Check runtime.binding for current validation; transport type is not authority.",
-        )
-    else:
-        transport_detail = _detail(
-            "unverified",
-            "transport_not_reported",
-            "A custom provider's transport has not been independently classified.",
-            "provider_type",
-            "Consult the trusted host integration; do not infer transport from a label.",
+            "Start a named local stdio profile through Codex.",
         )
     return {
         "subsystem": "token-io-mcp",
         "supported_transports": ["stdio"],
         "agent_runtime": "codex_cli",
         "enhanced_binding": (
-            "unverified"
+            "not_applicable"
+            if local
+            else "unverified"
             if not embedded
             else "available"
             if binding["status"] == "available"
             else "unavailable"
         ),
-        "binding_transport": transport if embedded else "unavailable",
+        "binding_transport": transport if local or embedded else "unavailable",
         "caller_match": caller_match,
         "mode_fallback": "Native",
         "api_decisions": api_decisions,
@@ -137,9 +132,39 @@ def capability_report(
                     "and local Work.",
                     "static_support.agent_runtime",
                     "Use Codex CLI; verify host identity, caller context, and guards separately.",
-                )
+                ),
+                "local_stdio": _detail(
+                    "available",
+                    "local_stdio_request_scoping",
+                    "Standard named profiles use local Codex stdio without a privileged host, "
+                    "inherited host descriptor or external identity provider. Metadata and "
+                    "recorded allocations scope state; they do not authenticate other "
+                    "same-user processes.",
+                    "static_support.local_stdio",
+                    "Start Codex from the intended project root. State calls require "
+                    "threadId/sessionId request metadata and operation-specific authorization.",
+                ),
             },
             "configuration": {
+                "public_interfaces": _detail(
+                    "unverified",
+                    "tool_dependencies_not_probed",
+                    "Public means no Enhanced binding requirement, not configured or authorized. "
+                    "Capability/rule/schema diagnostics, local Memory reads, Native task plans, "
+                    "candidate compliance, workflow routing and stateless selection/context "
+                    "tools are public. Schema diagnostics do not inspect unbound state paths. "
+                    "Workflow/Control evaluation and Root/Worker/state operations require local "
+                    "request scope, recorded roles, permissions and current operation checks.",
+                    "workflow.public_tool_contracts",
+                    "Check each tool: Memory requires existing startup-project files; plans "
+                    "require an injected backend; compliance requires an operator-configured "
+                    "reader/root/policy. API-backed selection/context and automatic routing "
+                    "require nonblank OPENAI_API_KEY and OPENAI_BASE_URL and per-call outbound "
+                    "authorization; explicit-stage routing is local. Materialization additionally "
+                    "requires a registered Worker, configured service and independent "
+                    "operator grant. "
+                    "No API or execution-readiness probe was made.",
+                ),
                 "serena_memory_reads": _detail(
                     str(memory_read_details.get("status", "unavailable")),
                     str(memory_read_details.get("reason_code", "serena_memory_unavailable")),
@@ -219,11 +244,17 @@ def capability_report(
                 "binding": binding,
                 "binding_transport": transport_detail,
                 "server_mode": _detail(
-                    "embedded" if embedded else "public_only",
-                    "startup_binding_accepted" if embedded else "startup_binding_unverified",
-                    "Startup fixes registration scope; current diagnostics never expand it.",
+                    "local_stdio" if local else "embedded" if embedded else "public_only",
+                    "local_request_scoping"
+                    if local
+                    else "startup_binding_accepted"
+                    if embedded
+                    else "startup_binding_unverified",
+                    "Profile fixes tool exposure; each state call resolves its current "
+                    "local scope.",
                     "server.create_server",
-                    "Protected calls still check identity, caller context, and required guards.",
+                    "Use the current request role, path scope and explicit operation "
+                    "authorization.",
                 ),
             },
         },

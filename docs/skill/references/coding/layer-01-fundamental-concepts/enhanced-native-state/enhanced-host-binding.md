@@ -2,28 +2,38 @@
 
 [English](enhanced-host-binding.md) | [简体中文](enhanced-host-binding_zh_cn.md)
 
-This owner defines the trusted source of Enhanced identity and operation guards, role exposure, and per-call revalidation. It does not own route selection, mode/count, task policy, or cross-runtime model bindings.
+This owner defines local Enhanced session scope, role registration and per-operation checks. Binding here is application registration, not independent host authentication or OS isolation. It does not own mode, count or route selection.
 
 ## General rules
 
-Protected operations require a trusted embedding to supply the current project, root-session and current-session identities, transport role, and actual permission/guard evidence. Recheck that binding and the guard required by the operation on every call, including after a tool has been listed. Revoked, missing, ambiguous, or insufficient evidence rejects the protected call and leaves Native work available where independently authorized.
+### Local registration and operation scope
 
-Environment variables, client metadata, caller-supplied identity or paths, operation arguments, and fields such as `authorized=true` are not identity or permission evidence. Production defaults deny protected Enhanced access when no trusted provider is installed. Expose only the public read-only surface when unbound; expose the Root or Worker surface only for the corresponding verified binding and revalidate it per call. A Worker binding grants no access to another Worker or Root-only data.
+Use the process's fixed project scope, current request session identifier and recorded allocations. State calls must check role, owning Root, own Worker assignment, database identity, paths, revision, idempotency and independent authorization. Reject missing, conflicting or out-of-scope inputs. Do not require an additional privileged host, external identity provider or unverifiable guard proof, and do not fill every guard to pretend it was verified.
 
-Native Coding responsibility is defined by the Skill's route and role owners; it is not a product MCP Worker binding. A Native Agent does not need to claim a Worker identity or call Worker-only tools to carry out an otherwise authorized Native task. Conversely, Native task responsibility does not satisfy this owner's trusted binding or guard requirements for a protected Enhanced operation. Keep these capability domains separate: continue Native work when independently authorized, and fail closed for an unavailable protected operation.
+Root registration of a Worker requires an approved role and released Slice. Allocation records are application relationships, not attestation of real runtime parent-child identity. An unknown thread must explicitly open its own Root workflow before using that state; multiple Root registrations for one thread block. Re-read current allocations per call and restore request scope on return/error.
 
-Keep evidence claims scoped: a fake provider verifies service behavior against a test contract; an SDK or stdio subprocess verifies protocol behavior. Neither demonstrates that a real host supplies attestation or enforces an OS permission boundary. Do not claim real-host verification without direct evidence from that host.
+### Trust boundary
+
+Metadata supplies local routing only. Payloads, environment variables, profiles and `authorized=true` cannot replace operation authorization. The same OS user can edit local data or forge metadata; this design does not defend against that user's malicious processes or provide independent process authentication or OS-level Worker isolation. Actual file access remains subject to OS permissions. Historical verified/trusted/guard field names do not expand this guarantee.
+
+Native Coding responsibility does not automatically register an MCP Worker. Independently authorized Native work remains available when Enhanced is unselected or its dependencies are unavailable. Transfer of existing canonical state follows its current owner; never recreate or overwrite records. Synthetic and protocol tests prove tested behavior, not host authentication.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-The current production CLI does not install a trusted host provider, so its protected operations remain denied by default. For each task, inspect the capabilities and evidence actually exposed and authorized in the current Session: if a trusted provider supplies verifiable identity and sufficient operation guards, apply the general per-call checks; otherwise mark that capability unavailable/unverified and do not make the protected call. New runtime capabilities can be used when directly exposed, authorized, and verified under the same checks; ordinary users do not need to edit this Skill first. SDK subprocess tests and fake bindings remain protocol/contract evidence only. Never use Computer Use to inspect a desktop or manufacture identity evidence.
+### Local stdio
+
+Standard local Codex CLI stdio derives the project partition from canonical startup cwd and reads MCP `_meta.threadId/sessionId`. State calls require bounded nonempty metadata and a safe thread component; changing opaque sessionId does not reset the thread. Root registers Workers through existing allocation operations; Workers resolve scope from existing allocations in the current project. Inspect capabilities and separate configuration before calls; no privileged-channel startup step is needed.
+
+Source: `core/src/mcp_tool_call.rs::with_mcp_tool_call_ids_meta`; the [official MCP documentation](https://learn.chatgpt.com/docs/extend/mcp) describes stdio registration. Use only actual exposed, authorized call paths; Computer Use is forbidden. This optimization supports local Codex CLI only.
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-There is currently no Claude-specific host-binding optimization. Follow the general rules; do not infer that a trusted provider exists.
+### Not applicable
+
+The [official MCP documentation](https://code.claude.com/docs/en/mcp) describes stdio there too, but this does not establish the same metadata contract. This repository's MCP does not support that direct client and adds no adapter. Document users may continue general rules and independently authorized Native work; absence of this optimization does not block unrelated work.
 
 ## Related concepts
 
-- [Enhanced Workflow Availability](enhanced-workflow-availability.md) — owns choosing Enhanced versus Native disposition.
-- [Runtime and Model Provider Support](../session-runtime/runtime-provider-support.md) — owns cross-runtime and model/effort bindings.
-- [Coding Delegation State Record](../delegation/delegation-state-record.md) — owns persisted identity-linked state and Worker lifecycle.
+- [Enhanced Workflow Availability](enhanced-workflow-availability.md)
+- [Enhanced State Store](enhanced-state-store.md)
+- [Delegation State Record](../delegation/delegation-state-record.md)

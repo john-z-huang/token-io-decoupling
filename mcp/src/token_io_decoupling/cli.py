@@ -7,7 +7,6 @@ import sys
 from pathlib import Path
 
 from token_io_decoupling_core.binding import BindingError
-from token_io_decoupling_core.host_binding import HostChannelBindingProvider
 from token_io_decoupling_core.profiles import PROFILE_SERVER_NAMES
 
 from token_io_decoupling.cli_commands import dispatch_command
@@ -48,19 +47,9 @@ def _run(*, prog: str, default_profile: str | None) -> int:
         return result
     args = result
     profile = args.profile
-    if args.codex_context and args.host_fd is None:
-        print(f"{prog}: --codex-context requires --host-fd", file=sys.stderr)
-        return 2
-    provider = None
     compliance_service = None
     output_materializer_config = None
     server = None
-    if args.host_fd is not None:
-        try:
-            provider = HostChannelBindingProvider.from_fd(args.host_fd)
-        except (BindingError, OSError, ValueError):
-            print(f"{prog}: authenticated host channel unavailable", file=sys.stderr)
-            return 2
     try:
         try:
             task_plan_service = load_task_plan_service(args.task_plan_factory)
@@ -89,10 +78,7 @@ def _run(*, prog: str, default_profile: str | None) -> int:
             )
             return 2
         server = create_server(
-            provider,
-            require_bound=provider is not None,
-            require_codex_context=args.codex_context,
-            state_root=_trusted_state_root() if provider is not None else None,
+            state_root=_trusted_state_root(),
             task_plan_service=task_plan_service,
             compliance_service=compliance_service,
             output_materializer_config=output_materializer_config,
@@ -110,8 +96,6 @@ def _run(*, prog: str, default_profile: str | None) -> int:
             close_materializer()
         if compliance_service is not None:
             compliance_service.close()
-        if provider is not None:
-            provider.close()
     return 0
 
 

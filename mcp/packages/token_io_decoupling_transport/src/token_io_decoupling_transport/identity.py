@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from token_io_decoupling_core.binding import BindingError, BindingProvider, DenyingBindingProvider
 from token_io_decoupling_core.state_models import BindingIdentity, HostGuard, SessionRole
+from token_io_decoupling_state.local_context import LocalSessionContext
 from token_io_decoupling_state.service import StateService
 
 
@@ -19,12 +20,36 @@ def binding_details(provider: BindingProvider) -> dict[str, str]:
             "next_step": next_step,
         }
 
+    if isinstance(provider, LocalSessionContext):
+        try:
+            binding = provider.current_binding()
+        except BindingError:
+            return result(
+                "request_required",
+                "local_codex_context_required",
+                "Local stdio state uses request metadata and recorded allocations, not "
+                "host authentication.",
+                "Invoke state tools from Codex with threadId/sessionId metadata; "
+                "register Workers before use.",
+            )
+        diagnostic = result(
+            "available",
+            "local_session_scoped",
+            "Local request scope resolved; this is not independent identity "
+            "authentication or OS isolation.",
+            "Use only the current role and allocated scope; per-operation authorization "
+            "still applies.",
+        )
+        diagnostic["role"] = binding.role.value
+        return diagnostic
     if type(provider) is DenyingBindingProvider:
         diagnostic = result(
             "unverified",
             "provider_not_configured",
             "No trusted host binding provider is configured; no probe was attempted.",
-            "Use Native, or configure a trusted host provider through the host integration.",
+            "Use Native. Standard setup ships no production host integration; reinstalling, "
+            "environment forwarding, and profile changes cannot establish one. See "
+            "support.standard_install_enhanced for the remaining integration prerequisites.",
         )
         diagnostic["source"] = "server.default_provider"
         return diagnostic

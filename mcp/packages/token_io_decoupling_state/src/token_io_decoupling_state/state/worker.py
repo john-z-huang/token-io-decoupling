@@ -195,7 +195,9 @@ def parent_get_worker_summary(self: StateService, allocation_id: str) -> WorkerS
             raise InvalidStateTransitionError("Worker allocation is not initialized")
         worker_session_id = row[0]
     verified = self._binding_provider.verify_child_binding(binding, worker_session_id)
-    _validate_child_binding(binding, verified, worker_session_id)
+    _validate_child_binding(
+        binding, verified, worker_session_id, check_host_guards=self._host_guard_checks
+    )
     if HostCapability.PARENT_SUMMARY_READ not in verified.capabilities:
         raise BindingError("host did not authorize parent summary access to this Worker")
     worker_path, worker_root = self._worker_database(worker_session_id, binding, create=False)

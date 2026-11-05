@@ -189,6 +189,16 @@ class FixedCodexSession:
         report = json.loads(result.content[0]["text"])
         if report.get("agent_runtime") != "codex_cli":
             raise CodexTestError("unexpected MCP capabilities response")
+        details = report.get("capability_details", {})
+        installation = details.get("support", {}).get("local_stdio", {})
+        binding = details.get("runtime", {}).get("binding", {})
+        if (
+            installation.get("reason_code") != "local_stdio_request_scoping"
+            or installation.get("status") != "available"
+            or binding.get("reason_code") != "local_codex_context_required"
+            or "threadId/sessionId" not in binding.get("next_step", "")
+        ):
+            raise CodexTestError("fresh CLI omitted standard-install binding diagnostics")
         for language in ("en", "zh_cn"):
             rules = self._client.request(
                 "mcpServer/tool/call",
@@ -210,7 +220,14 @@ class FixedCodexSession:
                 or len(context.get("context_hash", "")) != 64
             ):
                 raise CodexTestError("unexpected packaged MCP rule context")
-        return {"model": MODEL, "effort": EFFORT, "mcp": "passed", "model_turns": 0}
+        return {
+            "model": MODEL,
+            "effort": EFFORT,
+            "mcp": "passed",
+            "model_turns": 0,
+            "local_stdio": "available",
+            "binding_reason": "local_codex_context_required",
+        }
 
 
 @contextmanager

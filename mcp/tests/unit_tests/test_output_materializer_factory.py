@@ -66,7 +66,7 @@ def test_cli_forwards_typed_factory_configuration_to_server(tmp_path, monkeypatc
         assert spec == "operator_module:build"
         return config
 
-    def create_server(_provider, **kwargs):
+    def create_server(**kwargs):
         forwarded.update(kwargs)
         return _Server()
 

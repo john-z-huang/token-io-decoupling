@@ -559,7 +559,9 @@ def delegation_bind(
     allocation_id = _nonempty(allocation_id, "allocation_id")
     child_session_id = _nonempty(child_session_id, "child_session_id")
     verified = self._binding_provider.verify_child_binding(binding, child_session_id)
-    _validate_child_binding(binding, verified, child_session_id)
+    _validate_child_binding(
+        binding, verified, child_session_id, check_host_guards=self._host_guard_checks
+    )
     payload: dict[str, object] = {
         "allocation_id": allocation_id,
         "child_session_id": child_session_id,

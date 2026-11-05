@@ -1,29 +1,39 @@
-# 增强宿主绑定
+# Enhanced 宿主绑定
 
 [English](enhanced-host-binding.md) | [简体中文](enhanced-host-binding_zh_cn.md)
 
-本文档负责 Enhanced 身份与操作守卫的可信来源、角色暴露和每次调用重新核验。它不负责路线选择、mode/count、任务政策或跨运行时模型绑定。
+本文档负责 Enhanced 的本地会话范围、角色分配与逐操作检查。这里的“绑定”是应用内登记，不表示独立宿主认证或 OS 隔离；不负责模式、计数或路线选择。
 
 ## 通用规范
 
-受保护操作要求可信嵌入端提供当前 project、root-session 和 current-session 身份、传输角色，以及实际权限/守卫证据。每次调用都要重新核验绑定和该操作所需的守卫，包括工具已列出之后。证据被撤销、缺失、含糊或不足时，拒绝受保护调用；若 Native 工作另有授权，则仍可继续。
+### 本地登记与操作范围
 
-环境变量、客户端元数据、调用方提供的身份或路径、操作参数，以及 `authorized=true` 等字段都不是身份或权限证据。未安装可信 Provider 时，生产默认拒绝受保护的 Enhanced 访问。未绑定时只暴露公共只读接口；只有对应绑定已验证时才暴露 Root 或 Worker 接口，并且每次调用都重新核验。Worker 绑定不授予访问其他 Worker 或 Root-only 数据的权限。
+使用本进程固定项目范围、当前请求会话标识和已登记的分配。状态操作必须校验角色、所属 Root、自己的 Worker 分配、数据库身份、路径、revision、幂等和独立授权；缺失、冲突或越界即拒绝。不要求额外特权宿主、外部 identity provider 或无从验证的 guard 证明，也不得以全量填充 guard 来假装已验证。
 
-Native Coding 职责由 Skill 路线和角色 owner 定义，不等同于产品 MCP Worker 绑定。执行其他方面已获授权的 Native 任务时，Native Agent 无须声明 Worker 身份或调用 Worker 专用工具。反之，承担 Native 任务也不能满足本 owner 对受保护 Enhanced 操作要求的可信绑定或守卫。应保持两类能力边界独立：在另行获授权时可继续 Native 工作；受保护操作不可用时则按失败关闭处理。
+Root 登记 Worker 需要已批准的角色和已释放 Slice。分配记录是应用关系，不证明真实运行时父子身份。未知线程必须显式打开自己的 Root 工作流后才能使用该状态；发现同一线程有多个 Root 归属应阻断。每个调用重新读取当前分配，请求作用域在结束和异常时恢复。
 
-证据结论必须保持边界：fake provider 只验证服务是否符合测试契约；SDK 或 stdio 子进程只验证协议行为。两者都不能证明真实宿主提供了 attestation 或执行了 OS 权限边界。没有该宿主的直接证据时，不得声称真实宿主已验证。
+### 信任边界
+
+元数据只用于本地路由，payload、环境变量、profile 和 `authorized=true` 不能取代操作授权。同一 OS 用户可以修改本地数据或伪造元数据；本设计不防御该用户的恶意进程，不提供独立进程认证或 OS 级 Worker 隔离。实际文件访问仍受 OS 权限约束。历史数据字段名中的 verified/trusted/guard 不扩大这一保证。
+
+Native Coding 角色不自动登记 MCP Worker。未选择 Enhanced 或其依赖不可用时，独立已授权的 Native 工作仍可继续；已有 canonical 状态的转移遵循原 owner，不重建或覆写记录。合成测试和协议测试只证明所测行为，不证明宿主认证。
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-当前生产 CLI 未安装可信宿主 Provider，因此默认拒绝受保护操作。每项任务都要核对当前 Session 实际暴露且获授权的能力和证据：若可信 Provider 提供可验证身份及足够的操作守卫，则按通用规则逐次核验；否则将该能力标记为不可用/未验证，不执行受保护调用。新增运行时能力在直接暴露、获授权并通过同一核验后即可使用；普通使用者无需先修改本 Skill。SDK 子进程测试和 fake 绑定只属于协议/契约证据。不得使用 Computer Use 检查桌面或制造身份凭据。
+### 本地 stdio
+
+标准本地 Codex CLI stdio 使用启动 cwd 的 canonical path 派生项目分区，并解析 MCP `_meta.threadId/sessionId`。状态调用需要有界非空元数据和安全线程分量；不透明 sessionId 的变化不重置线程。Root 用现有分配操作登记 Worker，Worker 从当前项目已有分配中解析范围。调用前查看能力与独立配置，不需要特权通道启动步骤。
+
+源码依据：`core/src/mcp_tool_call.rs::with_mcp_tool_call_ids_meta`；[官方 MCP 文档](https://learn.chatgpt.com/docs/extend/mcp)说明 stdio 注册。只有当前会话实际暴露且授权的调用入口可用；禁止 Computer Use。此优化只支持本地 Codex CLI。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-当前没有 Claude 专属的宿主绑定优化。遵循通用规范；不得推断可信 Provider 已存在。
+### 不适用
+
+[官方 MCP 文档](https://code.claude.com/docs/en/mcp)说明该产品也有 stdio，但不能据此假定其元数据与上述契约相同。本仓库 MCP 不支持其直接连接，不增加适配；文档使用者可继续执行通用规范及独立已授权的 Native 工作，不因缺少此优化阻断无关任务。
 
 ## 相关概念
 
-- [增强工作流可用性](enhanced-workflow-availability_zh_cn.md) — 负责选择 Enhanced 或 Native 处置。
-- [运行环境与模型厂商支持](../session-runtime/runtime-provider-support_zh_cn.md) — 负责跨运行时及模型/effort 绑定。
-- [Coding Delegation State Record](../delegation/delegation-state-record_zh_cn.md) — 负责与身份关联的持久状态和 Worker 生命周期。
+- [增强工作流可用性](enhanced-workflow-availability_zh_cn.md)
+- [增强状态存储](enhanced-state-store_zh_cn.md)
+- [委派状态记录](../delegation/delegation-state-record_zh_cn.md)
