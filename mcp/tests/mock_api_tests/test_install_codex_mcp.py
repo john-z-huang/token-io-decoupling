@@ -148,55 +148,6 @@ def test_custom_python_and_dry_run_options(harness):
     assert _calls(harness) == []
 
 
-def test_installer_forwards_project_and_optional_serena_python(harness):
-    result = _run(
-        harness,
-        "--serena-project-root",
-        "/target project",
-        "--serena-python",
-        "/Serena env/bin/python",
-    )
-    assert result.returncode == 0, result.stderr
-    assert _calls(harness)[-1] == [
-        "setup",
-        "setup",
-        "codex",
-        "--all",
-        "--serena-project-root",
-        "/target project",
-        "--serena-python",
-        "/Serena env/bin/python",
-    ]
-
-
-def test_memory_dry_run_defers_uv_discovery_and_has_no_effects(harness):
-    env = harness["env"]
-    assert isinstance(env, dict)
-    env["PATH"] = "/nonexistent"
-    result = _run(harness, "--serena-project-root", "/target project", "--dry-run")
-    assert result.returncode == 0, result.stderr
-    assert "--serena-project-root" in result.stdout
-    assert "uv tool dir" in result.stdout
-    assert _calls(harness) == []
-
-
-@pytest.mark.parametrize(
-    "arguments",
-    [
-        ("--serena-project-root",),
-        ("--serena-project-root", "relative/project"),
-        ("--serena-python", "/env/bin/python"),
-        ("--serena-project-root", "/project", "--serena-python", "relative/python"),
-        ("--serena-project-root", "/project", "--profile", "root"),
-        ("--serena-project-root", "/first", "--serena-project-root", "/second"),
-    ],
-)
-def test_invalid_memory_options_stop_before_install(harness, arguments):
-    result = _run(harness, *arguments)
-    assert result.returncode == 2
-    assert _calls(harness) == []
-
-
 def test_dry_run_and_help_need_no_tools_or_config(harness):
     env = harness["env"]
     assert isinstance(env, dict)

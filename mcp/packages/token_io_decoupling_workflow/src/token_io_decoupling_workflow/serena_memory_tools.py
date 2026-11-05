@@ -17,7 +17,10 @@ MemoryPath = Annotated[
         strict=True,
         min_length=1,
         max_length=4096,
-        description="Serena logical name/mem: reference or file path in configured Memory roots.",
+        description=(
+            "Relative name under the startup directory project's .serena/memories; "
+            "optional mem: prefix and .md suffix."
+        ),
     ),
 ]
 TailLines = Annotated[

@@ -103,27 +103,24 @@ _STATELESS_API_TOOLS = {
 
 TOOL_DESCRIPTIONS: dict[str, str] = {
     "serena_memory_tail_read": _description(
-        "Read only the last N logical lines of a Memory using a trusted, configured Serena "
-        "MemoryManager and local file I/O. Two direct arguments, no payload envelope: "
-        "memory_path is a Serena logical name (optional mem: prefix/.md suffix), project-relative "
-        "or absolute file path inside the configured Memory roots; global/ selects global Memory. "
+        "Read the last N logical lines from a local project Memory file. Two direct arguments, "
+        "no payload envelope: memory_path is a project-relative name under .serena/memories, "
+        "with optional mem: prefix and .md suffix. Absolute, global, and external paths are "
+        "rejected. "
         "tail_lines is a strict integer 0..10000; zero returns only line-count metadata. "
         "The returned content is bounded to 64000 characters; oversized windows fail rather than "
         "silently truncate. Returns status/reason, canonical Memory/path identity, total_lines, "
-        "returned_lines and the selected line range/content on success. It uses the Manager's "
-        "actual roots, encoding and ignored policy; read-only Memories remain readable. "
-        "Default setup uses --serena-project-root and discovers an existing uv tool Serena "
-        "Python, persisting both project and --serena-python startup arguments. The fixed "
-        "local helper runs in that isolated environment; no Serena dependency is installed "
-        "in the MCP environment. Native service injection or --serena-memory-factory remains "
-        "an advanced alternative. Without a configured backend, returns unavailable without "
-        "importing Serena or probing paths. Rejects "
-        "traversal, symlinks, non-regular files, out-of-root targets and read-time changes. "
+        "returned_lines and the selected line range/content on success. Files are opened as "
+        "UTF-8; symlinks and paths outside the local Memory folder are rejected. "
+        "Project scope is fixed to the workflow server's actual startup directory. The tool "
+        "reads only files under that directory's .serena/memories folder, with no parent/"
+        "sibling/project discovery and no installation-time project binding. It uses Python "
+        "standard-library file operations only; it does not require Serena-Agent or another "
+        "local program. Missing folders or files return unavailable. Rejects "
+        "traversal, symlinks, non-regular files, out-of-root targets, and oversized tail windows. "
         "No files/directories, state, models or API requests are written or invoked. "
-        "Use line-count differences only for independently established append-only changes with "
-        "an unchanged prefix; counts do not detect edits, deletion, rewriting or prefix changes. "
-        "On missing/ignored/invalid paths or uncertain reads, correct the named prerequisite; "
-        "never claim a successful snapshot or retry blindly. No revision/idempotency key.",
+        "Missing files return unavailable. No files or directories are created, and no "
+        "revision/idempotency key is used.",
     ),
     "serena_memory_write_check": _description(
         "Quick read-only literal containment check of expected text in a Serena Memory tail. "
@@ -136,8 +133,8 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "present in that window: pre-existing text may match, and a valid edit outside the "
         "window may not. It does not prove a recent write occurred, preservation, semantic "
         "correctness, append-only history or concurrency/CAS safety, and cannot replace required "
-        "full-content acceptance or archive comparisons. Same configured backend, path/policy, "
-        "encoding, limits and read-time-change guards as tail read. No write, model/API request; "
+        "full-content acceptance or archive comparisons. Same startup-directory scope, path "
+        "checks, UTF-8 encoding, and tail limits as tail read. No write, model/API request; "
         "no revision/idempotency key. Treat unavailable/error as unverified; investigate or use "
         "an appropriately sized authorized window without claiming the write itself failed.",
     ),
@@ -890,15 +887,16 @@ SERVER_INSTRUCTIONS: dict[str, str] = {
         "completion, and archive operations. "
         "Task-plan writes require an explicitly injected TaskPlanService; the CLI loads trusted "
         "operator code only when --task-plan-factory MODULE:CALLABLE is supplied. "
-        "Read-only serena_memory_tail_read and serena_memory_write_check instead use a separate "
-        "SerenaMemoryReadService. Default setup codex --serena-project-root binds an existing "
-        "project and discovers uv tool Serena Python, persisting an explicit isolated "
-        "--serena-project-root/--serena-python startup pair. It does not mix dependencies or "
-        "initialize Serena. Native injection or --serena-memory-factory MODULE:CALLABLE is "
-        "an advanced alternative. Inspect capability_details.configuration.serena_memory_reads "
+        "Read-only serena_memory_tail_read and serena_memory_write_check use Python standard "
+        "library operations on files under the workflow server's actual startup directory "
+        "at .serena/memories. Project scope is fixed once at server startup; registrations "
+        "never store a project path or cwd. No Serena-Agent, extra interpreter, project "
+        "pre-registration, factory, or local helper program is required. "
+        "Inspect capability_details.configuration.serena_memory_reads "
         "and serena_memory_binding before use. "
-        "No read-backend configuration means unavailable with no Serena import or path probe; "
-        "these tools perform only local tail reads/literal matching, never writes or API calls. "
+        "Missing project directories/files return unavailable without falling back to another "
+        "project. These tools perform only local "
+        "tail reads/literal matching, never writes or API calls. "
         "A tail match or line-count difference cannot establish preservation, recent write "
         "execution or append-only history, and cannot replace required full-content checks. "
         "No task-plan factory means "
@@ -1069,11 +1067,15 @@ def server_description(profile: str | None, bound_role: str | None) -> str:
         elif bound_role == "worker":
             scope = "public tools and Worker assignment/progress operations, including aliases"
         else:
-            scope = "public workflow/rules, configured Memory tools, and schema diagnostics"
+            scope = (
+                "public workflow/rules, startup-directory-scoped local Memory tools, "
+                "and schema diagnostics"
+            )
     else:
         scope = {
             "workflow": (
-                "public capabilities/rules, configured Memory tail reads/write checks, "
+                "public capabilities/rules, startup-directory-scoped Memory tail "
+                "reads/write checks, "
                 "stateless effort selection, and Root-bound "
                 "evaluation tools"
             ),
@@ -1119,10 +1121,10 @@ def server_instructions(profile: str | None, bound_role: str | None) -> str:
         return (
             "This MCP server serves Codex CLI, including Codex CLI/app-server use from Desktop "
             "and local Work. "
-            "This public-only server exposes workflow/rule tools, configured Memory tail "
-            "reads/write checks, and schema diagnostics. Memory reads require an explicit "
-            "isolated project/Python binding, injected service or --serena-memory-factory; "
-            "otherwise they are unavailable. "
+            "This public-only server exposes workflow/rule tools, local Memory tail reads/write "
+            "checks, and schema diagnostics. Memory scope is fixed to this server's startup "
+            "directory at .serena/memories; no parent discovery, project registration, or "
+            "Memory project parameter is used. Missing folders/files are unavailable. "
             "Start with workflow_capabilities and rules_get_context. Protected "
             "operations are unavailable; a "
             "listed or public tool does not create a trusted host binding or grant authority."

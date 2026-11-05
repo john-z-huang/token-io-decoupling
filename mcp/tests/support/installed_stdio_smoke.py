@@ -74,6 +74,7 @@ async def _exercise(
     profile: str,
     repo_root: Path,
     output_materializer_factory: str | None = None,
+    memory_content: str | None = None,
 ) -> None:
     if not cli_path.is_absolute():
         raise AssertionError("installed CLI path must be absolute")
@@ -85,6 +86,10 @@ async def _exercise(
         cwd = Path(temporary).resolve()
         if cwd.is_relative_to(repo_root):
             raise AssertionError("stdio subprocess working directory must be outside the checkout")
+        if memory_content is not None:
+            memory_file = cwd / ".serena" / "memories" / "notes.md"
+            memory_file.parent.mkdir(parents=True)
+            memory_file.write_text(memory_content, encoding="utf-8")
         args = ["start-mcp-server", "--profile", profile]
         if output_materializer_factory is not None:
             args.extend(["--output-materializer-factory", output_materializer_factory])
@@ -92,7 +97,11 @@ async def _exercise(
             command=str(cli_path),
             args=args,
             cwd=str(cwd),
-            env={"PATH": os.defpath, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONPATH": ""},
+            env={
+                "PATH": "" if memory_content is not None else os.defpath,
+                "PYTHONDONTWRITEBYTECODE": "1",
+                "PYTHONPATH": "",
+            },
         )
         async with Client(parameters, mode="auto") as client:
             if client.protocol_version != "2026-07-28":
@@ -113,6 +122,28 @@ async def _exercise(
             if any(not tool.description for tool in tools.tools):
                 raise AssertionError(f"installed {profile} profile has an undescribed tool")
             if profile == "workflow":
+                if memory_content is not None:
+                    tail = await client.call_tool(
+                        "serena_memory_tail_read", {"memory_path": "notes", "tail_lines": 1}
+                    )
+                    tail_data = json.loads(_text(tail))
+                    if tail.is_error or tail_data.get("content") != memory_content:
+                        raise AssertionError(
+                            "installed local Memory tail did not match this project"
+                        )
+                    check = await client.call_tool(
+                        "serena_memory_write_check",
+                        {
+                            "memory_path": "mem:notes.md",
+                            "changed_content": memory_content.strip(),
+                            "tail_lines": 1,
+                        },
+                    )
+                    check_data = json.loads(_text(check))
+                    if check.is_error or check_data.get("success") is not True:
+                        raise AssertionError(
+                            "installed local Memory check did not match this project"
+                        )
                 capabilities = await client.call_tool("workflow_capabilities", {})
                 capability_data = json.loads(_text(capabilities))
                 if capabilities.is_error or capability_data.get("mode_fallback") != "Native":
@@ -342,7 +373,8 @@ async def _exercise(
                     or "no state path was inspected" not in status_text
                 ):
                     raise AssertionError("unbound schema status inspected a state path")
-            if list(cwd.iterdir()):
+            expected_entries = {".serena"} if memory_content is not None else set()
+            if {entry.name for entry in cwd.iterdir()} != expected_entries:
                 raise AssertionError(
                     "public stdio calls wrote into their temporary working directory"
                 )
@@ -422,7 +454,19 @@ def main() -> None:
     repo_root = Path(__file__).resolve().parents[3]
     cli_path = args.cli.resolve(strict=True)
     for profile in EXPECTED_TOOLS:
-        asyncio.run(_exercise(cli_path, profile, repo_root, args.output_materializer_factory))
+        if profile == "workflow":
+            for content in ("synthetic project A\n", "synthetic project B\n"):
+                asyncio.run(
+                    _exercise(
+                        cli_path,
+                        profile,
+                        repo_root,
+                        args.output_materializer_factory,
+                        content,
+                    )
+                )
+        else:
+            asyncio.run(_exercise(cli_path, profile, repo_root, args.output_materializer_factory))
     _exercise_codex_dry_run(cli_path, repo_root)
     print("installed unified launcher profile discovery: ok")
 

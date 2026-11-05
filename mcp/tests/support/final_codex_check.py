@@ -60,7 +60,7 @@ def execute(label, command, cwd, env=None):
     print(f"PASS: {label}", flush=True)
 
 
-def update_tool(directory, *, serena_test_python=None):
+def update_tool(directory):
     artifacts = directory / "artifacts"
     execute(
         "build current wheels",
@@ -101,16 +101,18 @@ def update_tool(directory, *, serena_test_python=None):
         directory,
         env,
     )
-    if serena_test_python is not None:
-        from serena_installer_smoke import verify_installation
-
-        try:
-            verify_installation(directory, serena_test_python)
-        except Exception as exc:
-            raise RuntimeError(
-                "Serena installer/configured-tool smoke failed; final SDK phase was not accepted"
-            ) from exc
-    return directory / "bin/token-io-decoupling"
+    installed = directory / "bin/token-io-decoupling"
+    execute(
+        "installed stdio smoke (synthetic project A/B)",
+        [
+            sys.executable,
+            str(WORKSPACE / "tests" / "support" / "installed_stdio_smoke.py"),
+            "--cli",
+            str(installed),
+        ],
+        WORKSPACE,
+    )
+    return installed
 
 
 def run_final(checks, runner, installer, inspector):
@@ -130,13 +132,6 @@ def main():
         if not os.environ.get(name, "").strip():
             print(f"FAIL: required process variable missing: {name}")
             return 1
-    serena_test_python = None
-    if os.environ.get("TOKEN_IO_RUN_SERENA_INSTALLER") == "1":
-        selected_python = os.environ.get("TOKEN_IO_SERENA_TEST_PYTHON", "").strip()
-        if not selected_python or not Path(selected_python).is_absolute():
-            print("FAIL: Serena installer smoke requires absolute TOKEN_IO_SERENA_TEST_PYTHON")
-            return 1
-        serena_test_python = Path(selected_python)
     try:
         with tempfile.TemporaryDirectory(prefix="token-io-final-tool-") as temporary:
 
@@ -150,7 +145,7 @@ def main():
             report = run_final(
                 check_commands(),
                 execute,
-                lambda: update_tool(Path(temporary), serena_test_python=serena_test_python),
+                lambda: update_tool(Path(temporary)),
                 inspect,
             )
             print(json.dumps(report))
