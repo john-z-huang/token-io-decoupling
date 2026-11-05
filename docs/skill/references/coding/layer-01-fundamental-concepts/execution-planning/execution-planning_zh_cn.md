@@ -16,11 +16,11 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-在交互式 Codex CLI 或向 Agent Session 直接暴露 `/plan` 命令的环境中，调用 `/plan` 进入 Plan mode；也可以附加首次规划请求，例如 `/plan Propose a migration plan for this service`。Codex 会据此在实现前起草执行计划。Codex 正在工作时该命令不可用；若当前 Session 未暴露直接 `/plan` 控制，则使用通用有界规划流程。默认使用[任务计划 Memory 生命周期](task-plan-memory-lifecycle_zh_cn.md)持久化精简综合内容并核验存储条目；`/plan` 是可选起草方式，transcript 不是计划记录。必需 Memory 工具或权限不可用时，报告限制并阻塞依赖持久化，不得回退到文件。父级任务记录仍负责实时任务状态。[OpenAI：Slash commands](https://learn.chatgpt.com/docs/developer-commands)。
+在交互式 Codex CLI 或向 Agent Session 直接暴露 `/plan` 命令的环境中，调用 `/plan` 进入 Plan mode；也可以附加首次规划请求，例如 `/plan Propose a migration plan for this service`。Codex 会据此在实现前起草执行计划。Codex 正在工作时该命令不可用；若当前 Session 未暴露直接 `/plan` 控制，则使用通用有界规划流程。默认使用[任务计划 Memory 生命周期](task-plan-memory-lifecycle_zh_cn.md)持久化精简综合内容，并完成其要求的核验；`/plan` 是可选起草方式，transcript 不是计划记录。必需 Memory 工具或权限不可用时，报告限制并阻塞依赖持久化，不得回退到文件。父级任务记录仍负责实时任务状态。[OpenAI：Slash commands](https://learn.chatgpt.com/docs/developer-commands)。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-已运行的 Claude Code Session 只有在同一 Session 直接暴露且授权 Plan-mode 控制时，才使用该模式草拟只读阶段计划；仅在启动时生效的参数及 Session 身份边界由[运行环境与模型厂商支持](../session-runtime/runtime-provider-support_zh_cn.md)负责。否则使用通用有界规划流程。默认使用 [任务计划 Memory 生命周期](task-plan-memory-lifecycle_zh_cn.md) 持久化精简综合阶段/证据提纲；Claude Plan mode 是可选起草方式；并遵守 Serena 工具实际暴露情况及有效权限。transcript 不能代替计划记录，也不得用于绕过权限；能力不可用时报告并阻塞依赖持久化，不得回退到文件。父级任务记录仍负责实时任务状态。编辑文件前仍须确认 Interaction Slice 已放行且工具权限实际生效。`/tasks` 报告运行中／后台 Agent 工作，不是持久计划记录，不能代替阶段检查点。[Anthropic：工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：后台 Agent](https://code.claude.com/docs/en/sub-agents)。
+已运行的 Claude Code Session 只有在同一 Session 直接暴露且授权 Plan-mode 控制时，才使用该模式草拟只读阶段计划；仅在启动时生效的参数及 Session 身份边界由[运行环境与模型厂商支持](../session-runtime/runtime-provider-support_zh_cn.md)负责。否则使用通用有界规划流程。默认使用 [任务计划 Memory 生命周期](task-plan-memory-lifecycle_zh_cn.md) 持久化精简综合阶段/证据提纲，并完成其要求的核验；Claude Plan mode 是可选起草方式；并遵守 Serena 工具实际暴露情况及有效权限。transcript 不能代替计划记录，也不得用于绕过权限；能力不可用时报告并阻塞依赖持久化，不得回退到文件。父级任务记录仍负责实时任务状态。编辑文件前仍须确认 Interaction Slice 已放行且工具权限实际生效。`/tasks` 报告运行中／后台 Agent 工作，不是持久计划记录，不能代替阶段检查点。[Anthropic：工作流](https://code.claude.com/docs/en/common-workflows)、[Anthropic：后台 Agent](https://code.claude.com/docs/en/sub-agents)。
 
 ## 相关概念
 

@@ -11,7 +11,7 @@
 5. 运行可以指导修复的聚焦临时检查，但不要把它们当作最终验收。
 6. 返回已修改路径、相关输出、剩余问题和尚未发布的边界。
 
-实施前应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)：要求当前计划/读回或有记录的限制例外；新事实/进度先同步，再汇报或执行依赖工作。需求变化须先记录、分析并反映到修订计划中，然后才实施受影响部分；仅父级可释放该工作。
+实施前应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)：要求当前计划证据和持久化确认，以及该 owner 要求的内容核验，或其有记录的限制例外。按 owner 规定的边界记录更新；影响授权、范围、验收、方向或依赖实施的事实，须在该工作前记录并分析。仅父级可释放受影响工作。
 
 ## 通过条件
 

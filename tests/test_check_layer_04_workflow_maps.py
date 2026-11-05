@@ -116,11 +116,32 @@ class WorkflowMapMigrationTests(unittest.TestCase):
                     "prior Continue covers Slice; boundary and epochs current --> SE05")
         self.assert_rejected()
 
-    def test_fixed_module_contract_rejects_deleted_memory_readback_order_edge(self):
-        self.mutate("docs/skill/references/coding/layer-04-workflows/modules/documentation.md",
-                    "DOC03 -- write succeeded and readback confirmed --> DOC04",
-                    "DOC03 -- write succeeded and readback confirmed --> DOC05")
-        self.assert_rejected()
+    def test_memory_verification_paths_cannot_skip_impact_or_continue_on_failure(self):
+        for suffix, required, passed, failed in (
+            ("", "owner requires stored-content verification",
+             "matching verified evidence or content comparison passes",
+             "required verification fails, is unavailable, or outcome is uncertain"),
+            ("_zh_cn", "owner 要求存储内容核验",
+             "匹配的核验凭据或内容比较通过", "必需核验失败、不可用或结果不明"),
+        ):
+            rel = f"docs/skill/references/coding/layer-04-workflows/modules/documentation{suffix}.md"
+            path = self.root / rel
+            original = path.read_text(encoding="utf-8")
+            mutations = (
+                ("DOC_MEM_VERIFY_NA --> DOC04", "DOC_MEM_VERIFY_NA --> DOC05"),
+                (f"DOC_MEM_VERIFY -- {passed} --> DOC04",
+                 f"DOC_MEM_VERIFY -- {passed} --> DOC05"),
+                (f"DOC_MEM_VERIFY -- {failed} --> DOC_NEEDS_MEM",
+                 f"DOC_MEM_VERIFY -- {failed} --> DOC04"),
+                (f"D_MEMORY_VERIFY -- {required} --> DOC_MEM_VERIFY",
+                 f"D_MEMORY_VERIFY -- {required} --> DOC_MEM_VERIFY_NA"),
+            )
+            for old, new in mutations:
+                with self.subTest(language=suffix, edge=old):
+                    path.write_text(original, encoding="utf-8")
+                    self.mutate(rel, old, new)
+                    self.assert_rejected()
+            path.write_text(original, encoding="utf-8")
 
     def test_plan_persistence_failure_cannot_continue_execution(self):
         for module, checkpoint, block in (
@@ -128,8 +149,8 @@ class WorkflowMapMigrationTests(unittest.TestCase):
             ("delegated-execution", "DE04", "DE_BLOCK"),
         ):
             for suffix, label in (
-                ("", "required plan access or update failed"),
-                ("_zh_cn", "必需计划访问或更新失败"),
+                ("", "required plan access, persistence, or verification failed"),
+                ("_zh_cn", "必需计划访问、持久化或核验失败"),
             ):
                 with self.subTest(module=module, language=suffix):
                     rel = f"docs/skill/references/coding/layer-04-workflows/modules/{module}{suffix}.md"
@@ -168,13 +189,13 @@ class WorkflowMapMigrationTests(unittest.TestCase):
 
     def test_completion_cannot_replace_history_with_summary(self):
         self.mutate("docs/skill/references/coding/layer-04-workflows/modules/delivery-acceptance.md",
-                    "a final summary cannot replace accumulated records",
-                    "a final summary may replace accumulated records")
+                    "final summary cannot replace accumulated records",
+                    "final summary may replace accumulated records")
         self.assert_rejected()
 
     def test_archive_requires_identical_content_not_just_final_status(self):
         self.mutate("docs/skill/references/coding/layer-04-workflows/modules/delivery-acceptance.md",
-                    "content identical to the verified final active baseline",
+                    "archive is identical to the verified final active baseline",
                     "a completed final status")
         self.assert_rejected()
 
@@ -398,10 +419,24 @@ class WorkflowMapMigrationTests(unittest.TestCase):
         self.assertIn("Do not restart or repeat preparation, preflight, or application while collecting the result", delegated)
         self.assertNotIn("pending child result returns `needs_prerequisite` and resumes at DE07", delegated)
 
-    def test_memory_is_read_back_before_impact_and_archive_follows_all_criteria(self):
-        docs = (ROUTES / "modules/documentation.md").read_text(encoding="utf-8")
-        self.assertLess(docs.index("DOC03 -- write succeeded and readback confirmed --> DOC04"),
-                        docs.index("DOC04 -- only documentation dimension changed"))
+    def test_memory_confirmation_and_conditional_verification_precede_impact(self):
+        for lang, suffix in (("en", ""), ("zh", "_zh_cn")):
+            with self.subTest(language=lang):
+                path = ROUTES / f"modules/documentation{suffix}.md"
+                errors = []
+                _, edges, _, _ = validator.parse_diagram(
+                    path.read_text(encoding="utf-8"), path, lang, errors)
+                self.assertEqual([], errors)
+                self.assertNotIn(("DOC03", "DOC04"), edges)
+                for edge in (
+                    ("DOC03", "D_MEMORY_VERIFY"),
+                    ("D_MEMORY_VERIFY", "DOC_MEM_VERIFY_NA"),
+                    ("DOC_MEM_VERIFY_NA", "DOC04"),
+                    ("D_MEMORY_VERIFY", "DOC_MEM_VERIFY"),
+                    ("DOC_MEM_VERIFY", "DOC04"),
+                    ("DOC_MEM_VERIFY", "DOC_NEEDS_MEM"),
+                ):
+                    self.assertIn(edge, edges)
         da = (ROUTES / "modules/delivery-acceptance.md").read_text(encoding="utf-8")
         self.assertIn("DA03 -- all criteria mapped; every applicable item passes on current epochs --> D_PLAN", da)
         self.assertIn("DA04 -- preservation, update, archive or readback failed --> DA_BLOCK", da)

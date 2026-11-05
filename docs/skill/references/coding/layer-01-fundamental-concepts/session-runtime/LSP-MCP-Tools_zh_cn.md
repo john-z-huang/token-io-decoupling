@@ -23,7 +23,9 @@ Serena、相关语言服务器或所需 LSP 操作不可用，或无法提供所
 
 ### 读取和写入可复用项目 Memory
 
-需要可复用的 Agent 项目知识时，先调用 `list_memories`，根据返回的名称识别相关笔记；再调用 `read_memory` 读取相关内容，然后再依赖其中的信息。Serena 提供有效的 memory-maintenance 名称时，遵循对应指引。使用 `write_memory` 保存稳定且不显而易见、能帮助后续任务的项目知识，以及用户明确要求跨会话保留的笔记。Memory 应简洁、基于事实，并在适当时链接到权威来源路径。
+需要可复用的 Agent 项目知识时，优先使用已提供或当前上下文中已有的名称；只有需要发现名称时才调用 `list_memories`。仅在需要相关 Memory 内容且当前上下文中没有有效内容时调用 `read_memory`。所需信息缺失、过期或失效、已知发生外部更新、出现写者交接或并发变化迹象、需要解决冲突或结果不明，或明确内容检查要求时，才刷新内容。仅有外部变化的理论可能性，不构成重复读取理由。Serena 提供有效的 memory-maintenance 名称时，遵循对应指引。使用 `write_memory` 保存稳定且不显而易见、能帮助后续任务的项目知识，以及用户明确要求跨会话保留的笔记。Memory 应简洁、基于事实，并在适当时链接到权威来源路径。任务计划、Worker memo、capsule、index 和 handoff 遵守各自生命周期 owner。
+
+普通成功的 `write_memory` 或 `edit_memory` 后，不得仅为确认操作执行就立即读取条目全文。用户明确要求、实际内容验收需要，或错误、结果不明、冲突、基线失效、疑似并发变化触发时，才检查存储内容；没有新触发条件时不重复同一检查。发现名称时只搜索相关 topic。遵守 ignored、只读及其他访问规则；不得用普通文件访问绕过 Memory 可见性或授权。一般长期项目知识与任务计划、Worker memo、capsule、index、handoff 分别归类；没有 owner 定义的需要时，不要把同一发现复制到多份记录。
 
 Serena 项目数据目录默认为 `.serena`；项目 Memory 位于 `.serena/memories/` 下。Memory 名称 `architecture/services` 会映射到 `.serena/memories/architecture/services.md`：斜杠分段会创建主题子目录，Serena 会自动添加 `.md` 扩展名。项目配置更改数据目录时，遵循配置值。只有用户明确要求跨项目 Memory 时才使用 `global/` 名称前缀。若要将现有 Skill 的文档名称和子目录意图保留为 Memory，就用对应文件名去掉 `.md` 后作为名称，并以斜杠表示子目录层级。
 
@@ -70,11 +72,11 @@ Memory 保存可复用的 Agent 上下文，不能替代权威仓库文档。不
 
 ### 在 Codex 中使用 Memory
 
-项目 Memory 使用实际暴露的 Serena Memory 工具；Codex 本地 memory 和 chat 压缩不能代替 `list_memories`、`read_memory` 或用户明确授权的 `write_memory`。onboarding 未完成时，调用 `mcp__serena__onboarding` 前先询问用户。Memory 的作用域由 Serena 项目配置决定，不会自动在 Codex Session、子 Agent 或其他运行环境之间共享。
+项目 Memory 使用实际暴露的 Serena Memory 工具；Codex 本地 memory 和 chat 压缩不能代替获授权的 Serena 记录。当前 Codex schema 观测中，`read_memory` 仅接收 `memory_name` 并返回具名 Memory 全文；不得虚构范围或分页参数。`max_chars` 限制写入内容，不限制读取输出。普通成功的 `write_memory` 或 `edit_memory` 结果是简短执行回执，不证明语义正确、存储内容相同或并发已受控。`write_memory` 会替换具名条目的全部内容。获准进行有界修改时，优先使用 `edit_memory` 的 literal 匹配，并防止意外多处匹配；基线未知或不完整时不得替换整条记录。若触发必需的存储内容检查，使用实际可用的读取操作并比较所需的完整内容。onboarding 未完成时，调用 `mcp__serena__onboarding` 前先询问用户。Memory 的作用域由 Serena 项目配置决定，不会自动在 Codex Session、子 Agent 或其他运行环境之间共享。
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-Claude Code 支持 MCP server；其 MCP Tool Search 默认延迟加载工具定义，并在需要时发现工具。需要 Serena 时，先在当前 Session 中发现并核验实际 Serena server 和工具名；部分配置会改为预先加载工具定义。之后只使用当前 Session 实际暴露且获准的 Serena 工具，并遵循上述项目根目录、查询结果范围、Memory 和 onboarding 规则。安装对应语言插件后，Claude Code Code Intelligence 也能提供独立的语言服务器导航和诊断；该功能与 Serena MCP 不同，也不代表当前 Session 已暴露 Serena 工具或 Memory。Claude Desktop Agent 仅能在其 Session 实际暴露相关 MCP 工具时使用 Serena。两个运行环境都不应假设 Serena Memory 会与其他 Session 或产品共享。
+Claude Code 支持 MCP server；其 MCP Tool Search 可按需发现工具定义，部分配置也会预先加载。需要 Serena 时，先在当前 Session 中发现并核验实际 Serena server、工具和 schema。之后只使用当前 Session 实际暴露且获准的 Serena 工具，并遵循上述项目根目录、查询范围、Memory 和 onboarding 规则。仅在所需信息缺失或过期时读取；成功写入结果只确认操作执行，不代表内容、语义或并发已核验。不得假设与 Codex 使用相同工具前缀、参数、读取粒度或连接。安装对应语言插件后，Claude Code Code Intelligence 也能提供独立的语言服务器导航和诊断；该功能与 Serena MCP 不同，也不代表当前 Session 已暴露 Serena 工具或 Memory。Claude Desktop Agent 仅能在其 Session 实际暴露相关 MCP 工具时使用 Serena。两个运行环境都不应假设 Serena Memory 会与其他 Session 或产品共享。
 
 
 ## 相关概念

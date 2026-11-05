@@ -13,7 +13,7 @@
 7. 已放行 Worker 需要持久化 memo 或交换记录时，必须确认具名持久 Memory 能力可用；memo 与跨 Worker 交换仍是独立触发条件。逻辑归属遵循所链接的 Layer-01 owner。能力不可用时报告并阻塞依赖工作；不得回退为文件存储。
 8. 已放行任务要求复用先前 Agent 项目知识时，使用[项目 Memory 与代码结构能力](../../layer-01-fundamental-concepts/session-runtime/LSP-MCP-Tools_zh_cn.md)访问获准 Memory，并对照权威项目文件核验来源指针和新鲜度。能力不可用时报告限制并返回获准的权威项目文件；仅当必需事实无法从其他获准方式确认时才暂停。Memory 不能替代获准路径中的权威项目文件。
 
-9. 应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)：复用前读取匹配共享计划，对照当前权威来源核验，新实质事实先记录再汇报或执行依赖动作。必需访问/更新失败阻塞依赖工作；已记录的持久化限制按 owner 的例外处理。
+9. 应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md)：计划内容在当前上下文中有效时直接复用；否则按需读取，并对照当前权威来源核验。在 owner 规定的边界记录更新；影响授权、范围、验收、方向或依赖动作的事实仍须在该动作前记录。必需访问、持久化或 owner 要求的核验失败时阻塞依赖工作；已记录的持久化限制按 owner 的例外处理。
 
 ## 通过条件
 
