@@ -311,7 +311,7 @@ class WorkflowMapMigrationTests(unittest.TestCase):
         path = self.root / "docs/workflow-module-migration.json"
         data = json.loads(path.read_text(encoding="utf-8"))
         entry = data["routes"]["single-agent"]["steps"][0]["targets"][0]
-        entry["owner_refs"] = ["enhanced-path-selection"]
+        entry["owner_refs"] = ["workflow-navigation-selection"]
         path.write_text(json.dumps(data), encoding="utf-8")
         self.assert_rejected()
 

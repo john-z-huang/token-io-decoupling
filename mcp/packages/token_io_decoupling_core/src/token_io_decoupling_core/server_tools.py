@@ -25,32 +25,11 @@ WORKFLOW_TOOLS = frozenset(
     }
 )
 
-ROOT_TOOLS = frozenset(
-    {
-        "workflow_open",
-        "delegation_reserve",
-        "delegation_unreserve",
-        "delegation_bind",
-        "slice_check",
-        "slice_release",
-        "workflow_transition",
-        "parent_get_worker_summary",
-        "workflow_reconcile",
-    }
-)
-
 WORKER_TOOLS = frozenset(
     {
-        "worker_get_assignment",
         "materialize_decoupled_output",
-        "worker_record_progress",
-        "worker_get_evidence",
-        "worker_report_blocker",
-        "worker_get_recovery_context",
     }
 )
-
-SHARED_TOOLS = frozenset({"database_schema_status", "state_get", "record_evidence"})
 
 DEV_WORKFLOW_TOOLS = frozenset(
     {
@@ -90,7 +69,7 @@ DEV_WORKFLOW_TOOLS = frozenset(
     }
 )
 
-TOOLS_SERVER_TOOLS = ROOT_TOOLS | WORKER_TOOLS | SHARED_TOOLS | DEV_WORKFLOW_TOOLS
+TOOLS_SERVER_TOOLS = WORKER_TOOLS | DEV_WORKFLOW_TOOLS
 
-if len(WORKFLOW_TOOLS) != 17 or len(TOOLS_SERVER_TOOLS) != 51:
+if len(WORKFLOW_TOOLS) != 17 or len(TOOLS_SERVER_TOOLS) != 34:
     raise RuntimeError("fixed MCP server tool inventories do not match their contract")

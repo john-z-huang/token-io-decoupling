@@ -11,14 +11,7 @@ from typing import Annotated, Any, Literal, TypeAlias, cast
 from pydantic import ConfigDict, Field, StrictBool, StrictStr, model_validator
 from token_io_decoupling_core.models import RuleContext, StrictModel
 from token_io_decoupling_core.rules import RuleLoader
-from token_io_decoupling_core.state_models import (
-    CheckpointEvaluation,
-    CheckpointNode,
-    EpochDimension,
-    EpochSnapshot,
-    WorkflowState,
-)
-from token_io_decoupling_state.service import BindingError, StateService
+from token_io_decoupling_core.workflow_models import CheckpointNode, EpochDimension
 
 from token_io_decoupling_workflow.api_recovery import (
     FailureClass,
@@ -119,8 +112,6 @@ class DecisionAdvice(StrictModel):
     reason: Literal[
         "disabled",
         "advice_available",
-        "core_blocked",
-        "state_context_unavailable",
         "rule_context_unavailable",
         "missing_credentials",
         "provider_error",
@@ -128,9 +119,7 @@ class DecisionAdvice(StrictModel):
         "refusal",
         "invalid_response",
         "rule_context_too_large",
-        "binding_unavailable",
         "stale_context",
-        "idempotent_replay",
     ]
     failure_class: FailureClass | None = None
     recovery: RecoveryGuidance | None = Field(
@@ -145,15 +134,8 @@ class DecisionAdvice(StrictModel):
     suggested_choice: str | None = None
     input_hash: str | None = None
     rule_hash: str | None = None
-    basis_revision: int | None = None
-    epochs: EpochSnapshot | None = None
     model: Literal["gpt-6-luna"] | None = None
     total_tokens: int | None = None
-
-
-class EvaluationWithAdvice(StrictModel):
-    evaluation: CheckpointEvaluation
-    advice: DecisionAdvice
 
 
 ClientFactory = Callable[[str, str], object]
@@ -164,13 +146,11 @@ class DecisionsAdvisor:
 
     def __init__(
         self,
-        state_service: StateService,
         rule_loader: RuleLoader,
         config: DecisionsRuntimeConfig,
         *,
         client_factory: ClientFactory | None = None,
     ) -> None:
-        self._state_service = state_service
         self._rule_loader = rule_loader
         self._config = config
         self._client_factory = client_factory
@@ -179,62 +159,48 @@ class DecisionsAdvisor:
         self,
         advisory_input: DecisionAdvisoryInput,
         *,
-        core_evaluation: CheckpointEvaluation | None = None,
-        replayed: bool = False,
+        current_facts: dict[str, str],
+        checkpoint_source_input_hash: str,
+        language: Literal["en", "zh_cn"] = "en",
+        expected_rule_hash: str,
     ) -> DecisionAdvice:
         node_id = advisory_input.node_id
-        if replayed:
-            return DecisionAdvice(status="fallback", reason="idempotent_replay", node_id=node_id)
-        if core_evaluation is not None and core_evaluation.outcome == "blocked":
-            return DecisionAdvice(status="fallback", reason="core_blocked", node_id=node_id)
         if not self._config.enabled:
             return DecisionAdvice(status="fallback", reason="disabled", node_id=node_id)
         if node_id not in SUPPORTED_ADVISORY_NODES:
             return DecisionAdvice(status="fallback", reason="invalid_response", node_id=node_id)
 
         try:
-            state = (
-                self._state_service.workflow_get_state_for_evaluation(core_evaluation)
-                if core_evaluation is not None
-                else self._state_service.workflow_get_state()
-            )
-            if state is None:
-                return DecisionAdvice(status="stale", reason="stale_context", node_id=node_id)
-        except BindingError:
-            return DecisionAdvice(status="fallback", reason="binding_unavailable", node_id=node_id)
-        except Exception:
-            return DecisionAdvice(
-                status="fallback", reason="state_context_unavailable", node_id=node_id
-            )
-        try:
-            rules = self._rule_loader.load_context(node_id.value)
+            rules = self._rule_loader.load_context(node_id.value, language=language)
         except Exception:
             return DecisionAdvice(
                 status="fallback", reason="rule_context_unavailable", node_id=node_id
             )
 
         allowed = list(rules.legal_branches)
+        if rules.context_hash != expected_rule_hash:
+            return DecisionAdvice(status="stale", reason="stale_context", node_id=node_id)
         if not allowed:
             return DecisionAdvice(status="fallback", reason="invalid_response", node_id=node_id)
         prompt = reviewed_prompt(node_id, allowed)
         if prompt is None:
             return DecisionAdvice(status="fallback", reason="invalid_response", node_id=node_id)
-        request_input = _request_input(advisory_input, rules, prompt)
+        request_input = _request_input(
+            advisory_input, rules, prompt, current_facts, checkpoint_source_input_hash, language
+        )
         if len(request_input) > MAX_REQUEST_CHARS:
-            return _fallback("rule_context_too_large", node_id, "", rules, state)
-        if core_evaluation is not None and (
-            core_evaluation.node_id is not node_id
-            or core_evaluation.stale
-            or core_evaluation.result_revision != state.revision
-            or core_evaluation.epochs != state.epochs
-            or core_evaluation.rule_hash != rules.context_hash
-        ):
-            return _fallback("stale_context", node_id, "", rules, state)
-        basis_hash = _basis_hash(advisory_input, state, rules.context_hash)
+            return _fallback("rule_context_too_large", node_id, "", rules)
+        basis_hash = _basis_hash(
+            advisory_input,
+            current_facts,
+            checkpoint_source_input_hash,
+            language,
+            rules.context_hash,
+        )
         api_key = os.environ.get("OPENAI_API_KEY")
         base_url = os.environ.get("OPENAI_BASE_URL")
         if not api_key or not api_key.strip() or not base_url or not base_url.strip():
-            return _fallback("missing_credentials", node_id, basis_hash, rules, state)
+            return _fallback("missing_credentials", node_id, basis_hash, rules)
 
         client: object | None = None
         try:
@@ -264,7 +230,6 @@ class DecisionsAdvisor:
                 node_id,
                 basis_hash,
                 rules,
-                state,
                 failure_class=failure.failure_class,
                 http_status=failure.http_status,
                 provider_error_code=failure.provider_error_code,
@@ -283,27 +248,22 @@ class DecisionsAdvisor:
             reason = (
                 "refusal" if _is_refusal(response, prompt.question_name) else "invalid_response"
             )
-            return _fallback(reason, node_id, basis_hash, rules, state)
+            return _fallback(reason, node_id, basis_hash, rules)
         response_model = getattr(response, "model", None)
         if response_model is not None and response_model != DECISIONS_MODEL:
-            return _fallback("invalid_response", node_id, basis_hash, rules, state)
+            return _fallback("invalid_response", node_id, basis_hash, rules)
 
-        try:
-            current_state = (
-                self._state_service.workflow_get_state_for_evaluation(core_evaluation)
-                if core_evaluation is not None
-                else self._state_service.workflow_get_state()
-            )
-            if current_state is None:
-                return DecisionAdvice(status="stale", reason="stale_context", node_id=node_id)
-            current_rules = self._rule_loader.load_context(node_id.value)
-        except BindingError:
-            return _fallback("binding_unavailable", node_id, basis_hash, rules, state)
-        except Exception:
-            return _fallback("stale_context", node_id, basis_hash, rules, state)
+        current_rules = self._rule_loader.load_context(node_id.value, language=language)
         if (
             current_rules.context_hash != rules.context_hash
-            or _basis_hash(advisory_input, current_state, current_rules.context_hash) != basis_hash
+            or _basis_hash(
+                advisory_input,
+                current_facts,
+                checkpoint_source_input_hash,
+                language,
+                current_rules.context_hash,
+            )
+            != basis_hash
         ):
             return DecisionAdvice(
                 status="stale",
@@ -311,8 +271,6 @@ class DecisionsAdvisor:
                 node_id=node_id,
                 input_hash=basis_hash,
                 rule_hash=rules.context_hash,
-                basis_revision=state.revision,
-                epochs=state.epochs,
             )
         usage = getattr(response, "usage", None)
         total_tokens = getattr(usage, "total_tokens", None)
@@ -325,8 +283,6 @@ class DecisionsAdvisor:
             suggested_choice=answer,
             input_hash=basis_hash,
             rule_hash=rules.context_hash,
-            basis_revision=state.revision,
-            epochs=state.epochs,
             model=DECISIONS_MODEL,
             total_tokens=total_tokens,
         )
@@ -339,30 +295,39 @@ class DecisionsAdvisor:
         return make_openai_client(api_key, base_url, timeout=DECISIONS_TIMEOUT_SECONDS)
 
 
-def _basis_hash(advisory_input: DecisionAdvisoryInput, state: WorkflowState, rule_hash: str) -> str:
+def _basis_hash(
+    advisory_input: DecisionAdvisoryInput,
+    current_facts: dict[str, str],
+    checkpoint_source_input_hash: str,
+    language: str,
+    rule_hash: str,
+) -> str:
     basis = {
         "input": advisory_input.model_dump(mode="json"),
-        "project_id": state.project_id,
-        "root_session_id": state.root_session_id,
-        "run_id": state.run_id,
+        "current_facts": current_facts,
+        "checkpoint_source_input_hash": checkpoint_source_input_hash,
+        "language": language,
         "rule_hash": rule_hash,
-        "revision": state.revision,
-        "mode_count": state.mode_count.model_dump(mode="json"),
-        "mode_source": state.mode_source,
-        "lifecycle": state.lifecycle,
-        "epochs": state.epochs.model_dump(mode="json"),
     }
     encoded = json.dumps(basis, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
 def _request_input(
-    advisory_input: DecisionAdvisoryInput, rules: RuleContext, prompt: DecisionPrompt
+    advisory_input: DecisionAdvisoryInput,
+    rules: RuleContext,
+    prompt: DecisionPrompt,
+    current_facts: dict[str, str],
+    checkpoint_source_input_hash: str,
+    language: str,
 ) -> str:
     facts = advisory_input.model_dump(mode="json", exclude={"node_id"})
     payload = {
         "node_id": advisory_input.node_id.value,
         "facts": facts,
+        "caller_supplied_current_facts": current_facts,
+        "checkpoint_source_input_hash": checkpoint_source_input_hash,
+        "language": language,
         "rule_facts": rules.required_facts,
         "rule_evidence": rules.required_evidence,
         "allowed_choices": rules.legal_branches,
@@ -411,15 +376,12 @@ def _fallback(
         "refusal",
         "invalid_response",
         "rule_context_too_large",
-        "state_context_unavailable",
         "rule_context_unavailable",
-        "binding_unavailable",
         "stale_context",
     ],
     node_id: CheckpointNode,
     input_hash: str,
     rules: RuleContext,
-    state: WorkflowState,
     *,
     failure_class: FailureClass | None = None,
     http_status: int | None = None,
@@ -427,7 +389,7 @@ def _fallback(
     recovery: RecoveryGuidance | None = None,
 ) -> DecisionAdvice:
     advice_recovery = recovery or recovery_for_reason(reason)
-    if reason not in {"disabled", "core_blocked", "idempotent_replay"}:
+    if reason != "disabled":
         advice_recovery = RecoveryGuidance(
             retry_eligible=False,
             action="continue_without_advice_or_review",
@@ -439,8 +401,6 @@ def _fallback(
         node_id=node_id,
         input_hash=input_hash,
         rule_hash=rules.context_hash,
-        basis_revision=state.revision,
-        epochs=state.epochs,
         failure_class=failure_class,
         recovery=advice_recovery,
         http_status=http_status,

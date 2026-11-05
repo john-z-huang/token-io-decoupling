@@ -37,6 +37,6 @@
 ## 相关概念
 
 - [Decisions 建议](decisions-advisory_zh_cn.md) — 负责加载当前事实和 owner 后的可选语义建议。
-- [增强规则上下文](../enhanced-native-state/enhanced-rule-context_zh_cn.md) — 负责当前 Skill 规则的来源和哈希边界。
+- [工作流规则上下文](../workflow-navigation/rule-context_zh_cn.md) — 负责当前 Skill 规则的来源和哈希边界。
 - [子代理职责选择](../delegation/child-role-selection_zh_cn.md) — 负责可能使用已审阅决策上下文的职责建议。
 - [任务执行主体分配](task-assignment_zh_cn.md) — 负责可能使用已审阅决策上下文的执行主体和现有子代理建议。

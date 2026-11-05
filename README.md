@@ -46,10 +46,10 @@ The [installer](scripts/install-codex-mcp.sh) installs or updates this checkout'
 - [Skill entry](docs/skill/SKILL.md): primary routing entry point.
 - [Coding references](docs/skill/references): independent Coding and shared protocol modules used by the workflows.
 - [Multilingual rules](MULTI_LINGUAL.md): bilingual documentation rules.
-- [Enhanced architecture](docs/skill/ENHANCED_ARCHITECTURE.md): optional MCP state, rule context, semantic advice, and verified host boundaries; Native remains the default.
+- [Workflow architecture](docs/skill/WORKFLOW_ARCHITECTURE.md): stateless rule navigation and structural checks, plus the separately guarded optional output-materialization capability.
 - [MCP development guide](mcp/DEVELOPMENT.md): local Python checks and package builds.
 
-The optional persisted Decisions integration is disabled by default. Every real request, including test requests, must read both local `OPENAI_API_KEY` and `OPENAI_BASE_URL`; missing either prevents a request. Follow the development guide for explicit enablement and testing. Public interfaces also include local Memory reads, Native task plans, compliance preflight, routing, and stateless context/selection tools. They do not require Enhanced binding, but retain their individual configuration and authorization requirements; discovery alone establishes neither. State operations require valid local request scope, recorded roles and operation authorization.
+The stateless rule and workflow path requires no database, API credential, or network request. Optional semantic advice is disabled by default; every real API request must read both local `OPENAI_API_KEY` and `OPENAI_BASE_URL`, with missing values preventing the request. Follow the development guide for explicit enablement and testing. The public interfaces include local Memory reads, task-plan lifecycle, compliance preflight, routing, and stateless context/selection tools. Tool discovery establishes neither capability nor authorization. Optional output materialization remains unavailable without its trusted startup-injected authorization provider and separate grant.
 
 OpenAI API tools share an HTTPX2 client with `trust_env=True`. They read `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY` and `NO_PROXY`, including lowercase forms, from the MCP process environment. `NO_PROXY` can bypass the proxy; without proxy settings, the client uses its normal direct route. An invalid or unreachable proxy returns the existing safe API error result without retrying a direct connection.
 

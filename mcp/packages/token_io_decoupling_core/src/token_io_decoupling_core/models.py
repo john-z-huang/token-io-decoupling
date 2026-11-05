@@ -1,4 +1,4 @@
-"""Strict data contracts shared by rule loading and the storage foundation."""
+"""Strict data contracts for rules, checkpoint evidence, and local authorization."""
 
 from __future__ import annotations
 
@@ -36,26 +36,6 @@ class ModeCount(StrictModel):
         if self.mode is CodingMode.MULTI_AGENT and self.child_count < 1:
             raise ValueError("Multi-Agent Coding requires a positive child_count")
         return self
-
-
-class SchemaVersion(StrictModel):
-    value: Annotated[StrictInt, Field(ge=1)]
-
-
-class Revision(StrictModel):
-    value: Annotated[StrictInt, Field(ge=0)]
-
-
-class ImplementationContentEpoch(StrictModel):
-    value: Annotated[StrictInt, Field(ge=0)]
-
-
-class DocumentationEpoch(StrictModel):
-    value: Annotated[StrictInt, Field(ge=0)]
-
-
-class GitMetadataEpoch(StrictModel):
-    value: Annotated[StrictInt, Field(ge=0)]
 
 
 Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
@@ -240,18 +220,3 @@ class RuleContextBundle(StrictModel):
     text_characters: int
     required_text_characters: int
     context_hash: Sha256
-
-
-class DatabaseKind(StrEnum):
-    WORKFLOW = "workflow"
-    WORKER = "worker"
-
-
-class SchemaStatus(StrictModel):
-    exists: bool
-    database_kind: DatabaseKind | None
-    current_version: Annotated[StrictInt, Field(ge=0)]
-    target_version: Annotated[StrictInt, Field(ge=1)]
-    pending_versions: list[Annotated[StrictInt, Field(ge=1)]]
-    compatible: bool
-    reason: NonEmptyString | None = None

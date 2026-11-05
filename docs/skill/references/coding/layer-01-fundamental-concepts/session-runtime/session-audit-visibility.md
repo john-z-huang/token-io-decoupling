@@ -2,7 +2,7 @@
 
 [English](session-audit-visibility.md) | [简体中文](session-audit-visibility_zh_cn.md)
 
-This module defines session audit-visibility presets, reasoning-summary cadence, and Worker-log visibility. It owns configuration values and display semantics; the applicable workflow decision node owns prompt, timing, resume, migration, and record-resolution procedures.
+This module defines session audit-visibility preferences, reasoning-summary cadence, and Worker-log visibility. It owns preference values and display semantics; the applicable workflow checkpoint applies explicit values or defaults to the parent-controlled record.
 
 ## General rules
 
@@ -15,7 +15,6 @@ audit_mode: balanced
 root_reasoning_cadence: milestone_only
 worker_reasoning_cadence: full
 source: {audit_mode: default, root_reasoning_cadence: default, worker_reasoning_cadence: default}
-revision: session-audit/v2
 ```
 
 | Field | Legal values | Default | Meaning |
@@ -24,9 +23,9 @@ revision: session-audit/v2
 | `root_reasoning_cadence` | `full`, `milestone_only`, `off` | `milestone_only` | Selects optional Root summary cadence. |
 | `worker_reasoning_cadence` | `full`, `milestone_only`, `off` | `full` | Selects optional Worker summary cadence independently. |
 | `source.<field>` | `explicit`, `default` per selectable field | `default` | `explicit` means the user selected that field; `default` means the policy supplied it. |
-| `revision` | `session-audit/v2` | `session-audit/v2` | Schema and policy-semantics revision; prose-only edits do not change it. |
+The root parent may accept explicit user preferences at any time. When no value was supplied, apply the defaults immediately; do not make a prompt, timer, or response prerequisite to Coding work.
 
-The task-record shape and configuration-prompt fields are defined by the [delegation state record](../delegation/delegation-state-record.md). The applicable workflow decision node collects and resolves the record using these field semantics.
+The task-record shape is defined by the [delegation state record](../delegation/delegation-state-record.md). The applicable workflow checkpoint records the effective values and whether each is explicit or default.
 
 ### Visible-copy presets
 

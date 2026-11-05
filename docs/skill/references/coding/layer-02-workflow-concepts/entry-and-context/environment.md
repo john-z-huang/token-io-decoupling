@@ -25,5 +25,5 @@ This checkpoint does not choose an execution mode, bind a model to a role, autho
 - [Coding Session Model](../../layer-01-fundamental-concepts/session-runtime/session-model.md) — locate Session topology ownership.
 - [Coding Context Exchange Workspace Boundary](../../layer-01-fundamental-concepts/context-exchange/context-exchange-workspace-boundary.md) — locate filesystem and worktree capability ownership.
 - [Coding Delegation Mode Confirmation](../../layer-01-fundamental-concepts/delegation/delegation-mode-confirmation.md) — locate mode-gate capability consumers.
-- [Enhanced Workflow Availability](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md) — locate optional path selection and unavailable disposition.
-- [Enhanced Host Binding](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md) — locate current session scope and operation-guard evidence.
+- [Workflow Navigation Availability](../../layer-01-fundamental-concepts/workflow-navigation/navigation-availability.md) — locate optional path selection and unavailable disposition.
+- [Session Role Ownership](../../layer-01-fundamental-concepts/session-runtime/session-role-ownership.md) — locate current session scope and operation-guard evidence.

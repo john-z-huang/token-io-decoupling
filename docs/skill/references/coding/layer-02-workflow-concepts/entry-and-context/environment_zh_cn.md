@@ -25,5 +25,5 @@
 - [Coding Session Model](../../layer-01-fundamental-concepts/session-runtime/session-model_zh_cn.md) — 定位 Session 拓扑归属。
 - [Coding Context Exchange 工作区边界](../../layer-01-fundamental-concepts/context-exchange/context-exchange-workspace-boundary_zh_cn.md) — 定位文件系统和 worktree 能力归属。
 - [Coding Delegation Mode Confirmation](../../layer-01-fundamental-concepts/delegation/delegation-mode-confirmation_zh_cn.md) — 定位模式门禁能力消费者。
-- [增强工作流可用性](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability_zh_cn.md) — 定位可选路线选择和不可用处置。
-- [增强宿主绑定](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding_zh_cn.md) — 定位当前会话范围及操作守卫证据。
+- [工作流导航可用性](../../layer-01-fundamental-concepts/workflow-navigation/navigation-availability_zh_cn.md) — 定位可选路线选择和不可用处置。
+- [Session 角色归属](../../layer-01-fundamental-concepts/session-runtime/session-role-ownership_zh_cn.md) — 定位当前会话范围及操作守卫证据。

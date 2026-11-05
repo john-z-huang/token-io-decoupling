@@ -42,7 +42,7 @@ The route mapping follows the seven modules already defined by the current workf
 | `documentation` | SM06 | MM06 |
 | `delivery_acceptance` | SM07 | MM07 |
 
-The native route reference points to the matching language and mode route. The Multi-Agent execution stage may include conditional reminders about role and authority gates, task authorization and memo conditions, and Slice-before-child lifecycle. Verification, documentation, and delivery stages may return their applicable conditional checks, including repair only after a verification finding, re-verification after a changed epoch, and Git only under existing authority. These reminders do not replace the route owner or authorize an action.
+The route reference points to the matching language and mode route. The Multi-Agent execution stage may include conditional reminders about role and authority gates, task authorization and memo conditions, and Slice-before-child lifecycle. Verification, documentation, and delivery stages may return their applicable conditional checks, including repair only after a verification finding, re-verification after a changed epoch, and Git only under existing authority. These reminders do not replace the route owner or authorize an action.
 
 ## Hashes and rule context
 
@@ -52,7 +52,7 @@ For an explicit stage, the tool loads that stage's bounded rule bundles, checks 
 
 ## Result and review
 
-Every result has `advisory_only: true`, `status`, `reason`, `source_facts_hash`, and `input_hash`. A locked mode also yields a `native_route` reference. A selected stage can include its `module_id` and `conditional_checks`. Results may include `rule_hash`, `index_sha256`, `rule_evidence`, `missing_facts`, and `capability_evidence`; API outcomes may also include `failure_class`, `provider_error_code`, `recovery`, the fixed model ID, and token usage. Evidence is a compact set of references and hashes, not a replacement for reading the current route owners.
+Every result has `advisory_only: true`, `status`, `reason`, `source_facts_hash`, and `input_hash`. A locked mode also yields a `route_reference` reference. A selected stage can include its `module_id` and `conditional_checks`. Results may include `rule_hash`, `index_sha256`, `rule_evidence`, `missing_facts`, and `capability_evidence`; API outcomes may also include `failure_class`, `provider_error_code`, `recovery`, the fixed model ID, and token usage. Evidence is a compact set of references and hashes, not a replacement for reading the current route owners.
 
 | Status | Meaning |
 | --- | --- |
@@ -67,7 +67,7 @@ The exact `reason` values are `explicit_stage_advice`, `stage_selected`, `mode_n
 
 Only `auto` can make a Decisions request. Before the request, the server reads nonblank `OPENAI_API_KEY` and `OPENAI_BASE_URL` from its process environment and passes both explicitly to the client. It uses exactly `gpt-6-luna`, with automatic retries disabled. A refusal, incomplete or invalid choice, wrong returned model, missing configuration, provider failure, missing outbound permission, disabled Decisions configuration, incomplete rules, or changed rule hash cannot produce an available suggestion. No API fallback or model substitution is used.
 
-The tool is stateless: it writes no workflow state and performs no Git, file, agent-creation, or dispatch operation. Tool discovery does not attest identity or grant authority. The native route remains the owner of stage order, checkpoint actions, branch conditions, evidence, and acceptance.
+The tool is stateless: it writes no workflow state and performs no Git, file, agent-creation, or dispatch operation. Tool discovery does not attest identity or grant authority. The linked route remains the owner of stage order, checkpoint actions, branch conditions, evidence, and acceptance.
 
 ## Related concepts
 

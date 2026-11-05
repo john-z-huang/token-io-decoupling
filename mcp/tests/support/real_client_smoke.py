@@ -201,7 +201,7 @@ def exercise_client(executable: Path, client: str) -> dict[str, Any]:
             report = json.loads(result["content"][0]["text"])
             details = report["capability_details"]
             assert report["agent_runtime"] == "codex_cli"
-            assert details["schema_version"] == 2
+            assert details["schema_version"] == 3
             assert details["support"]["agent_runtime"]["reason_code"] == "fixed_codex_cli"
             configuration = details["configuration"]
             for name in ("api_decisions",):
@@ -216,11 +216,10 @@ def exercise_client(executable: Path, client: str) -> dict[str, Any]:
                 "task_plan_backend_not_configured",
             )
             runtime = details["runtime"]
-            assert runtime["binding"]["status"] == "request_required"
-            assert runtime["binding"]["reason_code"] == "local_codex_context_required"
-            assert runtime["server_mode"]["status"] == "local_stdio"
-            assert report["enhanced_binding"] == "not_applicable"
-            assert report["binding_transport"] == "stdio"
+            assert runtime["binding"]["status"] == "unverified"
+            assert runtime["binding"]["reason_code"] == "provider_not_configured"
+            assert runtime["server_mode"]["status"] == "public_only"
+            assert report["binding_transport"] == "unavailable"
             assert all(runtime["binding"][key] for key in ("message", "source", "next_step"))
             denied = app.request(
                 "mcpServer/tool/call",

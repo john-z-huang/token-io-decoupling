@@ -208,6 +208,74 @@ def test_version_failure_reports_only_bounded_classifications(settings, monkeypa
     assert "synthetic-test-key" not in message and "synthetic.invalid" not in message
 
 
+def _standard_capability_report():
+    def detail(status, reason, message="configured diagnostic"):
+        return {
+            "status": status,
+            "reason_code": reason,
+            "message": message,
+            "source": "test fixture",
+            "next_step": "inspect the protected-operation boundary",
+        }
+
+    return {
+        "agent_runtime": "codex_cli",
+        "trusted_binding": "unverified",
+        "capability_details": {
+            "schema_version": 3,
+            "support": {
+                "identity_bound_operations": detail(
+                    "unavailable", "trusted_provider_not_configured"
+                )
+            },
+            "runtime": {
+                "binding": detail("unverified", "provider_not_configured"),
+                "server_mode": detail(
+                    "public_only",
+                    "startup_binding_unverified",
+                    "The standard executable has no caller identity or workflow state store.",
+                ),
+            },
+            "configuration": {
+                "output_materialization": detail(
+                    "unavailable", "output_materializer_not_configured"
+                )
+            },
+        },
+    }
+
+
+def test_standard_capability_diagnostics_report_verified_current_boundary():
+    assert adapter._standard_capability_diagnostics(_standard_capability_report()) == {
+        "capability_schema_version": 3,
+        "trusted_binding": "unverified",
+        "binding_reason": "provider_not_configured",
+        "server_mode": "public_only",
+        "materialization": "unavailable",
+    }
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda report: report["capability_details"].update(schema_version=2),
+        lambda report: report["capability_details"].pop("runtime"),
+        lambda report: report["capability_details"]["runtime"].pop("server_mode"),
+        lambda report: report["capability_details"]["support"]["identity_bound_operations"].update(
+            status="available"
+        ),
+        lambda report: report["capability_details"]["configuration"][
+            "output_materialization"
+        ].update(status="available"),
+    ],
+)
+def test_standard_capability_diagnostics_reject_stale_or_missing_schema(mutate):
+    report = _standard_capability_report()
+    mutate(report)
+    with pytest.raises(adapter.CodexTestError):
+        adapter._standard_capability_diagnostics(report)
+
+
 def test_sdk_factory_gets_explicit_cli_and_isolated_fixed_configuration(settings, monkeypatch):
     captured = {}
 

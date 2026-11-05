@@ -11,11 +11,7 @@ resolution-markers = [
 members = [
     "token-io-decoupling",
     "token-io-decoupling-core",
-    "token-io-decoupling-root-agent-tools",
-    "token-io-decoupling-share-tools",
-    "token-io-decoupling-state",
     "token-io-decoupling-transport",
-    "token-io-decoupling-worker-agent-tools",
     "token-io-decoupling-workflow",
 ]
 
@@ -1034,11 +1030,7 @@ source = { editable = "." }
 dependencies = [
     { name = "dev-workflow-standards-tools" },
     { name = "token-io-decoupling-core" },
-    { name = "token-io-decoupling-root-agent-tools" },
-    { name = "token-io-decoupling-share-tools" },
-    { name = "token-io-decoupling-state" },
     { name = "token-io-decoupling-transport" },
-    { name = "token-io-decoupling-worker-agent-tools" },
     { name = "token-io-decoupling-workflow" },
     { name = "tomlkit" },
 ]
@@ -1058,11 +1050,7 @@ dev = [
 requires-dist = [
     { name = "dev-workflow-standards-tools", git = "https://github.com/john-z-huang/dev-workflow-standards.git?subdirectory=mcp-server&rev=ba5ecc95d9f9da77aca22c17e712d6c8d2a05987" },
     { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
-    { name = "token-io-decoupling-root-agent-tools", editable = "packages/token_io_decoupling_root" },
-    { name = "token-io-decoupling-share-tools", editable = "packages/token_io_decoupling_shared" },
-    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
     { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
-    { name = "token-io-decoupling-worker-agent-tools", editable = "packages/token_io_decoupling_worker" },
     { name = "token-io-decoupling-workflow", editable = "packages/token_io_decoupling_workflow" },
     { name = "tomlkit", specifier = ">=0.15,<1" },
 ]
@@ -1088,55 +1076,6 @@ dependencies = [
 requires-dist = [{ name = "pydantic", specifier = ">=2.12,<3" }]
 
 [[package]]
-name = "token-io-decoupling-root-agent-tools"
-version = "0.1.0"
-source = { editable = "packages/token_io_decoupling_root" }
-dependencies = [
-    { name = "token-io-decoupling-core" },
-    { name = "token-io-decoupling-state" },
-    { name = "token-io-decoupling-transport" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
-    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
-    { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
-]
-
-[[package]]
-name = "token-io-decoupling-share-tools"
-version = "0.1.0"
-source = { editable = "packages/token_io_decoupling_shared" }
-dependencies = [
-    { name = "token-io-decoupling-core" },
-    { name = "token-io-decoupling-state" },
-    { name = "token-io-decoupling-transport" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
-    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
-    { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
-]
-
-[[package]]
-name = "token-io-decoupling-state"
-version = "0.1.0"
-source = { editable = "packages/token_io_decoupling_state" }
-dependencies = [
-    { name = "pydantic" },
-    { name = "token-io-decoupling-core" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "pydantic", specifier = ">=2.12,<3" },
-    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
-]
-
-[[package]]
 name = "token-io-decoupling-transport"
 version = "0.1.0"
 source = { editable = "packages/token_io_decoupling_transport" }
@@ -1144,7 +1083,6 @@ dependencies = [
     { name = "mcp" },
     { name = "pydantic" },
     { name = "token-io-decoupling-core" },
-    { name = "token-io-decoupling-state" },
 ]
 
 [package.metadata]
@@ -1152,24 +1090,6 @@ requires-dist = [
     { name = "mcp", specifier = ">=2.3,<3" },
     { name = "pydantic", specifier = ">=2.12,<3" },
     { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
-    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
-]
-
-[[package]]
-name = "token-io-decoupling-worker-agent-tools"
-version = "0.1.0"
-source = { editable = "packages/token_io_decoupling_worker" }
-dependencies = [
-    { name = "token-io-decoupling-core" },
-    { name = "token-io-decoupling-state" },
-    { name = "token-io-decoupling-transport" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
-    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
-    { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
 ]
 
 [[package]]
@@ -1181,7 +1101,6 @@ dependencies = [
     { name = "openai" },
     { name = "pydantic" },
     { name = "token-io-decoupling-core" },
-    { name = "token-io-decoupling-state" },
     { name = "token-io-decoupling-transport" },
 ]
 
@@ -1191,7 +1110,6 @@ requires-dist = [
     { name = "openai", specifier = ">=3.37,<4" },
     { name = "pydantic", specifier = ">=2.12,<3" },
     { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
-    { name = "token-io-decoupling-state", editable = "packages/token_io_decoupling_state" },
     { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
 ]
 

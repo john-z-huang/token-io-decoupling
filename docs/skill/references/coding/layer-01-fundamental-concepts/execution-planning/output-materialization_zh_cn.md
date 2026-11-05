@@ -20,7 +20,7 @@
 
 ## Codex CLI / ChatGPT Desktop 特别优化指令
 
-当前 MCP 操作为 `materialize_decoupled_output`，使用 `payload.request` 中的 `prepare`、`inspect` 或 `apply` 动作。只有配置了可信启动工厂、当前已验证任务分配、独立操作方授权、固定项目/产物根目录和必要只读合规预检时，能力才可用。缺少该配置时能力不可用，且不得猜测默认根目录。
+当前 MCP 操作为 `materialize_decoupled_output`，使用 `payload.request` 中的 `prepare`、`inspect` 或 `apply` 动作。它需要可信启动注入式授权 provider 提供当前 Worker 绑定和 assignment 上下文、单独的 operator grant、固定项目/产物根目录，以及必要的只读合规预检。服务核对该 provider 上下文与真实逐次调用 Worker 绑定一致，并在各阶段重新核验授权。工具 payload 不能选择或提供授权上下文。当前没有配置标准 provider；缺少可信 provider 或 grant 时能力不可用，不猜测默认根目录。
 
 受支持角色为 `Primary Output`，输出类别为 `code_configuration` 或 `skill_instructions`。普通文档和其他角色/类别不受支持。版本 1 提供有限的 `literal_text`、`json_document` 和 `fact_markdown` 模板。`prepare` 在项目目录外保存候选内容；`inspect` 读取有界页面；`apply` 在写入前重新检查当前授权、任务分配、哈希、基线和整批预检。保留并传回同一个清单哈希。检查逐文件和批次收据，尤其是 `partial`、`conflict` 或 `uncertain`；不得假定存在回滚，也不得对变更后的内容重试。精确请求字段、限制和恢复分类由 MCP 输出物化契约管理。
 
@@ -28,12 +28,12 @@
 
 ## Claude Code CLI / Claude Desktop 特别优化指令
 
-本项目 MCP Server 仅支持本地 Codex CLI。Claude 通用 MCP 能力不代表该 Server 支持直接连接，本 owner 也没有 Claude 专用直接工具优化。应依据当前会话实际暴露并授权的能力遵循通用规范。若受控能力不可用，则使用既有获授权 Native 路线及其验证要求。
+本项目 MCP Server 仅支持本地 Codex CLI。Claude 通用 MCP 能力不代表该 Server 支持直接连接，本 owner 也没有 Claude 专用直接工具优化。应依据当前会话实际暴露并授权的能力遵循通用规范。若此受控能力不可用，则使用任何独立获授权的直接输出路线及其验证要求。
 
 ## 相关概念
 
 - [Candidate Compliance Preflight](candidate-compliance_zh_cn.md) — 拥有只读候选检查。
-- [Enhanced Host Binding](../enhanced-native-state/enhanced-host-binding_zh_cn.md) — 拥有可信身份和逐次调用守卫。
-- [Enhanced Workflow Availability](../enhanced-native-state/enhanced-workflow-availability_zh_cn.md) — 拥有 Enhanced 与 Native 可用性处置。
+- [Session Role Ownership](../session-runtime/session-role-ownership_zh_cn.md) — 负责角色责任；此服务仍需单独的可信绑定上下文和 grant。
+- [Workflow Navigation Availability](../workflow-navigation/navigation-availability_zh_cn.md) — 负责可选导航不可用时直接读取 owner 的回退。
 - [Coding Execution Control](../execution-control/execution-control_zh_cn.md) — 拥有释放和 Control 转换。
 - [Task Assignment](task-assignment_zh_cn.md) — 拥有执行者和输出责任选择。

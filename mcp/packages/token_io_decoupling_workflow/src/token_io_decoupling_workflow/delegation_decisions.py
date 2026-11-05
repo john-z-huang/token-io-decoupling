@@ -12,7 +12,7 @@ from typing import Annotated, Any, Literal, cast
 from pydantic import Field, StrictBool, StrictInt, StrictStr, field_validator, model_validator
 from token_io_decoupling_core.models import CodingMode, StrictModel
 from token_io_decoupling_core.rules import RuleLoader, RuleLoadError
-from token_io_decoupling_core.state_models import AllocationRole
+from token_io_decoupling_core.workflow_models import AllocationRole
 
 from token_io_decoupling_workflow.api_recovery import (
     RecoveryGuidance,

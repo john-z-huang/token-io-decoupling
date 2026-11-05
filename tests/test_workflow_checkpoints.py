@@ -38,8 +38,8 @@ class WorkflowCheckpointConsumptionTests(unittest.TestCase):
 
     def test_local_session_scope_cannot_be_replaced_by_profile_selection(self):
         for name, required in (
-            ("enhanced-path-selection.md", "current session scope is resolved from the request and recorded allocations"),
-            ("enhanced-path-selection_zh_cn.md", "当前请求会话范围已通过请求上下文及已有分配解析"),
+            ("workflow-navigation-selection.md", "bounded workflow navigation"),
+            ("workflow-navigation-selection_zh_cn.md", "有界工作流导航"),
         ):
             with self.subTest(name=name):
                 path = MODULE.L3 / name
@@ -125,9 +125,9 @@ class WorkflowCheckpointConsumptionTests(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         self.assertEqual(MODULE.main(), 1)
 
-    def test_audit_pending_timeout_and_no_reprompt_semantics_are_required(self):
+    def test_audit_defaults_without_prompt_or_timer_are_required(self):
         path = MODULE.L3 / "session-audit-resolution.md"
-        path.write_text(path.read_text(encoding="utf-8").replace("never repeat the template", "repeat the template", 1))
+        path.write_text(path.read_text(encoding="utf-8").replace("apply the defaults immediately", "wait for a user reply", 1))
         self.assertEqual(MODULE.main(), 1)
 
     def test_context_source_hash_and_freshness_semantics_are_required(self):
@@ -153,7 +153,7 @@ class WorkflowCheckpointConsumptionTests(unittest.TestCase):
     def test_session_canonical_authority_and_readback_safety_is_required(self):
         path = MODULE.L3 / "session-state-resolution.md"
         text = path.read_text(encoding="utf-8").replace(
-            "An outage alone never changes authority", "An outage may change authority", 1)
+            "does not grant authority", "grants authority", 1)
         path.write_text(text, encoding="utf-8")
         self.assertEqual(MODULE.main(), 1)
 

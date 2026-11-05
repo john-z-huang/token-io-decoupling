@@ -7,11 +7,19 @@ import json
 import os
 import uuid
 from collections.abc import Mapping
+from contextvars import ContextVar
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Literal, Protocol, TypeAlias
+from pathlib import Path, PurePosixPath
+from typing import Annotated, Any, Literal, Protocol, TypeAlias
 
-from pydantic import TypeAdapter, ValidationError
+from pydantic import (
+    ConfigDict,
+    Field,
+    StringConstraints,
+    TypeAdapter,
+    ValidationError,
+    field_validator,
+)
 from token_io_decoupling_core.materialization_models import (
     DEFAULT_INSPECT_CHARS,
     MAX_MATERIALIZATION_BATCH_UTF8_BYTES,
@@ -32,7 +40,13 @@ from token_io_decoupling_core.materialization_models import (
     PreparedMaterializationManifest,
     Sha256Baseline,
 )
-from token_io_decoupling_state.service import StateService
+from token_io_decoupling_core.models import NonEmptyString, StrictModel
+from token_io_decoupling_core.workflow_models import (
+    BindingIdentity,
+    HostCapability,
+    HostGuard,
+    SessionRole,
+)
 
 from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
 from token_io_decoupling_workflow.materialization_storage import (
@@ -51,6 +65,66 @@ class MaterializationGrantProvider(Protocol):
     def current_grant(self) -> OutputMaterializationGrant | Mapping[str, object] | None: ...
 
 
+class MaterializationAssignment(StrictModel):
+    """Finite current assignment facts returned by a trusted startup provider."""
+
+    model_config = ConfigDict(frozen=True)
+
+    project_id: NonEmptyString
+    root_session_id: NonEmptyString
+    worker_session_id: NonEmptyString
+    allocation_id: NonEmptyString
+    role: Literal["Primary Output"]
+    output_class: Literal["code_configuration", "skill_instructions"]
+    slice_id: NonEmptyString
+    authorized_paths: Annotated[
+        tuple[Annotated[str, StringConstraints(min_length=1, max_length=512)], ...],
+        Field(min_length=1, max_length=128),
+    ]
+
+    @field_validator("authorized_paths")
+    @classmethod
+    def validate_paths(cls, paths: tuple[str, ...]) -> tuple[str, ...]:
+        if len(paths) != len(set(paths)):
+            raise ValueError("assignment_paths_must_be_unique")
+        for path in paths:
+            parsed = PurePosixPath(path)
+            if (
+                path.startswith("/")
+                or "\\" in path
+                or parsed.is_absolute()
+                or parsed.as_posix() != path
+                or any(part in {"", ".", ".."} for part in path.split("/"))
+            ):
+                raise ValueError("assignment_path_invalid")
+        return paths
+
+
+def materialization_assignment_hash(assignment: MaterializationAssignment) -> str:
+    canonical = json.dumps(
+        assignment.model_dump(mode="json"),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class MaterializationAuthorizationContext:
+    """Trusted startup supplied current binding and assignment; never a tool payload."""
+
+    binding: BindingIdentity
+    assignment: MaterializationAssignment
+    assignment_hash: str
+
+
+class MaterializationAuthorizationProvider(Protocol):
+    """Trusted source for a freshly checked Worker assignment and identity."""
+
+    def current_context(self) -> MaterializationAuthorizationContext: ...
+
+
 MaterializationReceiptStatus: TypeAlias = Literal[
     "applied", "already_identical", "partial", "conflict", "uncertain"
 ]
@@ -63,6 +137,7 @@ class OutputMaterializerConfig:
     project_root: str | os.PathLike[str]
     artifact_root: str | os.PathLike[str]
     grant_provider: MaterializationGrantProvider
+    authorization_provider: MaterializationAuthorizationProvider
 
     def __post_init__(self) -> None:
         project_root = Path(self.project_root)
@@ -71,6 +146,8 @@ class OutputMaterializerConfig:
             raise ValueError("materialization_roots_must_be_absolute")
         if not callable(getattr(self.grant_provider, "current_grant", None)):
             raise ValueError("materialization_grant_provider_invalid")
+        if not callable(getattr(self.authorization_provider, "current_context", None)):
+            raise ValueError("materialization_authorization_provider_invalid")
         object.__setattr__(self, "project_root", project_root)
         object.__setattr__(self, "artifact_root", artifact_root)
 
@@ -82,6 +159,9 @@ class _MaterializationFailure(Exception):
 
 
 _REQUEST_ADAPTER = TypeAdapter(MaterializationRequest)
+_CALLER_BINDING: ContextVar[BindingIdentity | None] = ContextVar(
+    "materialization_caller_binding", default=None
+)
 
 
 class OutputMaterializationService:
@@ -90,11 +170,11 @@ class OutputMaterializationService:
     def __init__(
         self,
         *,
-        state_service: StateService,
+        authorization_provider: MaterializationAuthorizationProvider,
         compliance_service: CompliancePreflightService,
         config: OutputMaterializerConfig,
     ) -> None:
-        self._state_service = state_service
+        self._authorization_provider = authorization_provider
         self._compliance_service = compliance_service
         self._config = config
         self._renderer = MaterializationTemplateRenderer()
@@ -120,7 +200,19 @@ class OutputMaterializationService:
         if self._storage is not None:
             self._storage.close()
 
-    def execute(self, request: MaterializationRequest) -> dict[str, object]:
+    def execute(
+        self,
+        request: MaterializationRequest,
+        *,
+        expected_binding: BindingIdentity | None = None,
+    ) -> dict[str, object]:
+        token = _CALLER_BINDING.set(expected_binding)
+        try:
+            return self._execute_scoped(request)
+        finally:
+            _CALLER_BINDING.reset(token)
+
+    def _execute_scoped(self, request: MaterializationRequest) -> dict[str, object]:
         if self._storage is None:
             return {
                 "status": "unavailable",
@@ -520,15 +612,40 @@ class OutputMaterializationService:
     def _authorize(self) -> dict[str, Any]:
         assert self._storage is not None
         try:
-            binding, assignment, assignment_hash = (
-                self._state_service.worker_get_materialization_context()
+            context = self._authorization_provider.current_context()
+            if not isinstance(context.assignment, MaterializationAssignment):
+                raise ValueError("worker_assignment_invalid")
+            assignment_model = MaterializationAssignment.model_validate_json(
+                context.assignment.model_dump_json()
             )
+            assignment_hash = materialization_assignment_hash(assignment_model)
+            if context.assignment_hash != assignment_hash:
+                raise ValueError("worker_assignment_hash_mismatch")
+            binding = context.binding
+            assignment = assignment_model.model_dump(mode="json")
         except Exception as exc:
-            raise _MaterializationFailure("worker_assignment_unavailable") from exc
+            reason = (
+                str(exc)
+                if str(exc) in {"worker_assignment_invalid", "worker_assignment_hash_mismatch"}
+                else "worker_assignment_unavailable"
+            )
+            raise _MaterializationFailure(reason) from exc
         if not isinstance(assignment, dict):
             raise _MaterializationFailure("worker_assignment_unavailable")
-        if self._identity_value(binding, "role") != "worker":
+        if _CALLER_BINDING.get() is None or context.binding != _CALLER_BINDING.get():
+            raise _MaterializationFailure("caller_binding_assignment_mismatch")
+        if not isinstance(binding, BindingIdentity) or binding.role is not SessionRole.WORKER:
             raise _MaterializationFailure("worker_binding_invalid")
+        if HostCapability.WORKER_WRITE not in binding.capabilities:
+            raise _MaterializationFailure("worker_write_capability_missing")
+        required_guards = {
+            HostGuard.IDENTITY_BOUND,
+            HostGuard.SESSION_BOUND,
+            HostGuard.PATH_BOUNDARY,
+            HostGuard.PARENT_CHILD_RELATION,
+        }
+        if not required_guards <= binding.guards:
+            raise _MaterializationFailure("worker_binding_guards_missing")
         project_id = self._required_assignment_text(assignment, "project_id")
         root_session_id = self._required_assignment_text(assignment, "root_session_id")
         worker_session_id = self._required_assignment_text(assignment, "worker_session_id")

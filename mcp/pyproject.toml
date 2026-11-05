@@ -10,12 +10,8 @@ requires-python = ">=3.11"
 dependencies = [
   "dev-workflow-standards-tools @ git+https://github.com/john-z-huang/dev-workflow-standards.git@ba5ecc95d9f9da77aca22c17e712d6c8d2a05987#subdirectory=mcp-server",
   "token-io-decoupling-core==0.1.0",
-  "token-io-decoupling-state==0.1.0",
   "token-io-decoupling-transport==0.1.0",
   "token-io-decoupling-workflow==0.1.0",
-  "token-io-decoupling-root-agent-tools==0.1.0",
-  "token-io-decoupling-worker-agent-tools==0.1.0",
-  "token-io-decoupling-share-tools==0.1.0",
   "tomlkit>=0.15,<1",
 ]
 
@@ -63,29 +59,10 @@ python-version = "3.11"
 [tool.ty.src]
 include = ["src", "packages", "tests"]
 
-# These released migration sources retain a historical import whose runtime
-# alias is provided only while the state loader imports them. Keep them
-# byte-for-byte unchanged because their source checksums are recorded in DB history.
-[[tool.ty.overrides]]
-include = ["packages/token_io_decoupling_state/src/token_io_decoupling_state/migrations/worker/v0001_initial.py"]
-
-[tool.ty.overrides.rules]
-unresolved-import = "ignore"
-
-[[tool.ty.overrides]]
-include = ["packages/token_io_decoupling_state/src/token_io_decoupling_state/migrations/workflow/v0001_initial.py"]
-
-[tool.ty.overrides.rules]
-unresolved-import = "ignore"
-
 [tool.uv.workspace]
 members = ["packages/*"]
 
 [tool.uv.sources]
 token-io-decoupling-core = { workspace = true }
-token-io-decoupling-state = { workspace = true }
 token-io-decoupling-transport = { workspace = true }
 token-io-decoupling-workflow = { workspace = true }
-token-io-decoupling-root-agent-tools = { workspace = true }
-token-io-decoupling-worker-agent-tools = { workspace = true }
-token-io-decoupling-share-tools = { workspace = true }

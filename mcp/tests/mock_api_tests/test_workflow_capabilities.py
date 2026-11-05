@@ -11,12 +11,11 @@ import pytest
 from mcp import Client
 from mcp.types import TextContent
 from token_io_decoupling_core.binding import BindingError, DenyingBindingProvider
-from token_io_decoupling_core.state_models import (
+from token_io_decoupling_core.workflow_models import (
     BindingIdentity,
     HostCapability,
     HostGuard,
     SessionRole,
-    VerifiedChildBinding,
 )
 from token_io_decoupling_transport.identity import binding_details, bound_role
 from token_io_decoupling_workflow.decisions import DecisionsRuntimeConfig
@@ -53,11 +52,6 @@ class ControlledProvider:
             raise self.outcome
         return cast(BindingIdentity, self.outcome)
 
-    def verify_child_binding(
-        self, parent: BindingIdentity, child_session_id: str
-    ) -> VerifiedChildBinding:
-        raise BindingError(SECRET)
-
 
 def _capabilities(server: Any) -> dict[str, Any]:
     async def read() -> dict[str, Any]:
@@ -72,13 +66,13 @@ def _capabilities(server: Any) -> dict[str, Any]:
 def _assert_safe_details(report: dict[str, Any]) -> None:
     assert SECRET not in json.dumps(report)
     details = report["capability_details"]
-    assert details["schema_version"] == 2
+    assert details["schema_version"] == 3
     assert report["agent_runtime"] == "codex_cli"
-    assert set(details["support"]) == {"agent_runtime", "local_stdio"}
-    installation = details["support"]["local_stdio"]
-    assert installation["status"] == "available"
-    assert installation["reason_code"] == "local_stdio_request_scoping"
-    assert "threadId/sessionId" in installation["next_step"]
+    assert set(details["support"]) == {"agent_runtime", "identity_bound_operations"}
+    identity = details["support"]["identity_bound_operations"]
+    assert identity["status"] in {"available", "unavailable", "unknown"}
+    assert identity["reason_code"]
+    assert identity["next_step"]
     entries = (
         list(details["support"].values())
         + list(details["configuration"].values())
@@ -92,14 +86,11 @@ def _assert_safe_details(report: dict[str, Any]) -> None:
 def test_default_report_distinguishes_support_configuration_and_unprobed_runtime(
     tmp_path: Path,
 ) -> None:
-    report = _capabilities(
-        create_workflow_server(DenyingBindingProvider(), state_root=tmp_path / "untouched")
-    )
+    report = _capabilities(create_workflow_server(DenyingBindingProvider()))
     _assert_safe_details(report)
-    assert report["enhanced_binding"] == "unverified"
+    assert report["trusted_binding"] == "unverified"
     assert report["binding_transport"] == "unavailable"
     assert report["caller_match"] == report["api_decisions"] == "disabled"
-    assert report["mode_fallback"] == "Native"
     details = report["capability_details"]
     assert report["agent_runtime"] == "codex_cli"
     assert "host_adapters" not in report
@@ -110,7 +101,7 @@ def test_default_report_distinguishes_support_configuration_and_unprobed_runtime
     public = configuration["public_interfaces"]
     assert public["status"] == "unverified"
     assert public["reason_code"] == "tool_dependencies_not_probed"
-    assert "no Enhanced binding requirement" in public["message"]
+    assert "do not authenticate facts" in public["message"]
     for requirement in ("backend", "reader/root/policy", "OPENAI_BASE_URL", "operator grant"):
         assert requirement in public["next_step"]
     for name in ("caller_match", "api_decisions"):
@@ -119,7 +110,7 @@ def test_default_report_distinguishes_support_configuration_and_unprobed_runtime
     assert configuration["task_plan_tools"]["reason_code"] == "task_plan_backend_not_configured"
     materialization = configuration["output_materialization"]
     assert materialization["status"] == "unavailable"
-    assert "Native coding-task role" in materialization["message"]
+    assert "Caller role labels" in materialization["message"]
     assert "matching operator grant" in materialization["next_step"]
     assert "fresh passing preflight" in materialization["next_step"]
     assert details["runtime"]["binding"]["status"] == "unverified"
@@ -134,11 +125,11 @@ def test_embedded_report_probes_once_and_keeps_runtime_scope_separate_from_bindi
     tmp_path: Path,
 ) -> None:
     provider = ControlledProvider(_identity(role))
-    server = create_workflow_server(provider, state_root=tmp_path / "untouched")
+    server = create_workflow_server(provider)
     provider.reads = 0
     report = _capabilities(server)
     assert provider.reads == 1
-    assert report["enhanced_binding"] == "available"
+    assert report["trusted_binding"] == "available"
     assert report["binding_transport"] == "embedded_provider"
     runtime = report["capability_details"]["runtime"]
     assert runtime["binding"]["reason_code"] == "baseline_verified"
@@ -175,13 +166,6 @@ def test_embedded_report_probes_once_and_keeps_runtime_scope_separate_from_bindi
             "unavailable",
             "session_identity_mismatch",
         ),
-        (
-            _identity(SessionRole.WORKER).model_copy(
-                update={"guards": frozenset(HostGuard) - {HostGuard.WORKER_STORE_ISOLATION}}
-            ),
-            "unavailable",
-            "required_guards_missing",
-        ),
     ],
 )
 def test_initial_and_later_provider_failures_are_safe_and_fail_closed(
@@ -192,7 +176,7 @@ def test_initial_and_later_provider_failures_are_safe_and_fail_closed(
     tmp_path: Path,
 ) -> None:
     provider = ControlledProvider(_identity() if initially_embedded else outcome)
-    server = create_workflow_server(provider, state_root=tmp_path / "untouched")
+    server = create_workflow_server(provider)
     provider.outcome = outcome
     provider.reads = 0
     report = _capabilities(server)
@@ -200,19 +184,10 @@ def test_initial_and_later_provider_failures_are_safe_and_fail_closed(
     diagnostic = report["capability_details"]["runtime"]["binding"]
     assert (diagnostic["status"], diagnostic["reason_code"]) == (status, code)
     assert "role" not in diagnostic
-    assert report["enhanced_binding"] == ("unavailable" if initially_embedded else "unverified")
+    assert report["trusted_binding"] == ("unavailable" if initially_embedded else "unverified")
     assert bound_role(provider) is None
     _assert_safe_details(report)
 
-    async def protected_call() -> None:
-        async with Client(server, mode="auto") as client:
-            result = await client.call_tool("workflow_evaluate", {"payload": {}})
-            assert result.is_error
-            text = cast(TextContent, result.content[0]).text
-            assert "session binding, role, scope or required authorization is unavailable" in text
-            assert SECRET not in text
-
-    asyncio.run(protected_call())
     assert not (tmp_path / "untouched").exists()
 
 
@@ -222,7 +197,7 @@ def test_later_valid_probe_never_promotes_startup_public_scope() -> None:
     original_tools = {tool.name for tool in server._tool_manager.list_tools()}
     provider.outcome = _identity()
     report = _capabilities(server)
-    assert report["enhanced_binding"] == "unverified"
+    assert report["trusted_binding"] == "unverified"
     assert report["binding_transport"] == "unavailable"
     runtime = report["capability_details"]["runtime"]
     assert runtime["binding"]["status"] == "available"
@@ -241,7 +216,6 @@ def test_enabled_configuration_does_not_probe_api_or_verify_request_context(tmp_
             require_codex_context=True,
             decisions_config=DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True),
             decisions_client_factory=forbidden_api_factory,
-            state_root=tmp_path / "untouched",
         )
     )
     assert report["caller_match"] == "required"

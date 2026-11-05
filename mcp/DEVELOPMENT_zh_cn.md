@@ -2,13 +2,13 @@
 
 [English](DEVELOPMENT.md) | [简体中文](DEVELOPMENT_zh_cn.md)
 
-本指南负责 Python workspace 的开发、构建产物检查、uv tool 安装与 Codex setup。[架构契约](../docs/skill/ENHANCED_ARCHITECTURE_zh_cn.md#实现包)负责包职责与依赖方向；[Skill 入口](../docs/skill/SKILL_zh_cn.md)及其链接的 owner 仍是工作流权威。
+本指南负责 Python workspace 的开发、构建产物检查、uv tool 安装与 Codex setup。[架构契约](../docs/skill/WORKFLOW_ARCHITECTURE_zh_cn.md#实现包)负责包职责与依赖方向；[Skill 入口](../docs/skill/SKILL_zh_cn.md)及其链接的 owner 仍是工作流权威。
 
 MCP Server 面向本地可用的 Codex CLI，包括本地 Work 使用的本地 Codex CLI/app-server 路径。云端 ChatGPT 对话、远端 Work 和其他 Code Agent 不是直接客户端。如果其他 Agent 在自己的环境安装 Codex CLI，并按本仓库说明配置 Server，则仅支持该环境中的本地 Codex CLI 路径；不维护其他 Agent 或云端界面适配器。Server 不增加运行环境选择步骤。遵循[目录指令](AGENTS_zh_cn.md)。固定客户端范围不等于宿主集成已经验证；各操作仍按现有流程检查实际能力、可信身份、守卫和权限。
 
 ## 环境与检查
 
-Workspace 包含八个可独立构建的分发包，各有自己的 `pyproject.toml`，共同使用一份 `uv.lock`。根分发包 `token-io-decoupling` 导出管理命令 `token-io-decoupling`，以及两个 MCP 可执行程序 `token-io-decoupling-workflow` 和 `token-io-decoupling-tools`。从 `mcp/` 使用托管 Python 和锁定依赖运行：
+Workspace 包含根分发包和三个可独立构建的成员分发包（`core`、`transport`、`workflow`），共同使用一份 `uv.lock`。根分发包 `token-io-decoupling` 导出管理命令 `token-io-decoupling`，以及两个 MCP 可执行程序 `token-io-decoupling-workflow` 和 `token-io-decoupling-tools`。从 `mcp/` 使用托管 Python 和锁定依赖运行：
 
 ```sh
 uv sync --managed-python --locked --all-packages --group dev
@@ -18,7 +18,7 @@ uv run --managed-python --locked -- ruff format --check .
 uv run --managed-python --locked -- ty check
 ```
 
-`ty` 覆盖根源码、测试、各库包及 core 构建 Hook。如需将环境放在 checkout 外，设置 `UV_PROJECT_ENVIRONMENT` 为临时目录的绝对路径。默认测试集使用临时数据库和离线 transport；真实 API 测试必须显式启用。从仓库根目录运行[仓库指令](../AGENTS_zh_cn.md)要求的文档检查。
+`ty` 覆盖根源码、测试、各库包及 core 构建 Hook。如需将环境放在 checkout 外，设置 `UV_PROJECT_ENVIRONMENT` 为临时目录的绝对路径。默认测试集仅在本地运行且不联网；真实 API 测试必须显式启用。从仓库根目录运行[仓库指令](../AGENTS_zh_cn.md)要求的文档检查。
 
 ### 测试组织
 
@@ -38,8 +38,8 @@ MCP 运行时由两个分别安装的可执行程序组成。每个程序都不�
 
 | MCP 可执行程序 / Codex 注册名 | 工具 |
 | --- | --- |
-| `token-io-decoupling-workflow` | 保持不变的 17 个工作流能力、规则、规划、路由和评估工具。 |
-| `token-io-decoupling-tools` | 共 51 个工具：9 个 Root、6 个 Worker、3 个共享工具和 33 个开发工作流工具；见[两个 MCP 程序与 Codex 注册](TOOLS_REGISTRATION_zh_cn.md)。 |
+| `token-io-decoupling-workflow` | 17 个无状态工作流能力、规则、规划、路由和评估工具。 |
+| `token-io-decoupling-tools` | 共 34 个工具：33 个开发工作流工具和 `materialize_decoupled_output`；见[两个 MCP 程序与 Codex 注册](TOOLS_REGISTRATION_zh_cn.md)。 |
 
 使用一次 setup 命令注册两个可执行程序：
 
@@ -60,21 +60,21 @@ codex mcp add token-io-decoupling-tools -- /absolute/path/to/token-io-decoupling
 
 仅供 Worker 使用的 `materialize_decoupled_output` 工具准备并检查有界输出产物，再通过独立授权的操作员服务应用产物。其请求、模板、授权与预检要求、启动选项 `--output-materializer-factory MODULE:CALLABLE`、结果和恢复边界见[Worker 输出材料化](OUTPUT_MATERIALIZATION_zh_cn.md)。可信 factory 返回 `OutputMaterializerConfig`；缺少配置时工具保持不可用，且不探测默认路径。
 
-每个可执行程序都有固定发现清单；工具发现不授予权限。没有可信宿主通道时，公共能力/规则读取可成功，schema 状态不检查状态路径而返回 unavailable，受保护调用则拒绝缺失绑定。Workflow/Control 判断要求经过验证的 Root。共享读取与证据写入每次都解析经过验证的角色；Worker 读取拒绝非空的 Root `index_page` 游标。
+每个可执行程序都有固定发现清单；工具发现不授予权限。规则/工作流路径是无状态的，不需要数据库或宿主绑定。`workflow_evaluate` 和 `evaluate_control_checkpoint` 只检查调用方提供的类型化事实及声明的输入结构；其结果不会认证、授权、通过检查点、持久化状态或安排后续调用。若没有可信的启动时注入授权 provider 和单独授权，输出材料化仍不可用。
 
-三个 Native 任务计划工具使用单独配置且绑定 checkout 的 Serena 后端，不使用 Enhanced 数据库。宿主可选择按仓库分层的全局存储，让主工作区与 linked worktrees 共享规划、独立仓库保持隔离；旧项目本地存储保持兼容。没有显式注入或受信任启动 factory 时，保持 `unavailable`。其 payload、配置、身份/路径映射、确定性检查、测试和保护限制由[任务计划生命周期工具](TASK_PLAN_TOOLS_zh_cn.md)负责。不会自动加载 Serena 配置或发起模型请求。
+三个任务计划工具使用单独配置且绑定 checkout 的 Serena MemoryManager 后端。其能力结果报告 `project_root`、`storage_scope`、`repository_id`、`namespace` 和 `archive_namespace`；默认项目范围可配置为全局存储，让 linked worktrees 共享规划、独立仓库保持隔离。只有受信任的启动 factory 显式注入服务后，工具才可用。其 payload、配置、身份/路径映射、确定性检查、测试和保护限制由[任务计划生命周期工具](TASK_PLAN_TOOLS_zh_cn.md)负责。不会自动加载 Serena 配置或发起模型请求。
 
-Canonical Python 实现使用架构契约列出的独立包名。`token_io_decoupling_mcp` 命名空间仅保留供兼容导入使用的 core/state 适配模块；它不提供 CLI 或默认 server factory。旧 `token_io_mcp` 导入命名空间不再作为通用 API 暴露。两个不可变 v1 迁移源仍保留历史字节中的 `token_io_mcp.models`；state migration loader 仅在导入期间临时提供 `DatabaseKind` 别名，随后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 core/state adapter 路径。兼容文件分别由 core 和 state 负责，wheel 路径不重复。
+Canonical Python 实现使用架构契约列出的独立包名。两个 MCP 可执行程序分别安装并暴露固定清单。
 
 [Memory 工具指南](SERENA_MEMORY_TOOLS_zh_cn.md)负责直接尾读/写入检查参数、本地路径解析、有界读取结果及匹配限制。这些工具用 Python 标准库读取当前项目 `.serena/memories/` 中的文件，不使用单独配置的任务计划后端。
 
 ## 能力报告诊断
 
-`workflow_capabilities({})` 是无参数公共工具；`capability_details.schema_version=2` 保留现有摘要并报告 `support.local_stdio=available/local_stdio_request_scoping`。`runtime.server_mode=local_stdio` 表示各具名 MCP 可执行程序使用本地请求范围；无状态元数据时 `runtime.binding=request_required/local_codex_context_required`。这些结果不是身份认证或操作授权。配置详情分别报告计划后端、Memory 路径、合规 reader、API 和物化条件；未探测的依赖不得视为已就绪。旧摘要 `enhanced_binding=not_applicable`、`binding_transport=stdio` 不再声称宿主认证。
+`workflow_capabilities({})` 是无参数公共工具；`capability_details.schema_version=3` 报告静态支持与已配置依赖，不探测 API 就绪情况。顶层 `trusted_binding` 在标准可执行程序中为 `unverified`，嵌入使用时反映已注入 provider。`capability_details.runtime.server_mode` 报告 `public_only` 或 `embedded`；没有注入 provider 时 `binding_transport` 为 `unavailable`，嵌入时为 `unverified`。这些诊断不认证调用方，也不授权操作。配置详情分别报告计划后端、Memory 路径、合规 reader、API 和物化条件；未探测的依赖不得视为已就绪。
 
 ### 已安装客户端运行时检查
 
-`tests/unit_tests/test_real_clients.py` 中的 `real_client` 用例运行真实安装的 Codex CLI，以及 ChatGPT Desktop 随附的 Codex 可执行文件。它们通过各自可执行文件的 app-server MCP 接口测试，不模拟客户端传输或宿主身份。覆盖范围是 MCP 宿主运行时边界，不包含 Desktop GUI 操作、已运行的 daemon，或已认证的 Enhanced 宿主绑定。
+`tests/unit_tests/test_real_clients.py` 中的 `real_client` 用例运行真实安装的 Codex CLI，以及 ChatGPT Desktop 随附的 Codex 可执行文件。它们通过各自可执行文件的 app-server MCP 接口测试，不模拟客户端传输或宿主身份。覆盖范围是 MCP 宿主运行时边界，不包含 Desktop GUI 操作、已运行的 daemon，或独立的宿主身份认证。
 
 获得创建临时测试线程和进程的授权后，从 `mcp/` 执行：
 
@@ -110,7 +110,7 @@ child-effort、decision-context 和 delegation selector 每次调用只发出一
 
 认证、授权、配置、配额、未知错误、拒绝、格式错误/不完整响应和证据不足都不是重试候选。应解决原因、刷新并重新计算过期事实/policy 的 hash，或停止。恢复提示不会改变现有结果 status、reason、hash、fallback 或 authority。只有成功的 `available` selector 结果才可在通常门禁通过后用于后续工作。
 
-`DecisionAdvice` 嵌在会改变状态的 evaluation 操作中。其恢复提示绝不授权重复外层 mutation 来重试 advice：相同幂等 key 的重放返回已存结果，不会再次调用 Decisions。继续执行时不使用 advice，或审阅现有结果。其他工具的 metadata 会区分只读查询、无状态 API、幂等写入和守卫/校验失败。mutation 完成情况未知时先读回；只可用原 payload 和 key 精确重放。权限、守卫和校验失败不是瞬时重试。
+可选建议是独立的无状态 API 操作；结构检查点评估既不调用 Decisions，也不持久化建议结果。恢复 metadata 适用于返回该信息的 API 操作，不会改变其结果 status、reason、hash、fallback 或 authority。仅在符合条件的瞬时失败且未超出调用方跟踪的尝试上限时重试，并先复核当前授权和输入。检查点评估不包含状态变更重放或已存结果行为。
 
 ## uv tool 安装与 Codex setup
 
@@ -136,7 +136,7 @@ uv tool install --force --reinstall --managed-python --python 3.14 --find-links 
 
 ### 标准安装可用范围
 
-标准安装可直接使用本地 stdio 状态操作，不要求特权服务或外部 provider。安装后重载服务并启动 fresh Codex CLI 会话，从目标项目根目录运行。状态调用要求有效线程元数据，Worker 必须先由 Root 登记；保留路径、角色、分配与逐操作授权检查。各公共工具的独立配置条件仍适用：Memory 需要已有项目文件，计划需要配置后端，合规预检需要配置 reader，API 工具需要两个非空 API 环境变量和逐调用外发授权，物化另需已登记 Worker、固定根目录、新鲜预检和独立 operator grant。可发现不等于已配置或已授权。
+标准安装通过本地 stdio 提供有界、无状态的规则导航及对调用方事实的结构校验，另提供单独配置的任务计划服务和具有各自文档化依赖的其他工具。这些公共规则/导航操作不需要线程 metadata、Root/Worker 登记或持久化工作流状态。只读 Memory 辅助工具仅限启动项目已有的 `.serena/memories/` 文件。除非配置可信 provider 和独立逐调用授权，否则输出 materializer 不可用。API 工具需要两个非空白 API 环境变量及逐调用出站授权。发现不代表已配置或已授权。
 
 确保 Codex CLI 位于 `PATH` 后，一次注册两个 MCP 可执行程序：
 
@@ -251,11 +251,11 @@ Codex 自身的环境中必须持有这两个非空白 API 变量，以及需要
 
 
 
-## 本地 stdio 会话上下文
+## 本地 stdio 工作流导航
 
-CLI 默认从进程的 OS 账户主目录派生 `.local/state/token-io-decoupling`，不使用调用方修改的 `HOME`。项目由启动 cwd 固定，状态按项目哈希与线程分区。无需 UID 0、继承 socket 或 provider 工厂；旧宿主通道实现和命令选项已删除。内部 Python provider 参数只保留为兼容嵌入/测试接口。
+标准本地 stdio 工具提供有界、无状态的工作流规则导航，以及对调用方提供事实的结构校验。它们不会在调用之间维护线程、项目、Root、Worker、allocation 或检查点状态。启动工作目录限定项目本地只读 Memory 辅助工具的范围；它不建立调用方身份或授权。
 
-[本地会话上下文](CODEX_CALLER_CONTEXT_zh_cn.md)负责元数据、Root/Worker 登记、角色与路径校验及同用户信任边界。不存在独立进程认证或 OS 级 Worker 隔离承诺。安装包测试验证实际 stdio 行为；SDK 最终检查仍限版本、发现、能力和规则读取，禁止模型轮次或状态修改。
+单独的输出 materializer 默认不可用，须具备可信启动上下文、独立操作员授权及匹配的逐次调用绑定。实际 guard 边界见[输出物化](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/output-materialization_zh_cn.md)和[调用方上下文](CODEX_CALLER_CONTEXT_zh_cn.md)。安装包检查验证 stdio 发现及有界行为；SDK 最终检查仍限版本、发现、能力和规则读取，不执行模型轮次或变更。
 
 ## 真实 API 请求的必需配置
 
@@ -269,9 +269,9 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 可选检查点建议仍默认关闭。其真实请求还必须具备显式启用及出站数据授权；本文档本身不授予这些权限。普通测试套件使用 Mock，真实 smoke 测试需要单独显式 opt-in，并遵守相同的双环境变量要求。
 
-经过授权的 embedding 通过 factory 的 `decisions_config` 参数传入 `DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True)` 启用建议。两个评估工具的可选 `semantic_input` 仅限任务意图、输出类别、Contract 变化、验证影响和 Control。返回中 Core 结果与建议分开；未提供语义输入时保留原有 Core 返回。建议不会选择或确认 Gate 分支；过期、无效、拒绝、不可用或重放的建议均回到文档判断。
+检查点工具对有界的调用方事实执行确定性的结构校验。可选决策建议是独立操作，不嵌入或持久化于这些评估中。任何建议请求都需要显式出站数据授权并审阅当前输入；建议不能选择或确认 Gate 分支。结构结果独立于任何单独请求的建议返回，两者都不能取代文档判断。
 
-`workflow_generate_decision_context` 是无状态公共操作，将调用方组合的材料生成供后续 Decisions 请求使用的一段问题或上下文描述。它使用[支持 Structured Outputs 的 Responses API](https://developers.openai.com/api/docs/guides/structured-outputs)，固定为 `gpt-6-luna`、`medium` 推理强度、`store=False`，不附带工具，也不自动调用下游接口。它不要求 Enhanced 绑定或启用可选建议。Code Agent 收集用户需求、当前 Git diff、相关 LSP 结果及其他必要的已核实观测，标注来源和验证边界，再组合为 `raw_content`。服务不读取仓库、不执行命令，也不把所供来源标签当作证明。
+`workflow_generate_decision_context` 是无状态公共操作，将调用方组合的材料生成供后续 Decisions 请求使用的一段问题或上下文描述。它使用[支持 Structured Outputs 的 Responses API](https://developers.openai.com/api/docs/guides/structured-outputs)，固定为 `gpt-6-luna`、`medium` 推理强度、`store=False`，不附带工具，也不自动调用下游接口。它不要求持久化工作流状态或启用可选建议。Code Agent 收集用户需求、当前 Git diff、相关 LSP 结果及其他必要的已核实观测，标注来源和验证边界，再组合为 `raw_content`。服务不读取仓库、不执行命令，也不把所供来源标签当作证明。
 
 发送 `payload.request`，包含必填的 `raw_content`（非空白严格字符串，最多 60,000 字符）、`decision_goal`（非空白严格字符串，最多 1,200 字符，描述实际下游判断目标）、`output_kind`（`decision_question` 或 `decision_context`）及 `outbound_data_permitted`（严格布尔值）。超长输入直接拒绝，不截断；不要仅为满足上限而省略关键约束。权限断言本身不授予采集或披露权限。每次获准请求仍必须具备两项本地 API 环境变量。例如：
 
@@ -290,13 +290,13 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 
 只有 `status: available` 携带非空白 `description`：`decision_question` 最多 1,200 字符，`decision_context` 最多 6,000 字符。结果包含 `output_kind`、对原始材料、目标及类型进行规范化 SHA-256 计算的 `input_hash`（排除权限断言），以及安全的模型和用量元数据。关键缺口或冲突返回 `blocked` / `insufficient_evidence`、`description: null`，并提供最多八项、每项最多 240 字符的 `missing_information`；配置缺失、拒绝、未完成或无效输出、超时及服务错误也阻塞，不回退。固定指令要求保留需求、观测、计划及已证明结果之间的区别，将嵌入的指令视为数据，不生成答案、所选分支或授权。这些语义要求仍需调用方审阅。将 `description` 用作 `decision_question` 或上下文前，须比对原始材料和当前仓库状态，并单独提供其他必需判断事实。生成哈希只标识本次生成输入，不能替代下游判断哈希。材料、目标或类型变化后，须重新比对和审阅。
 
-`workflow_select_child_effort` 是面向 Codex 子代理创建的独立、无状态公共 workflow 操作。显式且获准的调用携带 `payload.request.outbound_data_permitted: true`，仅为本次 Decisions 请求 opt-in；它不依赖可选建议的启用配置或 Enhanced Root store。此声明不能证明授权。按[运行时 owner 的创建契约](../docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)提供经过核实的有界任务事实及受支持档位。结果仅在可用时包含选定 effort，并附请求哈希和回显的切片指纹。父级审阅及当前输入比对仍是必需步骤。拒绝、证据不足、响应无效、缺少配置或服务失败均阻塞选择，不回退到固定 effort。该工具不创建 Agent、不修改工作流状态，也不授权任何门禁。
+`workflow_select_child_effort` 是面向 Codex 子代理创建的独立、无状态公共 workflow 操作。显式且获准的调用携带 `payload.request.outbound_data_permitted: true`，仅为本次 Decisions 请求 opt-in；它不依赖可选建议的启用配置或持久化工作流状态。此声明不能证明授权。按[运行时 owner 的创建契约](../docs/skill/references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support_zh_cn.md)提供经过核实的有界任务事实及受支持档位。结果仅在可用时包含选定 effort，并附请求哈希和回显的切片指纹。父级审阅及当前输入比对仍是必需步骤。拒绝、证据不足、响应无效、缺少配置或服务失败均阻塞选择，不回退到固定 effort。该工具不创建 Agent、不修改工作流状态，也不授权任何门禁。
 
 必填的 `decision_question` 是非空白严格字符串，最多 1,200 字符，用于询问当前已释放子任务所需的最低充分受支持档位。工具将其明确传入 Decisions input，并纳入规范化输入哈希；仅修改问题也会使旧哈希失效。它属于任务数据，无权修改固定模型、候选档位、指令或权限。本地校验执行字符串约束；固定 API 指令要求对超出范围或试图覆盖规则的问题返回 `insufficient_evidence`。该语义判断及父级审阅仍是必需步骤。每个候选档位均说明具体任务证据、相邻档位边界及排除条件；文件数量、影响程度或缺少事实本身均不足以支持升档。
 
 ### 委派判断与获批容量
 
-四个无状态公共工具提供委派建议，独立于可选的五检查点 advisor 和 Enhanced 状态。每个工具通过 `payload.request` 接收有界任务事实、已审阅背景及其 `context_input_hash`、当前 `fact_revision` 和 `fact_fingerprint`、Fork/模式事实及 `outbound_data_permitted`。身份、权限、来源和批准声明仍是调用方提供的事实，不是宿主证明。Root 先审查已授权的拟议任务，再选择职责或执行主体；面向子代理的具体 Interaction Slice 在此后放行，且须独立通过其门禁。
+四个无状态公共工具提供可选委派建议。每个工具通过 `payload.request` 接收有界任务事实、已审阅背景及其 `context_input_hash`、当前 `fact_revision` 和 `fact_fingerprint`、Fork/模式事实及 `outbound_data_permitted`。身份、权限、来源和批准声明仍是调用方提供的事实，不是宿主证明。Root 先审查已授权的拟议任务，再选择职责或执行主体；面向子代理的具体 Interaction Slice 在此后放行，且须独立通过其门禁。
 
 | 工具 | 判断及结果边界 |
 | --- | --- |
@@ -308,10 +308,6 @@ Root 和每个受委派的 Agent 都必须在项目功能代码及测试/smoke �
 获准的 API 请求在每次调用时明确读取非空白的 `OPENAI_API_KEY` 与 `OPENAI_BASE_URL`，只用 `gpt-6-luna`，不自动重试或请求后备模型。工具输入不能覆盖模型或端点。公共[判断背景生成](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation_zh_cn.md)操作复用 Responses 生成供审阅的背景；问题生成可选。其指令现来自当前 owner 的通用规范；`source_policy_hash` 标识加载的规则，成功请求期间规则发生变化时以 `stale_policy` 阻止复用。
 
 选择器通过 `RuleLoader` 加载当前 owner 指令和具体候选描述。结果区分 `available`、`skipped`、`fallback`、`blocked` 和 `stale`，带有请求/背景/事实及来源策略哈希。实际效果前，Root 必须与当前证据重新核对。缺少配置或必要策略时在请求前阻塞；过期规则必须刷新，不能转为兜底。选择器不会创建子代理、派发工作、修改预算或建立可信绑定。这些工具只接收一个已界定任务，不会将指令分解成多个任务。
-
-受保护的 Root `delegation_reserve` 仅在当前未分配容量耗尽后接受可选 `budget_approval`。Root 须通过 `user_approval` 引用用户实际的明确批准，为不同的未占用职责精确申请当前数量加一。原有绑定、guard、revision 和幂等要求继续生效。事务保留旧来源、记录批准、增加一个槽位并预留该职责；重放不能重复增加。已有未分配容量无需扩额。批准绝不允许重复职责或替代子代理，见[委派数量门禁](../docs/skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate_zh_cn.md)。
-
-创建开始之前，受保护的 Root `delegation_unreserve` 可以取消角色预留，使同一个尚未使用的槽位可以重新规划。它要求明确证明创建尚未开始的证据、当前 revision、幂等键以及原有 Root binding/guard。已绑定或身份不明，以及具有 Slice、派发或 Worker 历史的 allocation 均拒绝撤销。该证据是 Root 声明，不是独立宿主证明。撤销只清除尚未使用的预留，不减少锁定数量，也不释放子代理创建后的角色或身份。再次选择或预留新角色前必须刷新 allocation 事实。
 
 ### 组件优化测量
 
@@ -334,14 +330,6 @@ source ~/.zshrc
 TOKEN_IO_RUN_OFFICIAL_API=1 uv run --managed-python --locked -- pytest tests/real_api_tests/test_official_httpx2.py -q -s --tb=no
 ```
 
-旧的任务意图 advisor smoke 保持独立，使用自己的启用开关。获得该真实合成请求的显式授权后，确保两项本地环境变量已配置，再从 `mcp/` 运行：
-
-```sh
-TOKEN_IO_RUN_REAL_DECISIONS=1 uv run --managed-python --locked -- python tests/real_api_tests/decisions_real_smoke.py
-```
-
-没有 opt-in 时，脚本不发请求。它使用临时 Root 数据库和合成可信 provider，直接调用 `DecisionsAdvisor`，仅报告安全的状态、原因、分类元数据、选项和用量。它不证明本地会话范围，也不证明真实 API 请求经过了 MCP handler。MCP handler/协议测试使用模拟 API transport。advisor 在实际调用时读取两项必需的本地变量；脚本和项目都不提供替代凭据或默认端点。
-
 ## 构建、规则资源与安装检查
 
 从 `mcp/` 构建八个 wheel 与源码分发包：
@@ -360,23 +348,8 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 Skill 源码标记与 canonical 合规 helper 均存在时，launcher 构建会重新生成 Skill 快照 zip，避免相同的旧 helper 掩盖文档变化。缺少这些源码的脱离仓库构建必须具有内含快照：条目路径安全且唯一、CRC 有效，六个必需的 Skill/元数据/helper/loader/checker 文本条目均为含有非空白内容的 UTF-8。canonical helper 可用时还核对其字节一致性。这些检查验证上述必需条目，不证明每份文档的语义或完整性。快照缺失或无效会使构建失败。回归测试覆盖当前源码重建、有效的脱离源码回退，以及 CRC 有效但必需条目为空的快照。
 
-已发布迁移文件属于 state 包，保持原始字节不变，因为数据库历史记录了源码校验和。state loader 为两个 v1 文件所需的历史导入 `token_io_mcp.models.DatabaseKind` 临时提供模块别名，并在导入后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 adapter migration 路径。命名空间迁移不授权改写历史、校验规则或 schema 版本。测试同时覆盖旧历史与升级，以及新建数据库。
-
 [MCP CI 工作流](../.github/workflows/mcp.yml)在托管 Python 3.11 和 3.14 上执行锁定检查，并有独立的安装版 wheel job。用 `uv export --no-emit-workspace` 导出第三方构建/运行时约束，构建再加 `--all-groups`，运行时再加 `--no-dev`。Workspace 成员由本地产物提供，不作为 editable requirements 导出。从脱离仓库的 wheel 集安装时，以产物目录作为 `--find-links`，安装根包 `token_io_decoupling-0.1.0-py3-none-any.whl`；保留已配置的索引以解析锁定的第三方依赖。完整命令见 CI。
 
 临时安装使用命令局部的 `UV_TOOL_DIR` 和 `UV_TOOL_BIN_DIR`，均指向临时绝对目录。用锁定的 workspace 解释器运行 `tests/support/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-decoupling`。脚本在 checkout 外、空 `PYTHONPATH` 下启动两个独立 MCP 可执行程序，核验各自的精确清单与绑定拒绝，检查两种语言规则，并在空 `PATH` 下运行 setup dry-run。源码根项目的 tool 安装另行检查。这些结果证明包与 stdio 行为，不证明实际宿主绑定或 GitHub Actions 已运行。
 
 [文档工作流](../.github/workflows/multilingual-docs.yml)保留多语言、链接、路线验证器及扫描器回归；遍历时剪枝生成资源与环境，同时检查手写的 workspace 文档。
-
-## Native 恢复开发检查
-
-[Native 权威转交](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer_zh_cn.md)和 [Native 对账](../docs/skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation_zh_cn.md) owner 定义工作流边界。以下检查验证已实现的服务用例，不证明完整导出或宿主停写能力。
-
-恢复开发使用临时数据库和合成绑定。状态服务的定向用例覆盖完整集合的显式裁定、比较历史保留、恢复 Revision/Epoch 新鲜度、尚未完成的补证请求及派发副作用阻断，也覆盖精确确认不掩盖旧冲突、恢复后首个 Slice 前的新鲜 Control、已确认派发的无副作用重放，以及超限旧快照的有界回读。迁移测试区分有证明的旧确认配对与格式错误或 Revision 不相邻的记录。从 `mcp/` 先运行定向用例，再执行完整套件：
-
-```sh
-uv run --managed-python --locked -- pytest tests/mock_api_tests/test_state_service.py -k native
-uv run --managed-python --locked -- pytest tests/unit_tests/test_migrations.py
-```
-
-这些检查不证明宿主能够停止 Worker。受支持的实质差异恢复路径要求已有 Root 控制状态，且没有已绑定 Worker、活动 Worker Slice 或待确认派发。它裁定 Contract 来源与语义引用这一对字段，不重建缺失的身份、派发、生命周期或验收历史。不受支持的状态保持阻断并保留记录。证据引用和请求 Hash 提供审阅指针与完整性绑定；两者都不能认证调用方，也不能独立证明新鲜度或静默状态。

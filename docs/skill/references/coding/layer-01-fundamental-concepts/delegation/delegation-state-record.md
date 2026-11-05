@@ -8,7 +8,7 @@ This module owns the task-control record used by Coding delegation. It defines t
 
 ### Ownership
 
-The root parent owns one host-Session-level mode/count decision and updates task-specific slices and lifecycle in the same record. The record is task state; it is not stored by editing a policy file. In Native operation, maintain the canonical structured record in parent context and read it back before each route release; a transient child-status result is not canonical. In Enhanced operation, after an authorized Root store is initialized and its identity and schema are validated, the Root SQLite record is canonical for persistent Enhanced state. Parent context then keeps a readable snapshot or reference, not a competing writable authority. Native-to-Enhanced reconciliation follows [Native Reconciliation](../enhanced-native-state/native-reconciliation.md); return to Native follows [Native Authority Transfer](../enhanced-native-state/native-authority-transfer.md). Neither transition changes this record's field owners or permits overwriting a valid canonical record.
+The root parent owns one host-Session-level mode/count decision and updates task-specific slices and lifecycle in the same record. The record is task state, kept in the parent's canonical conversation context; it is not stored in a database or by editing a policy file. Read the current structured record back before each route release; a transient child-status result is not canonical. Preserve field ownership and never overwrite a valid current record with a stale summary.
 
 ### Record shape
 
@@ -31,25 +31,13 @@ session_audit: {audit_mode, root_reasoning_cadence, worker_reasoning_cadence,
                 source: {audit_mode: explicit | default, root_reasoning_cadence: explicit | default,
                         worker_reasoning_cadence: explicit | default},
                 worker_log_visibility: available | unverified | unavailable | Not applicable,
-                worker_log_evidence, audit_config_prompt: {status: unasked | pending | answered |
-                timed_out | unavailable | reused, prompted_at, deadline_at, response_at,
-                resolution: startup_explicit | prior_record | question_reply |
-                question_reply_after_timeout | timeout_default | awaiting_input | unavailable},
-                revision: session-audit/v2}
+                worker_log_evidence}
 lifecycle: pending | running | completed | interrupted
 unavailable_capabilities: [<capability names>]
 block_reason: <required only when gate_status is blocked>
 ```
 
-The `audit_config_prompt` record fields have these meanings; this schema does not define their transitions:
-
-| Field | Legal values / representation | Meaning |
-| --- | --- | --- |
-| `status` | `unasked`, `pending`, `answered`, `timed_out`, `unavailable`, `reused` | Recorded state of the configuration question. |
-| `prompted_at`, `deadline_at`, `response_at` | Observed ISO-8601 UTC timestamp or `null` | Actual prompt time, its recorded deadline, and most recently observed user-reply time. |
-| `resolution` | `startup_explicit`, `prior_record`, `question_reply`, `question_reply_after_timeout`, `timeout_default`, `awaiting_input`, `unavailable` | Recorded source or outcome for effective configuration. |
-
-The selected workflow route owns the decision and any state transition; preserve the record as task state.
+The selected workflow route records explicit preference values or the documented defaults; preserve mode/count, allocations, task scope, and lifecycle as task state.
 
 | `gate_status` | Mode and count | Allocations and lifecycle | Additional requirement |
 | --- | --- | --- | --- |
@@ -65,7 +53,7 @@ An initial count reserves exactly that many unassigned slots; reservation does n
 
 An unchanged initial record with `mode_source: default` must be Multi-Agent, `child_count: 1`, and exactly one reserved allocation; its reservation does not initialize a child. After a user-approved increase, the record's source becomes explicit. In every released Multi-Agent record, `child_count` equals the number of allocated slots. Each role and bound child identity is unique within the Session even after completion, failure, interruption, cancellation, or unavailability; lifecycle changes never release a role. Native import or recovery must reject duplicate roles or child identities. A Fork creates a new record only after fresh mode/count re-entry and never imports the source Session's child identities as current allocations. Actual child creation remains governed by the output-type and slice gates.
 
-`session_audit` follows the field definitions in [session audit visibility](../session-runtime/session-audit-visibility.md). The root parent alone writes it. `audit_config_prompt.status` describes the recorded prompt state; its timestamps are actual UTC observations or `null`, and `resolution` identifies the recorded source/result. The selected route collects and updates these fields. Update log evidence only at first Worker need or on new actual capability/access evidence or failure, never per message. This state never changes `mode`, `child_count`, authorization, allocations, or slice release. Do not copy the complete Root audit record into policy files or Worker-controlled state. An actual `pending` state remains pending until resolved; missing persistence or a failed audit update is not evidence of a reply, default, or completion.
+`session_audit` follows the field definitions in [session audit visibility](../session-runtime/session-audit-visibility.md). The root parent alone writes effective preference values and their per-field sources. When no explicit preference exists, use the documented defaults immediately. Update Worker-log evidence only when first needed or when new actual capability/access evidence or failure occurs, never per message. This state never changes `mode`, `child_count`, authorization, allocations, or Slice release. Do not copy the complete Root audit record into policy files or Worker-controlled state.
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
@@ -89,6 +77,3 @@ Claude Code's `/tasks` lists observable current/background subagent work, wherea
 - [Coding Execution Control](../execution-control/execution-control.md) — locate Interaction Slice field ownership.
 - [Coding Child Lifecycle](delegation-child-lifecycle.md) — locate child lifecycle field ownership.
 - [Coding Session Audit Visibility](../session-runtime/session-audit-visibility.md) — locate session audit configuration ownership.
-- [Enhanced State Store](../enhanced-native-state/enhanced-state-store.md) — locate Native versus Enhanced persistent-record authority.
-- [Native Reconciliation](../enhanced-native-state/native-reconciliation.md) — locate explicit Native-to-Enhanced Root reconciliation.
-- [Native Authority Transfer](../enhanced-native-state/native-authority-transfer.md) — locate explicit Enhanced-to-Native Root authority transfer.

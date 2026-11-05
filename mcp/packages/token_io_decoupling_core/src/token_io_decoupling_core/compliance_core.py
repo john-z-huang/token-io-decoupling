@@ -27,7 +27,7 @@ PAIR_ROOTS = (
     "AGENTS.md",
     "MULTI_LINGUAL.md",
     "docs/skill/workflows/coding.md",
-    "docs/skill/ENHANCED_ARCHITECTURE.md",
+    "docs/skill/WORKFLOW_ARCHITECTURE.md",
     "EXTERNAL_REFERENCES.md",
     "mcp/AGENTS.md",
     "mcp/CODEX_CALLER_CONTEXT.md",

@@ -9,12 +9,11 @@ from token_io_decoupling_core.codex_context import (
     CodexCallerBoundProvider,
     parse_codex_request_context,
 )
-from token_io_decoupling_core.state_models import (
+from token_io_decoupling_core.workflow_models import (
     BindingIdentity,
     HostCapability,
     HostGuard,
     SessionRole,
-    VerifiedChildBinding,
 )
 
 from token_io_decoupling.server import create_workflow_server
@@ -68,12 +67,6 @@ def test_request_scope_is_task_local_nested_and_reset_on_exit() -> None:
             if task is None or id(task) not in self.bindings:
                 raise BindingError("no synthetic task identity")
             return self.bindings[id(task)]
-
-        def verify_child_binding(
-            self, parent: BindingIdentity, child_session_id: str
-        ) -> VerifiedChildBinding:
-            del parent, child_session_id
-            raise BindingError("synthetic test provider has no child")
 
     async def run() -> None:
         base = TaskLocalProvider()

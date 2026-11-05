@@ -6,7 +6,7 @@ This document owns configuration and use of the three deterministic task-plan MC
 
 ## Configuration and discovery
 
-`task_plan_update`, `task_plan_complete`, and `task_plan_archive` belong to the fixed inventory of the `token-io-decoupling-workflow` executable. They are Native operations: an Enhanced database or verified Root binding is not their storage mechanism. Existing host permissions and task authorization remain required.
+`task_plan_update`, `task_plan_complete`, and `task_plan_archive` belong to the fixed inventory of the `token-io-decoupling-workflow` executable. Their backend is an explicitly configured Serena `MemoryManager`; the tool does not select or initialize that backend. The service is scoped to its configured project root and storage scope, and requests must match the bound checkout. Existing host permissions and task authorization remain required.
 
 The backend must be explicitly configured with the actual initialized Serena `MemoryManager` and its authorized project root. `create_workflow_server(task_plan_service=...)` supports embedding. The components are:
 

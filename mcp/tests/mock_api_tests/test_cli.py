@@ -45,7 +45,6 @@ def test_fixed_server_entrypoints_start_with_no_arguments(
     monkeypatch, tmp_path, entrypoint, factory_name
 ) -> None:
     calls = []
-    monkeypatch.setattr(cli, "_trusted_state_root", lambda: tmp_path)
     monkeypatch.setattr(
         cli,
         factory_name,
@@ -60,7 +59,12 @@ def test_fixed_server_entrypoints_start_with_no_arguments(
     monkeypatch.setattr(sys, "argv", [f"token-io-decoupling-{entrypoint.removesuffix('_main')}"])
 
     assert getattr(cli, entrypoint)() == 0
-    assert calls[0]["state_root"] == tmp_path
+    expected_server_args = (
+        {"task_plan_service": None, "compliance_service": None}
+        if entrypoint == "workflow_main"
+        else {"compliance_service": None, "output_materializer_config": None}
+    )
+    assert calls[0] == expected_server_args
     assert calls[1] == {"transport": "stdio"}
 
 

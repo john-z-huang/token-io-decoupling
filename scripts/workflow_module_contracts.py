@@ -245,7 +245,7 @@ MODULE_GRAPH_SHA256 = {
         "delegated-execution": "373cd76116cdbdad3a862a97a8221a5da51bc8a6a6d51db2a65675f8efbf4110",
         "delivery-acceptance": "114d90b56e06ce1cb9909b4d96709db532fbb01e96263412166e3ad878481145",
         "documentation": "c9070e292a599a7d4c2be5156ef4570082bfe7a042c0e65ff4597a09f6574714",
-        "entry-readiness": "269dc96c4965b035ce5ad6d6ea1fb04dd0cafbe64a8ec84f58e36f9a4745c2f8",
+        "entry-readiness": "603b02ed8284c379f4b50676ebc75787cf5da3ccfe33ee087f089f69b6cbd210",
         "session-readiness": "16f94918cc826fdf291d9102adc049acf5fca12d6778425d517845f257406252",
         "single-execution": "c8e13c6a23674d0743d8a19d0256c8623afb873f18e0e8a53c4042aebf104795",
         "verification-repair": "e1101b3f9ccb50347b5011bd134ba863fe47e96c05519f5593297a730f44333e",
@@ -255,7 +255,7 @@ MODULE_GRAPH_SHA256 = {
         "delegated-execution": "9ea8f48b70ec5ed8af34127fcd89c4b56a91f816498769ec871409f4a9ffd441",
         "delivery-acceptance": "38cd9058f163cdce14984ef7076db774f5ac0d35cbe6186f4d9c41af74dfe16c",
         "documentation": "4efd99ed15b4f66fbe1e0d784222d8e7a50a3a55308821fcc4ee6e4f0c2de2fe",
-        "entry-readiness": "3c8a6bbf88b8d27126b04bde51fbe5c8b356e5cb4de13d2af0a145d642331b5e",
+        "entry-readiness": "d0c50bca22148532a33c80a2087362c90f4a7d63e4903ff596ab0d1ed928eb4f",
         "session-readiness": "a3756c195fef91d6e186c428fb1d030b0430d8dd0e677d10dd7da2af894245e1",
         "single-execution": "27a517874ef476a3b984a8f052ef9767311ab24547f16904b57edf570d9a2b66",
         "verification-repair": "c6ac131143c713a1a80daf5025e32d557e07dc1ab9b50dcce4850e59f40a7c0c",
@@ -294,8 +294,8 @@ MODULE_SEMANTIC_FRAGMENTS = {
     ),
 }
 MANIFEST_ROUTE_SHA256 = {
-    "single-agent": "b131f04b533afae068f9a5439d9a46abaa02c5f357aa8af2602334bef864be74",
-    "multi-agent": "794618ea45a215251c8b51aa3b811b6ffc012489da5602e2c31ff251ba29aad0",
+    "single-agent": "c51773c389de272b22a0e193368c00977800a08a4fbeafde7702c691b60a4177",
+    "multi-agent": "7142e7d152c00fc3b359ed6bb38a2da36719a67b35c491a98738a2eddbb2c442",
 }
 MIXED_STEP_CONTRACTS = {
     ("single-agent", "S06"): {
@@ -316,14 +316,14 @@ VERIFICATION_STEP_CONTRACTS = {
 TOP_PREFIXES = {"coding-single-agent": "SM", "coding-multi-agent": "MM"}
 MIGRATION_MANIFEST = Path("docs/workflow-module-migration.json")
 LAYER3_OWNERS = (
-    "route-entry", "enhanced-path-selection", "session-audit-resolution",
+    "route-entry", "workflow-navigation-selection", "session-audit-resolution",
     "session-state-resolution", "context-source-selection", "decision-context-selection",
     "planning-output-selection", "bootstrap-selection", "executor-selection",
     "output-route-selection", "role-reservation", "advisory-selection",
     "repair-disposition", "documentation-impact", "module-entry-resolution",
 )
 MODULE_L3_OWNERS = {
-    "entry-readiness": {"module-entry-resolution", "enhanced-path-selection"},
+    "entry-readiness": {"module-entry-resolution", "workflow-navigation-selection"},
     "session-readiness": {"module-entry-resolution", "session-state-resolution", "session-audit-resolution"},
     "work-definition": {"module-entry-resolution", "context-source-selection", "decision-context-selection", "planning-output-selection", "advisory-selection"},
     "single-execution": {"module-entry-resolution", "executor-selection", "output-route-selection", "advisory-selection"},
@@ -334,7 +334,7 @@ MODULE_L3_OWNERS = {
 }
 L3_REQUIRED_LAYER12_LINK = {
     "route-entry": "../layer-02-workflow-concepts/entry-and-context/contract.md",
-    "enhanced-path-selection": "../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md",
+    "workflow-navigation-selection": "../layer-01-fundamental-concepts/workflow-navigation/navigation-availability.md",
     "session-audit-resolution": "../layer-01-fundamental-concepts/session-runtime/session-audit-visibility.md",
     "session-state-resolution": "../layer-01-fundamental-concepts/session-runtime/session-model.md",
     "context-source-selection": "../layer-02-workflow-concepts/entry-and-context/context.md",
@@ -381,7 +381,7 @@ MODULE_CHECKPOINT_LAYER12_TARGETS = {
                             "DA03": "../../layer-02-workflow-concepts/completion-and-effects/acceptance.md"},
 }
 MODULE_CHECKPOINT_L3_OWNERS = {
-    "entry-readiness": {"ER00": {"module-entry-resolution", "route-entry"}, "ER02": {"enhanced-path-selection"}},
+    "entry-readiness": {"ER00": {"module-entry-resolution", "route-entry"}, "ER02": {"workflow-navigation-selection"}},
     "session-readiness": {"SR00": {"module-entry-resolution"}, "SR02": {"session-state-resolution"}, "SR03": {"session-audit-resolution"}},
     "work-definition": {"WD00": {"module-entry-resolution"}, "WD01": {"context-source-selection", "decision-context-selection"}, "WD02": {"advisory-selection"}, "WD03": {"planning-output-selection"}},
     "single-execution": {"SE00": {"module-entry-resolution"}, "SE01": {"executor-selection", "output-route-selection"}, "SE05": {"advisory-selection"}},

@@ -26,6 +26,50 @@ class CodexTestError(RuntimeError):
     """Safe failure without SDK stderr, configuration values or credential data."""
 
 
+def _standard_capability_diagnostics(report):
+    details = report.get("capability_details")
+    if (
+        report.get("agent_runtime") != "codex_cli"
+        or not isinstance(details, dict)
+        or details.get("schema_version") != 3
+    ):
+        raise CodexTestError("fresh CLI returned an unsupported capability schema")
+    support = details.get("support")
+    runtime = details.get("runtime")
+    configuration = details.get("configuration")
+    if not all(isinstance(value, dict) for value in (support, runtime, configuration)):
+        raise CodexTestError("fresh CLI omitted required capability sections")
+    identity = support.get("identity_bound_operations")
+    binding = runtime.get("binding")
+    server_mode = runtime.get("server_mode")
+    materialization = configuration.get("output_materialization")
+    if not all(
+        isinstance(value, dict) for value in (identity, binding, server_mode, materialization)
+    ):
+        raise CodexTestError("fresh CLI omitted default protection diagnostics")
+    if (
+        identity.get("status") != "unavailable"
+        or identity.get("reason_code") != "trusted_provider_not_configured"
+        or binding.get("status") != "unverified"
+        or binding.get("reason_code") != "provider_not_configured"
+        or server_mode.get("status") != "public_only"
+        or server_mode.get("reason_code") != "startup_binding_unverified"
+        or "no caller identity" not in server_mode.get("message", "").lower()
+        or "workflow state store" not in server_mode.get("message", "").lower()
+        or materialization.get("status") != "unavailable"
+        or materialization.get("reason_code") != "output_materializer_not_configured"
+        or report.get("trusted_binding") != "unverified"
+    ):
+        raise CodexTestError("fresh CLI omitted stateless/default-protection diagnostics")
+    return {
+        "capability_schema_version": details["schema_version"],
+        "trusted_binding": report["trusted_binding"],
+        "binding_reason": binding["reason_code"],
+        "server_mode": server_mode["status"],
+        "materialization": materialization["status"],
+    }
+
+
 def launch_settings(executable: Path, directory: Path, bin_dir: Path):
     key = os.environ.get("OPENAI_API_KEY", "")
     base_url = os.environ.get("OPENAI_BASE_URL", "")
@@ -199,18 +243,7 @@ class FixedCodexSession:
         if result.is_error:
             raise CodexTestError("MCP capabilities call failed")
         report = json.loads(result.content[0]["text"])
-        if report.get("agent_runtime") != "codex_cli":
-            raise CodexTestError("unexpected MCP capabilities response")
-        details = report.get("capability_details", {})
-        installation = details.get("support", {}).get("local_stdio", {})
-        binding = details.get("runtime", {}).get("binding", {})
-        if (
-            installation.get("reason_code") != "local_stdio_request_scoping"
-            or installation.get("status") != "available"
-            or binding.get("reason_code") != "local_codex_context_required"
-            or "threadId/sessionId" not in binding.get("next_step", "")
-        ):
-            raise CodexTestError("fresh CLI omitted standard-install binding diagnostics")
+        diagnostics = _standard_capability_diagnostics(report)
         for language in ("en", "zh_cn"):
             rules = self._client.request(
                 "mcpServer/tool/call",
@@ -238,8 +271,7 @@ class FixedCodexSession:
             "mcp": "passed",
             "inventories": {name: len(tools) for name, tools in INVENTORIES.items()},
             "model_turns": 0,
-            "local_stdio": "available",
-            "binding_reason": "local_codex_context_required",
+            **diagnostics,
         }
 
 

@@ -200,7 +200,7 @@ class WorkflowRoutingPayload(StrictModel):
     request: DecouplingWorkflowRequest
 
 
-class NativeRouteReference(StrictModel):
+class RouteReference(StrictModel):
     route_id: RouteId
     route_path: StrictStr
     mode_count: ModeCount
@@ -256,7 +256,7 @@ class DecouplingWorkflowResult(StrictModel):
         "stale_rule_context",
     ]
     advisory_only: Literal[True] = True
-    native_route: NativeRouteReference | None = None
+    route_reference: RouteReference | None = None
     selected_stage: WorkflowStage | None = None
     module_id: ModuleId | None = None
     conditional_checks: list[ConditionalCheckAdvice] = Field(default_factory=list)
@@ -405,7 +405,7 @@ def _input_hash(request: DecouplingWorkflowRequest) -> str:
     return _canonical_hash(request.model_dump(mode="json", exclude={"source_facts_hash"}))
 
 
-def _route_reference(request: DecouplingWorkflowRequest) -> NativeRouteReference:
+def _route_reference(request: DecouplingWorkflowRequest) -> RouteReference:
     if request.mode_count.mode is CodingMode.SINGLE_AGENT:
         route_id: RouteId = "coding-single-agent"
         stem = "coding-single-agent"
@@ -413,7 +413,7 @@ def _route_reference(request: DecouplingWorkflowRequest) -> NativeRouteReference
         route_id = "coding-multi-agent"
         stem = "coding-multi-agent"
     suffix = "_zh_cn" if request.language == "zh_cn" else ""
-    return NativeRouteReference(
+    return RouteReference(
         route_id=route_id,
         route_path=f"docs/skill/references/coding/layer-04-workflows/{stem}{suffix}.md",
         mode_count=request.mode_count,
@@ -611,7 +611,7 @@ class WorkflowRouter:
 
     def decide(self, request: DecouplingWorkflowRequest) -> DecouplingWorkflowResult:
         input_hash = _input_hash(request)
-        native_route = _route_reference(request) if request.mode_locked else None
+        route_reference = _route_reference(request) if request.mode_locked else None
         capabilities = _capability_evidence(request)
         if not request.mode_locked:
             return self._result(
@@ -619,34 +619,34 @@ class WorkflowRouter:
                 input_hash,
                 status="blocked",
                 reason="mode_not_locked",
-                native_route=None,
+                route_reference=None,
                 missing_facts=["mode_locked"],
                 capability_evidence=capabilities,
             )
-        assert native_route is not None
+        assert route_reference is not None
         if request.stage != "auto":
             return self._decide_explicit(
                 request,
                 request.stage,
                 input_hash,
-                native_route,
+                route_reference,
                 capabilities,
             )
-        return self._decide_auto(request, input_hash, native_route, capabilities)
+        return self._decide_auto(request, input_hash, route_reference, capabilities)
 
     def _decide_explicit(
         self,
         request: DecouplingWorkflowRequest,
         stage: WorkflowStage,
         input_hash: str,
-        native_route: NativeRouteReference,
+        route_reference: RouteReference,
         capabilities: list[CapabilityEvidence],
     ) -> DecouplingWorkflowResult:
         nodes = _stage_rule_nodes(request.mode_count.mode, stage)
         bundles, failure = self._load_bundles(nodes, request.language)
         if failure is not None:
             return self._rules_failure(
-                request, input_hash, native_route, capabilities, bundles, failure
+                request, input_hash, route_reference, capabilities, bundles, failure
             )
         assert bundles is not None
         latest, latest_failure = self._load_bundles(nodes, request.language)
@@ -654,7 +654,7 @@ class WorkflowRouter:
             return self._rules_failure(
                 request,
                 input_hash,
-                native_route,
+                route_reference,
                 capabilities,
                 latest or bundles,
                 latest_failure or "rules_unavailable",
@@ -665,7 +665,7 @@ class WorkflowRouter:
                 input_hash,
                 status="stale",
                 reason="stale_rule_context",
-                native_route=native_route,
+                route_reference=route_reference,
                 bundles=latest,
                 missing_facts=["refresh_current_rule_context"],
                 capability_evidence=capabilities,
@@ -676,7 +676,7 @@ class WorkflowRouter:
             input_hash,
             status="available",
             reason="explicit_stage_advice",
-            native_route=native_route,
+            route_reference=route_reference,
             stage=stage,
             module_id=_module_id(request.mode_count.mode, stage),
             bundles=latest,
@@ -687,7 +687,7 @@ class WorkflowRouter:
         self,
         request: DecouplingWorkflowRequest,
         input_hash: str,
-        native_route: NativeRouteReference,
+        route_reference: RouteReference,
         capabilities: list[CapabilityEvidence],
     ) -> DecouplingWorkflowResult:
         if not request.source_facts:
@@ -696,7 +696,7 @@ class WorkflowRouter:
                 input_hash,
                 status="insufficient_evidence",
                 reason="source_facts_missing",
-                native_route=native_route,
+                route_reference=route_reference,
                 missing_facts=["source_facts"],
                 capability_evidence=capabilities,
                 recovery=recovery_for_reason("insufficient_evidence"),
@@ -707,7 +707,7 @@ class WorkflowRouter:
                 input_hash,
                 status="blocked",
                 reason="outbound_data_not_permitted",
-                native_route=native_route,
+                route_reference=route_reference,
                 missing_facts=["outbound_data_permission"],
                 capability_evidence=capabilities,
                 recovery=recovery_for_reason("outbound_data_not_permitted"),
@@ -719,7 +719,7 @@ class WorkflowRouter:
                 input_hash,
                 status="blocked",
                 reason="decisions_disabled",
-                native_route=native_route,
+                route_reference=route_reference,
                 missing_facts=["decisions_api_configuration"],
                 capability_evidence=capabilities,
                 recovery=recovery_for_reason("policy_unavailable"),
@@ -727,7 +727,7 @@ class WorkflowRouter:
         selection_bundles, failure = self._load_bundles(_SELECTION_RULE_NODES, request.language)
         if failure is not None:
             return self._rules_failure(
-                request, input_hash, native_route, capabilities, selection_bundles, failure
+                request, input_hash, route_reference, capabilities, selection_bundles, failure
             )
         assert selection_bundles is not None
         decision_request = _decision_input(request, selection_bundles)
@@ -735,7 +735,7 @@ class WorkflowRouter:
             return self._rules_failure(
                 request,
                 input_hash,
-                native_route,
+                route_reference,
                 capabilities,
                 selection_bundles,
                 "request_exceeds_supported_bound",
@@ -748,7 +748,7 @@ class WorkflowRouter:
                 input_hash,
                 status="blocked",
                 reason="missing_credentials",
-                native_route=native_route,
+                route_reference=route_reference,
                 bundles=selection_bundles,
                 missing_facts=["OPENAI_API_KEY", "OPENAI_BASE_URL"],
                 capability_evidence=capabilities,
@@ -814,7 +814,7 @@ class WorkflowRouter:
                 input_hash,
                 status="stale",
                 reason="stale_rule_context",
-                native_route=native_route,
+                route_reference=route_reference,
                 bundles=refreshed_selection or selection_bundles,
                 missing_facts=["refresh_current_rule_context"],
                 capability_evidence=capabilities,
@@ -831,7 +831,7 @@ class WorkflowRouter:
                 input_hash,
                 status="blocked",
                 reason=reason,
-                native_route=native_route,
+                route_reference=route_reference,
                 bundles=refreshed_selection,
                 capability_evidence=capabilities,
                 failure_class=failure_class,
@@ -844,7 +844,7 @@ class WorkflowRouter:
                 input_hash,
                 status="blocked",
                 reason="refusal",
-                native_route=native_route,
+                route_reference=route_reference,
                 bundles=refreshed_selection,
                 capability_evidence=capabilities,
                 recovery=recovery_for_reason("refusal"),
@@ -860,7 +860,7 @@ class WorkflowRouter:
                 input_hash,
                 status="blocked",
                 reason="incomplete_response",
-                native_route=native_route,
+                route_reference=route_reference,
                 bundles=refreshed_selection,
                 capability_evidence=capabilities,
                 recovery=recovery_for_reason("incomplete_response"),
@@ -873,7 +873,7 @@ class WorkflowRouter:
                 input_hash,
                 status="blocked",
                 reason="refusal" if _is_refusal(response) else "invalid_response",
-                native_route=native_route,
+                route_reference=route_reference,
                 bundles=refreshed_selection,
                 capability_evidence=capabilities,
                 recovery=recovery_for_reason(
@@ -886,7 +886,7 @@ class WorkflowRouter:
                 input_hash,
                 status="blocked",
                 reason="unsupported_model",
-                native_route=native_route,
+                route_reference=route_reference,
                 bundles=refreshed_selection,
                 capability_evidence=capabilities,
                 recovery=recovery_for_reason("unsupported_runtime_model"),
@@ -901,7 +901,7 @@ class WorkflowRouter:
                 input_hash,
                 status="insufficient_evidence",
                 reason="insufficient_evidence",
-                native_route=native_route,
+                route_reference=route_reference,
                 bundles=refreshed_selection,
                 missing_facts=["current_stage_evidence"],
                 capability_evidence=capabilities,
@@ -919,7 +919,7 @@ class WorkflowRouter:
             return self._rules_failure(
                 request,
                 input_hash,
-                native_route,
+                route_reference,
                 capabilities,
                 all_bundles,
                 stage_failure,
@@ -940,7 +940,7 @@ class WorkflowRouter:
                 input_hash,
                 status="stale",
                 reason="stale_rule_context",
-                native_route=native_route,
+                route_reference=route_reference,
                 bundles=current_bundles or all_bundles,
                 missing_facts=["refresh_current_rule_context"],
                 capability_evidence=capabilities,
@@ -952,7 +952,7 @@ class WorkflowRouter:
             return self._rules_failure(
                 request,
                 input_hash,
-                native_route,
+                route_reference,
                 capabilities,
                 current_bundles,
                 "rule_context_incomplete",
@@ -964,7 +964,7 @@ class WorkflowRouter:
             input_hash,
             status="available",
             reason="stage_selected",
-            native_route=native_route,
+            route_reference=route_reference,
             stage=stage,
             module_id=_module_id(request.mode_count.mode, stage),
             bundles=current_bundles,
@@ -1001,7 +1001,7 @@ class WorkflowRouter:
         self,
         request: DecouplingWorkflowRequest,
         input_hash: str,
-        native_route: NativeRouteReference,
+        route_reference: RouteReference,
         capabilities: list[CapabilityEvidence],
         bundles: Mapping[str, RuleContextBundle] | None,
         failure: str,
@@ -1037,7 +1037,7 @@ class WorkflowRouter:
             input_hash,
             status=status,
             reason=reason,
-            native_route=native_route,
+            route_reference=route_reference,
             bundles=context,
             missing_facts=_missing_rule_facts(context) or ["current_rule_context"],
             capability_evidence=capabilities,
@@ -1073,7 +1073,7 @@ class WorkflowRouter:
             "insufficient_evidence",
             "stale_rule_context",
         ],
-        native_route: NativeRouteReference | None,
+        route_reference: RouteReference | None,
         stage: WorkflowStage | None = None,
         module_id: ModuleId | None = None,
         bundles: Mapping[str, RuleContextBundle] | None = None,
@@ -1091,7 +1091,7 @@ class WorkflowRouter:
         return DecouplingWorkflowResult(
             status=status,
             reason=reason,
-            native_route=native_route,
+            route_reference=route_reference,
             selected_stage=stage,
             module_id=module_id,
             conditional_checks=_conditions(request.mode_count.mode, stage)

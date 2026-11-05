@@ -2,7 +2,7 @@
 
 [English](TOOLS_REGISTRATION.md) | [简体中文](TOOLS_REGISTRATION_zh_cn.md)
 
-本文负责两个独立 MCP 可执行程序的工具清单和 Codex 注册。[开发指南](DEVELOPMENT_zh_cn.md)负责构建、安装和最终检查；既有状态与工具 owner 继续负责各自的授权契约。
+本文负责两个独立 MCP 可执行程序的工具清单和 Codex 注册。[开发指南](DEVELOPMENT_zh_cn.md)负责构建、安装和最终检查；工作流 owner 保留策略权威，受保护工具保留其操作专属授权检查。
 
 ## 两个独立可执行程序
 
@@ -11,7 +11,7 @@ MCP 运行时由两个分别安装的可执行程序组成。每个程序都不�
 | 可执行程序与 Codex 注册名 | 清单 |
 | --- | --- |
 | `token-io-decoupling-workflow` | 保持不变的 17 个能力、规则、规划、路由与评估工具。 |
-| `token-io-decoupling-tools` | 共 51 个工具：9 个 Root、6 个 Worker、3 个共享工具和 33 个开发工作流工具。 |
+| `token-io-decoupling-tools` | 共 34 个工具：33 个开发工作流工具和 `materialize_decoupled_output`。 |
 
 管理命令 `token-io-decoupling` 不是 MCP 运行时，负责 setup、Skill 安装和环境变量转发修复。它的 `setup codex` 命令会解析、核验并注册当前两个 MCP 可执行程序。它只操作这两个注册表，不会识别或迁移其他注册。用户也可使用绝对可执行文件路径分别注册：
 
@@ -24,9 +24,9 @@ codex mcp add token-io-decoupling-tools -- /absolute/path/to/token-io-decoupling
 
 固定工具清单由[工具清单文件](packages/token_io_decoupling_core/src/token_io_decoupling_core/server_tools.py)负责。tools 可执行程序依赖 `dev-workflow-standards-tools`，来源固定为[其源仓库](https://github.com/john-z-huang/dev-workflow-standards/tree/ba5ecc95d9f9da77aca22c17e712d6c8d2a05987/mcp-server)提交 `ba5ecc95d9f9da77aca22c17e712d6c8d2a05987` 的 `mcp-server` 子目录。构建和安装必须解析该固定依赖及其封装资源，无需相邻开发 checkout 或绝对本地依赖路径。更新依赖时，必须按固定清单审阅工具签名、注解、描述和参数校验错误脱敏。
 
-工具发现不授予权限。Root 和 Worker 工具每次调用仍检查真实当前角色。共享读取与证据写入仍按角色限定，Worker 无法对 Root 状态分页。请求元数据、已记录分配、项目路径、Revision 和幂等检查继续生效。`materialize_decoupled_output` 仍要求已注册 Worker、已确认任务、单独配置的物化服务、操作员授权和当前预检。见 [Worker 输出材料化](OUTPUT_MATERIALIZATION_zh_cn.md)。
+工具发现不授予权限。33 个开发工具保留各自的仓库根、副作用、API 输入和写入授权检查。`materialize_decoupled_output` 是唯一单独受守卫的输出操作；它需要可信启动时注入的授权 provider、当前逐次调用 Worker 绑定、独立授权、固定根目录和当前预检。若无可信 provider 和授权，该工具不可用。详见 [Worker 输出材料化](OUTPUT_MATERIALIZATION_zh_cn.md)。
 
-开发工具保留各自的仓库根验证、副作用注解、API 输入审核和写入授权要求。tools 可执行程序复用其已发布的 schema、注解、描述与参数校验错误脱敏。开发工具可用不代表已建立 Enhanced Worker 绑定，也不授权 Git/GitHub 副作用。API 操作要求进程中非空的 `OPENAI_API_KEY` 与 `OPENAI_BASE_URL`，显式使用固定 `gpt-6-luna`，不回退到默认凭据、地址或其他模型。
+开发工具保留各自的仓库根验证、副作用注解、API 输入审核和写入授权要求。tools 可执行程序复用其已发布的 schema、注解、描述与参数校验错误脱敏。开发工具可用不能证明身份，也不授权 Git/GitHub 副作用。API 操作要求进程中非空的 `OPENAI_API_KEY` 与 `OPENAI_BASE_URL`，显式使用固定 `gpt-6-luna`，不回退到默认凭据、地址或其他模型。
 
 tools 可执行程序转发 API 和代理变量名以及 `OPENAI_TIMEOUT_MAX_RETRIES`，不写入变量值。Setup 为两个可执行程序使用空参数列表，保留两个目标注册表中的其他设置，并保留无关配置项。两个 MCP 进程保留各自的配置与能力要求。
 

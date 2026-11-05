@@ -11,7 +11,7 @@ import pytest
 from openai import OpenAI
 from token_io_decoupling_core.models import CodingMode
 from token_io_decoupling_core.rules import RuleLoader
-from token_io_decoupling_core.state_models import (
+from token_io_decoupling_core.workflow_models import (
     AllocationRole,
 )
 from token_io_decoupling_workflow.delegation_decisions import (

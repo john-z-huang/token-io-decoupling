@@ -3,12 +3,8 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from importlib.metadata import PackageNotFoundError, version
-from pathlib import Path
-
-from token_io_decoupling_core.binding import BindingError
 
 from token_io_decoupling.cli_commands import dispatch_command
 from token_io_decoupling.compliance_factory import (
@@ -24,22 +20,6 @@ from token_io_decoupling.task_plan_factory import (
     TaskPlanFactoryError,
     load_task_plan_service,
 )
-
-
-def _trusted_state_root() -> Path:
-    """Resolve canonical state under the CLI process's OS account, never caller HOME."""
-    try:
-        import pwd
-
-        effective_uid = getattr(os, "geteuid", None)
-        if effective_uid is None:
-            raise ValueError("effective UID is unavailable")
-        home = Path(pwd.getpwuid(effective_uid()).pw_dir)
-        if not home.is_absolute():
-            raise ValueError("OS account home is not absolute")
-        return home / ".local" / "state" / "token-io-decoupling"
-    except (AttributeError, ImportError, KeyError, OSError, TypeError, ValueError) as exc:
-        raise BindingError("trusted OS account state location is unavailable") from exc
 
 
 def _run_workflow(prog: str, argv: list[str]) -> int:
@@ -75,7 +55,6 @@ def _run_workflow(prog: str, argv: list[str]) -> int:
             print(f"{prog}: compliance startup factory failed ({exc.reason})", file=sys.stderr)
             return 2
         server = create_workflow_server(
-            state_root=_trusted_state_root(),
             task_plan_service=task_plan_service,
             compliance_service=compliance_service,
         )
@@ -130,7 +109,6 @@ def _run_tools(prog: str, argv: list[str]) -> int:
             )
             return 2
         server = create_tools_server(
-            state_root=_trusted_state_root(),
             compliance_service=compliance_service,
             output_materializer_config=output_materializer_config,
         )

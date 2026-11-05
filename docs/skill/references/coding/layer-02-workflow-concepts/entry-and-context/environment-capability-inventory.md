@@ -12,9 +12,9 @@ Record only capabilities directly exposed by the current surface: model identity
 
 Mark an unobserved capability as unknown. Do not substitute another runtime environment, model, parameter, Session, tool, permission, or inferred capability. Any required capability that is missing or unknown blocks the dependent slice.
 
-## Optional Enhanced host capability
+## Protected operation capability
 
-For an Enhanced operation selected by the workflow decision node, apply [Enhanced Workflow Availability](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md) and [Enhanced Host Binding](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md). Record the current session-scope source, current role, and the actual guards required by the intended operation, with evidence and scope. Missing request context, an unmet operation check, or a public rules-only surface is `unavailable`, not an inferred capability. Missing required capability blocks only dependent work; keep independently authorized Native work available. This inventory does not initialize state or authorize a protected call.
+For each protected operation, record the current Session and role facts plus the actual capabilities and permission checks it requires, with evidence and scope. Application request scope or a public rule surface does not authenticate identity or prove authority. Missing required capability blocks only dependent work. This inventory does not authorize a protected call.
 
 ## Route consumption
 
@@ -30,5 +30,4 @@ A profile required by a route is a capability requirement, not a product-wide av
 - [Coding Delegation Mode Confirmation](../../layer-01-fundamental-concepts/delegation/delegation-mode-confirmation.md) — locate mode-gate capability consumers.
 - [Coding Delegation Count Gate](../../layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.md) — locate count-gate capability consumers.
 
-- [Enhanced Workflow Availability](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-workflow-availability.md) — locate optional-path evidence and failure disposition.
-- [Enhanced Host Binding](../../layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md) — locate current session scope and guard evidence.
+- [Workflow Navigation Availability](../../layer-01-fundamental-concepts/workflow-navigation/navigation-availability.md) — locate optional-navigation failure disposition.

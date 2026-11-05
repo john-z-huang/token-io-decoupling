@@ -56,7 +56,12 @@ def test_detached_sdist_cli_installs_without_checkout(tmp_path):
     wheels = tmp_path / "wheels"
 
     def run(*args, cwd=tmp_path, env=None):
-        return subprocess.run(args, cwd=cwd, env=env, text=True, capture_output=True, check=True)
+        result = subprocess.run(args, cwd=cwd, env=env, text=True, capture_output=True)
+        if result.returncode != 0:
+            raise AssertionError(
+                f"command failed with exit code {result.returncode}: {args[0]}\n{result.stderr}"
+            )
+        return result
 
     run(
         "uv",
@@ -158,7 +163,7 @@ print(json.dumps({
     assert (skill / "SKILL_zh_cn.md").is_file()
     assert (skill / "workflows/coding.md").is_file()
     _assert_local_links(skill, skill)
-    assert (skill / "_project/mcp/rule-registry.json").is_file()
+    assert not (skill / "_project/mcp/rule-registry.json").exists()
     assert (skill / "_project/.github/workflows/mcp.yml").is_file()
     # Remove detached source too: updates still read the installed package snapshot.
     import shutil

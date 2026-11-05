@@ -31,7 +31,7 @@
         {
           "source_step": "S02",
           "semantic_substeps": [
-            "Environment, capability inventory, Enhanced path and host binding"
+            "Environment, capability inventory, Workflow navigation selection"
           ],
           "targets": [
             {
@@ -41,7 +41,7 @@
               ],
               "consumption": "direct",
               "owner_refs": [
-                "enhanced-path-selection"
+                "workflow-navigation-selection"
               ],
               "call_order": 1
             }
@@ -73,7 +73,7 @@
         {
           "source_step": "S04",
           "semantic_substeps": [
-            "Session state/authority, Context Firewall, audit, visibility, role boundaries, migrations/reconciliation/transfer"
+            "Parent-context record, Session identity/role, Context Firewall, audit preferences and capacity"
           ],
           "targets": [
             {
@@ -352,7 +352,7 @@
         {
           "source_step": "M02",
           "semantic_substeps": [
-            "Environment, capability inventory, Enhanced selection/host"
+            "Environment, capability inventory, Workflow navigation selection"
           ],
           "targets": [
             {
@@ -362,7 +362,7 @@
               ],
               "consumption": "direct",
               "owner_refs": [
-                "enhanced-path-selection"
+                "workflow-navigation-selection"
               ],
               "call_order": 1
             }
@@ -394,7 +394,7 @@
         {
           "source_step": "M04",
           "semantic_substeps": [
-            "Session identity/authority, Context Firewall, audit/visibility, Native/Enhanced transfer and readback"
+            "Session identity/role, Context Firewall, audit preferences and parent-context readback"
           ],
           "targets": [
             {
@@ -502,7 +502,7 @@
         {
           "source_step": "M08",
           "semantic_substeps": [
-            "Slice/stage release, recovery Continue, Control rule/epochs and Native/Enhanced persistence"
+            "Slice/stage release, recovery Continue, Control rule/epochs, and current parent-controlled task record"
           ],
           "targets": [
             {

@@ -32,4 +32,4 @@
 
 - [Coding Execution Decision Gate](execution-decision-gate_zh_cn.md) — 拥有执行决策前置条件。
 - [Task Assignment](task-assignment_zh_cn.md) — 拥有执行者选择。
-- [Enhanced Rule Context](../enhanced-native-state/enhanced-rule-context_zh_cn.md) — 拥有有界规则读取和完整性。
+- [Workflow Rule Context](../workflow-navigation/rule-context_zh_cn.md) — 拥有有界规则读取和完整性。

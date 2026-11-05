@@ -4,7 +4,7 @@
 
 - [Route entry](route-entry.md)
 - [Workflow module entry resolution](module-entry-resolution.md)
-- [Enhanced path selection](enhanced-path-selection.md)
+- [Workflow navigation selection](workflow-navigation-selection.md)
 - [Session state resolution](session-state-resolution.md)
 - [Session audit resolution](session-audit-resolution.md)
 - [Context source selection](context-source-selection.md)

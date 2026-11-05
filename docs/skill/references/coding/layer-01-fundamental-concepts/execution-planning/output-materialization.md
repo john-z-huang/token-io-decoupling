@@ -20,7 +20,7 @@ This capability is optional. Native output work may continue under its own autho
 
 ## Codex CLI / ChatGPT Desktop optimizations
 
-The current MCP operation is `materialize_decoupled_output` with `payload.request` action `prepare`, `inspect`, or `apply`. It is available only through a configured trusted startup factory, current verified assignment, independent operator grant, pinned project/artifact roots, and the required read-only compliance preflight. Without that setup the capability is unavailable and no default root is guessed.
+The current MCP operation is `materialize_decoupled_output` with `payload.request` action `prepare`, `inspect`, or `apply`. It requires a trusted startup-injected authorization provider that supplies current Worker binding and assignment context, a separate operator grant, pinned project/artifact roots, and required read-only compliance preflight. The service checks that provider context matches the actual per-call Worker binding and rechecks authority across phases. Tool payloads cannot select or supply authority context. No standard provider is configured; without the trusted provider and grant, the capability is unavailable and no default root is guessed.
 
 The supported role is `Primary Output` with output class `code_configuration` or `skill_instructions`. Ordinary documentation and other roles/classes are unsupported. Version 1 has finite `literal_text`, `json_document`, and `fact_markdown` templates. `prepare` stores a candidate outside the project; `inspect` reads a bounded page; `apply` rechecks current grant, assignment, hashes, baselines, and whole-batch preflight before writing. Keep and pass the same manifest hash. Review per-file and batch receipts, especially `partial`, `conflict`, or `uncertain`; do not assume rollback or retry over changed content. The MCP output-materialization contract owns exact request fields, limits, and recovery classifications.
 
@@ -28,12 +28,12 @@ For the optional fact-ordering request, follow the fixed API contract stated in 
 
 ## Claude Code CLI / Claude Desktop optimizations
 
-This repository's MCP Server supports local Codex CLI only. Claude's generic MCP capability does not make this server a supported direct client, and no Claude-specific direct-tool optimization is defined. Follow the general rules using capabilities actually exposed and authorized in the current Session. If the controlled capability is unavailable, use the existing authorized Native route and its verification requirements.
+This repository's MCP Server supports local Codex CLI only. Claude's generic MCP capability does not make this server a supported direct client, and no Claude-specific direct-tool optimization is defined. Follow the general rules using capabilities actually exposed and authorized in the current Session. If this controlled capability is unavailable, use any independently authorized direct output route and its verification requirements.
 
 ## Related concepts
 
 - [Candidate Compliance Preflight](candidate-compliance.md) — owns read-only candidate checks.
-- [Enhanced Host Binding](../enhanced-native-state/enhanced-host-binding.md) — owns trusted identity and per-call guards.
-- [Enhanced Workflow Availability](../enhanced-native-state/enhanced-workflow-availability.md) — owns Enhanced versus Native availability disposition.
+- [Session Role Ownership](../session-runtime/session-role-ownership.md) — owns role responsibility; this service still requires its separate trusted binding context and grant.
+- [Workflow Navigation Availability](../workflow-navigation/navigation-availability.md) — owns direct-owner fallback when optional navigation is unavailable.
 - [Coding Execution Control](../execution-control/execution-control.md) — owns release and Control transitions.
 - [Task Assignment](task-assignment.md) — owns executor and output responsibility.

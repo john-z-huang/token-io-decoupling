@@ -4,7 +4,7 @@
 
 - [路线入口](route-entry_zh_cn.md)
 - [工作流模块入口解析](module-entry-resolution_zh_cn.md)
-- [Enhanced 路径选择](enhanced-path-selection_zh_cn.md)
+- [工作流导航选择](workflow-navigation-selection_zh_cn.md)
 - [Session 状态解决](session-state-resolution_zh_cn.md)
 - [Session 审计解决](session-audit-resolution_zh_cn.md)
 - [上下文来源选择](context-source-selection_zh_cn.md)

@@ -32,4 +32,4 @@ This repository's MCP Server supports local Codex CLI only. Claude's general MCP
 
 - [Coding Execution Decision Gate](execution-decision-gate.md) — owns execution decision prerequisites.
 - [Task Assignment](task-assignment.md) — owns executor selection.
-- [Enhanced Rule Context](../enhanced-native-state/enhanced-rule-context.md) — owns bounded rule retrieval and completeness.
+- [Workflow Rule Context](../workflow-navigation/rule-context.md) — owns bounded rule retrieval and completeness.

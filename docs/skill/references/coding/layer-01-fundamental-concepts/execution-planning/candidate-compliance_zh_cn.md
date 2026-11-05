@@ -28,6 +28,6 @@
 
 ## 相关概念
 
-- [Enhanced Host Binding](../enhanced-native-state/enhanced-host-binding_zh_cn.md) — 拥有可信身份和逐次调用守卫。
+- [Session Role Ownership](../session-runtime/session-role-ownership_zh_cn.md) — 拥有可信身份和逐次调用守卫。
 - [Workflow Routing Advice](workflow-routing-advice_zh_cn.md) — 拥有可选阶段建议。
 - [Output Materialization](output-materialization_zh_cn.md) — 拥有受控输出准备与应用。

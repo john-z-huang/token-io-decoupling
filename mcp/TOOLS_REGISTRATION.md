@@ -2,7 +2,7 @@
 
 [English](TOOLS_REGISTRATION.md) | [简体中文](TOOLS_REGISTRATION_zh_cn.md)
 
-This document owns the two standalone MCP executable inventories and their Codex registration. The [development guide](DEVELOPMENT.md) owns building, installing, and final inspection; existing state and tool owners retain their authorization contracts.
+This document owns the two standalone MCP executable inventories and their Codex registration. The [development guide](DEVELOPMENT.md) owns building, installing, and final inspection; workflow owners retain policy authority and protected tools retain their operation-specific authorization checks.
 
 ## Two standalone executables
 
@@ -11,7 +11,7 @@ The MCP runtime has two separately installed executables. Each starts a stdio MC
 | Executable and Codex registration | Inventory |
 | --- | --- |
 | `token-io-decoupling-workflow` | The unchanged 17 capability, rule, planning, routing, and evaluation tools. |
-| `token-io-decoupling-tools` | 51 tools: 9 Root, 6 Worker, 3 shared, and 33 development workflow tools. |
+| `token-io-decoupling-tools` | 34 tools: 33 development workflow tools and `materialize_decoupled_output`. |
 
 The administrative `token-io-decoupling` command is not an MCP runtime. It provides setup, Skill installation, and environment-forwarding repair. Its `setup codex` command resolves, verifies, and registers the two current MCP executables. It operates only on those two registration tables; it does not recognize or migrate other registrations. Users may also register them separately with their absolute executable paths:
 
@@ -24,9 +24,9 @@ codex mcp add token-io-decoupling-tools -- /absolute/path/to/token-io-decoupling
 
 The inventories are fixed in [the tool manifest](packages/token_io_decoupling_core/src/token_io_decoupling_core/server_tools.py). The tools executable depends on `dev-workflow-standards-tools` from the fixed commit `ba5ecc95d9f9da77aca22c17e712d6c8d2a05987`, subdirectory `mcp-server`, of [its source repository](https://github.com/john-z-huang/dev-workflow-standards/tree/ba5ecc95d9f9da77aca22c17e712d6c8d2a05987/mcp-server). Building and installing must resolve this pinned dependency and its packaged resources; no adjacent developer checkout or absolute local dependency path is required. Updating it requires reviewing tool signatures, annotations, descriptions, and validation-error redaction against the fixed manifest.
 
-Discovery does not grant authority. Root and Worker tools remain checked against the actual current role on every call. Shared reads and evidence writes remain role scoped, and a Worker cannot paginate Root state. Request metadata, recorded allocations, project paths, revisions, and idempotency checks still apply. `materialize_decoupled_output` still requires a registered Worker, confirmed assignment, separately configured materializer, operator grant, and current preflight. See [Worker output materialization](OUTPUT_MATERIALIZATION.md).
+Discovery does not grant authority. The 33 development tools retain their own repository-root, side-effect, API-input, and write-authorization checks. `materialize_decoupled_output` is the sole separately guarded output operation; it requires a trusted startup-injected authorization provider, the current per-call Worker binding, an independent grant, pinned roots and current preflight. Without its trusted provider and grant, the tool remains unavailable. See [Worker output materialization](OUTPUT_MATERIALIZATION.md).
 
-Development tools retain their repository-root validation, side-effect annotations, API input review, and write-authorization requirements. The tools executable reuses their published schemas, annotations, descriptions, and validation-error redaction. A development tool's availability does not establish an Enhanced Worker binding or authorize Git/GitHub effects. API-backed operations require both nonblank process `OPENAI_API_KEY` and `OPENAI_BASE_URL`, explicitly use fixed `gpt-6-luna`, and have no default credential, endpoint, or model fallback.
+Development tools retain their repository-root validation, side-effect annotations, API input review, and write-authorization requirements. The tools executable reuses their published schemas, annotations, descriptions, and validation-error redaction. A development tool's availability does not establish identity or authorize Git/GitHub effects. API-backed operations require both nonblank process `OPENAI_API_KEY` and `OPENAI_BASE_URL`, explicitly use fixed `gpt-6-luna`, and have no default credential, endpoint, or model fallback.
 
 The tools executable forwards the API and proxy variable names plus `OPENAI_TIMEOUT_MAX_RETRIES`; it never writes their values. Setup uses empty argument lists for both executables, preserves other settings in either target registration, and leaves unrelated configuration entries untouched. The two MCP processes retain their separate configuration and capability requirements.
 

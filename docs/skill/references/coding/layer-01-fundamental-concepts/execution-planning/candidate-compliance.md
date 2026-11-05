@@ -28,6 +28,6 @@ This repository's MCP Server supports local Codex CLI only; generic Claude MCP s
 
 ## Related concepts
 
-- [Enhanced Host Binding](../enhanced-native-state/enhanced-host-binding.md) — owns trusted identity and per-call guards.
+- [Session Role Ownership](../session-runtime/session-role-ownership.md) — owns trusted identity and per-call guards.
 - [Workflow Routing Advice](workflow-routing-advice.md) — owns optional stage suggestions.
 - [Output Materialization](output-materialization.md) — owns controlled output preparation and application.

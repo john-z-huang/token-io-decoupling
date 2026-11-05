@@ -17,7 +17,7 @@ from token_io_decoupling_core.rules import (
     RuleLoadError,
     UnsafeRulePathError,
 )
-from token_io_decoupling_core.state_models import CheckpointNode
+from token_io_decoupling_core.workflow_models import CheckpointNode
 from token_io_decoupling_transport.payloads import RuleContextPayload
 
 

@@ -242,7 +242,7 @@ for owner, (english_marker, chinese_marker) in markers.items():
     )
 
 
-def test_workspace_builds_eight_wheels_with_disjoint_files(tmp_path: Path) -> None:
+def test_workspace_builds_four_wheels_with_disjoint_files(tmp_path: Path) -> None:
     workspace = Path(__file__).parents[2]
     output = tmp_path / "dist"
     build = subprocess.run(
@@ -254,7 +254,7 @@ def test_workspace_builds_eight_wheels_with_disjoint_files(tmp_path: Path) -> No
     )
     assert build.returncode == 0, build.stderr
     wheels = sorted(output.glob("*.whl"))
-    assert len(wheels) == 8
+    assert len(wheels) == 4
     owners: dict[str, Path] = {}
     for wheel_path in wheels:
         with zipfile.ZipFile(wheel_path) as wheel:
@@ -273,8 +273,9 @@ def test_workspace_builds_eight_wheels_with_disjoint_files(tmp_path: Path) -> No
                     )
                     owners[name] = wheel_path
     assert "token_io_decoupling_core/models.py" in owners
-    assert "token_io_decoupling_state/service.py" in owners
+    assert "token_io_decoupling_workflow/checkpoint_evaluation.py" in owners
     assert "token_io_decoupling_transport/registration.py" in owners
+    assert not any(name.startswith("token_io_decoupling_state/") for name in owners)
     assert "token_io_decoupling/cli.py" in owners
     assert "token_io_decoupling_mcp/__init__.py" in owners
     for facade in ("cli", "cli_commands", "decisions", "server", "setup_codex"):
