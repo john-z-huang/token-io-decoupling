@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "token-io-decoupling-dev"
+version = "0.1.0"
+description = "Standalone development MCP server for Token I/O project maintenance"
+requires-python = ">=3.11"
+dependencies = ["mcp>=2.3,<3"]
+
+[project.scripts]
+token-io-decoupling-dev = "token_io_decoupling_dev.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8,<9", "ruff>=0.14,<1", "ty>=0.0.1a0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/token_io_decoupling_dev"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/pyproject.toml", "/src/**", "/tests/**"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ty.environment]
+python-version = "3.11"
+
+[tool.ty.src]
+include = ["src", "tests"]
