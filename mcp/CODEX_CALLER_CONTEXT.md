@@ -6,13 +6,13 @@ This document owns project, thread and role scoping for local stdio requests. Th
 
 ## Installation and calls
 
-Standard `setup codex` registers four local stdio profiles. No privileged service, inherited host descriptor or external identity provider is required; the old `--host-fd` and `--codex-context` options are removed. Start Codex from the intended project directory. The MCP captures its canonical path at startup and derives the project partition with SHA-256.
+Standard `setup codex` registers the two current standalone local stdio executables: workflow and tools, each with no startup arguments. No privileged service, inherited host descriptor or external identity provider is required; the old `--host-fd` and `--codex-context` options are removed. Start Codex from the intended project directory. The MCP captures its canonical path at startup and derives the project partition with SHA-256.
 
 Codex supplies `threadId` and `sessionId` in top-level MCP request `_meta`. State operations require bounded nonempty strings; the thread must also be a safe path component. Do not put these fields in tool payloads. `sessionId` is opaque and a change does not reset thread state. Public capability, rule and configuration diagnostics need no session metadata. Capability details `support.local_stdio` and `runtime.binding` distinguish local support from current request context; reporting does not probe every dependency.
 
 ## Allocation and permissions
 
-Root must register Workers through the existing reserve, slice and `delegation_bind` sequence. Registration is an application record, not host attestation of a real parent-child relationship. Workers resolve their Root from existing allocations and Worker state in the current project and access only their own assignment. Multiple Root registrations, mismatched database identities and unsafe paths reject. A previously unknown thread must explicitly open its own Root workflow before using that state; a profile does not prove a role. ContextVar scopes reset on return/error and do not borrow concurrent request context.
+Root must register Workers through the existing reserve, slice and `delegation_bind` sequence. Registration is an application record, not host attestation of a real parent-child relationship. Workers resolve their Root from existing allocations and Worker state in the current project and access only their own assignment. Multiple Root registrations, mismatched database identities and unsafe paths reject. A previously unknown thread must explicitly open its own Root workflow before using that state; executable or tool discovery does not establish the caller's actual role. ContextVar scopes reset on return/error and do not borrow concurrent request context.
 
 Traversal, derived symlinks, database identity, role, allocation lifecycle, revision, idempotency and independent materialization-grant checks remain enforced. API requests still require configuration and per-call outbound authorization. Capability fields are not user permission.
 

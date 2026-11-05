@@ -10,7 +10,7 @@ import queue
 import re
 import signal
 import subprocess
-import sys
+import sysconfig
 import tempfile
 import threading
 import time
@@ -48,8 +48,8 @@ class AppServer:
                 raise RuntimeError("unsupported_mcp_transport_for_isolation")
             disabled.append(name + "={enabled=false," + transport + "}")
         config = {
-            "command": sys.executable,
-            "args": ["-m", "token_io_decoupling.cli", "start-mcp-server", "--profile", "workflow"],
+            "command": str(Path(sysconfig.get_path("scripts")) / "token-io-decoupling-workflow"),
+            "args": [],
             "cwd": str(WORKSPACE),
             "enabled": True,
             "env": {"PYTHONPATH": ""},
@@ -227,13 +227,22 @@ def exercise_client(executable: Path, client: str) -> dict[str, Any]:
                 {
                     **params,
                     "tool": "workflow_evaluate",
-                    "arguments": {"payload": {}},
+                    "arguments": {
+                        "payload": {
+                            "node_id": "contract",
+                            "expected_revision": 0,
+                            "idempotency_key": "unopened-real-client-test",
+                        }
+                    },
                 },
             )
             assert denied["isError"] is True
-            assert (
-                "session binding, role, scope or required authorization is unavailable"
-                in (denied["content"][0]["text"])
+            assert any(
+                message in denied["content"][0]["text"]
+                for message in (
+                    "Codex request context is unavailable or mismatched",
+                    "session binding, role, scope or required authorization is unavailable",
+                )
             )
             assert not any(method.startswith("turn/") for method in app.requested_methods)
     finally:

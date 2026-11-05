@@ -7,7 +7,7 @@ from types import ModuleType
 import pytest
 from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
 
-from token_io_decoupling.cli_commands import dispatch_command
+from token_io_decoupling import cli
 from token_io_decoupling.compliance_factory import (
     ComplianceFactoryError,
     load_compliance_service,
@@ -18,14 +18,18 @@ def test_absent_factory_does_not_configure_or_probe_a_service() -> None:
     assert load_compliance_service(None) is None
 
 
-def test_cli_exposes_only_the_explicit_compliance_factory_option() -> None:
-    args = dispatch_command(
-        "token-io-decoupling",
-        "workflow",
-        ["--compliance-factory", "operator_config:make_compliance"],
-    )
-    assert not isinstance(args, int)
-    assert args.compliance_factory == "operator_config:make_compliance"
+@pytest.mark.parametrize("entry", [cli.workflow_main, cli.tools_main])
+def test_server_cli_loads_only_the_explicit_compliance_factory(entry, monkeypatch):
+    specs = []
+
+    def load(spec):
+        specs.append(spec)
+        raise ComplianceFactoryError("factory_import_failed")
+
+    monkeypatch.setattr(cli, "load_compliance_service", load)
+    monkeypatch.setattr(sys, "argv", ["server", "--compliance-factory", "operator:build"])
+    assert entry() == 2
+    assert specs == ["operator:build"]
 
 
 def test_explicit_factory_returns_only_an_operator_configured_service(

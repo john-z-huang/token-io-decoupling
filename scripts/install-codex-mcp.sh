@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install or refresh the local Token I/O MCP tool, then register it with Codex.
+# Install or refresh both local MCP executables and their management CLI, then register them.
 
 set -euo pipefail
 
@@ -7,12 +7,9 @@ usage() {
   printf '%s\n' \
     'Usage: bash install-codex-mcp.sh [options]' \
     '' \
-    "Install or update this repository's Token I/O MCP tool and configure Codex." \
+    "Install or update this repository's Token I/O MCP commands and configure Codex." \
     '' \
     'Options:' \
-    '  --profile NAME       Configure one profile: workflow, root, worker, or share' \
-    '  --all                Configure all profiles (the default)' \
-    '  --replace            Replace conflicting existing registrations' \
     '  --python VERSION     Python version for uv (default: 3.14)' \
     '  --dry-run            Print the ordered plan without checking prerequisites' \
     '  -h, --help           Show this help'
@@ -69,12 +66,9 @@ resolve_repo_root() {
   pwd -P
 }
 
-profile=''
-replace=0
 dry_run=0
 python_version='3.14'
 python_seen=0
-selection_seen=0
 
 while (($# > 0)); do
   case "$1" in
@@ -85,34 +79,6 @@ while (($# > 0)); do
       fi
       usage
       exit 0
-      ;;
-    --profile)
-      if (($# < 2)) || [[ -z "$2" || "$2" == --* ]]; then
-        fail '--profile requires a non-empty profile name'
-        exit 2
-      fi
-      if ((selection_seen != 0)); then
-        fail '--profile cannot be combined with --all or another profile'
-        exit 2
-      fi
-      case "$2" in
-        workflow|root|worker|share) profile="$2" ;;
-        *) fail "invalid profile: $2"; exit 2 ;;
-      esac
-      selection_seen=1
-      shift 2
-      ;;
-    --all)
-      if ((selection_seen != 0)); then
-        fail '--all cannot be combined with --profile or another selection'
-        exit 2
-      fi
-      selection_seen=1
-      shift
-      ;;
-    --replace)
-      replace=1
-      shift
       ;;
     --dry-run)
       dry_run=1
@@ -140,13 +106,8 @@ done
 
 
 setup_args=(setup codex)
-if [[ -n "$profile" ]]; then
-  setup_args+=(--profile "$profile")
-else
-  setup_args+=(--all)
-fi
-if ((replace != 0)); then
-  setup_args+=(--replace)
+if ((dry_run != 0)); then
+  setup_args+=(--dry-run)
 fi
 
 if repo_root=$(resolve_repo_root); then
@@ -158,10 +119,12 @@ source_root="$repo_root/mcp"
 
 if ((dry_run != 0)); then
   printf '%s\n' 'Dry run: no installation/setup commands or Codex configuration reads/writes were run.'
-  printf '1. Install/update: uv tool install --force --reinstall --managed-python --python %q %q\n' \
+  printf '1. Install/update the admin, workflow, and tools commands: uv tool install --force --reinstall --managed-python --python %q %q\n' \
     "$python_version" "$source_root"
   printf '%s\n' '2. Resolve tool bin directory: uv tool dir --bin'
-  printf '3. Configure: <uv-tool-bin>/token-io-decoupling'
+  printf '%s\n' '   Workflow MCP executable: <uv-tool-bin>/token-io-decoupling-workflow'
+  printf '%s\n' '   Tools MCP executable: <uv-tool-bin>/token-io-decoupling-tools'
+  printf '3. Configure both MCP registrations through <uv-tool-bin>/token-io-decoupling'
   for argument in "${setup_args[@]}"; do
     printf ' %q' "$argument"
   done
@@ -197,12 +160,18 @@ if [[ -z "$bin_dir" ]]; then
   fail 'installation succeeded, but uv returned an empty tool bin directory; Codex setup was not run'
   exit 1
 fi
+for command_name in \
+  token-io-decoupling \
+  token-io-decoupling-workflow \
+  token-io-decoupling-tools; do
+  executable="$bin_dir/$command_name"
+  if [[ ! -f "$executable" || ! -x "$executable" ]]; then
+    printf 'install-codex-mcp: installation succeeded, but the installed command is missing or not executable at %q; Codex setup was not run\n' \
+      "$executable" >&2
+    exit 1
+  fi
+done
 launcher="$bin_dir/token-io-decoupling"
-if [[ ! -f "$launcher" || ! -x "$launcher" ]]; then
-  printf 'install-codex-mcp: installation succeeded, but the installed command is missing or not executable at %q; Codex setup was not run\n' \
-    "$launcher" >&2
-  exit 1
-fi
 
 if "$launcher" "${setup_args[@]}"; then
   printf '%s\n' 'Codex MCP setup completed. Reload the affected MCP servers in Codex to use the updated registrations.'

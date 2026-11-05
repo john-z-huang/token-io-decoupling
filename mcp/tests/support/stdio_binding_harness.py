@@ -17,7 +17,7 @@ from token_io_decoupling_core.state_models import (
     VerifiedChildBinding,
 )
 
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_tools_server
 
 
 class TestOnlyBindingProvider:
@@ -70,7 +70,7 @@ def main() -> None:
         from token_io_decoupling.output_materializer_factory import load_output_materializer_config
 
         materializer = load_output_materializer_config(output_materializer_factory)
-        server = create_server(
+        server = create_tools_server(
             provider,
             state_root=Path(sys.argv[3]),
             require_codex_context=require_codex_context,
@@ -82,7 +82,7 @@ def main() -> None:
     if len(sys.argv) != 3 or sys.argv[1] not in {"root", "worker"}:
         raise SystemExit("usage is private to tests")
     role = SessionRole.PARENT if sys.argv[1] == "root" else SessionRole.WORKER
-    server = create_server(
+    server = create_tools_server(
         cast(BindingProvider, TestOnlyBindingProvider(role)), state_root=Path(sys.argv[2])
     )
     server.run(transport="stdio")

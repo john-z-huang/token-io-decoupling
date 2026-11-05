@@ -66,23 +66,22 @@ def test_cli_forwards_typed_factory_configuration_to_server(tmp_path, monkeypatc
         assert spec == "operator_module:build"
         return config
 
-    def create_server(**kwargs):
+    def create_tools_server(**kwargs):
         forwarded.update(kwargs)
         return _Server()
 
-    monkeypatch.setattr(
-        cli.sys,
-        "argv",
-        ["token-io-decoupling", "--output-materializer-factory", "operator_module:build"],
-    )
-    monkeypatch.setattr(cli, "load_task_plan_service", lambda _spec: None)
     monkeypatch.setattr(cli, "load_compliance_service", lambda _spec: None)
     monkeypatch.setattr(cli, "load_output_materializer_config", load_config)
-    monkeypatch.setattr(cli, "create_server", create_server)
+    monkeypatch.setattr(cli, "create_tools_server", create_tools_server)
 
-    assert cli._run(prog="token-io-decoupling", default_profile="worker") == 0
+    assert (
+        cli._run_tools(
+            prog="token-io-decoupling-tools",
+            argv=["--output-materializer-factory", "operator_module:build"],
+        )
+        == 0
+    )
     assert forwarded["output_materializer_config"] is config
-    assert forwarded["profile"] == "worker"
     assert forwarded["transport"] == "stdio"
 
 
@@ -91,9 +90,9 @@ def test_worker_capability_is_unavailable_without_factory_or_path_probe(monkeypa
         raise AssertionError("unconfigured materialization must not probe storage roots")
 
     monkeypatch.setattr(MaterializationStorage, "__init__", forbidden_storage_init)
-    from token_io_decoupling.server import create_server
+    from token_io_decoupling.server import create_workflow_server
 
-    server = create_server(profile="workflow")
+    server = create_workflow_server()
 
     async def run() -> None:
         async with Client(server, mode="auto") as client:

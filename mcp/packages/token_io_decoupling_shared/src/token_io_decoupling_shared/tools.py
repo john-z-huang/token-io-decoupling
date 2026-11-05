@@ -16,7 +16,6 @@ def register_shared_tools(
     *,
     service: StateService,
     provider: BindingProvider,
-    profile: str | None,
     schema_status: Any,
     binding_diagnostic: Any,
     bound_role_for: Any,
@@ -26,8 +25,6 @@ def register_shared_tools(
         lambda: schema_status(service, binding_diagnostic(provider) == "available"),
         codex_guard=registrar.require_codex_context,
     )
-    if profile != "share":
-        return
     registrar.register(
         "state_get",
         _GET_STATE,

@@ -1,4 +1,4 @@
-"""Role-aware MCP tool registration shared by profile registrars."""
+"""Role-aware MCP tool registration for fixed server manifests."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel, TypeAdapter, ValidationError, WithJsonSchema
 from token_io_decoupling_core.binding import BindingError, BindingProvider
 from token_io_decoupling_core.codex_context import CodexCallerBoundProvider
-from token_io_decoupling_core.profiles import PROFILE_ROLES, PROFILE_TOOLS
 from token_io_decoupling_state.local_context import LocalSessionContext
 from token_io_decoupling_state.service import StateServiceError
 
@@ -21,7 +20,7 @@ from token_io_decoupling_transport.tool_metadata import tool_description
 
 
 class ToolRegistrar:
-    """Apply profile exposure, role checks, typed payloads, and Codex request scope."""
+    """Apply fixed manifest exposure, role checks, typed payloads, and request scope."""
 
     def __init__(
         self,
@@ -29,34 +28,29 @@ class ToolRegistrar:
         *,
         provider: BindingProvider,
         state_provider: BindingProvider,
-        profile: str | None,
-        bound_role: str | None,
-        embedded: bool,
+        allowed_tools: frozenset[str],
         require_codex_context: bool,
         bound_role_for: Callable[[BindingProvider], str | None],
     ) -> None:
         self.server = server
         self.provider = provider
         self.state_provider = state_provider
-        self.profile = profile
-        self.bound_role = bound_role
-        self.embedded = embedded
+        self.allowed_tools = allowed_tools
         self.require_codex_context = require_codex_context
         self._bound_role_for = bound_role_for
 
     def include(self, name: str) -> bool:
-        return self.profile is None or name in PROFILE_TOOLS[self.profile]
+        return name in self.allowed_tools
 
-    def check_profile_role(
+    def check_operation_role(
         self, expected: str | None, callback: Callable[[], Any], *, enforce: bool = True
     ) -> Any:
-        if self.profile is None or not enforce:
+        if not enforce or expected is None:
             return callback()
         actual = self._bound_role_for(self.provider)
-        required = PROFILE_ROLES[self.profile]
-        if actual is None or (required is not None and actual != required):
-            raise BindingError("session role for this profile is unavailable")
-        if expected is not None and actual != expected:
+        if actual is None:
+            raise BindingError("session role is unavailable")
+        if actual != expected:
             raise BindingError("session role does not match this operation")
         return callback()
 
@@ -95,21 +89,17 @@ class ToolRegistrar:
         enhanced: bool = True,
         role: str | None = None,
     ) -> None:
-        if not self.include(name) or (
-            self.profile is None and role is not None and role != self.bound_role
-        ):
+        if not self.include(name):
             return
         needs_context = enhanced and self.require_codex_context
 
         if needs_context:
 
             def handler(payload: dict[str, Any], context: MCPContext) -> Any:
-                if enhanced and not self.embedded and self.profile is None:
-                    raise ToolError("enhanced operations are unavailable in the unbound CLI")
                 return self.with_codex_context(
                     context,
                     lambda: self._call_safely(
-                        lambda: self.check_profile_role(
+                        lambda: self.check_operation_role(
                             role,
                             lambda: callback(
                                 TypeAdapter(payload_type).validate_json(
@@ -123,10 +113,8 @@ class ToolRegistrar:
         else:
 
             def handler(payload: dict[str, Any]) -> Any:
-                if enhanced and not self.embedded and self.profile is None:
-                    raise ToolError("enhanced operations are unavailable in the unbound CLI")
                 return self._call_safely(
-                    lambda: self.check_profile_role(
+                    lambda: self.check_operation_role(
                         role,
                         lambda: callback(
                             TypeAdapter(payload_type).validate_json(
@@ -176,7 +164,7 @@ class ToolRegistrar:
                 return self.with_codex_context(
                     context,
                     lambda: self._call_safely(
-                        lambda: self.check_profile_role(role, callback, enforce=enforce_role)
+                        lambda: self.check_operation_role(role, callback, enforce=enforce_role)
                     ),
                 )
         else:
@@ -184,7 +172,7 @@ class ToolRegistrar:
             def handler() -> Any:
                 enforce_role = name not in {"workflow_capabilities", "database_schema_status"}
                 return self._call_safely(
-                    lambda: self.check_profile_role(role, callback, enforce=enforce_role)
+                    lambda: self.check_operation_role(role, callback, enforce=enforce_role)
                 )
 
         handler.__name__ = name
@@ -200,23 +188,19 @@ class ToolRegistrar:
     def register_enhanced_no_args(
         self, name: str, callback: Callable[[], Any], *, role: str
     ) -> None:
-        if not self.include(name) or (self.profile is None and role != self.bound_role):
+        if not self.include(name):
             return
         if self.require_codex_context:
 
             def handler(context: MCPContext) -> Any:
-                if not self.embedded and self.profile is None:
-                    raise ToolError("enhanced operations are unavailable in the unbound CLI")
                 return self.with_codex_context(
                     context,
-                    lambda: self._call_safely(lambda: self.check_profile_role(role, callback)),
+                    lambda: self._call_safely(lambda: self.check_operation_role(role, callback)),
                 )
         else:
 
             def handler() -> Any:
-                if not self.embedded and self.profile is None:
-                    raise ToolError("enhanced operations are unavailable in the unbound CLI")
-                return self._call_safely(lambda: self.check_profile_role(role, callback))
+                return self._call_safely(lambda: self.check_operation_role(role, callback))
 
         handler.__name__ = name
         handler.__doc__ = tool_description(name)

@@ -12,7 +12,7 @@ class BindingError(PermissionError):
 
 
 class BindingProvider(Protocol):
-    """Internal session-context seam; local CLI profiles configure request scope automatically."""
+    """Internal context seam; both local stdio servers scope calls from request metadata."""
 
     def current_binding(self) -> BindingIdentity: ...
 

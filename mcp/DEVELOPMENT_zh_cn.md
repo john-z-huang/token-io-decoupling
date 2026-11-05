@@ -8,7 +8,7 @@ MCP Server 面向本地可用的 Codex CLI，包括本地 Work 使用的本地 C
 
 ## 环境与检查
 
-Workspace 包含八个可独立构建的分发包，各有自己的 `pyproject.toml`，共同使用一份 `uv.lock`。只有根分发包 `token-io-decoupling` 导出 console script。从 `mcp/` 使用托管 Python 和锁定依赖运行：
+Workspace 包含八个可独立构建的分发包，各有自己的 `pyproject.toml`，共同使用一份 `uv.lock`。根分发包 `token-io-decoupling` 导出管理命令 `token-io-decoupling`，以及两个 MCP 可执行程序 `token-io-decoupling-workflow` 和 `token-io-decoupling-tools`。从 `mcp/` 使用托管 Python 和锁定依赖运行：
 
 ```sh
 uv sync --managed-python --locked --all-packages --group dev
@@ -32,22 +32,27 @@ uv run --managed-python --locked -- ty check
 
 混合模块按测试用例拆分，marker 或文件名不能替代正确的目录归属。共享 fixture 和子进程辅助程序可以放在这三个用例目录之外，但不得成为未分类测试用例的存放处。迁移时保留断言、参数化与收集覆盖，同步更新导入、仓库根路径定位及 CI/脚本引用。普通 pytest 必须收集并跳过真实请求用例，且跳过前不读取凭据、不发送请求。后续新增测试同样遵守这些目录规则。
 
-## 统一入口与 profile 工具
+## 独立 MCP 可执行程序
 
-安装后的命令为 `token-io-decoupling`，启动时选择 profile：
+MCP 运行时由两个分别安装的可执行程序组成。每个程序都不需要启动参数，即可启动 stdio server。`token-io-decoupling` 是用于 setup、Skill 安装和环境变量转发修复的管理 CLI，不是 MCP 运行时，也没有直接启动 MCP server 的默认行为。
+
+| MCP 可执行程序 / Codex 注册名 | 工具 |
+| --- | --- |
+| `token-io-decoupling-workflow` | 保持不变的 17 个工作流能力、规则、规划、路由和评估工具。 |
+| `token-io-decoupling-tools` | 共 51 个工具：9 个 Root、6 个 Worker、3 个共享工具和 33 个开发工作流工具；见[两个 MCP 程序与 Codex 注册](TOOLS_REGISTRATION_zh_cn.md)。 |
+
+使用一次 setup 命令注册两个可执行程序：
 
 ```sh
-token-io-decoupling start-mcp-server --profile workflow
+token-io-decoupling setup codex
 ```
 
-`--profile` 接受 `workflow`、`root`、`worker` 或 `share`。省略子命令时使用 workflow profile 启动 stdio；`--version` 输出入口版本。各 profile 的清单固定且互不重复：
+也可从已安装的 tool bin 目录取得可执行文件绝对路径，分别注册：
 
-| Profile / Codex 服务注册名 | 工具 |
-| --- | --- |
-| `workflow` / `token-io-decoupling-workflow` | `workflow_capabilities`、`rules_get_context`、`workflow_generate_decision_context`、`workflow_select_child_effort`、`decide_decoupling_workflow`、`validate_decoupling_compliance`、`workflow_select_child_role`、`workflow_select_executor`、`workflow_select_child`、`workflow_assess_output_tokens`、`task_plan_update`、`task_plan_complete`、`task_plan_archive`、`serena_memory_tail_read`、`serena_memory_write_check`、`workflow_evaluate`、`evaluate_control_checkpoint` |
-| `root` / `token-io-decoupling-root-agent-tools` | `workflow_open`、`delegation_reserve`、`delegation_unreserve`、`delegation_bind`、`slice_check`、`slice_release`、`workflow_transition`、`parent_get_worker_summary`、`workflow_reconcile` |
-| `worker` / `token-io-decoupling-worker-agent-tools` | `worker_get_assignment`、`worker_record_progress`、`worker_get_evidence`、`worker_report_blocker`、`worker_get_recovery_context`、`materialize_decoupled_output` |
-| `share` / `token-io-decoupling-share-tools` | `database_schema_status`、`state_get`、`record_evidence` |
+```sh
+codex mcp add token-io-decoupling-workflow -- /absolute/path/to/token-io-decoupling-workflow
+codex mcp add token-io-decoupling-tools -- /absolute/path/to/token-io-decoupling-tools
+```
 
 `decide_decoupling_workflow` 的有界请求、路由选择、哈希和结果契约见[Decoupling 工作流路由](WORKFLOW_ROUTING_zh_cn.md)。
 
@@ -55,17 +60,17 @@ token-io-decoupling start-mcp-server --profile workflow
 
 仅供 Worker 使用的 `materialize_decoupled_output` 工具准备并检查有界输出产物，再通过独立授权的操作员服务应用产物。其请求、模板、授权与预检要求、启动选项 `--output-materializer-factory MODULE:CALLABLE`、结果和恢复边界见[Worker 输出材料化](OUTPUT_MATERIALIZATION_zh_cn.md)。可信 factory 返回 `OutputMaterializerConfig`；缺少配置时工具保持不可用，且不探测默认路径。
 
-Profile 控制工具发现，不授予权限。没有可信宿主通道时，公共能力/规则读取可成功，schema 状态不检查状态路径而返回 unavailable，受保护调用则拒绝缺失绑定。Workflow/Control 判断要求经过验证的 Root。共享读取与证据写入每次都解析经过验证的角色；Worker 读取拒绝非空的 Root `index_page` 游标。
+每个可执行程序都有固定发现清单；工具发现不授予权限。没有可信宿主通道时，公共能力/规则读取可成功，schema 状态不检查状态路径而返回 unavailable，受保护调用则拒绝缺失绑定。Workflow/Control 判断要求经过验证的 Root。共享读取与证据写入每次都解析经过验证的角色；Worker 读取拒绝非空的 Root `index_page` 游标。
 
 三个 Native 任务计划工具使用单独配置且绑定 checkout 的 Serena 后端，不使用 Enhanced 数据库。宿主可选择按仓库分层的全局存储，让主工作区与 linked worktrees 共享规划、独立仓库保持隔离；旧项目本地存储保持兼容。没有显式注入或受信任启动 factory 时，保持 `unavailable`。其 payload、配置、身份/路径映射、确定性检查、测试和保护限制由[任务计划生命周期工具](TASK_PLAN_TOOLS_zh_cn.md)负责。不会自动加载 Serena 配置或发起模型请求。
 
-Canonical Python 实现使用架构契约列出的独立包名。重命名后的 `token_io_decoupling_mcp` 适配命名空间承载原 façade 模块和默认 factory 的仅公共接口行为；`python -m token_io_decoupling_mcp.cli` 仍可使用。旧 `token_io_mcp` 导入命名空间不再作为通用 API 暴露。两个不可变 v1 迁移源仍保留历史字节中的 `token_io_mcp.models`；state migration loader 仅在导入期间临时提供 `DatabaseKind` 别名，随后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 adapter migration 路径。兼容文件分别由 core、state 或 launcher 负责，wheel 路径不重复。本 workspace 不导出旧四个 console script，也不导出之前的 `token-io-mcp` console script。
+Canonical Python 实现使用架构契约列出的独立包名。`token_io_decoupling_mcp` 命名空间仅保留供兼容导入使用的 core/state 适配模块；它不提供 CLI 或默认 server factory。旧 `token_io_mcp` 导入命名空间不再作为通用 API 暴露。两个不可变 v1 迁移源仍保留历史字节中的 `token_io_mcp.models`；state migration loader 仅在导入期间临时提供 `DatabaseKind` 别名，随后移除。直接导入 frozen state 迁移模块会绕过此局部加载器，不受支持；需要直接导入时请使用重命名后的 core/state adapter 路径。兼容文件分别由 core 和 state 负责，wheel 路径不重复。
 
 [Memory 工具指南](SERENA_MEMORY_TOOLS_zh_cn.md)负责直接尾读/写入检查参数、本地路径解析、有界读取结果及匹配限制。这些工具用 Python 标准库读取当前项目 `.serena/memories/` 中的文件，不使用单独配置的任务计划后端。
 
 ## 能力报告诊断
 
-`workflow_capabilities({})` 是无参数公共工具；`capability_details.schema_version=2` 保留现有摘要并报告 `support.local_stdio=available/local_stdio_request_scoping`。`runtime.server_mode=local_stdio` 表示具名 profile 使用本地请求范围；无状态元数据时 `runtime.binding=request_required/local_codex_context_required`。这些结果不是身份认证或操作授权。配置详情分别报告计划后端、Memory 路径、合规 reader、API 和物化条件；未探测的依赖不得视为已就绪。旧摘要 `enhanced_binding=not_applicable`、`binding_transport=stdio` 不再声称宿主认证。
+`workflow_capabilities({})` 是无参数公共工具；`capability_details.schema_version=2` 保留现有摘要并报告 `support.local_stdio=available/local_stdio_request_scoping`。`runtime.server_mode=local_stdio` 表示各具名 MCP 可执行程序使用本地请求范围；无状态元数据时 `runtime.binding=request_required/local_codex_context_required`。这些结果不是身份认证或操作授权。配置详情分别报告计划后端、Memory 路径、合规 reader、API 和物化条件；未探测的依赖不得视为已就绪。旧摘要 `enhanced_binding=not_applicable`、`binding_transport=stdio` 不再声称宿主认证。
 
 ### 已安装客户端运行时检查
 
@@ -96,7 +101,7 @@ uv run --no-sync python tests/support/final_codex_check.py
 
 每次 SDK 启动都要求并显式复用进程中非空的 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，固定模型为 `gpt-6-luna`、推理强度为 `medium`，并核验实际配置及线程设置。配置缺失或冲突时失败，不回退到已保存登录或其他凭据、端点、模型、推理强度。Key 仅通过子进程环境传递；不得输出凭据值或 SDK 原始诊断，也不得写入认证文件。
 
-适配器选择 `PATH` 中已安装的 `codex`，或 `TOKEN_IO_CODEX_CLI_PATH` 指定的绝对可执行路径，不使用 SDK 自带 CLI。临时 `HOME`／`CODEX_HOME` 隔离配置。全新实例仅加载刚安装的 MCP 命令，通过只读 `command/exec` 执行其 `--version`，发现工具，并调用 `workflow_capabilities` 及双语 `rules_get_context`。禁止模型回合、mutation、任意 Shell 命令及复杂任务。这用于弥补当前会话无法动态重载更新后 MCP Server 的问题，不证明既有会话已重载。CI 安装测试依赖组以执行策略、静态和类型检查，不启动该 SDK 最终查看。
+适配器选择 `PATH` 中已安装的 `codex`，或 `TOKEN_IO_CODEX_CLI_PATH` 指定的绝对可执行路径，不使用 SDK 自带 CLI。临时 `HOME`／`CODEX_HOME` 隔离配置。全新实例加载刚安装的 MCP 命令及两个默认注册，执行只读 `command/exec` 查看版本、发现两个工具清单，并调用 `workflow_capabilities` 及双语 `rules_get_context`。禁止模型回合、mutation、任意 Shell 命令及复杂任务。这用于弥补当前会话无法动态重载更新后 MCP Server 的问题，不证明既有会话已重载。CI 安装测试依赖组以执行策略、静态和类型检查，不启动该 SDK 最终查看。
 
 
 ## API 与工具恢复提示
@@ -133,23 +138,15 @@ uv tool install --force --reinstall --managed-python --python 3.14 --find-links 
 
 标准安装可直接使用本地 stdio 状态操作，不要求特权服务或外部 provider。安装后重载服务并启动 fresh Codex CLI 会话，从目标项目根目录运行。状态调用要求有效线程元数据，Worker 必须先由 Root 登记；保留路径、角色、分配与逐操作授权检查。各公共工具的独立配置条件仍适用：Memory 需要已有项目文件，计划需要配置后端，合规预检需要配置 reader，API 工具需要两个非空 API 环境变量和逐调用外发授权，物化另需已登记 Worker、固定根目录、新鲜预检和独立 operator grant。可发现不等于已配置或已授权。
 
-确保 Codex CLI 位于 `PATH` 后，单独注册 MCP profiles：
+确保 Codex CLI 位于 `PATH` 后，一次注册两个 MCP 可执行程序：
 
 ```sh
 token-io-decoupling setup codex
 ```
 
-注册或更新工具后重新加载受影响的 MCP Server。注册会转发必需环境变量的名称，但不提供变量值，也不建立本地会话上下文。
+Setup 会解析并核验当前 workflow 和 tools 可执行程序，然后使用空参数列表注册这两个目标。它保留任一目标表中的其他设置，并保持无关配置不变。它不会检查、分类、删除或迁移其他注册。`--dry-run` 会读取配置并仅预检当前两个目标表，但不启动 MCP 子进程，也不写入。注册或更新工具后重新加载受影响的 MCP Server。环境转发仅保存变量名，不提供变量值，也不建立本地会话上下文。
 
 Memory 工具不需要额外安装选项或 Serena 包。从目标项目根目录启动 Codex；MCP 使用启动工作目录作为项目根，只读取 `.serena/memories/` 中的文件。它不搜索父级或兄弟项目。Memory 目录和所请求的文件必须已存在；缺失时返回非成功结果，不创建任何内容。文件操作使用 Python 标准库。详见[Memory 工具](SERENA_MEMORY_TOOLS_zh_cn.md)。
-
-旧 workflow 注册若含 Serena 专用启动参数或固定工作目录，不会自动迁移。要用当前参数替换该 workflow 注册，请从目标项目根目录运行：
-
-```sh
-token-io-decoupling setup codex --profile workflow --replace
-```
-
-此操作只替换 workflow 注册，保留其他 profile 和无关设置。
 
 ### 安装与更新本地 Skill 指令
 
@@ -191,34 +188,25 @@ bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh
 
 之后仍按上述方法执行 `skills install` 或 `skills update`。
 
-前置条件为 Bash 3.2 或更新版本（包括 macOS 的 `/bin/bash`）、`uv` 和 Codex CLI；`uv` 与 `codex` 必须位于 `PATH`。脚本相对自身定位 `mcp/`，针对该源码执行 `uv tool install --force --reinstall --managed-python --python 3.14`，通过 `uv tool dir --bin` 获取 bin 目录，再以绝对路径调用安装后入口的 `setup codex`。uv 会解析已声明的本地 workspace 依赖；即使只修改了依赖的源码或打包规则，`--reinstall` 也会更新它们。工具 bin 目录无需位于 `PATH`，无需激活虚拟环境或另行执行 setup。重复运行会从当前 checkout 更新此工具，不会卸载旧 `token-io-mcp` 工具。
+前置条件为 Bash 3.2 或更新版本（包括 macOS 的 `/bin/bash`）、`uv` 和 Codex CLI；`uv` 与 `codex` 必须位于 `PATH`。脚本相对自身定位 `mcp/`，针对该源码执行 `uv tool install --force --reinstall --managed-python --python 3.14`，通过 `uv tool dir --bin` 获取 bin 目录，再以绝对路径调用安装后的管理命令 `setup codex`。uv 会解析已声明的依赖；即使只修改了依赖的源码或打包规则，`--reinstall` 也会更新它们。工具 bin 目录无需位于 `PATH`，无需激活虚拟环境或另行执行 setup。重复运行会从当前 checkout 更新此工具。
 
 每项操作只需调用脚本一次，在上述命令后追加相应选项即可：
 
 | 选项 | 操作 |
 | --- | --- |
-| `--dry-run` | 输出安装和 setup 计划，不运行安装/setup 命令或读写配置；真实运行前，未来的工具 bin 路径以符号占位表示。 |
-| `--profile workflow` | 只注册一个 profile；也可选择 `root`、`worker` 或 `share`。安装包仍包含全部 profile。 |
-| `--all` | 显式选择默认的四个 profile，不能与 `--profile` 同用。 |
-| `--replace` | 允许 setup 替换冲突或已禁用的注册；省略时仍拒绝冲突。 |
+| `--dry-run` | 安装器只输出安装计划，不安装或调用 setup；真实运行前，未来的工具 bin 路径以符号占位表示。直接运行 `setup codex --dry-run` 时会读取配置并仅预检两个目标表；不启动 MCP 子进程，也不写入。 |
 | `--python VERSION` | 指定 uv 托管的 Python 版本，替代默认的 `3.14`。 |
 | `--help` | 显示用法，不安装或修改配置。 |
 
 脚本在安装前验证参数及必需命令。某阶段失败后停止后续阶段并返回非零状态。安装和注册是不同副作用：若安装后 setup 失败，更新后的工具仍保留安装状态；重新运行前先检查 setup 的部分状态报告。注册设置保留和转发检查仍由现有 setup helper 负责。成功后重新加载受影响的服务；脚本不会重启客户端或提供凭据值。
 
-Setup 使用一个核验后的可执行文件绝对路径和不同 profile 参数注册上表的四个服务名，并自动将必需 API 变量和可选代理变量的名称合并到各自的 `env_vars`。自行单独管理工具安装的用户仍可直接调用 `token-io-decoupling setup codex`。例如，一次安装后命令调用即可只注册 root profile 并修复其转发：
+Setup 使用两个经过核验的可执行文件绝对路径和空启动参数注册两个 MCP 命令。它合并必需 API 变量和可选代理变量的名称；tools 可执行程序还转发 `OPENAI_TIMEOUT_MAX_RETRIES`。它仅更新这两个目标表，保留其其他设置及无关配置，不会检查或迁移其他注册。见[两个 MCP 程序与 Codex 注册](TOOLS_REGISTRATION_zh_cn.md)。需要分别注册时，可使用上文两个直接 Codex 命令。
 
-```sh
-token-io-decoupling setup codex --profile root
-```
+管理命令从当前安装环境的 scripts 目录及精确的分发包入口元数据解析自身路径。每个 MCP 可执行程序使用服务启动工作目录作为项目根；这不建立宿主身份。
 
-本入口从当前安装环境的 scripts 目录及精确的分发包入口元数据解析可执行文件。Memory 工具以服务进程启动工作目录作为项目根；这不建立宿主身份。
+安装后的 `setup codex --dry-run` 会输出两个目标注册的计划路径和空参数，不写入配置。真实 setup 会解析当前已安装的可执行程序，核验其 `tools/list` 清单，并以原子方式 upsert 仅有的两个目标表。它保留这些表中的其他设置和无关配置。更新保留文件权限模式，拒绝不支持的 TOML 布局，并在替换前检查输入文件是否已改变。避免并发配置写入：此检查不是全局锁。不会打印配置值或子进程输出。
 
-安装后命令的 `setup codex --dry-run` 输出所选 profile 的 JSON 参数向量及变量名转发计划，不运行 setup 子进程，也不读写配置。真实 setup 在注册写入前探测 CLI，并读取清单及嵌套 `transport` 数据。启用状态、命令和启动参数匹配的注册跳过重新注册，但补齐转发名称。替换使用同名 upsert，不先删除；后续转发失败与已应用注册分开报告。不打印捕获的配置或子进程输出。
-
-由于 Codex upsert 会替换注册项，setup 会将原设置暂存在内存中，每次 upsert 成功后连同转发声明一起恢复，再处理下一个 profile。替换 stdio 注册时保留附加设置和已有转发变量名，只改变入口、profile 参数及预期的启用状态。HTTP 转为 stdio 时保留通用工具策略和超时设置，但移除旧传输与认证字段。后续 profile 失败时，报告会区分已完成的注册/转发和待处理项。需要保留这些设置的替换应使用 setup。
-
-新入口及注册核验通过后，从本仓库旧四命令工具迁移的环境可用 `uv tool uninstall token-io-mcp` 移除旧分发包。保留其他工具、服务和设置，并重新连接 MCP 客户端以加载新启动命令。Setup 不建立本地会话上下文。
+若两个目标表都已正确，setup 不执行写入。它不会重写无关条目或管理其他服务注册。
 
 协议目标仍为 `2026-07-28`。SDK 子进程测试核验协商与调用；实际可信宿主集成仍需独立证据。
 
@@ -227,16 +215,16 @@ token-io-decoupling setup codex --profile root
 安装脚本已通过 setup 自动处理转发。若仅修复已有注册的转发，从任意工作目录调用一次[独立修复脚本](../scripts/configure-codex-mcp-env.py)：
 
 ```sh
-uv run --managed-python -- /absolute/path/to/skill/scripts/configure-codex-mcp-env.py --server dev-workflow-standards-tools
+uv run --managed-python -- /absolute/path/to/skill/scripts/configure-codex-mcp-env.py --server token-io-decoupling-tools
 ```
 
 追加 `--dry-run` 可改为只预览而不写入。已有安装也可用 `token-io-decoupling setup codex-env --server NAME` 完成相同操作；两者是替代入口，无须连续执行。重复 `--server NAME` 可在一次文件操作中更新多个已有 stdio 注册项。默认合并 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`HTTP_PROXY`、`HTTPS_PROXY`、`ALL_PROXY`、`NO_PROXY` 及四个代理变量的小写形式；重复 `--env-var NAME` 可改用自定义变量名列表。`--config /absolute/path/config.toml` 显式选择文件，否则目标为 `$CODEX_HOME/config.toml`，未设置 `CODEX_HOME` 时使用 `~/.codex/config.toml`。脚本通过 PEP 723 元数据让 uv 准备 TOML Kit，并从当前 checkout 导入 helper，因此不依赖已安装的 MCP 包或 Codex CLI。安装后的命令使用相同 helper。
 
-Helper 只合并所选 `env_vars`，保留其他变量名、注释、设置和文件权限。没有缺失变量名时，重复成功运行不改变文件字节或修改时间。写入通过同目录临时文件完成，并在替换前检测输入是否发生变化；应避免其他进程同时写配置，因为这不是跨客户端事务。文件或服务条目不存在、非 stdio 服务、TOML 或字段类型无效、目标为符号链接、所需变量存在冲突的远端来源、写入失败时，均返回安全错误。它不会创建服务条目、打印配置值或发起 API 请求。此修复命令的 `--dry-run` 会读取并验证所选文件，但不写入；上文的注册 dry-run 则明确不检查配置。
+Helper 只合并所选 `env_vars`，保留其他变量名、注释、设置和文件权限。没有缺失变量名时，重复成功运行不改变文件字节或修改时间。写入通过同目录临时文件完成，并在替换前检测输入是否发生变化；应避免其他进程同时写配置，因为这不是跨客户端事务。文件或服务条目不存在、非 stdio 服务、TOML 或字段类型无效、目标为符号链接、所需变量存在冲突的远端来源、写入失败时，均返回安全错误。它不会创建服务条目、打印配置值或发起 API 请求。此修复命令的 `--dry-run` 会读取并验证所选文件，但不写入；上文的 setup dry-run 会读取配置并仅预检两个目标表，不启动 MCP 子进程，也不写入。
 
-TOML Kit 文档说明了一项格式保留例外：扩展数组表的乱序子表在重新序列化时会被重新排列，锁定版本也存在这一行为。计划写入修复前，helper 会检查原文档未经修改时能否逐字节往返还原；不支持的排版会被拒绝且不写入，避免静默移动无关内容。注册 setup 也在 upsert 前的预检中执行相同检查。若独立修复命令发现转发已经完整，即使存在这种排版也仍保持无改动。
+TOML Kit 文档说明了一项格式保留例外：扩展数组表的乱序子表在重新序列化时会被重新排列，锁定版本也存在这一行为。计划写入修复前，helper 会检查原文档未经修改时能否逐字节往返还原；不支持的排版会被拒绝且不写入，避免静默移动无关内容。注册 setup 会在单次原子配置更新前执行相同检查。若独立修复命令发现转发已经完整，即使存在这种排版也仍保持无改动。
 
-下面是不完整的结果示例。手动编辑时须保留已有 `command`、`args`、审批设置及其他转发变量名：
+下面是不完整的默认注册结果示例。手动编辑时须保留已有 `command`、`args`、审批设置及其他转发变量名；`tools` 项还应保留其 `OPENAI_TIMEOUT_MAX_RETRIES` 转发声明：
 
 ```toml
 [mcp_servers.token-io-decoupling-workflow]
@@ -246,31 +234,18 @@ env_vars = [
   "http_proxy", "https_proxy", "all_proxy", "no_proxy",
 ]
 
-[mcp_servers.token-io-decoupling-root-agent-tools]
+[mcp_servers.token-io-decoupling-tools]
 env_vars = [
   "OPENAI_API_KEY", "OPENAI_BASE_URL",
   "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
   "http_proxy", "https_proxy", "all_proxy", "no_proxy",
-]
-
-[mcp_servers.token-io-decoupling-worker-agent-tools]
-env_vars = [
-  "OPENAI_API_KEY", "OPENAI_BASE_URL",
-  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
-  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
-]
-
-[mcp_servers.token-io-decoupling-share-tools]
-env_vars = [
-  "OPENAI_API_KEY", "OPENAI_BASE_URL",
-  "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
-  "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+  "OPENAI_TIMEOUT_MAX_RETRIES",
 ]
 ```
 
 Codex 自身的环境中必须持有这两个非空白 API 变量，以及需要使用的代理变量。`env_vars` 允许将对应变量值转发给各自单独启动的 MCP 进程；它不会读取 Shell 配置或 `.env` 文件，也不会复制其他终端的环境。不要将真实值写入仓库文件、setup 参数、日志或示例。字段含义见 [Codex MCP 配置参考](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
 
-新注册和已匹配注册都会在 setup 时合并转发声明，`--replace` 后也会执行相同合并。安装脚本已自动包含 setup；单独执行 `uv tool install` 仍不会注册服务或提供凭据。修改配置后重新加载受影响的 MCP 服务；若客户端没有重载机制，退出后重新打开客户端以创建新服务进程。运行中的进程不会自动获得修改后的配置。
+两个 MCP 注册都会在 setup 时合并转发声明。安装脚本已自动包含 setup；单独执行 `uv tool install` 仍不会注册服务或提供凭据。修改配置后重新加载受影响的 MCP 服务；若客户端没有重载机制，退出后重新打开客户端以创建新服务进程。运行中的进程不会自动获得修改后的配置。
 
 终端调用成功而 MCP 请求报告缺配置时，检查客户端进程环境、各注册项的转发变量名，以及服务是否已重新创建。只记录变量存在性及是否非空白。当前 Decisions advisor 在任一必需值缺失或为空白时，在创建 SDK client 之前返回 `fallback`，原因为 `missing_credentials`；不要套用其他服务的 `missing_api_key` 错误名称。转发不会启用 API 请求、授予出站数据权限或建立本地会话上下文；下文的独立要求仍须满足。
 
@@ -389,7 +364,7 @@ Skill 源码标记与 canonical 合规 helper 均存在时，launcher 构建会�
 
 [MCP CI 工作流](../.github/workflows/mcp.yml)在托管 Python 3.11 和 3.14 上执行锁定检查，并有独立的安装版 wheel job。用 `uv export --no-emit-workspace` 导出第三方构建/运行时约束，构建再加 `--all-groups`，运行时再加 `--no-dev`。Workspace 成员由本地产物提供，不作为 editable requirements 导出。从脱离仓库的 wheel 集安装时，以产物目录作为 `--find-links`，安装根包 `token_io_decoupling-0.1.0-py3-none-any.whl`；保留已配置的索引以解析锁定的第三方依赖。完整命令见 CI。
 
-临时安装使用命令局部的 `UV_TOOL_DIR` 和 `UV_TOOL_BIN_DIR`，均指向临时绝对目录。用锁定的 workspace 解释器运行 `tests/support/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-decoupling`。脚本在 checkout 外、空 `PYTHONPATH` 下启动四个 profile 子进程，核验精确清单与绑定拒绝，检查两种语言规则，并在空 `PATH` 下运行 setup dry-run。源码根项目的 tool 安装另行检查。这些结果证明包与 stdio 行为，不证明实际宿主绑定或 GitHub Actions 已运行。
+临时安装使用命令局部的 `UV_TOOL_DIR` 和 `UV_TOOL_BIN_DIR`，均指向临时绝对目录。用锁定的 workspace 解释器运行 `tests/support/installed_stdio_smoke.py --cli /absolute/temporary/bin/token-io-decoupling`。脚本在 checkout 外、空 `PYTHONPATH` 下启动两个独立 MCP 可执行程序，核验各自的精确清单与绑定拒绝，检查两种语言规则，并在空 `PATH` 下运行 setup dry-run。源码根项目的 tool 安装另行检查。这些结果证明包与 stdio 行为，不证明实际宿主绑定或 GitHub Actions 已运行。
 
 [文档工作流](../.github/workflows/multilingual-docs.yml)保留多语言、链接、路线验证器及扫描器回归；遍历时剪枝生成资源与环境，同时检查手写的 workspace 文档。
 

@@ -1,27 +1,24 @@
 from __future__ import annotations
 
-import importlib
 import tomllib
 from pathlib import Path
 
-from token_io_decoupling_core.binding import BindingError
 
-from token_io_decoupling import cli
-
-
-def test_package_installs_one_unified_console_script() -> None:
+def test_package_installs_admin_and_two_fixed_mcp_entrypoints() -> None:
     project = Path(__file__).parents[2] / "pyproject.toml"
     scripts = tomllib.loads(project.read_text(encoding="utf-8"))["project"]["scripts"]
-    assert scripts == {"token-io-decoupling": "token_io_decoupling.cli:main"}
+    assert scripts == {
+        "token-io-decoupling": "token_io_decoupling.cli:main",
+        "token-io-decoupling-workflow": "token_io_decoupling.cli:workflow_main",
+        "token-io-decoupling-tools": "token_io_decoupling.cli:tools_main",
+    }
 
 
-def test_legacy_adapter_is_disjoint_and_importable() -> None:
-    from token_io_decoupling_mcp.binding import BindingError as LegacyBindingError
-
-    import token_io_decoupling_mcp
-
-    legacy_server = importlib.import_module("token_io_decoupling_mcp.server")
-
-    assert token_io_decoupling_mcp.__version__ == "0.1.0"
-    assert LegacyBindingError is BindingError
-    assert legacy_server.create_server is cli.create_server
+def test_obsolete_root_forwarders_are_not_in_the_wheel_package() -> None:
+    project = Path(__file__).parents[2]
+    pyproject = tomllib.loads((project / "pyproject.toml").read_text(encoding="utf-8"))
+    assert pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == [
+        "src/token_io_decoupling"
+    ]
+    obsolete = project / "src" / "token_io_decoupling_mcp"
+    assert not list(obsolete.glob("*.py"))

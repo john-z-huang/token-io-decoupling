@@ -2,11 +2,11 @@
 
 [English](OUTPUT_MATERIALIZATION.md) | [简体中文](OUTPUT_MATERIALIZATION_zh_cn.md)
 
-This document owns the `materialize_decoupled_output` Worker tool contract: its prepare, inspect, and apply lifecycle, trusted operator grant, bounded templates, result interpretation, and recovery boundaries. The [MCP workspace development guide](DEVELOPMENT.md) owns profile inventory and startup-factory indexing.
+This document owns the `materialize_decoupled_output` Worker tool contract: its prepare, inspect, and apply lifecycle, trusted operator grant, bounded templates, result interpretation, and recovery boundaries. The [MCP executable and registration guide](TOOLS_REGISTRATION.md) owns the current executable inventory and Codex registration; the [MCP workspace development guide](DEVELOPMENT.md) owns installation and startup-factory indexing.
 
 ## Purpose and authority
 
-The tool lets an eligible Worker prepare bounded output artifacts outside the project, inspect those artifacts, and apply an explicitly granted set of files through the configured project root. It is worker-only and does not add a profile. Tool discovery, a verified Worker binding, Worker state-store guards, `WORKER_WRITE`, and an assignment do not by themselves grant project-file write authority.
+The tool lets an eligible Worker prepare bounded output artifacts outside the project, inspect those artifacts, and apply an explicitly granted set of files through the configured project root. It is worker-only and is exposed by the `token-io-decoupling-tools` executable. Tool discovery, a verified Worker binding, Worker state-store guards, `WORKER_WRITE`, and an assignment do not by themselves grant project-file write authority.
 
 Each operation re-reads the verified Worker materialization context and a separate trusted operator grant. The context must identify the current Worker, Root, project, allocation, role, output class, released slice, and confirmed assignment hash. The grant must be active and match that binding, the pinned project and artifact directory identities, policy version, exact paths, operations, and allowed templates. A changed or revoked grant, changed assignment, missing context, or unavailable safety capability fails closed. Grant data is obtained from trusted operator code, never from the request payload.
 

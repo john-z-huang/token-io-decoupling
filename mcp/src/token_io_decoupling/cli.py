@@ -1,13 +1,14 @@
-"""Unified installed CLI for the Token I/O MCP role profiles."""
+"""Management CLI and fixed workflow/tools stdio entry points."""
 
 from __future__ import annotations
 
+import argparse
 import os
 import sys
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from token_io_decoupling_core.binding import BindingError
-from token_io_decoupling_core.profiles import PROFILE_SERVER_NAMES
 
 from token_io_decoupling.cli_commands import dispatch_command
 from token_io_decoupling.compliance_factory import (
@@ -18,7 +19,7 @@ from token_io_decoupling.output_materializer_factory import (
     OutputMaterializerFactoryError,
     load_output_materializer_config,
 )
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_tools_server, create_workflow_server
 from token_io_decoupling.task_plan_factory import (
     TaskPlanFactoryError,
     load_task_plan_service,
@@ -41,31 +42,82 @@ def _trusted_state_root() -> Path:
         raise BindingError("trusted OS account state location is unavailable") from exc
 
 
-def _run(*, prog: str, default_profile: str | None) -> int:
-    result = dispatch_command(prog, default_profile, sys.argv[1:])
-    if isinstance(result, int):
-        return result
-    args = result
-    profile = args.profile
+def _run_workflow(prog: str, argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog=prog, description="Start the workflow MCP server.")
+    try:
+        package_version = version("token-io-decoupling")
+    except PackageNotFoundError:
+        package_version = "0.1.0"
+    parser.add_argument("--version", action="version", version=f"{prog} {package_version}")
+    parser.add_argument(
+        "--task-plan-factory",
+        metavar="MODULE:CALLABLE",
+        help="explicitly load trusted operator code that returns a configured TaskPlanService",
+    )
+    parser.add_argument(
+        "--compliance-factory",
+        metavar="MODULE:CALLABLE",
+        help="explicitly load trusted operator code that returns a read-only compliance service",
+    )
+    args = parser.parse_args(argv)
+
     compliance_service = None
-    output_materializer_config = None
     server = None
     try:
         try:
             task_plan_service = load_task_plan_service(args.task_plan_factory)
         except TaskPlanFactoryError as exc:
-            print(
-                f"{prog}: task-plan startup factory failed ({exc.reason})",
-                file=sys.stderr,
-            )
+            print(f"{prog}: task-plan startup factory failed ({exc.reason})", file=sys.stderr)
             return 2
         try:
             compliance_service = load_compliance_service(args.compliance_factory)
         except ComplianceFactoryError as exc:
-            print(
-                f"{prog}: compliance startup factory failed ({exc.reason})",
-                file=sys.stderr,
-            )
+            print(f"{prog}: compliance startup factory failed ({exc.reason})", file=sys.stderr)
+            return 2
+        server = create_workflow_server(
+            state_root=_trusted_state_root(),
+            task_plan_service=task_plan_service,
+            compliance_service=compliance_service,
+        )
+        server.run(transport="stdio")
+    except Exception:
+        print(f"{prog}: server startup failed", file=sys.stderr)
+        return 2
+    finally:
+        if compliance_service is not None:
+            compliance_service.close()
+    return 0
+
+
+def _run_tools(prog: str, argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog=prog, description="Start the aggregate tools MCP server.")
+    try:
+        package_version = version("token-io-decoupling")
+    except PackageNotFoundError:
+        package_version = "0.1.0"
+    parser.add_argument("--version", action="version", version=f"{prog} {package_version}")
+    parser.add_argument(
+        "--compliance-factory",
+        metavar="MODULE:CALLABLE",
+        help="explicitly load trusted operator code that returns a read-only compliance service",
+    )
+    parser.add_argument(
+        "--output-materializer-factory",
+        metavar="MODULE:CALLABLE",
+        help=(
+            "explicitly load trusted operator code that returns a bounded output-materializer "
+            "configuration"
+        ),
+    )
+    args = parser.parse_args(argv)
+
+    compliance_service = None
+    server = None
+    try:
+        try:
+            compliance_service = load_compliance_service(args.compliance_factory)
+        except ComplianceFactoryError as exc:
+            print(f"{prog}: compliance startup factory failed ({exc.reason})", file=sys.stderr)
             return 2
         try:
             output_materializer_config = load_output_materializer_config(
@@ -77,13 +129,10 @@ def _run(*, prog: str, default_profile: str | None) -> int:
                 file=sys.stderr,
             )
             return 2
-        server = create_server(
+        server = create_tools_server(
             state_root=_trusted_state_root(),
-            task_plan_service=task_plan_service,
             compliance_service=compliance_service,
             output_materializer_config=output_materializer_config,
-            profile=profile,
-            server_name=(PROFILE_SERVER_NAMES[profile] if profile is not None else None),
         )
         server.run(transport="stdio")
     except Exception:
@@ -100,13 +149,16 @@ def _run(*, prog: str, default_profile: str | None) -> int:
 
 
 def main() -> int:
-    return _run(prog="token-io-decoupling", default_profile="workflow")
+    return dispatch_command("token-io-decoupling", sys.argv[1:])
 
 
-def legacy_main() -> int:
-    """Preserve the historical module CLI's public-only default server."""
-    return _run(prog="token-io-mcp", default_profile=None)
+def workflow_main() -> int:
+    return _run_workflow("token-io-decoupling-workflow", sys.argv[1:])
+
+
+def tools_main() -> int:
+    return _run_tools("token-io-decoupling-tools", sys.argv[1:])
 
 
 if __name__ == "__main__":
-    raise SystemExit(legacy_main())
+    raise SystemExit(main())

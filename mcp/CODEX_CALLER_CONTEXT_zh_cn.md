@@ -6,13 +6,13 @@
 
 ## 安装与调用
 
-标准 `setup codex` 注册四个本地 stdio profile。无需特权服务、宿主描述符或外部 identity provider；旧 `--host-fd` 和 `--codex-context` 选项已删除。从目标项目目录启动 Codex，MCP 在启动时固定该目录的 canonical path，并以 SHA-256 派生项目分区。
+标准 `setup codex` 注册当前两个独立的本地 stdio 可执行程序：workflow 和 tools，均不带启动参数。无需特权服务、宿主描述符或外部 identity provider；旧 `--host-fd` 和 `--codex-context` 选项已删除。从目标项目目录启动 Codex，MCP 在启动时固定该目录的 canonical path，并以 SHA-256 派生项目分区。
 
 Codex 在 MCP 请求顶层 `_meta` 中传入 `threadId` 和 `sessionId`。状态操作要求两者都是有界非空字符串，线程还必须是安全路径分量；不要将它们放入工具 payload。`sessionId` 是不透明标识，其变化不重置线程状态。公共能力、规则与配置诊断不要求会话元数据。能力报告的 `support.local_stdio` 和 `runtime.binding` 区分本地支持与当前请求上下文；报告本身不测试所有依赖。
 
 ## 分配与权限
 
-Root 必须通过现有 reserve、slice 与 `delegation_bind` 流程登记 Worker；登记是应用记录，不是宿主对真实父子关系的认证。Worker 按当前项目下已有 allocation 和 Worker 状态解析 Root，只能访问自己的分配。重复 Root 归属、数据库身份不匹配或不安全路径均拒绝。首次未知线程只有在显式打开自己的 Root 工作流后才能使用该状态；profile 本身不证明角色。请求作用域通过 ContextVar 在结束/异常时恢复，不借用其他并发请求。
+Root 必须通过现有 reserve、slice 与 `delegation_bind` 流程登记 Worker；登记是应用记录，不是宿主对真实父子关系的认证。Worker 按当前项目下已有 allocation 和 Worker 状态解析 Root，只能访问自己的分配。重复 Root 归属、数据库身份不匹配或不安全路径均拒绝。首次未知线程只有在显式打开自己的 Root 工作流后才能使用该状态；可执行程序或工具发现不能证明调用方的实际角色。请求作用域通过 ContextVar 在结束/异常时恢复，不借用其他并发请求。
 
 路径穿越、派生符号链接、数据库身份、角色、分配生命周期、revision、幂等及物化的独立 grant 检查保持生效。API 请求仍要求配置和逐调用外发授权。能力字段不是用户授权。
 

@@ -6,25 +6,25 @@ This document owns configuration and use of the three deterministic task-plan MC
 
 ## Configuration and discovery
 
-`task_plan_update`, `task_plan_complete`, and `task_plan_archive` belong to the `workflow` profile and the default public inventory. They are Native operations: an Enhanced database or verified Root binding is not their storage mechanism. Existing host permissions and task authorization remain required.
+`task_plan_update`, `task_plan_complete`, and `task_plan_archive` belong to the fixed inventory of the `token-io-decoupling-workflow` executable. They are Native operations: an Enhanced database or verified Root binding is not their storage mechanism. Existing host permissions and task authorization remain required.
 
-The backend must be explicitly configured with the actual initialized Serena `MemoryManager` and its authorized project root. `create_server(task_plan_service=...)` supports embedding. The components are:
+The backend must be explicitly configured with the actual initialized Serena `MemoryManager` and its authorized project root. `create_workflow_server(task_plan_service=...)` supports embedding. The components are:
 
 ```python
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_workflow_server
 from token_io_decoupling_workflow.task_plan_core import SerenaMemoryStore, TaskPlanService
 
 
 def make_server(project_root, memory_manager):
     # Both arguments come from the host's already authorized Serena project.
     store = SerenaMemoryStore(memory_manager, project_root, storage_scope="global")
-    return create_server(profile="workflow", task_plan_service=TaskPlanService(store))
+    return create_workflow_server(task_plan_service=TaskPlanService(store))
 ```
 
 For an operator-owned launcher integration, `--task-plan-factory module:callable` loads a zero-argument callable returning a configured `TaskPlanService`. For example:
 
 ```sh
-token-io-decoupling start-mcp-server --profile workflow --task-plan-factory trusted_adapter:make_service
+token-io-decoupling-workflow --task-plan-factory trusted_adapter:make_service
 ```
 
 `trusted_adapter` is an operator-provided, reviewed module, not a bundled adapter or a tool argument. Its environment must already contain the compatible Serena dependency and authorized project object. The tool package does not install Serena, load/migrate its configuration, create a project, guess a `.serena` directory, or open another Memory store. Do not execute an invented factory to obtain availability. An unconfigured service returns `unavailable` without inspecting memory paths; invalid explicit configuration fails rather than silently falling back.

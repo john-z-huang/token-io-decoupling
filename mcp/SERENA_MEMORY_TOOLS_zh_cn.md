@@ -6,7 +6,7 @@
 
 ## 工具
 
-两个工具属于 `workflow` profile，直接接收参数。
+两个工具由 `token-io-decoupling-workflow` 可执行程序暴露，直接接收参数。
 
 | 工具 | 参数 | 结果 |
 | --- | --- | --- |
@@ -40,5 +40,6 @@ Windows 运行尚未经过独立验证。
 
 ## 相关文档
 
-- [MCP 开发指南](DEVELOPMENT_zh_cn.md) — 安装和 profile 设置。
+- [MCP 开发指南](DEVELOPMENT_zh_cn.md) — 安装和 workspace 工具。
+- [MCP 可执行程序与注册指南](TOOLS_REGISTRATION_zh_cn.md) — 当前可执行程序清单和 Codex 注册。
 - [任务计划 Memory 生命周期](../docs/skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md) — 内容保全和归档要求。

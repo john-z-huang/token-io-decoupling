@@ -36,7 +36,7 @@ from token_io_decoupling_workflow.decisions import (
     VerificationImpactInput,
 )
 
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_tools_server, create_workflow_server
 
 
 class Provider:
@@ -574,7 +574,7 @@ def test_mcp_core_and_advice_are_separate_and_replay_does_not_call_api(
 ) -> None:
     monkeypatch.setattr("token_io_decoupling_workflow.decisions.os.environ", NoCredentialReads())
     fake = FakeClient(_choice_response("task_intent", "not coding"))
-    server = create_server(
+    server = create_workflow_server(
         Provider(),
         state_root=tmp_path / "state",
         decisions_config=DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True),
@@ -582,8 +582,12 @@ def test_mcp_core_and_advice_are_separate_and_replay_does_not_call_api(
     )
 
     async def run() -> None:
-        async with Client(server, mode="auto") as client:
-            opened = await client.call_tool(
+        tools = create_tools_server(Provider(), state_root=tmp_path / "state")
+        async with (
+            Client(server, mode="auto") as client,
+            Client(tools, mode="auto") as state_client,
+        ):
+            opened = await state_client.call_tool(
                 "workflow_open",
                 {
                     "payload": {
@@ -615,7 +619,7 @@ def test_mcp_core_and_advice_are_separate_and_replay_does_not_call_api(
                 },
             )
             assert mismatch.is_error
-            state = await client.call_tool("workflow_get_state", {"payload": {}})
+            state = await state_client.call_tool("state_get", {"payload": {}})
             assert not state.is_error
             assert json.loads(_text_content(state))["revision"] == 0
 
@@ -669,7 +673,7 @@ def test_mcp_semantic_advice_does_not_replace_core_choice_and_replay_is_not_fres
     monkeypatch.setenv("OPENAI_API_KEY", "test-secret-key")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://example.invalid/v1")
     fake = FakeClient(_choice_response("task_intent", "not coding"))
-    server = create_server(
+    server = create_workflow_server(
         Provider(),
         state_root=tmp_path / "state",
         decisions_config=DecisionsRuntimeConfig(enabled=True, outbound_data_permitted=True),
@@ -691,8 +695,12 @@ def test_mcp_semantic_advice_does_not_replace_core_choice_and_replay_is_not_fres
     }
 
     async def run() -> None:
-        async with Client(server, mode="auto") as client:
-            opened = await client.call_tool(
+        tools = create_tools_server(Provider(), state_root=tmp_path / "state")
+        async with (
+            Client(server, mode="auto") as client,
+            Client(tools, mode="auto") as state_client,
+        ):
+            opened = await state_client.call_tool(
                 "workflow_open",
                 {
                     "payload": {
@@ -734,7 +742,7 @@ def test_mcp_disabled_advice_does_not_read_environment_or_create_client(
 ) -> None:
     monkeypatch.setattr("token_io_decoupling_workflow.decisions.os.environ", NoCredentialReads())
     client_calls: list[object] = []
-    server = create_server(
+    server = create_workflow_server(
         Provider(),
         state_root=tmp_path / "state",
         decisions_config=DecisionsRuntimeConfig(),
@@ -742,8 +750,12 @@ def test_mcp_disabled_advice_does_not_read_environment_or_create_client(
     )
 
     async def run() -> None:
-        async with Client(server, mode="auto") as client:
-            opened = await client.call_tool(
+        tools = create_tools_server(Provider(), state_root=tmp_path / "state")
+        async with (
+            Client(server, mode="auto") as client,
+            Client(tools, mode="auto") as state_client,
+        ):
+            opened = await state_client.call_tool(
                 "workflow_open",
                 {
                     "payload": {
@@ -974,13 +986,13 @@ def test_two_independent_servers_share_atomic_evaluation_replay_metadata(
     def decisions_client_factory(*_args: object) -> FakeClient:
         return fake
 
-    first_server = create_server(
+    first_server = create_workflow_server(
         Provider(),
         state_root=shared_state_root,
         decisions_config=decisions_config,
         decisions_client_factory=decisions_client_factory,
     )
-    second_server = create_server(
+    second_server = create_workflow_server(
         Provider(),
         state_root=shared_state_root,
         decisions_config=decisions_config,
@@ -1006,7 +1018,8 @@ def test_two_independent_servers_share_atomic_evaluation_replay_metadata(
             return await client.call_tool("workflow_evaluate", payload)
 
     async def run() -> None:
-        async with Client(first_server, mode="auto") as client:
+        tools = create_tools_server(Provider(), state_root=shared_state_root)
+        async with Client(tools, mode="auto") as client:
             opened = await client.call_tool(
                 "workflow_open",
                 {

@@ -11,7 +11,6 @@ from token_io_decoupling.codex_env import (
     DEFAULT_ENV_VARS,
     CodexEnvError,
     merge_env_vars,
-    validate_setup_config,
 )
 
 
@@ -133,6 +132,17 @@ def test_remote_duplicate_conflict_is_not_hidden_by_local_entry(tmp_path: Path) 
     assert path.read_bytes() == before
 
 
+def test_http_only_environment_headers_rejected_before_write(tmp_path: Path) -> None:
+    path = _config(
+        tmp_path,
+        '[mcp_servers.server]\ncommand = "runner"\nenv_http_headers = { "X-Test" = "test" }\n',
+    )
+    before = path.read_bytes()
+    with pytest.raises(CodexEnvError, match="not stdio"):
+        merge_env_vars(path, ("server",))
+    assert path.read_bytes() == before
+
+
 @pytest.mark.parametrize("name", ["HAS=EQUALS", "BAD\nNAME", "HAS SPACE"])
 def test_invalid_environment_names_rejected(tmp_path: Path, name: str) -> None:
     path = _config(tmp_path, '[mcp_servers.server]\ncommand = "runner"\n')
@@ -140,11 +150,6 @@ def test_invalid_environment_names_rejected(tmp_path: Path, name: str) -> None:
     with pytest.raises(CodexEnvError, match="variable names"):
         merge_env_vars(path, ("server",), (name,))
     assert path.read_bytes() == before
-
-
-def test_setup_preflight_allows_valid_conflicting_http_when_replacing(tmp_path: Path) -> None:
-    path = _config(tmp_path, '[mcp_servers.server]\nurl = "https://example.invalid"\n')
-    validate_setup_config(path, ("server",), allow_replaced_conflicts=True)
 
 
 @pytest.mark.parametrize(
@@ -164,10 +169,9 @@ def test_invalid_config_rejected_without_write(tmp_path: Path, body: str) -> Non
     assert path.read_bytes() == before
 
 
-def test_missing_server_rejected_and_setup_preflight_allows_new_server(tmp_path: Path) -> None:
+def test_missing_server_rejected(tmp_path: Path) -> None:
     path = _config(tmp_path, '[mcp_servers.other]\ncommand = "runner"\n')
     before = path.read_bytes()
-    validate_setup_config(path, ("new-server",))
     with pytest.raises(CodexEnvError, match="missing"):
         merge_env_vars(path, ("new-server",))
     assert path.read_bytes() == before

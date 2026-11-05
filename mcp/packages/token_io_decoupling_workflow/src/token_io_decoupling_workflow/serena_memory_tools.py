@@ -46,7 +46,7 @@ ChangedContent = Annotated[
 def register_serena_memory_tools(
     registrar: ToolRegistrar, service: SerenaMemoryReadService
 ) -> None:
-    """Expose only the workflow profile's two public, configured-scope read operations."""
+    """Expose only the workflow server's two public, configured-scope read operations."""
 
     def tail_read(memory_path: MemoryPath, tail_lines: TailLines) -> dict[str, Any]:
         return service.tail_read(memory_path, tail_lines)

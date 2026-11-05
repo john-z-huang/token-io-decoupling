@@ -6,7 +6,7 @@ This document owns the optional Enhanced component and interface contract withou
 
 ## Components and authoritative data
 
-The implementation uses eight uv workspace packages under `mcp/`, Pydantic, sqlite3, the official MCP SDK v2 and OpenAI SDK. Four local stdio profiles expose fixed disjoint inventories. State calls automatically resolve request threads and existing allocations without a privileged channel or external identity provider. The [MCP development guide](../../mcp/DEVELOPMENT.md) owns installation, capabilities and verification. Tests establish tested behavior, not host authentication.
+The implementation uses eight uv workspace packages under `mcp/`, Pydantic, sqlite3, the official MCP SDK v2 and OpenAI SDK. Two standalone MCP executables expose the fixed workflow inventory (17 tools) and tools inventory (51 tools), each through its own local stdio server and without startup arguments. The root `token-io-decoupling` command is administrative; setup resolves and registers only these two current executables, and the command does not serve MCP requests itself. State calls automatically resolve request threads and existing allocations without a privileged channel or external identity provider. The [MCP development guide](../../mcp/DEVELOPMENT.md) owns installation, capabilities and verification. The [MCP executable and registration guide](../../mcp/TOOLS_REGISTRATION.md) owns the executable identities, inventories and Codex registration behavior. Tests establish tested behavior, not host authentication.
 
 Markdown owner documents remain the sole policy-text authority. The JSON registry at [`mcp/rule-registry.json`](../../mcp/rule-registry.json) maps stable node IDs to owner headings, facts, evidence, branches, evaluation mode, failure action, and successor checkpoints. It must not duplicate owner prose. The independent version 1 fragment index does not change registry v2 nodes or the database schema; it maps bounded fragment IDs and dependencies to authoritative owner sections without copying their policy. Legacy rule-context calls retain their existing contract, while a fragment bundle requires explicit version 1. The implementation uses the same fence-aware parser and normalization for source and packaged resources, so their fragment content and hashes agree. Source development must select its repository root explicitly; installed runtimes read their packaged snapshot. At load time, the implementation reads the current owner text and computes its hash; it does not maintain a second hand-authored policy body or stored node hash. Ordinary prose changes become visible through dynamic rereads. A change to node structure, branch enums, or hard constraints requires a compatible implementation and test update under the changed `contract_version`.
 
@@ -16,27 +16,28 @@ Persistence authority and access boundaries are owned by [Enhanced State Store](
 
 ## Implementation packages
 
-The uv workspace root and seven members are separate Python distributions, each with its own build metadata. The root owns the only console script; the role libraries export registrations rather than executables.
+The uv workspace root and seven members are separate Python distributions, each with its own build metadata. The root distribution exports the administrative `token-io-decoupling` command and the `token-io-decoupling-workflow` and `token-io-decoupling-tools` MCP executables. The role libraries remain separate Python packages; they do not expose separate Codex MCP executables. The distribution names below identify packages, not Codex server registrations.
 
 | Distribution | Project | Canonical import / responsibility |
 | --- | --- | --- |
-| `token-io-decoupling` | [workspace root](../../mcp/pyproject.toml) | `token_io_decoupling`: CLI, Codex setup, server composition |
-| `token-io-decoupling-core` | [core](../../mcp/packages/token_io_decoupling_core/pyproject.toml) | `token_io_decoupling_core`: contracts, bindings, profiles, rules and packaged resources |
+| `token-io-decoupling` | [workspace root](../../mcp/pyproject.toml) | `token_io_decoupling`: administrative CLI, Codex setup, and MCP executable entry points |
+| `token-io-decoupling-core` | [core](../../mcp/packages/token_io_decoupling_core/pyproject.toml) | `token_io_decoupling_core`: contracts, bindings, fixed tool manifests and groupings, rules and packaged resources |
 | `token-io-decoupling-state` | [state](../../mcp/packages/token_io_decoupling_state/pyproject.toml) | `token_io_decoupling_state`: state facade, domain operations, transactions and migrations |
 | `token-io-decoupling-transport` | [transport](../../mcp/packages/token_io_decoupling_transport/pyproject.toml) | `token_io_decoupling_transport`: MCP registration, request scopes and common wire schemas |
 | `token-io-decoupling-workflow` | [workflow](../../mcp/packages/token_io_decoupling_workflow/pyproject.toml) | `token_io_decoupling_workflow`: rule/evaluation tools and optional Decisions advice |
-| `token-io-decoupling-root-agent-tools` | [root tools](../../mcp/packages/token_io_decoupling_root/pyproject.toml) | `token_io_decoupling_root`: Root tool registrations |
-| `token-io-decoupling-worker-agent-tools` | [worker tools](../../mcp/packages/token_io_decoupling_worker/pyproject.toml) | `token_io_decoupling_worker`: Worker tool registrations |
-| `token-io-decoupling-share-tools` | [shared tools](../../mcp/packages/token_io_decoupling_shared/pyproject.toml) | `token_io_decoupling_shared`: shared state/evidence registrations |
+| `token-io-decoupling-root-agent-tools` | [root tools](../../mcp/packages/token_io_decoupling_root/pyproject.toml) | `token_io_decoupling_root`: Root tool implementation package |
+| `token-io-decoupling-worker-agent-tools` | [worker tools](../../mcp/packages/token_io_decoupling_worker/pyproject.toml) | `token_io_decoupling_worker`: Worker tool implementation package |
+| `token-io-decoupling-share-tools` | [shared tools](../../mcp/packages/token_io_decoupling_shared/pyproject.toml) | `token_io_decoupling_shared`: shared state/evidence tool implementation package |
 
 The main dependency direction is:
 
 ```mermaid
 flowchart TD
-    CLI[Unified CLI package] --> Roles[Four role packages]
+    CLI[Admin and two MCP executable entry points] --> Roles[Four tool packages]
     CLI --> Transport[Transport package]
     CLI --> State[State package]
     CLI --> Core[Core package]
+    CLI --> External[dev-workflow-standards-tools library]
     Roles --> Transport
     Roles --> State
     Roles --> Core
@@ -47,7 +48,7 @@ flowchart TD
 
 Core has no upward implementation imports. State is independent of transport and launcher; transport does not import role packages. Workflow-specific advisory payloads belong to workflow, avoiding a transport/workflow cycle. The state facade delegates to bounded owners for evidence/evaluation, control, Native recovery, delegation, Worker operations, dispatch, persistence, validation and projections. Compatibility signatures and the overridable Worker dispatch seam remain explicit.
 
-The renamed `token_io_decoupling_mcp` adapter namespace uses a core-owned `pkgutil.extend_path` initializer; core, state and launcher own disjoint adapter files. Functional implementations use their canonical package names. All released migration sources remain byte-for-byte unchanged. The two v1 migration files still import `DatabaseKind` from the historical `token_io_mcp.models` path; the state loader supplies that one module name temporarily while importing migrations, then removes it. Use the renamed adapter migration paths for direct imports; importing frozen state migration modules directly bypasses the scoped compatibility loader and is unsupported. This migration-only alias is not a general legacy import namespace. Build tests check independent artifacts, no duplicate wheel file ownership, and legacy database history.
+The `token_io_decoupling_mcp` namespace remains only for core/state adapter modules used by compatibility imports; core owns its `pkgutil.extend_path` initializer and core and state own disjoint adapter files. It has no launcher or default server factory. Functional implementations use their canonical package names. All released migration sources remain byte-for-byte unchanged. The two v1 migration files still import `DatabaseKind` from the historical `token_io_mcp.models` path; the state loader supplies that one module name temporarily while importing migrations, then removes it. Use the renamed core/state adapter migration paths for direct imports; importing frozen state migration modules directly bypasses the scoped compatibility loader and is unsupported. This migration-only alias is not a general legacy import namespace. Build tests check independent artifacts, no duplicate wheel file ownership, and legacy database history.
 
 ## Identity and state boundaries
 

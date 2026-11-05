@@ -62,7 +62,7 @@ from token_io_decoupling_workflow.output_materialization import (
     OutputMaterializerConfig,
 )
 
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_tools_server
 
 
 def _result_text(result) -> str:
@@ -1133,12 +1133,11 @@ def test_worker_stdio_exposes_bounded_action_schema_and_applies_only_with_factor
         _workspace(tmp_path, [path])
     )
     materializer.close()
-    server = create_server(
+    server = create_tools_server(
         provider,
         state_root=tmp_path / "state",
         compliance_service=preflight,
         output_materializer_config=config,
-        profile="worker",
     )
 
     async def run() -> None:

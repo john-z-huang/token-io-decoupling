@@ -9,7 +9,7 @@ from mcp.shared.exceptions import MCPError
 from mcp.types import TextContent
 from token_io_decoupling_workflow.serena_memory import SerenaMemoryReadService
 
-from token_io_decoupling.server import create_server
+from token_io_decoupling.server import create_workflow_server
 
 
 def receipt(result: Any) -> dict[str, Any]:
@@ -40,9 +40,7 @@ class Reader(SerenaMemoryReadService):
 def test_flat_wire_contract_and_configured_dispatch() -> None:
     async def run() -> None:
         reader = Reader()
-        async with Client(
-            create_server(profile="workflow", serena_memory_service=reader)
-        ) as client:
+        async with Client(create_workflow_server(serena_memory_service=reader)) as client:
             tools = {tool.name: tool for tool in (await client.list_tools()).tools}
             for name, fields in (
                 ("serena_memory_tail_read", {"memory_path", "tail_lines"}),
@@ -82,7 +80,7 @@ def test_flat_wire_contract_and_configured_dispatch() -> None:
 
 def test_unconfigured_tools_are_discoverable_but_unavailable() -> None:
     async def run() -> None:
-        async with Client(create_server(profile="workflow")) as client:
+        async with Client(create_workflow_server()) as client:
             caps = receipt(await client.call_tool("workflow_capabilities", {}))
             assert caps["serena_memory_reads"] == "unavailable"
             for name, args in (
@@ -100,9 +98,7 @@ def test_unconfigured_tools_are_discoverable_but_unavailable() -> None:
 def test_wire_validation_rejects_invalid_windows_and_empty_expected_text() -> None:
     async def run() -> None:
         reader = Reader()
-        async with Client(
-            create_server(profile="workflow", serena_memory_service=reader)
-        ) as client:
+        async with Client(create_workflow_server(serena_memory_service=reader)) as client:
             invalid_calls = [
                 ("serena_memory_tail_read", {"memory_path": "notes", "tail_lines": value})
                 for value in (-1, True, "2", 10001)

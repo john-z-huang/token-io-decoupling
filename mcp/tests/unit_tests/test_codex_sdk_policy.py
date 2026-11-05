@@ -24,7 +24,7 @@ def settings(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENAI_BASE_URL", "https://synthetic.invalid/v1")
     executable = tmp_path / "codex"
     executable.touch()
-    return executable, tmp_path, ["test-mcp"]
+    return executable, tmp_path, tmp_path / "bin"
 
 
 def test_sdk_is_only_a_test_dependency_and_single_import_boundary():
@@ -70,6 +70,15 @@ def test_missing_credentials_fail_before_sdk_import(settings, monkeypatch, name,
 def test_fixed_settings_reuse_process_values_without_key_in_arguments(settings):
     overrides, environment = adapter.launch_settings(*settings)
     parsed = tomllib.loads("\n".join(overrides))
+    assert parsed["mcp_servers"] == {
+        name: {
+            "command": str(settings[2] / name),
+            "args": [],
+            "env_vars": [],
+            "startup_timeout_sec": 30,
+        }
+        for name in ("token-io-decoupling-tools", "token-io-decoupling-workflow")
+    }
     assert parsed["model"] == "gpt-6-luna"
     assert parsed["model_reasoning_effort"] == "medium"
     assert parsed["forced_login_method"] == "api"

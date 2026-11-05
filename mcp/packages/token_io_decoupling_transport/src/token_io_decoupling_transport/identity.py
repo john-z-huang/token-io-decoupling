@@ -48,7 +48,7 @@ def binding_details(provider: BindingProvider) -> dict[str, str]:
             "provider_not_configured",
             "No trusted host binding provider is configured; no probe was attempted.",
             "Use Native. Standard setup ships no production host integration; reinstalling, "
-            "environment forwarding, and profile changes cannot establish one. See "
+            "environment forwarding, and server-entrypoint selection cannot establish one. See "
             "support.standard_install_enhanced for the remaining integration prerequisites.",
         )
         diagnostic["source"] = "server.default_provider"

@@ -6,7 +6,7 @@
 
 ## 组件与权威数据
 
-实现采用 `mcp/` 下的八包 uv workspace、Pydantic、sqlite3、官方 MCP SDK v2 与 OpenAI SDK。四个本地 stdio profile 暴露固定互不重复的工具清单；状态调用自动解析请求线程与现有分配，不需要特权通道或外部 identity provider。[MCP 开发指南](../../mcp/DEVELOPMENT_zh_cn.md)负责安装、能力与验证。测试证明所测行为，不构成宿主认证证据。
+实现采用 `mcp/` 下的八包 uv workspace、Pydantic、sqlite3、官方 MCP SDK v2 与 OpenAI SDK。两个独立 MCP 可执行程序分别通过本地 stdio server 暴露固定的 workflow 清单（17 个工具）和 tools 清单（51 个工具），启动时均不需要参数。根命令 `token-io-decoupling` 仅用于管理；setup 只解析并注册当前这两个可执行程序，命令自身不处理 MCP 请求。状态调用自动解析请求线程与现有分配，不需要特权通道或外部 identity provider。[MCP 开发指南](../../mcp/DEVELOPMENT_zh_cn.md)负责安装、能力与验证；[MCP 可执行程序与注册指南](../../mcp/TOOLS_REGISTRATION_zh_cn.md)负责可执行程序身份、清单和 Codex 注册行为。测试证明所测行为，不构成宿主认证证据。
 
 Markdown owner 文档仍是政策文本的唯一权威。JSON 注册表 [`mcp/rule-registry.json`](../../mcp/rule-registry.json) 将稳定节点 ID 映射到 owner 标题、事实、证据、分支、判断方式、失败处理和后续检查点，不得复制 owner 正文。独立的片段索引 v1 不修改该注册表的 v2 节点或数据库 Schema；它将有界片段 ID 和依赖映射到权威 owner 章节，不复制政策正文。旧版规则上下文调用保留现有契约；片段 bundle 必须显式选择版本 1。源码和打包资源使用相同的 fence-aware parser 与规范化，因此片段正文及其 Hash 一致。源码开发须显式选择仓库根目录；已安装运行时读取打包快照。实现加载时读取当前 owner 文本并计算 Hash；不维护第二份人工编写的政策正文或持久化节点 Hash。普通正文变化通过动态重读生效。节点结构、分支枚举或硬约束变化时，必须使用变化后的 `contract_version` 同步兼容实现与测试。
 
@@ -16,27 +16,28 @@ SQLite 保存结构化控制状态、证据引用、语义正文引用及 Hash�
 
 ## 实现包
 
-uv workspace 根项目与七个成员分别是独立的 Python 分发包，各有构建元数据。只有根包导出 console script；角色库导出工具注册，而非可执行程序。
+uv workspace 根项目与七个成员分别是独立的 Python 分发包，各有构建元数据。根分发包导出管理命令 `token-io-decoupling`，以及 MCP 可执行程序 `token-io-decoupling-workflow` 和 `token-io-decoupling-tools`。角色库仍是独立 Python 包，不会单独暴露为 Codex MCP 可执行程序。下表中的分发包名称标识 Python 包，不代表 Codex server 注册名。
 
 | 分发包 | 项目 | Canonical 导入 / 职责 |
 | --- | --- | --- |
-| `token-io-decoupling` | [workspace 根项目](../../mcp/pyproject.toml) | `token_io_decoupling`：CLI、Codex setup、服务组装 |
-| `token-io-decoupling-core` | [core](../../mcp/packages/token_io_decoupling_core/pyproject.toml) | `token_io_decoupling_core`：契约、绑定、profile、规则与打包资源 |
+| `token-io-decoupling` | [workspace 根项目](../../mcp/pyproject.toml) | `token_io_decoupling`：管理 CLI、Codex setup 与 MCP 可执行程序入口 |
+| `token-io-decoupling-core` | [core](../../mcp/packages/token_io_decoupling_core/pyproject.toml) | `token_io_decoupling_core`：契约、绑定、固定工具清单与分组、规则和打包资源 |
 | `token-io-decoupling-state` | [state](../../mcp/packages/token_io_decoupling_state/pyproject.toml) | `token_io_decoupling_state`：状态 façade、领域操作、事务与迁移 |
 | `token-io-decoupling-transport` | [transport](../../mcp/packages/token_io_decoupling_transport/pyproject.toml) | `token_io_decoupling_transport`：MCP 注册、请求 scope 与共享 wire schema |
 | `token-io-decoupling-workflow` | [workflow](../../mcp/packages/token_io_decoupling_workflow/pyproject.toml) | `token_io_decoupling_workflow`：规则/判断工具与可选 Decisions 建议 |
-| `token-io-decoupling-root-agent-tools` | [Root 工具](../../mcp/packages/token_io_decoupling_root/pyproject.toml) | `token_io_decoupling_root`：Root 工具注册 |
-| `token-io-decoupling-worker-agent-tools` | [Worker 工具](../../mcp/packages/token_io_decoupling_worker/pyproject.toml) | `token_io_decoupling_worker`：Worker 工具注册 |
-| `token-io-decoupling-share-tools` | [共享工具](../../mcp/packages/token_io_decoupling_shared/pyproject.toml) | `token_io_decoupling_shared`：共享状态/证据工具注册 |
+| `token-io-decoupling-root-agent-tools` | [Root 工具](../../mcp/packages/token_io_decoupling_root/pyproject.toml) | `token_io_decoupling_root`：Root 工具实现包 |
+| `token-io-decoupling-worker-agent-tools` | [Worker 工具](../../mcp/packages/token_io_decoupling_worker/pyproject.toml) | `token_io_decoupling_worker`：Worker 工具实现包 |
+| `token-io-decoupling-share-tools` | [共享工具](../../mcp/packages/token_io_decoupling_shared/pyproject.toml) | `token_io_decoupling_shared`：共享状态/证据工具实现包 |
 
 主要依赖方向如下：
 
 ```mermaid
 flowchart TD
-    CLI[统一 CLI 包] --> Roles[四个角色包]
+    CLI[管理命令与两个 MCP 可执行程序入口] --> Roles[四个工具包]
     CLI --> Transport[传输包]
     CLI --> State[状态包]
     CLI --> Core[核心包]
+    CLI --> External[dev-workflow-standards-tools 库]
     Roles --> Transport
     Roles --> State
     Roles --> Core
@@ -47,7 +48,7 @@ flowchart TD
 
 Core 不向上导入实现。State 独立于 transport 和 launcher；transport 不导入角色包。Workflow 专用的建议 payload 归 workflow 所有，避免 transport/workflow 环。状态 façade 委派给有界 owner，分别负责证据/判断、Control、Native 恢复、委派、Worker 操作、派发、持久化、校验与投影；兼容签名与可重载的 Worker 派发边界仍显式保留。
 
-重命名后的 `token_io_decoupling_mcp` 适配命名空间使用 core 所有的 `pkgutil.extend_path` 初始化文件；core、state 与 launcher 分别拥有不重叠的适配文件。功能实现使用 canonical 包名。所有已发布迁移源码均保持逐字节不变。两个 v1 迁移文件仍从历史路径 `token_io_mcp.models` 导入 `DatabaseKind`；state loader 仅在导入迁移期间临时提供该模块名，随后移除。直接导入 frozen state 迁移模块会绕过该局部兼容加载器，不受支持；需要直接导入时请用重命名后的 adapter migration 路径。此迁移专用别名不是通用旧版导入命名空间。构建测试核验独立产物、wheel 文件不重复归属及旧数据库历史。
+`token_io_decoupling_mcp` 命名空间仅保留供兼容导入使用的 core/state 适配模块；其 `pkgutil.extend_path` 初始化文件由 core 所有，core 与 state 分别拥有互不重叠的适配文件。该命名空间不提供 launcher 或默认 server factory。功能实现使用 canonical 包名。所有已发布迁移源码均保持逐字节不变。两个 v1 迁移文件仍从历史路径 `token_io_mcp.models` 导入 `DatabaseKind`；state loader 仅在导入迁移期间临时提供该模块名，随后移除。直接导入 frozen state 迁移模块会绕过该局部兼容加载器，不受支持；需要直接导入时请用重命名后的 core/state adapter migration 路径。此迁移专用别名不是通用旧版导入命名空间。构建测试核验独立产物、wheel 文件不重复归属及旧数据库历史。
 
 ## 身份与状态边界
 
