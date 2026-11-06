@@ -7,7 +7,7 @@ WORKFLOW_TOOLS = frozenset(
     {
         "workflow_capabilities",
         "rules_get_context",
-        "decide_decoupling_workflow",
+        "workflow_check_event",
         "workflow_select_child_effort",
         "workflow_generate_decision_context",
         "workflow_select_child_role",

@@ -10,7 +10,10 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
 
 class RuleResourcesBuildHook(BuildHookInterface):
+    """只核验批准的 workflow 编译资源，不在产品构建中读取作者源。"""
+
     def initialize(self, version, build_data):
+        """构建前执行版本、清单与内容完整性检查。"""
         del version, build_data
         resources = Path(self.root) / "src/token_io_decoupling_workflow/_resources"
         try:
@@ -28,8 +31,12 @@ class RuleResourcesBuildHook(BuildHookInterface):
                 raise ValueError("compiled resources must be JSON objects")
             build_id = manifest.get("build_id")
             if (
-                manifest.get("schema_version") != 2
-                or instructions.get("schema_version") != 2
+                type(manifest.get("schema_version")) is not int
+                or manifest["schema_version"] != 3
+                or type(instructions.get("schema_version")) is not int
+                or instructions["schema_version"] != 3
+                or manifest.get("language") != "zh_cn"
+                or instructions.get("language") != "zh_cn"
                 or not isinstance(build_id, str)
                 or not build_id.strip()
                 or instructions.get("build_id") != build_id

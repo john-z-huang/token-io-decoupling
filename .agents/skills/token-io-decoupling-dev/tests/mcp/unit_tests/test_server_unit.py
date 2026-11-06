@@ -1,14 +1,15 @@
-from typing import Any, cast
+from mcp.server import MCPServer
 
 from token_io_decoupling.server import create_tools_server, create_workflow_server
 from token_io_decoupling_core.server_tools import TOOLS_SERVER_TOOLS, WORKFLOW_TOOLS
 
 
-def _names(server: object) -> set[str]:
-    return {tool.name for tool in cast(Any, server)._tool_manager.list_tools()}
+def _names(server: MCPServer[object]) -> set[str]:
+    return {tool.name for tool in server._tool_manager.list_tools()}
 
 
 def test_fixed_servers_expose_only_current_stateless_contracts() -> None:
+    """真实注册清单必须精确为 workflow 11 项和 tools 41 项，且不复活已移除的状态 API。"""
     workflow = create_workflow_server()
     tools = create_tools_server()
 
@@ -28,23 +29,24 @@ def test_fixed_servers_expose_only_current_stateless_contracts() -> None:
 
 
 def test_default_materialization_is_unavailable_without_trusted_context() -> None:
+    """默认实例没有可信物化配置，不能因为 tools 服务可用就获得写入能力。"""
     server = create_tools_server()
-    assert cast(Any, server)._output_materializer is None
+    assert server._output_materializer is None
 
 
 def test_rule_metadata_describes_compiled_execution_without_owner_followup() -> None:
+    """工具说明须准确暴露版本、完整交付和非权威边界，不能引导回读作者源。"""
     from token_io_decoupling_workflow.tool_metadata import tool_description
 
     description = tool_description("rules_get_context")
-    assert "context_version (integer 2" in description
-    assert "Version 1 is retired and rejected" in description
-    assert "fragments is empty" in description
-    assert "not paths to read" in description
-    routing = tool_description("decide_decoupling_workflow")
-    assert "selected stage's executable text" in routing
-    assert "shared_requirements" in routing
-    assert "required before any action" in routing
-    assert "required when prerequisites are missing" in routing
-    assert "matching hash" in routing
-    assert "only those units" in routing
-    assert "Follow the referenced current route owners" not in routing
+    assert "context_version（整数2" in description
+    assert "版本1已退役并拒绝" in description
+    assert "fragments=[]" in description
+    assert "不是待打开路径" in description
+    assert "language（仅 zh_cn，默认 zh_cn）" in description
+    event = tool_description("workflow_check_event")
+    assert "不保存状态" in event
+    assert "结构" in event
+    assert "continue 不表示验收完成" in event
+    assert "阶段" in event
+    assert "task_received" in event

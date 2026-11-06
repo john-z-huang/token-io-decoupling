@@ -17,10 +17,10 @@ from token_io_decoupling_transport.setup_codex import SetupError, setup_codex
 
 
 def dispatch_command(prog: str, argv: list[str]) -> int:
-    """Run only administrative commands; MCP servers have separate fixed entry points."""
+    """仅派发安装管理命令；MCP 服务各有独立固定入口。"""
     parser = argparse.ArgumentParser(
         prog=prog,
-        description="Configure the local MCP servers or manage the bundled Skill.",
+        description="配置本地 MCP 服务或管理包内 Skill。",
     )
     try:
         package_version = version("token-io-decoupling")
@@ -29,20 +29,18 @@ def dispatch_command(prog: str, argv: list[str]) -> int:
     parser.add_argument("--version", action="version", version=f"{prog} {package_version}")
     commands = parser.add_subparsers(dest="command", required=True)
 
-    setup = commands.add_parser("setup", help="configure a Codex MCP service")
+    setup = commands.add_parser("setup", help="配置 Codex MCP 服务")
     targets = setup.add_subparsers(dest="target", required=True)
-    codex = targets.add_parser("codex", help="register both local MCP servers")
+    codex = targets.add_parser("codex", help="注册两个本地 MCP 服务")
     codex.add_argument("--dry-run", action="store_true")
     codex.add_argument("--server", choices=("tools", "workflow", "both"), default="both")
-    codex_env = targets.add_parser(
-        "codex-env", help="merge environment variable names into existing Codex servers"
-    )
+    codex_env = targets.add_parser("codex-env", help="将环境变量名称合并到已有 Codex 服务配置")
     codex_env.add_argument("--config", type=Path)
     codex_env.add_argument("--server", action="append", required=True, metavar="NAME")
     codex_env.add_argument("--env-var", action="append", metavar="NAME")
     codex_env.add_argument("--dry-run", action="store_true")
 
-    skills = commands.add_parser("skills", help="install or update the bundled Skill")
+    skills = commands.add_parser("skills", help="安装或更新包内 Skill")
     actions = skills.add_subparsers(dest="skill_action", required=True)
     for action in ("install", "update"):
         command = actions.add_parser(action)

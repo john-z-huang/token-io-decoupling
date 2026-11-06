@@ -1,6 +1,6 @@
 """Shared installation facts; no service policy or calling order."""
 
 STANDARD_INSTALL_NOTICE = (
-    "Independent local Codex stdio services expose 11 workflow tools and 41 standalone tools. "
-    "Each service can be installed and registered separately. Discovery grants no authority."
+    "独立本地 Codex stdio 服务分别提供11个 workflow 工具与41个独立工具。"
+    "服务可以分别安装和注册，工具发现不产生权限。"
 )

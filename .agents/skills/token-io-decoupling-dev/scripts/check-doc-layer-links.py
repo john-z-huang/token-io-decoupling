@@ -3,12 +3,15 @@
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
+from collections.abc import Callable
 from pathlib import Path, PurePosixPath
 
-from markdown_discovery import discover_markdown
 from compliance_core_loader import load_compliance_core
+from markdown_discovery import discover_markdown
+from workflow_checks.links import HookLinkMapError, approved_edges
 
 _COMPLIANCE_CORE = load_compliance_core()
 
@@ -42,11 +45,14 @@ def counterpart(path: PurePosixPath) -> PurePosixPath:
     return _COMPLIANCE_CORE.counterpart(path)
 
 
-def allowed(source: str, target: str, is_navigation: bool, source_path: PurePosixPath | None = None,
-            target_path: PurePosixPath | None = None) -> bool:
-    return _COMPLIANCE_CORE.allowed_link(
-        source, target, is_navigation, source_path, target_path
-    )
+def allowed(
+    source: str,
+    target: str,
+    is_navigation: bool,
+    source_path: PurePosixPath | None = None,
+    target_path: PurePosixPath | None = None,
+) -> bool:
+    return _COMPLIANCE_CORE.allowed_link(source, target, is_navigation, source_path, target_path)
 
 
 def iter_links(path: Path):
@@ -70,7 +76,26 @@ def iter_route_coordinates(path: Path):
             yield line_number, match.group(0)
 
 
+def repository_link_issues(
+    root: Path, documents: dict[str, str], target_present: Callable[[str], bool]
+) -> list[str]:
+    """配置故障明确阻止验收；精确 Hook 边不豁免链接安全与语言隔离。"""
+    try:
+        hook_dependencies = approved_edges(root)
+    except HookLinkMapError as error:
+        return [str(error)]
+
+    def allows_hook_dependency(source: str, target: str) -> bool:
+        """仅接受有限清单中的当前 Hook 关系，历史来源映射不恢复退役文档的访问权。"""
+        return (source, target) in hook_dependencies
+
+    return _COMPLIANCE_CORE.document_link_issues(
+        documents, target_present=target_present, additional_allowed_link=allows_hook_dependency
+    )
+
+
 def main(root: Path | None = None) -> int:
+    """发现当前维护文档并汇总链接、分层与来源配置错误，以退出码供 CI 判断。"""
     root = Path(root or ROOT).absolute()
     errors: list[str] = []
     markdown_files = sorted(
@@ -96,9 +121,7 @@ def main(root: Path | None = None) -> int:
                 return False
         return candidate.is_file()
 
-    errors.extend(
-        _COMPLIANCE_CORE.document_link_issues(documents, target_present=target_present)
-    )
+    errors.extend(repository_link_issues(root, documents, target_present))
     if errors:
         print("Document layer validation failed:", file=sys.stderr)
         print("\n".join(f"- {error}" for error in errors), file=sys.stderr)
@@ -108,4 +131,6 @@ def main(root: Path | None = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--root", type=Path, default=ROOT)
+    raise SystemExit(main(parser.parse_args().root))

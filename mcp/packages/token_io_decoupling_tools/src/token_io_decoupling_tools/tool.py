@@ -37,8 +37,7 @@ MemoryPath = Annotated[
         min_length=1,
         max_length=4096,
         description=(
-            "Relative name under the startup directory project's .serena/memories; "
-            "optional mem: prefix and .md suffix."
+            "启动目录所绑定项目的 .serena/memories 下的相对名称，可带 mem: 前缀和 .md 后缀。"
         ),
     ),
 ]
@@ -48,7 +47,7 @@ TailLines = Annotated[
         strict=True,
         ge=0,
         le=10000,
-        description="Last N logical lines; zero returns line-count metadata with empty content.",
+        description="最后 N 个逻辑行；零表示仅返回行数元数据，内容为空。",
     ),
 ]
 ChangedContent = Annotated[
@@ -57,7 +56,7 @@ ChangedContent = Annotated[
         strict=True,
         min_length=1,
         max_length=64000,
-        description="Nonempty text to find literally in the tail; no normalization or regex.",
+        description="在尾部按字面查找的非空文本；不规范化，也不使用正则表达式。",
     ),
 ]
 
@@ -335,7 +334,7 @@ def register_tools(
     output_materializer: OutputMaterializationService | None,
     output_materialization_details: dict[str, str],
 ) -> None:
-    """Register local and upstream operations with the same ToolDefinition template."""
+    """使用同一注册模板公开独立操作；注册关系不要求 workflow 调用顺序。"""
 
     def tools_capabilities() -> dict[str, Any]:
         return capability_report(

@@ -139,6 +139,7 @@ def _candidate_call(client: _FakeClient) -> dict[str, Any]:
 def test_child_candidate_with_idle_primary_calls_decisions_with_priority_pool(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """空闲 Primary 应进入当前优先候选池，发给模型的描述须保留权限范围。"""
     monkeypatch.setenv("OPENAI_API_KEY", "canary-secret-key")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://canary.example.invalid/v1")
     client = _FakeClient(_choice_response("child_candidate", "primary-ref"))
@@ -169,7 +170,7 @@ def test_child_candidate_with_idle_primary_calls_decisions_with_priority_pool(
     ]
     choices = call["questions"][0]["choices"]
     assert [item["value"] for item in choices] == ["primary-ref", "insufficient_evidence"]
-    assert "Permission scope:" in choices[0]["description"]
+    assert "权限范围：" in choices[0]["description"]
     assert "current_skill_owner_sources" in request
     assert "outbound_data_permitted" not in request["caller_facts"]
     assert (

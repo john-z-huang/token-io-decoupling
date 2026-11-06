@@ -10,6 +10,7 @@ from typing import Any, cast
 import pytest
 from mcp import Client
 from mcp.types import TextContent
+from support.codex_sdk import _standard_capability_diagnostics
 
 from token_io_decoupling.server import create_workflow_server
 from token_io_decoupling_core.binding import BindingError, DenyingBindingProvider
@@ -54,23 +55,32 @@ class ControlledProvider:
 
 
 def _capabilities(server: Any) -> dict[str, Any]:
+    """通过真实 MCP 会话取得能力报告，非文本或错误响应不能冒充正常诊断。"""
+
     async def read() -> dict[str, Any]:
+        """先窄化为成功 TextContent，再解码服务实际返回的 JSON。"""
         async with Client(server, mode="auto") as client:
             result = await client.call_tool("workflow_capabilities", {})
             assert not result.is_error
-            return json.loads(cast(TextContent, result.content[0]).text)
+            content = result.content[0]
+            assert isinstance(content, TextContent)
+            return json.loads(content.text)
 
     return asyncio.run(read())
 
 
 def _assert_safe_details(report: dict[str, Any]) -> None:
+    """统一核对当前能力报告的版本和安全边界，不把配置或发现误报为实测权限。"""
     assert SECRET not in json.dumps(report)
     details = report["capability_details"]
     assert details["schema_version"] == 3
     assert report["agent_runtime"] == "codex_cli"
-    assert report["instruction_delivery"]["schema_version"] == 2
+    assert report["instruction_delivery"]["schema_version"] == 3
     assert report["instruction_delivery"]["source_fallback"] is False
-    assert report["instruction_delivery"]["start"]["payload"]["node_id"] == "contract"
+    assert report["instruction_delivery"]["start"] == {
+        "tool": "workflow_check_event",
+        "payload": {"request": {"event": "task_received"}},
+    }
     assert set(details["support"]) == {"agent_runtime", "identity_bound_operations"}
     identity = details["support"]["identity_bound_operations"]
     assert identity["status"] in {"available", "unavailable", "unknown"}
@@ -89,6 +99,7 @@ def _assert_safe_details(report: dict[str, Any]) -> None:
 def test_default_report_distinguishes_support_configuration_and_unprobed_runtime(
     tmp_path: Path,
 ) -> None:
+    """默认报告必须分开表达支持、配置和未探测的运行时状态。"""
     report = _capabilities(create_workflow_server(DenyingBindingProvider()))
     _assert_safe_details(report)
     assert report["trusted_binding"] == "unverified"
@@ -104,8 +115,8 @@ def test_default_report_distinguishes_support_configuration_and_unprobed_runtime
     public = configuration["public_interfaces"]
     assert public["status"] == "unverified"
     assert public["reason_code"] == "tool_dependencies_not_probed"
-    assert "do not authenticate facts" in public["message"]
-    assert "API configuration" in public["next_step"]
+    assert "不认证事实" in public["message"]
+    assert "API 配置" in public["next_step"]
     for name in ("caller_match", "api_decisions"):
         assert configuration[name]["reason_code"] == "configured_disabled"
     assert "task_plan_tools" not in configuration
@@ -117,6 +128,16 @@ def test_default_report_distinguishes_support_configuration_and_unprobed_runtime
     assert details["runtime"]["binding"]["reason_code"] == "provider_not_configured"
     assert details["runtime"]["server_mode"]["status"] == "public_only"
     assert not (tmp_path / "untouched").exists()
+
+
+def test_sdk_diagnostics_accept_real_chinese_capability_report() -> None:
+    """让最终 SDK 校验器消费真实中文 MCP 报告，防止英文假样例掩盖安装检验失败。"""
+    report = _capabilities(create_workflow_server(DenyingBindingProvider()))
+    diagnostics = _standard_capability_diagnostics(report)
+    assert diagnostics["capability_schema_version"] == 3
+    assert diagnostics["trusted_binding"] == "unverified"
+    assert diagnostics["server_mode"] == "public_only"
+    assert diagnostics["materialization"] == "separate_service"
 
 
 @pytest.mark.parametrize("role", [SessionRole.PARENT, SessionRole.WORKER])

@@ -14,10 +14,12 @@ from token_io_decoupling_workflow.rules import RuleLoader
 
 
 class StatelessCheckpointResult(StrictModel):
+    """当次事实结构与规则完整性报告，不保存状态，也不认证授权或验收。"""
+
     status: str
     authority: str = "structural_check_only"
     node_id: str
-    language: str = "en"
+    language: str = "zh_cn"
     selected_branch: str | None = None
     missing_facts: list[str] = Field(default_factory=list)
     missing_evidence: list[str] = Field(default_factory=list)
@@ -39,12 +41,12 @@ def evaluate_checkpoint(
     submission: EvidenceSubmission,
     *,
     rules: RuleLoader,
-    language: str = "en",
+    language: str = "zh_cn",
     expected_rule_hash: str | None = None,
 ) -> StatelessCheckpointResult:
-    """Check supplied fact/evidence shape and rule completeness without retaining state."""
+    """对当前输入及规则指纹执行结构检查；ready 仅表示可交给 Agent 审阅。"""
     node_id = submission.node_id
-    if language not in {"en", "zh_cn"}:
+    if language != "zh_cn":
         raise ValueError("unsupported checkpoint evaluation language")
     context = rules.load_context(node_id.value, language=language)
     source_hash = checkpoint_submission_source_input_hash(submission)

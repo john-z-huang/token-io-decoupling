@@ -1,13 +1,11 @@
-"""Exercise the released CLI with only built artifacts in a fresh environment."""
+"""使用真实发行文件验证独立安装、单中文更新和原有目录保护。"""
 
 from __future__ import annotations
 
 import hashlib
 import io
 import json
-import os
 import re
-import shutil
 import subprocess
 import sys
 import tarfile
@@ -17,7 +15,16 @@ from pathlib import Path
 from urllib.parse import unquote
 
 import pytest
+from support.skill_installation import (
+    IsolatedSkillCli,
+    SkillArtifacts,
+    build_skill_artifacts,
+    file_snapshot,
+    prepare_skill_cli,
+    write_legacy_skill_snapshot,
+)
 
+from token_io_decoupling import skills
 from token_io_decoupling.skills import validate_skill_bundle
 
 REPOSITORY = next(
@@ -27,40 +34,50 @@ REPOSITORY = next(
 )
 
 
+def _markdown_prose(path: Path) -> str:
+    """排除围栏代码示例，避免将示例链接误当成交付文档引用。"""
+    return re.sub(r"\x60{3}.*?\x60{3}|~~~.*?~~~", "", path.read_text(), flags=re.S)
+
+
+def _markdown_anchors(path: Path) -> set[str]:
+    """按真实标题计算 Unicode 锚点及重复标题后缀，中文改名仍须正确定位。"""
+    counts: dict[str, int] = {}
+    result: set[str] = set()
+    for line in _markdown_prose(path).splitlines():
+        heading = re.match(r"^#{1,6}\s+(.+?)\s*#*$", line)
+        if heading is None:
+            continue
+        text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading[1]).lower()
+        slug = "".join(
+            character
+            for character in text
+            if unicodedata.category(character)[0] in "LN" or character in "_- "
+        ).replace(" ", "-")
+        count = counts.get(slug, 0)
+        counts[slug] = count + 1
+        result.add(slug + (f"-{count}" if count else ""))
+    return result
+
+
 def _assert_local_links(documents: Path, boundary: Path) -> None:
-    def prose(path):
-        return re.sub(r"\x60{3}.*?\x60{3}|~~~.*?~~~", "", path.read_text(), flags=re.S)
-
-    def anchors(path):
-        counts = {}
-        result = set()
-        for line in prose(path).splitlines():
-            heading = re.match(r"^#{1,6}\s+(.+?)\s*#*$", line)
-            if heading is None:
-                continue
-            text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading[1]).lower()
-            slug = "".join(
-                c for c in text if unicodedata.category(c)[0] in "LN" or c in "_- "
-            ).replace(" ", "-")
-            count = counts.get(slug, 0)
-            counts[slug] = count + 1
-            result.add(slug + (f"-{count}" if count else ""))
-        return result
-
-    for doc in documents.rglob("*.md"):
-        text = re.sub(r"(\x60+).*?\1", "", prose(doc))
+    """核对安装快照内的链接、目录边界与实际章节，不能靠删检查掩盖迁移断链。"""
+    for document in documents.rglob("*.md"):
+        text = re.sub(r"(\x60+).*?\1", "", _markdown_prose(document))
         for raw in re.findall(r"\]\(([^)]+)\)", text):
             if "://" in raw or raw.startswith(("mailto:", "{{")):
                 continue
             target, _, fragment = raw.partition("#")
-            resolved = (doc.parent / unquote(target.split("?")[0])).resolve() if target else doc
-            assert resolved.is_relative_to(boundary), (doc, raw)
-            assert resolved.exists(), (doc, raw)
+            resolved = (
+                (document.parent / unquote(target.split("?")[0])).resolve() if target else document
+            )
+            assert resolved.is_relative_to(boundary), (document, raw)
+            assert resolved.exists(), (document, raw)
             if fragment and resolved.suffix == ".md":
-                assert unquote(fragment) in anchors(resolved), (doc, raw)
+                assert unquote(fragment) in _markdown_anchors(resolved), (document, raw)
 
 
 def test_generated_skill_links_stay_inside_delivered_tree(tmp_path):
+    """从真实批准 ZIP 展开后检查全部本地链接，保证脱离作者树仍可阅读。"""
     bundle = REPOSITORY / "mcp/src/token_io_decoupling/_resources/skill_bundle.zip"
     _, contents = validate_skill_bundle(bundle.read_bytes())
     skill = tmp_path / "skill"
@@ -73,6 +90,7 @@ def test_generated_skill_links_stay_inside_delivered_tree(tmp_path):
 
 @pytest.mark.parametrize("rewrite_manifest", [False, True])
 def test_instruction_index_tampering_is_rejected_by_bundle_integrity(rewrite_manifest):
+    """篡改索引后，即使重算其清单 Hash，也不能绕过同批 core 文件清单约束。"""
     bundle = REPOSITORY / "mcp/src/token_io_decoupling/_resources/skill_bundle.zip"
     manifest, contents = validate_skill_bundle(bundle.read_bytes())
     assert "instruction-index.json" in manifest["files"]
@@ -96,186 +114,162 @@ def test_instruction_index_tampering_is_rejected_by_bundle_integrity(rewrite_man
         )
 
 
-def test_detached_sdist_cli_installs_without_checkout(tmp_path):
-    workspace = REPOSITORY / "mcp"
-    wheels = tmp_path / "wheels"
+@pytest.fixture(scope="module")
+def skill_artifacts(tmp_path_factory: pytest.TempPathFactory) -> SkillArtifacts:
+    """整组只构建一次真实 wheel 与分离 sdist，不把源码 checkout 交给安装子进程。"""
+    return build_skill_artifacts(REPOSITORY, tmp_path_factory.mktemp("skill-artifacts"))
 
-    def run(*args, cwd=tmp_path, env=None):
-        result = subprocess.run(args, cwd=cwd, env=env, text=True, capture_output=True)
-        if result.returncode != 0:
-            raise AssertionError(
-                f"command failed with exit code {result.returncode}: {args[0]}\n{result.stderr}"
-            )
-        return result
 
-    run(
-        "uv",
-        "build",
-        "--all-packages",
-        "--wheel",
-        "--no-build-isolation",
-        "--python",
-        sys.executable,
-        "--out-dir",
-        str(wheels),
-        cwd=workspace,
-    )
-    sdists = tmp_path / "sdists"
-    run(
-        "uv",
-        "build",
-        "--package",
-        "token-io-decoupling",
-        "--sdist",
-        "--no-build-isolation",
-        "--python",
-        sys.executable,
-        "--out-dir",
-        str(sdists),
-        cwd=workspace,
-    )
-    detached = tmp_path / "detached"
-    detached.mkdir()
-    with tarfile.open(next(sdists.glob("*.tar.gz"))) as archive:
-        archive.extractall(detached, filter="data")
-    project = next(detached.iterdir())
-    assert (project / "src/token_io_decoupling/_resources/skill_bundle.zip").is_file()
-    assert not (project / "rule_sources").exists()
-    run(
-        "uv",
-        "build",
-        "--wheel",
-        "--no-build-isolation",
-        "--python",
-        sys.executable,
-        "--out-dir",
-        str(wheels),
-        cwd=project,
-    )
-    venv = tmp_path / "standalone"
-    run("uv", "venv", "--python", sys.executable, str(venv))
-    run(
-        "uv",
-        "pip",
-        "install",
-        "--offline",
-        "--python",
-        str(venv / "bin/python"),
-        "--find-links",
-        str(wheels),
-        *map(str, wheels.glob("*.whl")),
-    )
-    home = tmp_path / "home"
-    legacy = home / ".agents/skills/token-io-decoupling"
-    (legacy / ".git").mkdir(parents=True)
-    (legacy / "uncommitted.txt").write_text("preserve me")
-    env = {**os.environ, "HOME": str(home)}
-    env.pop("PYTHONPATH", None)
-    cli = str(venv / "bin/token-io-decoupling")
-    config = home / ".codex/config.toml"
-    config.parent.mkdir()
-    config.write_text('[mcp_servers.preserved]\ncommand = "existing-mcp"\n')
-    config_before = config.read_bytes()
-    rule_probe = """
-import hashlib
-import json
-from importlib.resources import files
-resources = files('token_io_decoupling_workflow').joinpath('_resources')
-payload = resources.joinpath('instructions.json').read_bytes()
-manifest = json.loads(resources.joinpath('manifest.json').read_bytes())
-assert manifest['files']['instructions.json'] == hashlib.sha256(payload).hexdigest()
-assert manifest['build_id'] == json.loads(payload)['build_id']
-print(json.dumps(manifest, sort_keys=True))
-"""
+@pytest.fixture
+def isolated_cli(skill_artifacts: SkillArtifacts, tmp_path: Path) -> IsolatedSkillCli:
+    """每个安装场景使用独立虚拟环境与 HOME，避免读写用户真实安装。"""
+    return prepare_skill_cli(skill_artifacts, tmp_path)
 
-    def probe():
-        return run(str(venv / "bin/python"), "-I", "-c", rule_probe, env=env).stdout
 
-    def program_snapshot():
-        return {
-            path.relative_to(venv).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
-            for path in venv.rglob("*")
-            if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc"
-        }
+def test_detached_sdist_builds_without_author_tree(skill_artifacts: SkillArtifacts) -> None:
+    """分离 sdist 应只靠批准 ZIP 重建，且安装前删除临时作者 checkout。"""
+    with tarfile.open(skill_artifacts.sdist) as archive:
+        names = {"/".join(Path(name).parts[1:]) for name in archive.getnames()}
+    assert "src/token_io_decoupling/_resources/skill_bundle.zip" in names
+    assert not any(name.startswith(("rule_sources/", "instruction-compiler/")) for name in names)
+    assert not skill_artifacts.detached_source.exists()
+    assert len(list(skill_artifacts.wheels.glob("*.whl"))) == 5
 
-    rules_before = probe()
-    program_before = program_snapshot()
-    run(cli, "skills", "install", env=env)
-    skill = legacy.with_name("token-io-decoupling-skill")
-    baseline = (skill / "SKILL.md").read_bytes()
-    assert b"name: token-io-decoupling-skill" in baseline
-    assert (skill / "SKILL_zh_cn.md").is_file()
-    assert (skill / "manifest.json").is_file()
+
+def test_detached_cli_installs_single_chinese_skill(isolated_cli: IsolatedSkillCli) -> None:
+    """真实独立 CLI 只安装中文单源与扁平索引，所有规范链接必须在交付树内成立。"""
+    installed = isolated_cli.invoke("skills", "install")
+    assert installed.returncode == 0, installed.stderr
+    skill = isolated_cli.skill
+    assert b"name: token-io-decoupling-skill" in (skill / "SKILL.md").read_bytes()
+    assert not list(skill.rglob("*_zh_cn.md"))
+    manifest = json.loads((skill / "manifest.json").read_bytes())
     index = json.loads((skill / "instruction-index.json").read_bytes())
+    assert manifest["schema_version"] == index["schema_version"] == 3
+    assert manifest["language"] == index["language"] == "zh_cn"
     contract = index["checkpoints"]["contract"]
     change = index["checkpoints"]["contract_change"]
-    assert contract["documents"] == change["documents"]
+    assert contract["document"].endswith("task-received.md#判断")
+    assert change["document"].endswith("progress-reported.md#判断")
     assert contract["required_facts"] != change["required_facts"]
-    snapshot = {
-        path.relative_to(skill).as_posix(): path.read_bytes()
-        for path in skill.rglob("*")
-        if path.is_file()
-    }
-    # Model an earlier managed snapshot containing retired export names.
-    retired = skill / "instructions/unit.0123456789abcdef.md"
-    retired.write_text("previous generated document\n")
-    old_manifest = json.loads((skill / "manifest.json").read_bytes())
-    old_manifest["files"][retired.relative_to(skill).as_posix()] = hashlib.sha256(
-        retired.read_bytes()
-    ).hexdigest()
-    (skill / "manifest.json").write_text(json.dumps(old_manifest, sort_keys=True) + "\n")
-    marker = json.loads((skill / ".token-io-skill.json").read_bytes())
-    marker["files"] = {
-        path.relative_to(skill).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in skill.rglob("*")
-        if path.is_file() and path.name != ".token-io-skill.json"
-    }
-    (skill / ".token-io-skill.json").write_text(json.dumps(marker, sort_keys=True))
-    _assert_local_links(skill, skill)
+    assert "documents" not in contract
     for forbidden in ("_project", "instruction-compiler", ".agents", "tests", "benchmarks"):
         assert not (skill / forbidden).exists()
-    shutil.rmtree(project)
-    run(cli, "skills", "update", env=env)
-    assert not retired.exists()
-    run(cli, "skills", "update", env=env)
-    assert {
-        path.relative_to(skill).as_posix(): path.read_bytes()
-        for path in skill.rglob("*")
-        if path.is_file()
-    } == snapshot
     _assert_local_links(skill, skill)
-    assert (skill / "SKILL.md").read_bytes() == baseline
-    assert config.read_bytes() == config_before
-    assert probe() == rules_before
-    assert program_snapshot() == program_before
-    index_path = skill / "instruction-index.json"
-    index_before = index_path.read_bytes()
-    index_path.write_text("{}\n")
-    rejected_index = subprocess.run(
-        [cli, "skills", "update"], cwd=tmp_path, env=env, capture_output=True
-    )
-    assert rejected_index.returncode == 2
-    assert index_path.read_text() == "{}\n"
-    index_path.write_bytes(index_before)
-    (skill / "SKILL.md").write_text("local Skill edits")
-    assert probe() == rules_before
-    assert run(cli, "--version", env=env).returncode == 0
-    run(
-        sys.executable,
-        str(
-            REPOSITORY / ".agents/skills/token-io-decoupling-dev/tests/mcp/support"
-            "/installed_stdio_smoke.py"
+
+
+def test_schema2_update_retires_all_previous_language_files(isolated_cli: IsolatedSkillCli) -> None:
+    """旧受管双语言快照整体换成当前中文批次；再次更新须保持字节幂等且无残留备份。"""
+    assert isolated_cli.invoke("skills", "install").returncode == 0
+    skill = isolated_cli.skill
+    current = file_snapshot(skill)
+    write_legacy_skill_snapshot(skill)
+    assert json.loads((skill / "manifest.json").read_bytes())["schema_version"] == 2
+    assert (skill / "SKILL_zh_cn.md").is_file()
+    assert b"English entry" in (skill / "SKILL.md").read_bytes()
+    updated = isolated_cli.invoke("skills", "update")
+    assert updated.returncode == 0, updated.stderr
+    assert not (skill / "instructions").exists()
+    assert not list(skill.rglob("*_zh_cn.md"))
+    assert file_snapshot(skill) == current
+    assert isolated_cli.invoke("skills", "update").returncode == 0
+    assert file_snapshot(skill) == current
+    assert not list(skill.parent.glob(f".{skill.name}-backup-*"))
+    _assert_local_links(skill, skill)
+
+
+def test_update_preserves_locally_modified_instruction_index(
+    isolated_cli: IsolatedSkillCli,
+) -> None:
+    """用户改过索引后更新必须拒绝，整棵受管树保持修改后的原样。"""
+    assert isolated_cli.invoke("skills", "install").returncode == 0
+    index = isolated_cli.skill / "instruction-index.json"
+    index.write_text("{}\n")
+    edited = file_snapshot(isolated_cli.skill)
+    rejected = isolated_cli.invoke("skills", "update")
+    assert rejected.returncode == 2
+    assert file_snapshot(isolated_cli.skill) == edited
+
+
+def test_local_skill_edits_do_not_change_program_or_rules(isolated_cli: IsolatedSkillCli) -> None:
+    """修改已安装指令不能改变程序、配置或内置规则，也不能被更新静默覆盖。"""
+    assert isolated_cli.invoke("skills", "install").returncode == 0
+    rules_before = isolated_cli.rule_manifest()
+    program_before = file_snapshot(isolated_cli.venv)
+    config_before = isolated_cli.config.read_bytes()
+    entry = isolated_cli.skill / "SKILL.md"
+    entry.write_text("local Skill edits")
+    assert isolated_cli.invoke("skills", "update").returncode == 2
+    assert entry.read_text() == "local Skill edits"
+    assert isolated_cli.invoke("--version").returncode == 0
+    smoke = subprocess.run(
+        (
+            sys.executable,
+            str(
+                REPOSITORY
+                / ".agents/skills/token-io-decoupling-dev/tests/mcp/support"
+                / "installed_stdio_smoke.py"
+            ),
+            "--cli",
+            str(isolated_cli.cli),
         ),
-        "--cli",
-        cli,
-        env=env,
-    )
-    rejected = subprocess.run(
-        [cli, "skills", "install", "--name", "token-io-decoupling"],
-        cwd=tmp_path,
-        env=env,
+        cwd=isolated_cli.root,
+        env=isolated_cli.environment(),
+        text=True,
         capture_output=True,
     )
+    assert smoke.returncode == 0, smoke.stderr
+    assert isolated_cli.rule_manifest() == rules_before
+    assert file_snapshot(isolated_cli.venv) == program_before
+    assert isolated_cli.config.read_bytes() == config_before
+
+
+def test_legacy_skill_checkout_is_preserved(isolated_cli: IsolatedSkillCli) -> None:
+    """旧名称指向受保护 checkout，安装失败后未提交文件与 Git 目录都须保留。"""
+    rejected = isolated_cli.invoke("skills", "install", "--name", "token-io-decoupling")
     assert rejected.returncode == 2
-    assert (legacy / "uncommitted.txt").read_text() == "preserve me"
-    assert (legacy / ".git").is_dir()
+    assert (isolated_cli.legacy / "uncommitted.txt").read_text() == "preserve me"
+    assert (isolated_cli.legacy / ".git").is_dir()
+
+
+def test_failed_publication_restores_the_complete_old_snapshot(tmp_path, monkeypatch):
+    """注入新目录发布失败后，真实回滚必须恢复全部旧字节并清理备份和锁。"""
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    target = skills.install_skill()
+    before = file_snapshot(target)
+    rename = Path.rename
+
+    def fail_publication(source: Path, destination: Path) -> Path:
+        if source.name == "new":
+            raise OSError("staging publish failed")
+        return rename(source, destination)
+
+    monkeypatch.setattr(Path, "rename", fail_publication)
+    with pytest.raises(OSError, match="staging publish failed"):
+        skills.install_skill(update=True)
+    assert file_snapshot(target) == before
+    assert not list(target.parent.glob(f".{target.name}-backup-*"))
+    assert not (target.parent / f".{target.name}.lock").exists()
+
+
+def test_failed_publication_and_rollback_preserve_the_recovery_snapshot(tmp_path, monkeypatch):
+    """连续破坏发布与恢复 rename，仍须保留自动清理之外的完整旧树及准确恢复路径。"""
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    target = skills.install_skill()
+    before = file_snapshot(target)
+    rename = Path.rename
+
+    def fail_publication_and_rollback(source: Path, destination: Path) -> Path:
+        if source.name in {"new", "previous"}:
+            raise OSError("injected rename failure")
+        return rename(source, destination)
+
+    monkeypatch.setattr(Path, "rename", fail_publication_and_rollback)
+    with pytest.raises(OSError, match="previous snapshot preserved at") as failed:
+        skills.install_skill(update=True)
+    backups = list(target.parent.glob(f".{target.name}-backup-*/previous"))
+    assert len(backups) == 1
+    assert file_snapshot(backups[0]) == before
+    assert str(backups[0]) in str(failed.value)
+    assert not target.exists()
+    assert not (target.parent / f".{target.name}.lock").exists()

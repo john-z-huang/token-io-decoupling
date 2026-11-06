@@ -46,6 +46,7 @@ def test_removed_setup_selection_and_override_flags_are_rejected(monkeypatch, ca
 def test_fixed_server_entrypoints_start_with_no_arguments(
     monkeypatch, tmp_path, module, factory_name
 ) -> None:
+    """两个固定服务以无参数入口启动，发现结果必须符合当前工具清单。"""
     calls = []
     monkeypatch.setattr(
         module,
@@ -63,7 +64,7 @@ def test_fixed_server_entrypoints_start_with_no_arguments(
 
     assert module.main() == 0
     expected_server_args = (
-        {}
+        {"event_advice_config": module.DecisionsRuntimeConfig()}
         if module is workflow_cli
         else {
             "task_plan_service": None,

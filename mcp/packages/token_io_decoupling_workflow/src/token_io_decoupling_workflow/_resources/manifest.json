@@ -1,7 +1,8 @@
 {
-  "build_id": "29d66bafa514842a130bdb0daf857d899268e082a7c62a8ed2464fcdc679fb1e",
+  "build_id": "5cb103e6fc5d4d7220dce85dceeeca76caf485588a5b402b6b3f3d942e2de54d",
   "files": {
-    "instructions.json": "7188f4ce900d1b51ba2992c7b172311d914f09bcd64ffbfa8da9579270f60243"
+    "instructions.json": "903061fc157132efe38e2a617e512ccfd818bafac9f0358d9cb9d73bc21dd412"
   },
-  "schema_version": 2
+  "language": "zh_cn",
+  "schema_version": 3
 }

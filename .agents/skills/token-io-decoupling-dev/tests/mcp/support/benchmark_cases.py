@@ -36,7 +36,7 @@ _CASE_SOURCES = {
         "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/rules.py"
     ],
     "multi_auto_work_definition": [
-        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/workflow_routing.py"
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/events/checks.py"
     ],
     "generic_create_preflight_pass": [
         "mcp/packages/token_io_decoupling_tools/src/token_io_decoupling_tools/compliance_preflight.py"

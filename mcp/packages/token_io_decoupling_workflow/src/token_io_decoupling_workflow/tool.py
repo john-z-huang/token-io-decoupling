@@ -15,7 +15,7 @@ from token_io_decoupling_workflow.decision_context import (
     DecisionContextGenerator,
     DecisionContextPayload,
 )
-from token_io_decoupling_workflow.decisions import DecisionsAdvisor, DecisionsRuntimeConfig
+from token_io_decoupling_workflow.decisions import DecisionsAdvisor
 from token_io_decoupling_workflow.delegation_decisions import (
     ChildCandidateSelectionPayload,
     ChildRoleSelectionPayload,
@@ -23,16 +23,15 @@ from token_io_decoupling_workflow.delegation_decisions import (
     ExecutorSelectionPayload,
     OutputTokenRoutingPayload,
 )
+from token_io_decoupling_workflow.events.advice import EventAdvisor
+from token_io_decoupling_workflow.events.checks import WorkflowEventChecker
+from token_io_decoupling_workflow.events.models import EventCheckPayload
 from token_io_decoupling_workflow.payloads import (
     _CONTROL_EVALUATE,
     _EVALUATE,
     _RULE_CONTEXT,
 )
 from token_io_decoupling_workflow.rules import DEFAULT_CONTEXT_TEXT_BUDGET, RuleLoader
-from token_io_decoupling_workflow.workflow_routing import (
-    WorkflowRouter,
-    WorkflowRoutingPayload,
-)
 
 
 def register_tools(
@@ -40,15 +39,17 @@ def register_tools(
     *,
     rules: RuleLoader,
     advisor: DecisionsAdvisor,
-    decisions_config: DecisionsRuntimeConfig | None,
+    event_advisor: EventAdvisor,
     capability_callback,
 ) -> None:
+    """集中声明 11 个操作及其输入模型，注册关系不模拟 DAG 或执行顺序。"""
     effort_selector = ChildEffortSelector()
     context_generator = DecisionContextGenerator(rules=rules)
     delegation_selector = DelegationDecisionSelector(rules)
-    workflow_router = WorkflowRouter(rules, decisions_config)
+    event_checker = WorkflowEventChecker(rules, event_advisor)
 
     def get_rule_context(payload: Any) -> Any:
+        """返回当前请求所选的完整编译内容，不按历史调用补齐规则。"""
         return rules.load_context_bundle(
             payload.node_id.value,
             language=payload.language,
@@ -57,6 +58,7 @@ def register_tools(
         )
 
     def evaluate_node(payload: Any) -> Any:
+        """先保留独立结构结论，再附加可选建议；建议失败不授权执行。"""
         if payload.submission.node_id is not payload.node_id:
             raise ValueError("submission node must match the evaluated checkpoint")
         result = evaluate_checkpoint(
@@ -79,6 +81,7 @@ def register_tools(
         return output
 
     def evaluate_control(payload: Any) -> Any:
+        """对固定 Control 节点复用同一结构与建议边界，不推进任务状态。"""
         if payload.submission.node_id is not CheckpointNode.CONTROL:
             raise ValueError("control evaluation requires Control evidence")
         result = evaluate_checkpoint(
@@ -123,9 +126,9 @@ def register_tools(
                 payload_type=DecisionContextPayload,
             ),
             ToolDefinition(
-                name="decide_decoupling_workflow",
-                callback=lambda payload: workflow_router.decide(payload.request),
-                payload_type=WorkflowRoutingPayload,
+                name="workflow_check_event",
+                callback=lambda payload: event_checker.check(payload.request),
+                payload_type=EventCheckPayload,
             ),
             ToolDefinition(
                 name="workflow_select_child_role",

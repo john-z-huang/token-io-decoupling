@@ -1,43 +1,22 @@
-# Workflow and tools architecture
+# Workflow 与工具架构
 
-[English](WORKFLOW_ARCHITECTURE.md) | [简体中文](WORKFLOW_ARCHITECTURE_zh_cn.md)
 
-## Independent services
+## 独立服务
 
-Tools and workflow are independently installable local Codex CLI MCP services. Neither implementation, CLI, startup factory, schema nor metadata imports the other service. The root distribution is an optional full-installation and administration package. A tools-only client does not install the Coding Skill or follow its route.
+Tools 和 workflow 是可独立安装的本地 Codex CLI MCP 服务。每个 tools 操作使用自己的输入、资源现状和宿主授权，不要求 workflow 模式、事件或先前工具调用。任务计划、Memory、memo、候选准备与受保护写入保留各自的独立操作契约。资源历史不证明 workflow 进度。
 
-## Implementation packages
+## Agent 控制的 Workflow
 
-- `token-io-decoupling-core` owns shared typed contracts, identity/authorization guards and generic candidate checks. It contains no compiled rule resources.
-- `token-io-decoupling-transport` owns generic registration, payload helpers, caller scopes, environment forwarding and selected-service Codex setup. Service descriptions are injected by the owning implementation.
-- `token-io-decoupling-tools` owns 41 operations: upstream development helpers, task plans, local Memory queries, candidate preflight, protected output materialization and optional diagnostics. It owns its console script and explicit backend startup factories. It does not load workflow rules or initialize workflow services.
-- `token-io-decoupling-workflow` owns 11 rule, navigation, advisory and structural-evaluation tools, its console script, rule loader and approved compiled resources. It neither probes nor reports another service's backend readiness.
-- The root distribution owns administration and the optional generated Skill ZIP. Its compatibility Python factories import the selected runtime lazily.
+可选 [Coding Skill](SKILL.md) 提供两套短流程指令和六类[逻辑事件契约](references/coding/hooks/README.md)。Code Agent 根据当前目标与实际证据选择动作，在会话上下文中维护 Contract、模式/数量、真实分配、待办、Epoch 和已尝试副作用。同一 Session 恢复时保留确认事实，重试前核对不明副作用。
 
-```mermaid
-flowchart TD
-    Root[Optional full install and admin] --> Tools[Standalone tools]
-    Root --> Workflow[Optional workflow]
-    Tools --> Transport[Generic transport and setup]
-    Workflow --> Transport
-    Tools --> Core[Common contracts and guards]
-    Workflow --> Core
-    Transport --> Core
-    Workflow --> Rules[Compiled instruction resources]
-```
+Workflow 服务提供无状态的当前指令、结构检查和可选语义建议，不提供数据库、任务状态文件、Memory 后端、执行日志、阶段游标、恢复服务，或推进业务 DAG 的 Python 方法。任何结果都不选择自动后继或授予操作权限。Code Agent 负责实质决策及基于证据的最终验收。
 
-## Operation contracts
+## 静态交付与可选建议
 
-Each tools operation consumes its own inputs and current resource state. There are no workflow checkpoint, mode, route, prerequisite-tool or follow-up-tool gates. Schema bounds, current revisions, path checks and host authorization remain part of the operation. Plan completion consumes an existing compatible plan; archive consumes a completed plan; output apply consumes an existing prepared artifact. Resource state is not proof that a previous tool or workflow step was called.
+一次检查只交付共享契约和所请求的当前事件。明确请求的短 workflow 单独返回；链接用于导航，不预加载其它事件。rules_get_context 继续作为当前规则单元的有界查询。静态指令交付不依赖 API、tools Server、计划或 Memory 后端。可选模型建议需要自己的端点/凭据配置及外发授权，不隐式发送会话全文。
 
-Task plans and Memory belong to tools. `tools_capabilities` is an optional, local dependency diagnostic. Plan writes use an explicitly configured backend; Memory queries use the tools server startup project's existing `.serena/memories`. Optional API operations use their own required process configuration and outbound review. A missing dependency affects only operations using it.
+生成 Skill、编译规则及各自清单属于同一构建批次。依赖工作前核验完整当前指令及匹配 Hash；Hash 标识内容，不证明真实性或权限。规则缺失/不兼容时不回退读取作者源。原生适配器只在实际宿主协议支持的范围内补充逻辑契约；Agent 声称完成前主动检查 completion_requested。
 
-## Optional compiled workflow
+## 操作与写入授权
 
-The Coding Skill applies only when explicitly adopted. Its routes can use independent tools under the caller's current authorization; they do not become prerequisites for those tools. The workflow service returns approved compiled actions, conditions, evidence and exact continuations. It stores no checkpoint state. Static lookup needs no API, plan backend, Memory or tools server. Missing or incompatible rule resources block only dependent workflow operations, without author-source fallback.
-
-## Protected writes
-
-Output materialization retains the trusted current Worker binding and assignment, independent operator grant, pinned roots, path and baseline checks, fresh preflight, immutable manifests, write-time reauthorization and receipts. Callers cannot provide trusted identity or permission in a payload. Standard unconfigured materialization is unavailable. Discovery, hashes, diagnostic statuses and structural review do not grant authority or certify completion.
-
-The private compiler produces workflow resources and the optional Skill ZIP as one approved batch. Generated resources are never hand-edited. The [development guide](../../../.agents/skills/token-io-decoupling-dev/references/mcp/DEVELOPMENT.md) owns checks and installation verification.
+选择相关能力时，准备、准确候选审核、当前预检和应用相互独立。受保护输出写入保留可信 Worker 身份/分工、独立操作者授权、固定根目录、路径/基线检查、不可变清单、写入时授权与实际回执。依赖缺失只影响对应操作。局部或不明副作用需要当前读回；Hook 或结构通过不能授权重试或证明成功。

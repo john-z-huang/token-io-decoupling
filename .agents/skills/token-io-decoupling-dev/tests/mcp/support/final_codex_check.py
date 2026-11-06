@@ -21,6 +21,7 @@ COMPILER = REPOSITORY / "instruction-compiler"
 
 
 def check_commands():
+    """声明有序验收清单：先新鲜度和普通检查，再允许安装与独立 SDK 检验。"""
     python = sys.executable
     targets = ["src", "packages", str(MCP_TESTS)]
     commands = [
@@ -32,7 +33,14 @@ def check_commands():
         (
             "compiler tests",
             [
+                "uv",
+                "run",
+                "--no-project",
+                "--with-editable",
+                str(COMPILER),
+                "--python",
                 python,
+                "python",
                 "-m",
                 "unittest",
                 "discover",
@@ -101,11 +109,9 @@ def check_commands():
         ),
     ]
     for script in (
-        "check-multilingual-docs.py",
+        "check-chinese-docs.py",
         "check-doc-layer-links.py",
-        "check-layer-01-sections.py",
-        "check-layer-02-04-provider-neutrality.py",
-        "check-layer-04-workflow-maps.py",
+        "check-workflow-checkpoints.py",
     ):
         commands.append((script, [python, str(DEVELOPMENT / "scripts" / script)], REPOSITORY))
     commands.append(

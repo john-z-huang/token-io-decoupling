@@ -1,6 +1,6 @@
 interface:
   display_name: "Token I/O Decoupling"
-  short_description: "Optional compiled Coding workflow; tools work independently | 可选 Coding 编译工作流；工具可独立使用"
+  short_description: "可选的无状态事件工作流；工具可独立使用"
 
 policy:
   allow_implicit_invocation: false
