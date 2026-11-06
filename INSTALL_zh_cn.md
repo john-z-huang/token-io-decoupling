@@ -36,6 +36,8 @@ Helper 重装工具和 workspace 依赖、刷新批准的编译资源，并检�
 
 默认 Skill 名为 `token-io-decoupling-skill`。如果选择了其它名称，两条 Skill 命令均使用相同的 `--name my-coding-skill`。已有 Skill 使用 `update`，尚未安装使用 `install`。
 
+生成的指令文档使用可读的来源名称，例如 `instructions/workflow-concepts--entry-and-context--contract.md`。文档链接保留作者原有的可读名称，内部单元 ID 保留在索引和 MCP 查询中。清单覆盖 `instruction-index.json`，将稳定单元 ID 和检查点 ID 映射到对应的双语文档。多个检查点可以共用文档，索引仍保留各自独立的必需事实、证据、合法分支和返回规则。更新会替换受管快照，同时移除旧文档名称。
+
 ## 仅构建发行文件
 
 在 checkout 根目录运行：
