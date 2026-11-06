@@ -14,9 +14,9 @@ from token_io_decoupling_core.registry_contract import (
     UnsupportedRegistryShapeError,
     validate_supported_registry_shape,
 )
-from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.workflow_models import EvidenceSubmission
 from token_io_decoupling_workflow.checkpoint_evaluation import evaluate_checkpoint
+from token_io_decoupling_workflow.rules import RuleLoader
 
 
 def _submission(payload: dict[str, Any]) -> EvidenceSubmission:

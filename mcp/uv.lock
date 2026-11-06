@@ -11,6 +11,7 @@ resolution-markers = [
 members = [
     "token-io-decoupling",
     "token-io-decoupling-core",
+    "token-io-decoupling-tools",
     "token-io-decoupling-transport",
     "token-io-decoupling-workflow",
 ]
@@ -1030,9 +1031,9 @@ source = { editable = "." }
 dependencies = [
     { name = "dev-workflow-standards-tools" },
     { name = "token-io-decoupling-core" },
+    { name = "token-io-decoupling-tools" },
     { name = "token-io-decoupling-transport" },
     { name = "token-io-decoupling-workflow" },
-    { name = "tomlkit" },
 ]
 
 [package.dev-dependencies]
@@ -1050,9 +1051,9 @@ dev = [
 requires-dist = [
     { name = "dev-workflow-standards-tools", git = "https://github.com/john-z-huang/dev-workflow-standards.git?subdirectory=mcp-server&rev=ba5ecc95d9f9da77aca22c17e712d6c8d2a05987" },
     { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
+    { name = "token-io-decoupling-tools", editable = "packages/token_io_decoupling_tools" },
     { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
     { name = "token-io-decoupling-workflow", editable = "packages/token_io_decoupling_workflow" },
-    { name = "tomlkit", specifier = ">=0.15,<1" },
 ]
 
 [package.metadata.requires-dev]
@@ -1076,6 +1077,27 @@ dependencies = [
 requires-dist = [{ name = "pydantic", specifier = ">=2.12,<3" }]
 
 [[package]]
+name = "token-io-decoupling-tools"
+version = "0.1.0"
+source = { editable = "packages/token_io_decoupling_tools" }
+dependencies = [
+    { name = "dev-workflow-standards-tools" },
+    { name = "httpx2" },
+    { name = "openai" },
+    { name = "token-io-decoupling-core" },
+    { name = "token-io-decoupling-transport" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "dev-workflow-standards-tools", git = "https://github.com/john-z-huang/dev-workflow-standards.git?subdirectory=mcp-server&rev=ba5ecc95d9f9da77aca22c17e712d6c8d2a05987" },
+    { name = "httpx2", specifier = ">=2.16,<3" },
+    { name = "openai", specifier = ">=3.37,<4" },
+    { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
+    { name = "token-io-decoupling-transport", editable = "packages/token_io_decoupling_transport" },
+]
+
+[[package]]
 name = "token-io-decoupling-transport"
 version = "0.1.0"
 source = { editable = "packages/token_io_decoupling_transport" }
@@ -1083,6 +1105,7 @@ dependencies = [
     { name = "mcp" },
     { name = "pydantic" },
     { name = "token-io-decoupling-core" },
+    { name = "tomlkit" },
 ]
 
 [package.metadata]
@@ -1090,6 +1113,7 @@ requires-dist = [
     { name = "mcp", specifier = ">=2.3,<3" },
     { name = "pydantic", specifier = ">=2.12,<3" },
     { name = "token-io-decoupling-core", editable = "packages/token_io_decoupling_core" },
+    { name = "tomlkit", specifier = ">=0.15,<1" },
 ]
 
 [[package]]

@@ -12,8 +12,8 @@ from typing import Any
 
 import pytest
 
-from token_io_decoupling_workflow import task_plan_core as core
-from token_io_decoupling_workflow.task_plan_core import (
+from token_io_decoupling_tools import task_plan_core as core
+from token_io_decoupling_tools.task_plan_core import (
     _GIT_IDENTITY_DOMAIN,
     SerenaMemoryStore,
     TaskPlanFailure,

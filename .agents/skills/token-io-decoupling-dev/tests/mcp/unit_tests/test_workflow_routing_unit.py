@@ -9,10 +9,10 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_workflow.decisions import (
     DecisionsRuntimeConfig,
 )
+from token_io_decoupling_workflow.rules import RuleLoader
 from token_io_decoupling_workflow.workflow_routing import (
     MAX_CAPABILITY_FACTS,
     MAX_HARD_CONSTRAINTS,

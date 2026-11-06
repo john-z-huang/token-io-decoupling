@@ -8,7 +8,7 @@ MCP Server 面向本地可用的 Codex CLI，包括本地 Work 使用的本地 C
 
 ## 环境与检查
 
-Workspace 包含根分发包和三个可独立构建的成员分发包（`core`、`transport`、`workflow`），共同使用一份 `uv.lock`。根分发包 `token-io-decoupling` 导出管理命令 `token-io-decoupling`，以及两个 MCP 可执行程序 `token-io-decoupling-workflow` 和 `token-io-decoupling-tools`。从 `mcp/` 使用托管 Python 和锁定依赖运行：
+Workspace 包含五个分发包：可选根管理／完整安装、共享 core/transport，以及可独立安装的 tools/workflow 运行时。运行时成员拥有各自 console script，互不依赖。Workflow 拥有编译规则；tools 拥有计划、Memory、preflight 与物化。以下命令在 mcp/ 中使用托管 Python 和锁定依赖执行：
 
 ```sh
 uv sync --managed-python --locked --all-packages --group dev --group codex-test
@@ -38,8 +38,8 @@ MCP 运行时由两个分别安装的可执行程序组成。每个程序都不�
 
 | MCP 可执行程序 / Codex 注册名 | 工具 |
 | --- | --- |
-| `token-io-decoupling-workflow` | 17 个无状态工作流能力、规则、规划、路由和评估工具。 |
-| `token-io-decoupling-tools` | 共 34 个工具：33 个开发工作流工具和 `materialize_decoupled_output`；见[两个 MCP 程序与 Codex 注册](TOOLS_REGISTRATION_zh_cn.md)。 |
+| `token-io-decoupling-workflow` | 11 个无状态工作流能力、规则、规划、路由和评估工具。 |
+| `token-io-decoupling-tools` | 共 41 个工具：33 个开发工作流工具和 `materialize_decoupled_output`；见[两个 MCP 程序与 Codex 注册](TOOLS_REGISTRATION_zh_cn.md)。 |
 
 使用一次 setup 命令注册两个可执行程序：
 
@@ -70,7 +70,7 @@ Canonical Python 实现使用架构契约列出的独立包名。两个 MCP 可�
 
 ## 能力报告诊断
 
-`workflow_capabilities({})` 是无参数公共工具；`capability_details.schema_version=3` 报告静态支持与已配置依赖，不探测 API 就绪情况。顶层 `trusted_binding` 在标准可执行程序中为 `unverified`，嵌入使用时反映已注入 provider。`capability_details.runtime.server_mode` 报告 `public_only` 或 `embedded`；没有注入 provider 时 `binding_transport` 为 `unavailable`，嵌入时为 `unverified`。这些诊断不认证调用方，也不授权操作。配置详情分别报告计划后端、Memory 路径、合规 reader、API 和物化条件；未探测的依赖不得视为已就绪。
+`workflow_capabilities` 报告工作流自身的静态支持、可选 API 配置和安全绑定诊断（schema 版本 3），不导入或探测 tools 服务、Memory、计划存储、preflight 或物化。诊断不授予身份或权限。`tools_capabilities` 可选地报告 tools 后端、本地 Memory 绑定、preflight 和物化，不是任何操作的前置条件。未配置计划后端时不探测 Git 或 Memory 路径；已配置的全局存储可重新核验已有 Git 身份／根目录，不创建路径。
 
 ### 已安装客户端运行时检查
 
@@ -118,13 +118,15 @@ child-effort、decision-context 和 delegation selector 每次调用只发出一
 将源码仓库放在普通开发目录中，不要放进 `~/.agents/skills/`。准备好 `uv` 后，从仓库的 `mcp/` workspace 目录安装根包；使用源码绝对路径即可在任意工作目录执行：
 
 ```sh
-uv tool install --force --reinstall --managed-python --python 3.14 /absolute/path/to/token-io-decoupling/mcp
+uv tool install --force --reinstall --managed-python --python 3.14 --with-executables-from token-io-decoupling-workflow --with-executables-from token-io-decoupling-tools /absolute/path/to/token-io-decoupling/mcp
 ```
 
 uv 会在隔离的工具环境中构建并安装可执行程序及声明的本地 workspace 依赖。`--reinstall` 同时更新依赖、批准的编译指令资源及入口程序。这一步只安装程序，不注册 MCP Server，也不安装 Skill 指令。若安装已构建的 wheel，请提供同一批准批次的四个精确 wheel 路径（参见[构建产物检查](#构建规则资源与安装检查)）：
 
 ```sh
 uv tool install --force --reinstall --managed-python --python 3.14 \
+  --with-executables-from token-io-decoupling-workflow \
+  --with-executables-from token-io-decoupling-tools \
   --with /absolute/path/to/wheels/token_io_decoupling_core-0.1.0-py3-none-any.whl \
   --with /absolute/path/to/wheels/token_io_decoupling_transport-0.1.0-py3-none-any.whl \
   --with /absolute/path/to/wheels/token_io_decoupling_workflow-0.1.0-py3-none-any.whl \
@@ -339,11 +341,11 @@ uv run --project instruction-compiler token-io-compile compile
 uv run --project instruction-compiler token-io-compile compile --check
 ~~~
 
-编译器持久输出 core `_resources/instructions.json`、`manifest.json`、`mcp/src/token_io_decoupling/_resources/skill_bundle.zip` 及 `instruction-compiler/build-report.json`。本地 `skills/token-io-decoupling` 树仅为可选查看导出，已由 Git 忽略，产品构建和安装均不需要它。该导出缺失时，`compile --check` 根据当前编译输入核验持久 core 资源、ZIP 和报告，不创建导出；导出存在时，还核验其完整文件清单和内容。Core 与包内 Skill manifest 均使用 `schema_version: 2` 和相同 `build_id`，`files` 映射以 SHA-256 绑定完整字节。生成物禁止手工修改。Hash 仅证明内容一致，不证明语义正确，仍须编译场景测试和独立指令审阅。
+编译器持久输出 workflow `_resources/instructions.json`、`manifest.json`、`mcp/src/token_io_decoupling/_resources/skill_bundle.zip` 及 `instruction-compiler/build-report.json`。本地 `skills/token-io-decoupling` 树仅为可选查看导出，已由 Git 忽略，产品构建和安装均不需要它。该导出缺失时，`compile --check` 根据当前编译输入核验持久 workflow 资源、ZIP 和报告，不创建导出；导出存在时，还核验其完整文件清单和内容。Workflow 与包内 Skill manifest 均使用 `schema_version: 2` 和相同 `build_id`，`files` 映射以 SHA-256 绑定完整字节。生成物禁止手工修改。Hash 仅证明内容一致，不证明语义正确，仍须编译场景测试和独立指令审阅。
 
 构建 hook 仅验证批准资源，不导入编译器、不读作者文档、不抽取标题、不收集仓库附件。源码开发和安装后运行时使用同一编译格式。资源缺失、损坏、陈旧或不兼容时阻塞依赖执行，不回退作者文件。规则、路由响应包含当前步骤完整可执行正文、条件、证据、失败或返回边界及下一步；元数据、能力结果在各自职责内保持精简。
 
-从 `mcp/` 构建四个 wheel 和四个 sdist：
+从 `mcp/` 构建五个 wheel 和五个 sdist：
 
 ~~~sh
 uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-dist
@@ -351,13 +353,13 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 产品包排除私有开发 Skill、编译器、作者源、测试、基准和旧仓库投影。sdist 携带批准资源及最少产品构建输入，独立重建不需要编译器或作者源。第三方构建依赖须事先可用，不承诺离线安装依赖。
 
-生成 Skill 和 core 资源构成同一批准批次。安装器在任何目标写入前验证归档路径、完整清单、Hash 和已安装 core 构建标识，并保留旧 checkout 保护、本地修改检测、并发锁及更新回滚。替换安装名称时更新安装副本 manifest Hash，保留政策批次；不能以兼容为由恢复原始 owner 查找。
+生成 Skill 和 workflow 资源构成同一批准批次。安装器在任何目标写入前验证归档路径、完整清单、Hash 和已安装 core 构建标识，并保留旧 checkout 保护、本地修改检测、并发锁及更新回滚。替换安装名称时更新安装副本 manifest Hash，保留政策批次；不能以兼容为由恢复原始 owner 查找。
 
 源码安装 helper 在 `uv tool install` 前验证编译新鲜度；资源陈旧即失败，不在安装时重新生成。其 dry-run 不进行编译器、安装、网络或配置操作。更新可执行程序、注册 MCP 和更新已安装 Skill 仍是独立动作。安装同批次产物后更新 Skill、重载受影响 MCP Server，并启动新的 Agent 会话。重新读取指令和政策 Hash、重新评估陈旧结果并保留历史；编辑已安装 Skill 不能修改 MCP 资源。
 
 [MCP CI](../../../../../.github/workflows/mcp.yml)覆盖受支持 Python 版本、编译新鲜度、运行时测试及已安装 wheel stdio。[文档 CI](../../../../../.github/workflows/multilingual-docs.yml)覆盖编译场景、双语作者和开发文档、链接、分层、路由及夹具。触发范围包含私有组件、编译器与生成物变化。开发检查和文档回归直接使用私有 Skill 的实际入口；根 scripts 仅保留安装入口，开发及测试转发别名均已移除。
 
-[产物回归](../../tests/mcp/unit_tests/test_build_artifacts.py)验证四个分发包、私有内容排除、同批次资源、损坏拒绝及独立重建。[安装回归](../../tests/mcp/unit_tests/test_skill_artifacts.py)验证无需 checkout 的安装及其不受已安装 Skill 编辑影响。临时工具检查使用任务局部 `UV_TOOL_DIR`、`UV_TOOL_BIN_DIR` 和 [stdio smoke 脚本](../../tests/mcp/support/installed_stdio_smoke.py)。
+[产物回归](../../tests/mcp/unit_tests/test_build_artifacts.py)验证五个分发包、私有内容排除、同批次资源、损坏拒绝及独立重建。[安装回归](../../tests/mcp/unit_tests/test_skill_artifacts.py)验证无需 checkout 的安装及其不受已安装 Skill 编辑影响。临时工具检查使用任务局部 `UV_TOOL_DIR`、`UV_TOOL_BIN_DIR` 和 [stdio smoke 脚本](../../tests/mcp/support/installed_stdio_smoke.py)。
 
 SDK 最终查看必须按上文有序协调器执行：全部适用检查、当前构建、隔离工具安装、已安装 stdio、全新只读 CLI 查看。首个前置或检查阶段失败即停止。
 

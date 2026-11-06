@@ -14,8 +14,8 @@ def test_fixed_servers_expose_only_current_stateless_contracts() -> None:
 
     assert _names(workflow) == set(WORKFLOW_TOOLS)
     assert _names(tools) == set(TOOLS_SERVER_TOOLS)
-    assert len(WORKFLOW_TOOLS) == 17
-    assert len(TOOLS_SERVER_TOOLS) == 34
+    assert len(WORKFLOW_TOOLS) == 11
+    assert len(TOOLS_SERVER_TOOLS) == 41
     retired = {
         "database_schema_status",
         "state_get",
@@ -33,7 +33,7 @@ def test_default_materialization_is_unavailable_without_trusted_context() -> Non
 
 
 def test_rule_metadata_describes_compiled_execution_without_owner_followup() -> None:
-    from token_io_decoupling_transport.tool_metadata import tool_description
+    from token_io_decoupling_workflow.tool_metadata import tool_description
 
     description = tool_description("rules_get_context")
     assert "context_version (integer 2" in description

@@ -7,13 +7,13 @@ import sys
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
-from token_io_decoupling.codex_env import (
+from token_io_decoupling_transport.codex_env import (
     DEFAULT_ENV_VARS,
     CodexEnvError,
     config_path,
     merge_env_vars,
 )
-from token_io_decoupling.setup_codex import SetupError, setup_codex
+from token_io_decoupling_transport.setup_codex import SetupError, setup_codex
 
 
 def dispatch_command(prog: str, argv: list[str]) -> int:
@@ -33,6 +33,7 @@ def dispatch_command(prog: str, argv: list[str]) -> int:
     targets = setup.add_subparsers(dest="target", required=True)
     codex = targets.add_parser("codex", help="register both local MCP servers")
     codex.add_argument("--dry-run", action="store_true")
+    codex.add_argument("--server", choices=("tools", "workflow", "both"), default="both")
     codex_env = targets.add_parser(
         "codex-env", help="merge environment variable names into existing Codex servers"
     )
@@ -81,7 +82,7 @@ def dispatch_command(prog: str, argv: list[str]) -> int:
         return 0
 
     try:
-        return setup_codex(dry_run=args.dry_run)
+        return setup_codex(dry_run=args.dry_run, server=args.server)
     except SetupError as exc:
         print(f"{prog}: {exc}", file=sys.stderr)
         return 2

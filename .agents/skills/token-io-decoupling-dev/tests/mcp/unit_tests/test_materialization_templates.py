@@ -15,7 +15,7 @@ from token_io_decoupling_core.materialization_models import (
     OutputMaterializationGrant,
     SourceFact,
 )
-from token_io_decoupling_workflow.materialization_templates import (
+from token_io_decoupling_tools.materialization_templates import (
     MODEL,
     MaterializationTemplateError,
     MaterializationTemplateRenderer,

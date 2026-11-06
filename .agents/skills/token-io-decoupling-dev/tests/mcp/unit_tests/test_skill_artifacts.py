@@ -180,7 +180,7 @@ def test_detached_sdist_cli_installs_without_checkout(tmp_path):
 import hashlib
 import json
 from importlib.resources import files
-resources = files('token_io_decoupling_core').joinpath('_resources')
+resources = files('token_io_decoupling_workflow').joinpath('_resources')
 payload = resources.joinpath('instructions.json').read_bytes()
 manifest = json.loads(resources.joinpath('manifest.json').read_bytes())
 assert manifest['files']['instructions.json'] == hashlib.sha256(payload).hexdigest()

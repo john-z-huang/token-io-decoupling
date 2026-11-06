@@ -33,13 +33,13 @@ _COMMON_SOURCES = [
 ]
 _CASE_SOURCES = {
     "rules_current_verification": [
-        "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/rules.py"
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/rules.py"
     ],
     "multi_auto_work_definition": [
         "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/workflow_routing.py"
     ],
     "generic_create_preflight_pass": [
-        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/compliance_preflight.py"
+        "mcp/packages/token_io_decoupling_tools/src/token_io_decoupling_tools/compliance_preflight.py"
     ],
     "skill_cross_language_preflight_fail": [
         ".agents/skills/token-io-decoupling-dev/scripts/_compliance_core.py"

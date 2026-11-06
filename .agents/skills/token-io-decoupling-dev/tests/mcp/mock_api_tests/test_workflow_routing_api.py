@@ -10,12 +10,12 @@ import pytest
 from openai import OpenAI
 
 import token_io_decoupling_workflow.openai_client as openai_client
-from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_workflow.decisions import (
     DECISIONS_MODEL,
     DECISIONS_TIMEOUT_SECONDS,
     DecisionsRuntimeConfig,
 )
+from token_io_decoupling_workflow.rules import RuleLoader
 from token_io_decoupling_workflow.workflow_routing import (
     DecouplingWorkflowRequest,
     WorkflowRouter,

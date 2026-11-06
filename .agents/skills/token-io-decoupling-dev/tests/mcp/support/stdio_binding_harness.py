@@ -49,8 +49,10 @@ def main() -> None:
         require_codex_context = sys.argv[1] == "bridge-codex"
         role = SessionRole.PARENT if sys.argv[2] == "root" else SessionRole.WORKER
         provider = TestOnlyBindingProvider(role)
-        from token_io_decoupling.compliance_factory import load_compliance_service
-        from token_io_decoupling.output_materializer_factory import load_output_materializer_config
+        from token_io_decoupling_tools.compliance_factory import load_compliance_service
+        from token_io_decoupling_tools.output_materializer_factory import (
+            load_output_materializer_config,
+        )
 
         materializer = load_output_materializer_config(output_materializer_factory)
         server = create_tools_server(

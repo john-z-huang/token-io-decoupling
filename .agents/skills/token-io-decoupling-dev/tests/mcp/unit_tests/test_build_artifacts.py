@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import os
 import subprocess
 import sys
 import tarfile
@@ -56,8 +57,8 @@ def artifacts(tmp_path_factory):
     output = tmp_path_factory.mktemp("compiled-product-artifacts")
     built = _build(WORKSPACE, output, "--all-packages")
     assert built.returncode == 0, built.stderr
-    assert len(list(output.glob("*.whl"))) == 4
-    assert len(list(output.glob("*.tar.gz"))) == 4
+    assert len(list(output.glob("*.whl"))) == 5
+    assert len(list(output.glob("*.tar.gz"))) == 5
     return output
 
 
@@ -84,7 +85,7 @@ def _assert_product_names(names):
         }, name
 
 
-def test_four_distributions_have_disjoint_product_payloads(artifacts):
+def test_five_distributions_have_disjoint_product_payloads(artifacts):
     owners = {}
     for wheel in artifacts.glob("*.whl"):
         with zipfile.ZipFile(wheel) as archive:
@@ -101,9 +102,18 @@ def test_four_distributions_have_disjoint_product_payloads(artifacts):
                     assert name not in owners, (name, owners.get(name), wheel.name)
                     owners[name] = wheel.name
     assert "token_io_decoupling/cli.py" in owners
-    assert "token_io_decoupling_core/_resources/instructions.json" in owners
-    assert "token_io_decoupling_transport/registration.py" in owners
+    assert "token_io_decoupling_workflow/_resources/instructions.json" in owners
+    assert "token_io_decoupling_transport/tool.py" in owners
+    assert "token_io_decoupling_tools/tool.py" in owners
+    assert "token_io_decoupling_workflow/tool.py" in owners
+    assert "token_io_decoupling_transport/registration.py" not in owners
+    assert "token_io_decoupling_tools/serena_memory_tools.py" not in owners
+    assert "token_io_decoupling_tools/tools.py" not in owners
+    assert "token_io_decoupling_workflow/tools.py" not in owners
     assert "token_io_decoupling_workflow/checkpoint_evaluation.py" in owners
+    assert "token_io_decoupling_tools/task_plan_core.py" in owners
+    assert "token_io_decoupling_tools/serena_memory.py" in owners
+    assert not any(name.startswith("token_io_decoupling_core/_resources/") for name in owners)
     assert not any(name.endswith("/heading_parser.py") for name in owners)
     for sdist in artifacts.glob("*.tar.gz"):
         with tarfile.open(sdist) as archive:
@@ -111,8 +121,8 @@ def test_four_distributions_have_disjoint_product_payloads(artifacts):
 
 
 def test_skill_and_core_are_one_complete_compiled_batch(artifacts):
-    with zipfile.ZipFile(_wheel(artifacts, "token_io_decoupling_core")) as core:
-        prefix = "token_io_decoupling_core/_resources/"
+    with zipfile.ZipFile(_wheel(artifacts, "token_io_decoupling_workflow")) as core:
+        prefix = "token_io_decoupling_workflow/_resources/"
         resources = {
             name.removeprefix(prefix) for name in core.namelist() if name.startswith(prefix)
         }
@@ -135,7 +145,7 @@ def test_skill_and_core_are_one_complete_compiled_batch(artifacts):
     )
 
 
-@pytest.mark.parametrize("distribution", ["token_io_decoupling", "token_io_decoupling_core"])
+@pytest.mark.parametrize("distribution", ["token_io_decoupling", "token_io_decoupling_workflow"])
 def test_detached_sdist_rebuild_preserves_approved_resources(artifacts, tmp_path, distribution):
     project = _detach(artifacts, distribution, tmp_path / "detached")
     assert not (project / "rule_sources").exists()
@@ -153,7 +163,7 @@ def test_detached_sdist_rebuild_preserves_approved_resources(artifacts, tmp_path
             assert rebuilt.read(name) == original.read(name)
 
 
-@pytest.mark.parametrize("distribution", ["token_io_decoupling", "token_io_decoupling_core"])
+@pytest.mark.parametrize("distribution", ["token_io_decoupling", "token_io_decoupling_workflow"])
 @pytest.mark.parametrize("damage", ["missing", "corrupt", "extra"])
 def test_detached_build_rejects_unapproved_resources(artifacts, tmp_path, distribution, damage):
     project = _detach(artifacts, distribution, tmp_path / "detached")
@@ -173,8 +183,8 @@ def test_detached_build_rejects_unapproved_resources(artifacts, tmp_path, distri
 
 
 def test_detached_build_rejects_internally_valid_mixed_batch(artifacts, tmp_path):
-    project = _detach(artifacts, "token_io_decoupling_core", tmp_path / "detached")
-    resources = project / "src/token_io_decoupling_core/_resources"
+    project = _detach(artifacts, "token_io_decoupling_workflow", tmp_path / "detached")
+    resources = project / "src/token_io_decoupling_workflow/_resources"
     payload = json.loads((resources / "instructions.json").read_bytes())
     payload["build_id"] = "another-batch"
     serialized = json.dumps(payload).encode()
@@ -193,3 +203,161 @@ def test_skill_payload_contains_no_executable_or_private_attachment(artifacts):
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         _assert_product_names(archive.namelist())
         assert all(Path(name).suffix in {".md", ".json", ".yaml"} for name in archive.namelist())
+
+
+@pytest.mark.parametrize("service", ["tools", "workflow"])
+def test_runtime_wheel_installs_and_runs_without_sibling_or_admin(artifacts, tmp_path, service):
+    environment = tmp_path / "venv"
+    created = subprocess.run(
+        ["uv", "venv", "--offline", "--python", sys.executable, str(environment)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert created.returncode == 0, created.stderr
+    interpreter = environment / "bin/python"
+    installed = subprocess.run(
+        [
+            "uv",
+            "pip",
+            "install",
+            "--offline",
+            "--python",
+            str(interpreter),
+            str(_wheel(artifacts, "token_io_decoupling_core")),
+            str(_wheel(artifacts, "token_io_decoupling_transport")),
+            str(_wheel(artifacts, f"token_io_decoupling_{service}")),
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert installed.returncode == 0, installed.stderr
+    memory = tmp_path / ".serena/memories"
+    memory.mkdir(parents=True)
+    (memory / "notes.md").write_text("wheel-only Memory\n", encoding="utf-8")
+    code = r"""
+import asyncio
+import importlib.util
+import json
+import sys
+from pathlib import Path
+from mcp import Client, StdioServerParameters
+
+service = sys.argv[1]
+sibling = "workflow" if service == "tools" else "tools"
+assert importlib.util.find_spec("token_io_decoupling_" + sibling) is None
+assert importlib.util.find_spec("token_io_decoupling") is None
+if service == "tools":
+    assert importlib.util.find_spec("token_io_decoupling_core.rules") is None
+else:
+    assert importlib.util.find_spec("dev_workflow_standards_tools") is None
+
+
+async def run():
+    executable = Path(sys.executable).with_name("token-io-decoupling-" + service)
+    async with Client(
+        StdioServerParameters(command=str(executable), args=[])
+    ) as client:
+        tools = (await client.list_tools()).tools
+        assert len(tools) == (41 if service == "tools" else 11)
+        if service == "tools":
+            result = await client.call_tool(
+                "serena_memory_tail_read",
+                {
+                    "memory_path": "notes",
+                    "tail_lines": 1,
+                },
+            )
+            assert not result.is_error
+            assert (
+                json.loads(result.content[0].text)["content"] == "wheel-only Memory\n"
+            )
+        else:
+            result = await client.call_tool(
+                "rules_get_context",
+                {
+                    "payload": {
+                        "node_id": "contract",
+                        "context_version": 2,
+                    }
+                },
+            )
+            assert not result.is_error
+            assert json.loads(result.content[0].text)["complete"]
+
+
+asyncio.run(run())
+"""
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key
+        not in {
+            "PYTHONPATH",
+            "OPENAI_API_KEY",
+            "OPENAI_BASE_URL",
+        }
+    }
+    result = subprocess.run(
+        [str(interpreter), "-I", "-c", code, service],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=45,
+    )
+    assert result.returncode == 0, result.stderr
+    cli = interpreter.with_name(f"token-io-decoupling-{service}")
+    preview = subprocess.run(
+        [str(cli), "setup", "codex", "--dry-run"],
+        cwd=tmp_path,
+        env={**env, "CODEX_HOME": str(tmp_path / "config")},
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=15,
+    )
+    assert preview.returncode == 0, preview.stderr
+    assert f"Would configure token-io-decoupling-{service}:" in preview.stdout
+    sibling = "workflow" if service == "tools" else "tools"
+    assert f"Would configure token-io-decoupling-{sibling}:" not in preview.stdout
+    assert not (tmp_path / "config/config.toml").exists()
+
+
+def test_full_uv_tool_install_exposes_dependency_owned_launchers(artifacts, tmp_path):
+    env = {
+        **os.environ,
+        "UV_TOOL_DIR": str(tmp_path / "tools"),
+        "UV_TOOL_BIN_DIR": str(tmp_path / "bin"),
+    }
+    installed = subprocess.run(
+        [
+            "uv",
+            "tool",
+            "install",
+            "--offline",
+            "--python",
+            sys.executable,
+            "--with-executables-from",
+            "token-io-decoupling-workflow",
+            "--with-executables-from",
+            "token-io-decoupling-tools",
+            "--find-links",
+            str(artifacts),
+            str(_wheel(artifacts, "token_io_decoupling")),
+        ],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert installed.returncode == 0, installed.stderr
+    assert {path.name for path in (tmp_path / "bin").iterdir()} == {
+        "token-io-decoupling",
+        "token-io-decoupling-tools",
+        "token-io-decoupling-workflow",
+    }

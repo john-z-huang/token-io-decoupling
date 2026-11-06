@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from token_io_decoupling.task_plan_factory import (
+from token_io_decoupling_tools.task_plan_core import TaskPlanService
+from token_io_decoupling_tools.task_plan_factory import (
     TaskPlanFactoryError,
     load_task_plan_service,
 )
-from token_io_decoupling_workflow.task_plan_core import TaskPlanService
 
 
 def make_service() -> TaskPlanService:

@@ -1,5 +1,5 @@
 {
-  "build_id": "75487fb6498e0b28bdb4c50fcf90d338ca03ac0525694c63875b3125bf211a80",
+  "build_id": "29d66bafa514842a130bdb0daf857d899268e082a7c62a8ed2464fcdc679fb1e",
   "closures": {
     "en:codex:SKILL.md#Hard constraints": {
       "characters": 2469,
@@ -361,7 +361,7 @@
       ]
     },
     "en:codex:references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md": {
-      "characters": 23488,
+      "characters": 23739,
       "continuations": {},
       "sources": [
         "references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md"
@@ -1762,7 +1762,7 @@
       ]
     },
     "en:documents:references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md": {
-      "characters": 25073,
+      "characters": 25324,
       "continuations": {},
       "sources": [
         "references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md"
@@ -2876,7 +2876,7 @@
       ]
     },
     "zh_cn:codex:references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md": {
-      "characters": 8264,
+      "characters": 8366,
       "continuations": {},
       "sources": [
         "references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md"
@@ -4277,7 +4277,7 @@
       ]
     },
     "zh_cn:documents:references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md": {
-      "characters": 8863,
+      "characters": 8965,
       "continuations": {},
       "sources": [
         "references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md"
@@ -5033,8 +5033,8 @@
     }
   },
   "source_hashes": {
-    "SKILL.md": "c6232c44a2f158a9191ba3ed6be98d7e982280c1e62111472932c07978dc5e5e",
-    "SKILL_zh_cn.md": "ed1ce4bc0a4e3da76385f35250588c7a6dc9dd20c2ba6fd20e097f18827ba645",
+    "SKILL.md": "bc5987a3d1206d62d9290b26518a4dceefad9516be46e08bf9e23094d9f330d2",
+    "SKILL_zh_cn.md": "96aa23666b91e97a216a0219258c4ad1474a2c3157e31172af4e9c637a4b1ae6",
     "references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-dispatch.md": "906e9319c5fa0c6e5569fc7864dcb816ca4d4284ecfccafe3c53f62de919cac4",
     "references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-dispatch_zh_cn.md": "a4efb9b9a2ba45a036f30812b104041f791e0bfd9c6fe2957411fdd0f3a66b45",
     "references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle.md": "5db04b6755eefc3a57b0de78201c3390dd88947ff3b7bc828a99dd5ee00dcf56",
@@ -5091,8 +5091,8 @@
     "references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing_zh_cn.md": "62682804eca90ea7754f08a35b82009fdf01bdc9a31b70e53f76ad04f4763d79",
     "references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment.md": "4894e7bf14380fb570ae687cf80b71a5eddfabee9ddc369cf56101c243eb4d2d",
     "references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment_zh_cn.md": "e23b76b5d76f2e3a02e7e0df1e06d9a2091e1863cef161696588a111e8f09c55",
-    "references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md": "b5a65c5b5100fc6a2c579d60e8d5f65b68118304e82c61169cbb35d06b5118c8",
-    "references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md": "f2af47f2b967d2025426935802019e2fdf4127b7ea415686cd148055847ca1c0",
+    "references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md": "27937a74dd2e078f5ba3dd7b1177f0bbc9c2319cd03defa3d826cf72d95c56ce",
+    "references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle_zh_cn.md": "c62ff9cd12b5f3bc25ae1564772da062d3d1acda01d21e9d5a4d49c542b50181",
     "references/coding/layer-01-fundamental-concepts/execution-planning/workflow-module-contract.md": "6d47de8231d7a6640cd2980b50a1348d764020b1f385ba06a9f629e1be752149",
     "references/coding/layer-01-fundamental-concepts/execution-planning/workflow-module-contract_zh_cn.md": "86916fd3f6eb1836e07219e17cd5fe31fc861d6cc9956f88f2e8ae4b42f0e6f0",
     "references/coding/layer-01-fundamental-concepts/execution-planning/workflow-routing-advice.md": "6010abee60bf2d2b2ee45711bf8f75686a5433363995b58d69faa629c9f4d227",

@@ -9,9 +9,15 @@ def test_package_installs_admin_and_two_fixed_mcp_entrypoints() -> None:
     scripts = tomllib.loads(project.read_text(encoding="utf-8"))["project"]["scripts"]
     assert scripts == {
         "token-io-decoupling": "token_io_decoupling.cli:main",
-        "token-io-decoupling-workflow": "token_io_decoupling.cli:workflow_main",
-        "token-io-decoupling-tools": "token_io_decoupling.cli:tools_main",
     }
+    for suffix in ("workflow", "tools"):
+        member = project.parent / "packages" / f"token_io_decoupling_{suffix}" / "pyproject.toml"
+        metadata = tomllib.loads(member.read_text(encoding="utf-8"))["project"]
+        assert metadata["scripts"] == {
+            f"token-io-decoupling-{suffix}": f"token_io_decoupling_{suffix}.cli:main"
+        }
+        sibling = "tools" if suffix == "workflow" else "workflow"
+        assert not any(f"token-io-decoupling-{sibling}" in dep for dep in metadata["dependencies"])
 
 
 def test_obsolete_root_forwarders_are_not_in_the_wheel_package() -> None:

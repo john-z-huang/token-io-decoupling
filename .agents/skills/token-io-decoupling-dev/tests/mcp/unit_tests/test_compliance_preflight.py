@@ -14,11 +14,11 @@ from token_io_decoupling_core.compliance_core import (
     build_result,
     validate_candidate_list,
 )
-from token_io_decoupling_workflow.compliance_preflight import (
+from token_io_decoupling_tools.compliance_preflight import (
     CompliancePreflightService,
     validate_decoupling_compliance,
 )
-from token_io_decoupling_workflow.payloads import _COMPLIANCE_PREFLIGHT
+from token_io_decoupling_tools.payloads import _COMPLIANCE_PREFLIGHT
 
 
 def candidate(path="src/new.py", content="print(1)\n", operation="create", baseline=None):

@@ -73,10 +73,8 @@ async def _exercise(
             ):
                 raise AssertionError(f"installed {server_kind} server omitted discovery metadata")
             tools = await client.list_tools()
-            if "persisted workflow state" not in client.instructions:
-                raise AssertionError("server discovery omitted the stateless workflow limitation")
-            if "persisted workflow state" not in client.server_info.description:
-                raise AssertionError("server description omitted the stateless workflow limitation")
+            if server_kind == "tools" and "workflow_capabilities" in client.instructions:
+                raise AssertionError("standalone tools inherited workflow entry instructions")
             names = {tool.name for tool in tools.tools}
             if names != EXPECTED_TOOLS[server_kind]:
                 raise AssertionError(
@@ -84,29 +82,25 @@ async def _exercise(
                 )
             if any(not tool.description for tool in tools.tools):
                 raise AssertionError(f"installed {server_kind} server has an undescribed tool")
+            if server_kind == "tools" and memory_content is not None:
+                tail = await client.call_tool(
+                    "serena_memory_tail_read", {"memory_path": "notes", "tail_lines": 1}
+                )
+                tail_data = json.loads(_text(tail))
+                if tail.is_error or tail_data.get("content") != memory_content:
+                    raise AssertionError("installed local Memory tail did not match this project")
+                check = await client.call_tool(
+                    "serena_memory_write_check",
+                    {
+                        "memory_path": "mem:notes.md",
+                        "changed_content": memory_content.strip(),
+                        "tail_lines": 1,
+                    },
+                )
+                check_data = json.loads(_text(check))
+                if check.is_error or check_data.get("success") is not True:
+                    raise AssertionError("installed local Memory check did not match this project")
             if server_kind == "workflow":
-                if memory_content is not None:
-                    tail = await client.call_tool(
-                        "serena_memory_tail_read", {"memory_path": "notes", "tail_lines": 1}
-                    )
-                    tail_data = json.loads(_text(tail))
-                    if tail.is_error or tail_data.get("content") != memory_content:
-                        raise AssertionError(
-                            "installed local Memory tail did not match this project"
-                        )
-                    check = await client.call_tool(
-                        "serena_memory_write_check",
-                        {
-                            "memory_path": "mem:notes.md",
-                            "changed_content": memory_content.strip(),
-                            "tail_lines": 1,
-                        },
-                    )
-                    check_data = json.loads(_text(check))
-                    if check.is_error or check_data.get("success") is not True:
-                        raise AssertionError(
-                            "installed local Memory check did not match this project"
-                        )
                 capabilities = await client.call_tool("workflow_capabilities", {})
                 capability_data = json.loads(_text(capabilities))
                 if capabilities.is_error:
@@ -330,7 +324,7 @@ def _exercise_codex_dry_run(cli_path: Path, repo_root: Path) -> None:
                 raise AssertionError(f"setup dry-run omitted the installed {name} command")
         if (
             "OPENAI_TIMEOUT_MAX_RETRIES" not in result.stdout
-            or "independent process authentication" not in result.stdout
+            or "Discovery grants no authority" not in result.stdout
         ):
             raise AssertionError("setup dry-run omitted environment forwarding or install limits")
 

@@ -119,7 +119,7 @@ source_root="$repo_root/mcp"
 
 if ((dry_run != 0)); then
   printf '%s\n' 'Dry run: no installation/setup commands or Codex configuration reads/writes were run.'
-  printf '1. Install/update the admin, workflow, and tools commands: uv tool install --force --reinstall --managed-python --python %q %q\n' \
+  printf '1. Install/update the admin, workflow, and tools commands: uv tool install --force --reinstall --managed-python --with-executables-from token-io-decoupling-workflow --with-executables-from token-io-decoupling-tools --python %q %q\n' \
     "$python_version" "$source_root"
   printf '%s\n' '2. Resolve tool bin directory: uv tool dir --bin'
   printf '%s\n' '   Workflow MCP executable: <uv-tool-bin>/token-io-decoupling-workflow'
@@ -158,7 +158,10 @@ else
   exit "$exit_code"
 fi
 
-if "$uv_path" tool install --force --reinstall --managed-python --python "$python_version" "$source_root"; then
+if "$uv_path" tool install --force --reinstall --managed-python \
+  --with-executables-from token-io-decoupling-workflow \
+  --with-executables-from token-io-decoupling-tools \
+  --python "$python_version" "$source_root"; then
   :
 else
   exit_code=$?

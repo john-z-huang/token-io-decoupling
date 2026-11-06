@@ -6,7 +6,7 @@
 
 ## 工具
 
-两个工具由 `token-io-decoupling-workflow` 可执行程序暴露，直接接收参数。
+两个工具由 `token-io-decoupling-tools` 可执行程序暴露，直接接收参数。
 
 | 工具 | 参数 | 结果 |
 | --- | --- | --- |

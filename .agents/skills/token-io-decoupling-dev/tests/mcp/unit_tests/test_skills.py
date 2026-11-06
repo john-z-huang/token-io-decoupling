@@ -44,7 +44,7 @@ def _entries():
 def home(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
     root = tmp_path / "packages/token_io_decoupling/_resources"
-    core = tmp_path / "packages/token_io_decoupling_core/_resources"
+    core = tmp_path / "packages/token_io_decoupling_workflow/_resources"
     root.mkdir(parents=True)
     core.mkdir(parents=True)
     (root / "skill_bundle.zip").write_bytes(_archive(_entries()))
@@ -67,7 +67,7 @@ def home(tmp_path, monkeypatch):
     )
     packages = {
         "token_io_decoupling": root.parent,
-        "token_io_decoupling_core": core.parent,
+        "token_io_decoupling_workflow": core.parent,
     }
     with patch("token_io_decoupling.skills.files", side_effect=packages.__getitem__):
         yield tmp_path
@@ -189,8 +189,8 @@ def test_root_build_hook_rejects_same_id_document_profile_drift(home):
     (resources / "skill_bundle.zip").write_bytes(_same_id_document_profile_drift())
     shutil.copy2(repository / "mcp/src/token_io_decoupling/skills.py", resources.parent)
     shutil.copytree(
-        home / "packages/token_io_decoupling_core",
-        project / "packages/token_io_decoupling_core/src/token_io_decoupling_core",
+        home / "packages/token_io_decoupling_workflow",
+        project / "packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow",
     )
     validate = runpy.run_path(str(repository / "mcp/hatch_build.py"))["validate_compiled_skill"]
     with pytest.raises(RuntimeError, match="core instruction map"):
@@ -198,7 +198,7 @@ def test_root_build_hook_rejects_same_id_document_profile_drift(home):
 
 
 def test_corrupt_core_resource_is_rejected_before_any_write(home):
-    core = home / "packages/token_io_decoupling_core/_resources/instructions.json"
+    core = home / "packages/token_io_decoupling_workflow/_resources/instructions.json"
     core.write_text('{"schema_version": 2, "build_id": "wrong"}')
     with pytest.raises(ValueError, match="core resources"):
         install_skill()

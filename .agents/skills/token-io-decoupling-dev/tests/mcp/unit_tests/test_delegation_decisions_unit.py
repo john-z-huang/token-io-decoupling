@@ -6,7 +6,6 @@ from typing import Any, Literal
 import pytest
 
 from token_io_decoupling_core.models import CodingMode
-from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.workflow_models import (
     AllocationRole,
 )
@@ -17,6 +16,7 @@ from token_io_decoupling_workflow.delegation_decisions import (
     DelegationDecisionSelector,
     OutputTokenRoutingInput,
 )
+from token_io_decoupling_workflow.rules import RuleLoader
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[6]
 

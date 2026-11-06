@@ -11,7 +11,6 @@ from typing import Annotated, Any, Literal, TypeAlias, cast
 from pydantic import ConfigDict, Field, StrictBool, StrictStr, model_validator
 
 from token_io_decoupling_core.models import RuleContext, StrictModel
-from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.workflow_models import CheckpointNode, EpochDimension
 from token_io_decoupling_workflow.api_recovery import (
     FailureClass,
@@ -22,6 +21,7 @@ from token_io_decoupling_workflow.api_recovery import (
     recovery_for_reason,
 )
 from token_io_decoupling_workflow.decision_prompts import DecisionPrompt, reviewed_prompt
+from token_io_decoupling_workflow.rules import RuleLoader
 
 DECISIONS_MODEL = "gpt-6-luna"
 DECISIONS_TIMEOUT_SECONDS = 20.0

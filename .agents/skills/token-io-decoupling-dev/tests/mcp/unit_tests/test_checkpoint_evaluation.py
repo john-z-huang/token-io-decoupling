@@ -8,7 +8,6 @@ from typing import Any, cast
 import pytest
 from pydantic import ValidationError
 
-from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.workflow_models import (
     CheckpointEvidenceRef,
     CheckpointFact,
@@ -24,6 +23,7 @@ from token_io_decoupling_core.workflow_models import (
 )
 from token_io_decoupling_workflow.checkpoint_evaluation import evaluate_checkpoint
 from token_io_decoupling_workflow.payloads import EvaluatePayload
+from token_io_decoupling_workflow.rules import RuleLoader
 
 
 def _submission(
@@ -314,20 +314,15 @@ def test_submission_rejects_just_over_nested_item_limits() -> None:
 
 
 def test_evaluation_callback_passes_same_language_to_fake_advisor() -> None:
-    from token_io_decoupling_workflow.tools import register_workflow_tools
+    from token_io_decoupling_transport.tool import ToolDefinition
+    from token_io_decoupling_workflow.tool import register_tools
 
     class FakeRegistrar:
         def __init__(self) -> None:
             self.callbacks: dict[str, Any] = {}
 
-        def register_no_args(self, name: str, callback: Any) -> None:
-            return None
-
-        def include(self, name: str) -> bool:
-            return not name.startswith("serena_memory_")
-
-        def register(self, name: str, payload_type: Any, callback: Any, **kwargs: Any) -> None:
-            self.callbacks[name] = callback
+        def register_all(self, definitions: tuple[ToolDefinition, ...]) -> None:
+            self.callbacks = {definition.name: definition.callback for definition in definitions}
 
     class FakeAdvisor:
         calls: list[dict[str, Any]] = []
@@ -339,17 +334,12 @@ def test_evaluation_callback_passes_same_language_to_fake_advisor() -> None:
     rules = _rules()
     registrar = FakeRegistrar()
     advisor = FakeAdvisor()
-    cast(Any, register_workflow_tools)(
+    cast(Any, register_tools)(
         registrar,
-        task_plan_service=object(),
-        compliance_service=None,
         rules=rules,
         advisor=advisor,
         decisions_config=None,
-        provider=object(),
-        embedded=False,
-        require_codex_context=False,
-        binding_details=lambda _provider: {},
+        capability_callback=lambda: {},
     )
     language = "zh_cn"
     expected = rules.load_context(CheckpointNode.TASK_INTENT.value, language=language)

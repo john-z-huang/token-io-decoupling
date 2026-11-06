@@ -6,6 +6,8 @@ from types import SimpleNamespace
 import pytest
 
 from token_io_decoupling import cli, cli_commands
+from token_io_decoupling_tools import cli as tools_cli
+from token_io_decoupling_workflow import cli as workflow_cli
 
 
 def test_admin_entrypoint_only_dispatches_management_commands(monkeypatch, capsys) -> None:
@@ -23,7 +25,7 @@ def test_setup_codex_dispatches_the_two_server_registration(monkeypatch) -> None
     )
     monkeypatch.setattr(sys, "argv", ["token-io-decoupling", "setup", "codex", "--dry-run"])
     assert cli.main() == 0
-    assert calls == [{"dry_run": True}]
+    assert calls == [{"dry_run": True, "server": "both"}]
 
 
 @pytest.mark.parametrize("flag", ["--profile", "--all", "--replace", "--migrate-tools"])
@@ -38,31 +40,36 @@ def test_removed_setup_selection_and_override_flags_are_rejected(monkeypatch, ca
 
 
 @pytest.mark.parametrize(
-    ("entrypoint", "factory_name"),
-    (("workflow_main", "create_workflow_server"), ("tools_main", "create_tools_server")),
+    ("module", "factory_name"),
+    ((workflow_cli, "create_workflow_server"), (tools_cli, "create_tools_server")),
 )
 def test_fixed_server_entrypoints_start_with_no_arguments(
-    monkeypatch, tmp_path, entrypoint, factory_name
+    monkeypatch, tmp_path, module, factory_name
 ) -> None:
     calls = []
     monkeypatch.setattr(
-        cli,
+        module,
         factory_name,
         lambda **kwargs: (
             calls.append(kwargs)
             or SimpleNamespace(run=lambda **run_kwargs: calls.append(run_kwargs))
         ),
     )
-    monkeypatch.setattr(cli, "load_task_plan_service", lambda _factory: None)
-    monkeypatch.setattr(cli, "load_compliance_service", lambda _factory: None)
-    monkeypatch.setattr(cli, "load_output_materializer_config", lambda _factory: None)
-    monkeypatch.setattr(sys, "argv", [f"token-io-decoupling-{entrypoint.removesuffix('_main')}"])
+    if module is tools_cli:
+        monkeypatch.setattr(module, "load_task_plan_service", lambda _factory: None)
+        monkeypatch.setattr(module, "load_compliance_service", lambda _factory: None)
+        monkeypatch.setattr(module, "load_output_materializer_config", lambda _factory: None)
+    monkeypatch.setattr(sys, "argv", ["server"])
 
-    assert getattr(cli, entrypoint)() == 0
+    assert module.main() == 0
     expected_server_args = (
-        {"task_plan_service": None, "compliance_service": None}
-        if entrypoint == "workflow_main"
-        else {"compliance_service": None, "output_materializer_config": None}
+        {}
+        if module is workflow_cli
+        else {
+            "task_plan_service": None,
+            "compliance_service": None,
+            "output_materializer_config": None,
+        }
     )
     assert calls[0] == expected_server_args
     assert calls[1] == {"transport": "stdio"}
@@ -100,3 +107,13 @@ def test_codex_env_command_requires_server_selection(monkeypatch, capsys) -> Non
     monkeypatch.setattr(sys, "argv", ["token-io-decoupling", "setup", "codex-env"])
     assert cli.main() == 2
     assert "--server" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "flag", ["--task-plan-factory", "--compliance-factory", "--output-materializer-factory"]
+)
+def test_workflow_rejects_migrated_backend_options(monkeypatch, flag) -> None:
+    monkeypatch.setattr(sys, "argv", ["workflow", flag, "operator:build"])
+    with pytest.raises(SystemExit) as error:
+        workflow_cli.main()
+    assert error.value.code == 2

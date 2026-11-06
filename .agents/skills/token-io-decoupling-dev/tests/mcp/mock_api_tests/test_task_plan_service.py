@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from token_io_decoupling_workflow.task_plan_core import (
+from token_io_decoupling_tools.task_plan_core import (
     SerenaMemoryStore,
     TaskPlanFailure,
     TaskPlanService,

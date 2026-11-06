@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import tomlkit
 
-from token_io_decoupling.codex_env import (
+from token_io_decoupling_transport.codex_env import (
     DEFAULT_ENV_VARS,
     CodexEnvError,
     merge_env_vars,

@@ -105,17 +105,14 @@ def test_default_report_distinguishes_support_configuration_and_unprobed_runtime
     assert public["status"] == "unverified"
     assert public["reason_code"] == "tool_dependencies_not_probed"
     assert "do not authenticate facts" in public["message"]
-    for requirement in ("backend", "reader/root/policy", "OPENAI_BASE_URL", "operator grant"):
-        assert requirement in public["next_step"]
+    assert "API configuration" in public["next_step"]
     for name in ("caller_match", "api_decisions"):
         assert configuration[name]["reason_code"] == "configured_disabled"
-    assert configuration["task_plan_tools"]["status"] == "unavailable"
-    assert configuration["task_plan_tools"]["reason_code"] == "task_plan_backend_not_configured"
-    materialization = configuration["output_materialization"]
-    assert materialization["status"] == "unavailable"
-    assert "Caller role labels" in materialization["message"]
-    assert "matching operator grant" in materialization["next_step"]
-    assert "fresh passing preflight" in materialization["next_step"]
+    assert "task_plan_tools" not in configuration
+    assert "serena_memory_reads" not in configuration
+    assert "output_materialization" not in configuration
+    identity = details["support"]["identity_bound_operations"]
+    assert identity["reason_code"] == "workflow_has_no_identity_bound_operations"
     assert details["runtime"]["binding"]["status"] == "unverified"
     assert details["runtime"]["binding"]["reason_code"] == "provider_not_configured"
     assert details["runtime"]["server_mode"]["status"] == "public_only"

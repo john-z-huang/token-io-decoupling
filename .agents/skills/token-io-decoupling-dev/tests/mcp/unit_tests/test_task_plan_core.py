@@ -4,7 +4,7 @@ import hashlib
 
 import pytest
 
-from token_io_decoupling_workflow.task_plan_core import (
+from token_io_decoupling_tools.task_plan_core import (
     _EVENT_PREFIX,
     _HEADER_PREFIX,
     TaskPlanFailure,

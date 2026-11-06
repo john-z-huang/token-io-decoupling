@@ -31,7 +31,7 @@ _PRUNED_RELATIVE_DIRECTORIES = frozenset(
     {
         "skills/token-io-decoupling",
         "mcp/src/token_io_decoupling/_resources",
-        "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/_resources",
+        "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/_resources",
     }
 )
 

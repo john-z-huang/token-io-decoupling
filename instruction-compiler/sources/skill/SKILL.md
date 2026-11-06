@@ -1,11 +1,13 @@
 ---
 name: token-io-decoupling-skill
-description: "High-volume Agent Token I/O decoupling for Coding. Coding separates high-value input-side reasoning, implementation output, independent change verification, and the Documentation/Comments & Git Operations role for approved documentation/comments and non-trivial repository Git work, while keeping Core role and Session rules independent of any specific Code Agent product or model; runtime-environment bindings and capability checks are declared in the Coding workflow."
+description: "Optional compiled Coding workflow; standalone tools do not require this Skill"
 ---
 
 # Token I/O Decoupling
 
 [English](SKILL.md) | [简体中文](SKILL_zh_cn.md)
+
+Load this Skill only when choosing the complete Coding workflow. Independent tools, task plans and Memory require neither this Skill nor its checkpoints or calling order. Their own operation contracts and current host authorization still apply.
 
 This Skill maintains one executable workflow: Coding. It separates high-value semantic decisions from high-volume project-state consumption and output materialization. Multimodal and Mixed concepts are not maintained as executable workflows in this repository.
 

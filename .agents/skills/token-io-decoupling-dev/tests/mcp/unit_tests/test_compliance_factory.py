@@ -6,19 +6,19 @@ from types import ModuleType
 
 import pytest
 
-from token_io_decoupling import cli
-from token_io_decoupling.compliance_factory import (
+from token_io_decoupling_tools import cli
+from token_io_decoupling_tools.compliance_factory import (
     ComplianceFactoryError,
     load_compliance_service,
 )
-from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
+from token_io_decoupling_tools.compliance_preflight import CompliancePreflightService
 
 
 def test_absent_factory_does_not_configure_or_probe_a_service() -> None:
     assert load_compliance_service(None) is None
 
 
-@pytest.mark.parametrize("entry", [cli.workflow_main, cli.tools_main])
+@pytest.mark.parametrize("entry", [cli.main])
 def test_server_cli_loads_only_the_explicit_compliance_factory(entry, monkeypatch):
     specs = []
 

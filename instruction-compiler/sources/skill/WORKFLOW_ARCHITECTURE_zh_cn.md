@@ -1,43 +1,43 @@
-# 工作流架构
+# 工作流与工具架构
 
 [English](WORKFLOW_ARCHITECTURE.md) | [简体中文](WORKFLOW_ARCHITECTURE_zh_cn.md)
 
-本文档负责本仓库本地工作流工具的架构边界；不取代 Skill Markdown 工作流 owner、不决定授权，也不存储规范任务状态。
+## 独立服务
 
-## 工作流与规则
-
-工作流 server 返回开发期编译、批准并版本化的执行指令。产品执行只消费编译资源；作者文档是开发期政策源，不是运行时查阅要求。规则与路由结果包含当前范围的动作、条件、证据、失败处理及精确继续位置。Hash 和调用方声明均不证明身份、权限、检查点完成或验收通过。
-
-静态指令查询不依赖数据库、API 凭据或网络。可选语义建议保持独立，沿用其明确 API 授权和进程配置要求。源码开发与安装包使用相同编译资源加载器；资源缺失或不兼容时阻止依赖工作，不回读作者 Markdown。
-
-## 受保护的输出物化
-
-可选输出物化操作独立于工作流评估。它需要由可信启动配置注入的授权 provider，提供当前 Worker 绑定和 assignment 上下文；另须提供独立 grant 并通过既有的逐次调用检查。工具调用方不能选择或提供该 provider 上下文。当前没有标准 provider；未显式配置可信 provider 和 grant 时，此能力不可用。应用请求范围不等于宿主认证。[输出物化](references/coding/layer-01-fundamental-concepts/execution-planning/output-materialization_zh_cn.md) owner 仍负责准备、全新预检、manifest 检查和写入时重新授权。
+Tools 与 workflow 是可分别安装的本地 Codex CLI MCP 服务。实现、CLI、启动 factory、schema 和 metadata 均不导入对方服务。根分发包仅提供可选的完整安装与管理；仅使用 tools 的客户端不安装 Coding Skill，也不遵循其路线。
 
 ## 实现包
 
-MCP workspace 包含独立构建的 `core`、`transport` 和 `workflow` 分发包。Core 负责稳定运行时契约、清单和编译指令资源；transport 负责 MCP 注册、请求范围和 schema；workflow 负责规则查找、无状态评估、导航/建议及可选物化服务。根分发包提供两个 MCP 可执行程序及管理 setup。[开发指南](../../../.agents/skills/token-io-decoupling-dev/references/mcp/DEVELOPMENT_zh_cn.md)负责当前工具数量、包命令、构建和验证流程。
+- `token-io-decoupling-core` 负责共享类型契约、身份／授权守卫及通用候选检查，不包含编译规则资源。
+- `token-io-decoupling-transport` 负责通用注册、payload helper、调用方 scope、环境转发及按服务选择的 Codex setup；服务说明由所属实现注入。
+- `token-io-decoupling-tools` 负责 41 项操作：上游开发助手、任务计划、本地 Memory 查询、候选 preflight、受保护输出物化及可选诊断。它拥有自己的 console script 及显式后端启动 factory，不加载工作流规则或初始化工作流服务。
+- `token-io-decoupling-workflow` 负责 11 个规则、导航、建议及结构评估工具、自身 console script、规则加载器及批准的编译资源；不探测或报告其他服务的后端就绪状态。
+- 根分发包负责管理入口和可选生成 Skill ZIP；兼容 Python factory 延迟导入所选运行时。
 
 ```mermaid
 flowchart TD
-    Root[CLI 和两个可执行入口] --> Transport[Transport]
-    Root --> Workflow[Workflow]
-    Root --> Core[Core 契约和规则资源]
-    Transport --> Workflow
-    Transport --> Core
+    Root[可选完整安装与管理] --> Tools[独立 tools]
+    Root --> Workflow[可选 workflow]
+    Tools --> Transport[通用传输与 setup]
+    Workflow --> Transport
+    Tools --> Core[共享契约与守卫]
     Workflow --> Core
+    Transport --> Core
+    Workflow --> Rules[编译指令资源]
 ```
 
-## API 与数据边界
+## 操作契约
 
-每个可选 OpenAI API 请求都必须使用开发指南指定的必需进程环境值和固定模型。配置缺失时必须在发出请求前失败。工作流工具不持久化 Session 状态，也不执行 Git、文件、Agent 创建或派发操作。输出物化是范围明确的例外；缺少可信启动配置时仍不可用。
+每项 tools 操作消费自身输入和当前资源状态，不要求工作流检查点、模式、路线、前置工具或后续工具。Schema 边界、当前版本、路径检查及宿主授权保留在操作内。计划完成操作消费已有兼容计划，归档消费已有完成计划，输出 apply 消费已有 prepared artifact；资源状态不证明先前调用过某个工具或工作流步骤。
 
-私有指令编译器验证作者源和显式执行依赖，生成同一批准批次的资源与 Skill。运行时 node/fragment/stage ID 仅在该批次内解析。内容 Hash 只标识指令，不证明任务事实或授权。结构评估返回当前编译指令和审阅状态；调用方仍须判断真实证据与权限。
+任务计划和 Memory 属于 tools。`tools_capabilities` 是可选本地依赖诊断。计划写入使用显式配置的后端，Memory 查询读取 tools 服务启动项目已有的 `.serena/memories`。可选 API 操作使用各自必需的进程配置和外发审核；缺少依赖只影响使用该依赖的操作。
 
-## 相关概念
+## 可选编译工作流
 
-- [工作流规则上下文](references/coding/layer-01-fundamental-concepts/workflow-navigation/rule-context_zh_cn.md) — 有界查找和所供事实结构检查。
-- [工作流导航可用性](references/coding/layer-01-fundamental-concepts/workflow-navigation/navigation-availability_zh_cn.md) — 编译指令继续位置与不可用处置。
-- [Coding Delegation State Record](references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record_zh_cn.md) — 父级控制任务记录。
-- [Output Materialization](references/coding/layer-01-fundamental-concepts/execution-planning/output-materialization_zh_cn.md) — 独立守卫的输出写入。
-- [Coding 工作流选择器](workflows/coding_zh_cn.md) — 路线导航。
+仅在明确采用时应用 Coding Skill。其路线可在当前调用方授权下使用独立工具，但不成为这些工具的前置条件。Workflow 服务返回批准的编译动作、条件、证据和准确续接，不存储检查点状态。静态查询不需要 API、计划后端、Memory 或 tools 服务。规则资源缺失或不兼容仅阻止依赖它的工作流操作，不回退到作者源。
+
+## 受保护写入
+
+输出物化保留可信的当前 Worker 身份与任务分配、独立操作者授权、固定根目录、路径及基线检查、新鲜 preflight、不可变 manifest、写入时重新授权和回执。调用方不能通过 payload 提供可信身份或权限。标准未配置物化服务保持不可用。发现、哈希、诊断状态和结构审查均不授予权限或证明完成。
+
+私有编译器将 workflow 资源和可选 Skill ZIP 生成为同一批准批次，禁止手工修改生成物。[开发指南](../../../.agents/skills/token-io-decoupling-dev/references/mcp/DEVELOPMENT_zh_cn.md)负责检查与安装验证。

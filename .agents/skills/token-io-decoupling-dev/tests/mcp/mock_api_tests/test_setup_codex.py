@@ -6,19 +6,19 @@ from types import SimpleNamespace
 import pytest
 import tomlkit
 
-from token_io_decoupling import setup_codex
-from token_io_decoupling.codex_env import DEFAULT_ENV_VARS, TOOLS_ENV_VARS
-from token_io_decoupling.setup_codex import SetupError
 from token_io_decoupling_core.server_tools import (
     TOOLS_SERVER_NAME,
     TOOLS_SERVER_TOOLS,
     WORKFLOW_SERVER_NAME,
     WORKFLOW_TOOLS,
 )
+from token_io_decoupling_transport import setup_codex
+from token_io_decoupling_transport.codex_env import DEFAULT_ENV_VARS, TOOLS_ENV_VARS
+from token_io_decoupling_transport.setup_codex import SetupError
 
 _ENTRY_POINTS = {
-    "token-io-decoupling-workflow": "token_io_decoupling.cli:workflow_main",
-    "token-io-decoupling-tools": "token_io_decoupling.cli:tools_main",
+    "token-io-decoupling-workflow": "token_io_decoupling_workflow.cli:main",
+    "token-io-decoupling-tools": "token_io_decoupling_tools.cli:main",
 }
 _UNRELATED_SERVERS = (
     "token-io-decoupling",
@@ -322,8 +322,8 @@ def test_installed_discovery_checks_both_distinct_no_argument_programs(
     paths = _install_metadata(monkeypatch, tmp_path)
     executables = setup_codex._installed_servers()
     assert executables == paths
-    assert len(WORKFLOW_TOOLS) == 17
-    assert len(TOOLS_SERVER_TOOLS) == 34
+    assert len(WORKFLOW_TOOLS) == 11
+    assert len(TOOLS_SERVER_TOOLS) == 41
     calls = []
     expected_by_path = {
         str(paths["token-io-decoupling-workflow"]): WORKFLOW_TOOLS,
@@ -353,6 +353,34 @@ def test_installed_discovery_checks_both_distinct_no_argument_programs(
     ]
 
 
+@pytest.mark.parametrize("selection", ["tools", "workflow"])
+def test_selected_setup_ignores_uninstalled_and_malformed_sibling(
+    monkeypatch, tmp_path, selection
+) -> None:
+    selected = f"token-io-decoupling-{selection}"
+    sibling = "token-io-decoupling-" + ("workflow" if selection == "tools" else "tools")
+    content = (
+        f'[mcp_servers."{selected}"]\ncommand = "/old"\nenabled = false\n'
+        f'[mcp_servers."{sibling}"]\ncommand = ["malformed but unselected"]\n'
+    )
+    paths, config, discoveries = _setup(monkeypatch, tmp_path, content)
+    original = setup_codex.metadata.distribution
+    looked_up = []
+
+    def only_selected(name):
+        looked_up.append(name)
+        assert name == selected
+        return original(name)
+
+    monkeypatch.setattr(setup_codex.metadata, "distribution", only_selected)
+    assert setup_codex.setup_codex(server=selection) == 0
+    parsed = tomlkit.parse(config.read_text())["mcp_servers"]
+    assert looked_up == [selected]
+    assert discoveries == [{selected: paths[selected]}]
+    assert parsed[selected]["enabled"] is False
+    assert parsed[sibling]["command"] == ["malformed but unselected"]
+
+
 def test_installed_metadata_requires_expected_console_script_targets(monkeypatch, tmp_path) -> None:
     _install_metadata(monkeypatch, tmp_path)
     monkeypatch.setattr(
@@ -368,7 +396,7 @@ def test_installed_metadata_requires_expected_console_script_targets(monkeypatch
                 SimpleNamespace(
                     group="console_scripts",
                     name="token-io-decoupling-tools",
-                    value="token_io_decoupling.cli:tools_main",
+                    value="token_io_decoupling_tools.cli:main",
                 ),
             ]
         ),

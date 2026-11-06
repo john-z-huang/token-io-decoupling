@@ -9,11 +9,11 @@ from typing import cast
 from mcp import Client
 from mcp.types import TextContent
 
-from token_io_decoupling import cli
-from token_io_decoupling import output_materializer_factory as factory_module
-from token_io_decoupling.output_materializer_factory import load_output_materializer_config
-from token_io_decoupling_workflow.materialization_storage import MaterializationStorage
-from token_io_decoupling_workflow.output_materialization import OutputMaterializerConfig
+from token_io_decoupling_tools import cli
+from token_io_decoupling_tools import output_materializer_factory as factory_module
+from token_io_decoupling_tools.materialization_storage import MaterializationStorage
+from token_io_decoupling_tools.output_materialization import OutputMaterializerConfig
+from token_io_decoupling_tools.output_materializer_factory import load_output_materializer_config
 
 
 class _GrantProvider:
@@ -81,7 +81,7 @@ def test_cli_forwards_typed_factory_configuration_to_server(tmp_path, monkeypatc
     monkeypatch.setattr(cli, "create_tools_server", create_tools_server)
 
     assert (
-        cli._run_tools(
+        cli.run(
             prog="token-io-decoupling-tools",
             argv=["--output-materializer-factory", "operator_module:build"],
         )
@@ -96,13 +96,13 @@ def test_worker_capability_is_unavailable_without_factory_or_path_probe(monkeypa
         raise AssertionError("unconfigured materialization must not probe storage roots")
 
     monkeypatch.setattr(MaterializationStorage, "__init__", forbidden_storage_init)
-    from token_io_decoupling.server import create_workflow_server
+    from token_io_decoupling.server import create_tools_server
 
-    server = create_workflow_server()
+    server = create_tools_server()
 
     async def run() -> None:
         async with Client(server, mode="auto") as client:
-            result = await client.call_tool("workflow_capabilities", {})
+            result = await client.call_tool("tools_capabilities", {})
             assert not result.is_error
             data = json.loads(cast(TextContent, result.content[0]).text)
             assert data["output_materialization"] == "unavailable"

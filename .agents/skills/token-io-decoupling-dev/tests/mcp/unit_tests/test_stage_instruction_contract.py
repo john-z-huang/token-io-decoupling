@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from support.compiled_resources import CompiledResources
 
-from token_io_decoupling_core.rules import RuleLoader, RuleLoadError
+from token_io_decoupling_workflow.rules import RuleLoader, RuleLoadError
 
 
 @pytest.mark.parametrize("language", ["en", "zh_cn"])

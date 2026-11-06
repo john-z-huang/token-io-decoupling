@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from token_io_decoupling_workflow.serena_memory import (
+from token_io_decoupling_tools.serena_memory import (
     MAX_CONTENT_CHARS,
     MAX_TAIL_LINES,
     SerenaMemoryReadService,

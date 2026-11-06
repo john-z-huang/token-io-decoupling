@@ -89,7 +89,7 @@ class RuleLoader:
 
     def _load_document(self) -> dict[str, Any]:
         try:
-            root = resources.files("token_io_decoupling_core").joinpath("_resources")
+            root = resources.files("token_io_decoupling_workflow").joinpath("_resources")
             manifest_raw = root.joinpath("manifest.json").read_bytes()
             raw = root.joinpath("instructions.json").read_bytes()
             if len(raw) > MAX_COMPILED_RESOURCE_BYTES or len(manifest_raw) > 1_000_000:

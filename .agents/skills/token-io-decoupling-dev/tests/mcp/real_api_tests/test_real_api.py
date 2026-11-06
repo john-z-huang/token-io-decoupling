@@ -16,7 +16,6 @@ from mcp.types import TextContent
 
 from token_io_decoupling.server import create_workflow_server
 from token_io_decoupling_core.models import CodingMode
-from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.workflow_models import AllocationRole
 from token_io_decoupling_workflow.child_effort import (
     DECISIONS_MODEL,
@@ -40,6 +39,7 @@ from token_io_decoupling_workflow.delegation_decisions import (
     ExecutorSelectionInput,
     OutputTokenRoutingInput,
 )
+from token_io_decoupling_workflow.rules import RuleLoader
 
 _OPT_IN_NAME = "TOKEN_IO_RUN_REAL_API"
 _OPTED_IN = os.environ.get(_OPT_IN_NAME) == "1"

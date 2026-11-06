@@ -5,12 +5,12 @@ from __future__ import annotations
 from pydantic import Field
 
 from token_io_decoupling_core.models import RuleContext, StrictModel
-from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.workflow_models import (
     EvidenceSubmission,
     FactKey,
     checkpoint_submission_source_input_hash,
 )
+from token_io_decoupling_workflow.rules import RuleLoader
 
 
 class StatelessCheckpointResult(StrictModel):
