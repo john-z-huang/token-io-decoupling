@@ -10,7 +10,6 @@ from token_io_decoupling_core.rules import DEFAULT_CONTEXT_TEXT_BUDGET, RuleLoad
 from token_io_decoupling_core.workflow_models import CheckpointNode
 from token_io_decoupling_transport.payloads import _RULE_CONTEXT
 from token_io_decoupling_transport.registration import ToolRegistrar
-
 from token_io_decoupling_workflow.capabilities import capability_report
 from token_io_decoupling_workflow.checkpoint_evaluation import evaluate_checkpoint
 from token_io_decoupling_workflow.child_effort import (
@@ -77,8 +76,6 @@ def register_workflow_tools(
     workflow_router = WorkflowRouter(rules, decisions_config)
 
     def get_rule_context(payload: Any) -> Any:
-        if payload.context_version is None:
-            return rules.load_context(payload.node_id.value, language=payload.language)
         return rules.load_context_bundle(
             payload.node_id.value,
             language=payload.language,

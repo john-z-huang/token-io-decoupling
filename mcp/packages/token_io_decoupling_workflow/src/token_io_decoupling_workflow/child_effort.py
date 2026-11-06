@@ -9,9 +9,9 @@ from collections.abc import Callable
 from typing import Annotated, Any, Literal, cast
 
 from pydantic import ConfigDict, Field, StrictBool, StrictStr, field_validator, model_validator
+
 from token_io_decoupling_core.models import StrictModel
 from token_io_decoupling_transport.payloads import payload_model
-
 from token_io_decoupling_workflow.api_recovery import (
     RecoveryGuidance,
     classify_provider_failure,

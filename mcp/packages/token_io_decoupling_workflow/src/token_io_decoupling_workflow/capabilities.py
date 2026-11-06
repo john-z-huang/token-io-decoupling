@@ -6,7 +6,6 @@ from collections.abc import Callable
 from typing import Any
 
 from token_io_decoupling_core.binding import BindingProvider, DenyingBindingProvider
-
 from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
 from token_io_decoupling_workflow.serena_memory import SerenaMemoryReadService
 from token_io_decoupling_workflow.task_plan_core import TaskPlanService
@@ -106,6 +105,20 @@ def capability_report(
         "caller_match": caller_match,
         "api_decisions": api_decisions,
         "workflow_routing": "available_per_invocation",
+        "instruction_delivery": {
+            "schema_version": 2,
+            "format": "compiled_json",
+            "source_fallback": False,
+            "resource_status": "checked_per_instruction_call",
+            "start": {
+                "tool": "rules_get_context",
+                "payload": {"node_id": "contract", "context_version": 2},
+            },
+            "interpretation": (
+                "Use complete returned instruction bodies; compiled IDs are not files to read. "
+                "Missing facts and grants remain separate prerequisites."
+            ),
+        },
         "child_effort_decisions": "available_per_invocation",
         "delegation_decisions": "available_per_invocation",
         "decision_context_generation": "available_per_invocation",
@@ -210,7 +223,7 @@ def capability_report(
                     "does not probe paths or assert current authority.",
                     "server.output_materializer_config",
                     "Use the tool only for a confirmed Primary Output assignment "
-                    "with code_configuration or skill_instructions output and a matching "
+                    "with code_configuration output and a matching "
                     "operator grant, pinned roots, and fresh passing preflight; inspect any "
                     "unavailable result.",
                 ),
@@ -236,7 +249,7 @@ def capability_report(
                     "authority.",
                     "workflow.decide_decoupling_workflow",
                     "Inspect the returned route, module, facts, and rule hashes; follow the "
-                    "current route owners and capability gates.",
+                    "returned compiled instructions and capability gates.",
                 ),
             },
             "runtime": {

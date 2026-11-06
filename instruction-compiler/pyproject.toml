@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "token-io-instruction-compiler"
+version = "0.1.0"
+description = "Repository-private deterministic instruction compiler"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+token-io-compile = "token_io_instruction_compiler.compiler:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/token_io_instruction_compiler"]
+
+[dependency-groups]
+dev = ["ruff>=0.14,<1"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

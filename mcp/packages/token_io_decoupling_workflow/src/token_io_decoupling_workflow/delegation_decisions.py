@@ -5,15 +5,14 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import re
 from collections.abc import Callable, Mapping, Sequence
 from typing import Annotated, Any, Literal, cast
 
 from pydantic import Field, StrictBool, StrictInt, StrictStr, field_validator, model_validator
-from token_io_decoupling_core.models import CodingMode, StrictModel
-from token_io_decoupling_core.rules import RuleLoader, RuleLoadError
-from token_io_decoupling_core.workflow_models import AllocationRole
 
+from token_io_decoupling_core.models import CodingMode, StrictModel
+from token_io_decoupling_core.rules import CompiledDelegationPolicy, RuleLoader, RuleLoadError
+from token_io_decoupling_core.workflow_models import AllocationRole
 from token_io_decoupling_workflow.api_recovery import (
     RecoveryGuidance,
     classify_provider_failure,
@@ -575,7 +574,7 @@ class DelegationDecisionSelector:
             action = "root_review_insufficient_evidence"
         return result.model_copy(update={"next_action": action})
 
-    def _load_policies(self, names: Sequence[str]) -> dict[str, tuple[str, str]] | None:
+    def _load_policies(self, names: Sequence[str]) -> dict[str, CompiledDelegationPolicy] | None:
         try:
             return {name: self._rules.load_delegation_policy(name) for name in names}
         except (RuleLoadError, OSError, ValueError):
@@ -585,7 +584,7 @@ class DelegationDecisionSelector:
         self,
         kind: str,
         payload: DecisionInputBase,
-        policies: Mapping[str, tuple[str, str]],
+        policies: Mapping[str, CompiledDelegationPolicy],
         policy_names: Sequence[str],
         choices: Sequence[str],
         accepted: dict[str, set[str]],
@@ -790,7 +789,7 @@ def _candidate_result(
 def _result_base(
     kind: str,
     payload: DecisionInputBase,
-    policies: Mapping[str, tuple[str, str]] | None,
+    policies: Mapping[str, CompiledDelegationPolicy] | None,
 ) -> DelegationDecisionResult:
     return DelegationDecisionResult(
         status="blocked",
@@ -809,7 +808,7 @@ def _result_base(
 def _request_input(
     kind: str,
     payload: DecisionInputBase,
-    policies: Mapping[str, tuple[str, str]],
+    policies: Mapping[str, CompiledDelegationPolicy],
     policy_names: Sequence[str],
     choices: Sequence[str],
 ) -> str:
@@ -834,9 +833,9 @@ def _request_input(
     return json.dumps(envelope, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
-def _decision_instructions(kind: str, policies: Mapping[str, tuple[str, str]]) -> str:
+def _decision_instructions(kind: str, policies: Mapping[str, CompiledDelegationPolicy]) -> str:
     owner, heading = _INSTRUCTION_HEADINGS[kind]
-    owner_instructions = _extract_subsection(policies[owner][0], heading)
+    owner_instructions = policies[owner].sections.get(heading)
     if not owner_instructions:
         raise RuleLoadError("required Decisions instructions are missing from the current owner")
     return f"{owner_instructions}\n\n{_GENERIC_BOUNDARY_INSTRUCTIONS}"
@@ -845,11 +844,11 @@ def _decision_instructions(kind: str, policies: Mapping[str, tuple[str, str]]) -
 def _choice_payload(
     kind: str,
     choices: Sequence[str],
-    policies: Mapping[str, tuple[str, str]],
+    policies: Mapping[str, CompiledDelegationPolicy],
     payload: DecisionInputBase,
 ) -> list[dict[str, str]]:
     owner, heading = _CHOICE_HEADINGS[kind]
-    owner_descriptions = _extract_choice_sections(policies[owner][0], heading)
+    owner_descriptions = policies[owner].choices.get(heading)
     if not owner_descriptions:
         raise RuleLoadError("required choice descriptions are missing from the current owner")
     candidate_by_ref: dict[str, ChildCandidate] = {}
@@ -879,39 +878,6 @@ def _choice_payload(
             raise RuleLoadError("a required choice description is missing from the current owner")
         choice_payload.append({"value": choice, "description": description})
     return choice_payload
-
-
-def _extract_subsection(text: str, heading: str) -> str:
-    lines = text.splitlines()
-    target = f"### {heading}"
-    start = next((index + 1 for index, line in enumerate(lines) if line.strip() == target), None)
-    if start is None:
-        return ""
-    end = next(
-        (index for index in range(start, len(lines)) if lines[index].startswith(("## ", "### "))),
-        len(lines),
-    )
-    return "\n".join(lines[start:end]).strip()
-
-
-def _extract_choice_sections(text: str, heading: str) -> dict[str, str]:
-    section = _extract_subsection(text, heading)
-    lines = section.splitlines()
-    choices: dict[str, str] = {}
-    current: str | None = None
-    body: list[str] = []
-    for line in lines:
-        match = re.fullmatch(r"####\s+(.+?)\s*", line)
-        if match:
-            if current is not None:
-                choices[current] = "\n".join(body).strip()
-            current = match.group(1).strip()
-            body = []
-        elif current is not None:
-            body.append(line)
-    if current is not None:
-        choices[current] = "\n".join(body).strip()
-    return choices
 
 
 def _fallback_is_allowed(reason: str) -> bool:

@@ -6,9 +6,9 @@ from typing import Annotated, Any
 
 from mcp.types import ToolAnnotations
 from pydantic import Field
+
 from token_io_decoupling_transport.registration import ToolRegistrar
 from token_io_decoupling_transport.tool_metadata import tool_description
-
 from token_io_decoupling_workflow.serena_memory import SerenaMemoryReadService
 
 MemoryPath = Annotated[

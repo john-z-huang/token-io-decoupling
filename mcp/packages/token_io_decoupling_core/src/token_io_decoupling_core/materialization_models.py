@@ -33,9 +33,9 @@ BoundedTitle = Annotated[StrictStr, Field(min_length=1, max_length=256)]
 BoundedFactText = Annotated[StrictStr, Field(max_length=8_192)]
 MaterializationOperation: TypeAlias = Literal["create", "replace"]
 MaterializationTemplateName: TypeAlias = Literal["literal_text", "json_document", "fact_markdown"]
-MaterializationPolicyScope: TypeAlias = Literal["skill_maintenance", "generic_project"]
+MaterializationPolicyScope: TypeAlias = Literal["generic_project"]
 MaterializationRole: TypeAlias = Literal["Primary Output"]
-MaterializationOutputClass: TypeAlias = Literal["code_configuration", "skill_instructions"]
+MaterializationOutputClass: TypeAlias = Literal["code_configuration"]
 
 
 class DirectoryIdentity(StrictModel):
@@ -189,7 +189,7 @@ class OutputMaterializationGrant(StrictModel):
     grant_id: Annotated[StrictStr, Field(min_length=1, max_length=128)]
     revision: Annotated[StrictInt, Field(ge=1)]
     active: StrictBool
-    policy_version: Literal[1]
+    policy_version: Literal[2]
     project_id: Annotated[StrictStr, Field(min_length=1, max_length=128)]
     root_session_id: Annotated[StrictStr, Field(min_length=1, max_length=128)]
     worker_session_id: Annotated[StrictStr, Field(min_length=1, max_length=128)]
@@ -216,7 +216,7 @@ class OutputMaterializationGrant(StrictModel):
     def require_exact_policy_version_type(cls, value: object) -> object:
         if isinstance(value, dict) and "policy_version" in value:
             version = value["policy_version"]
-            if type(version) is not int or version != 1:
+            if type(version) is not int or version != 2:
                 raise ValueError("materialization_policy_version_invalid")
         return value
 
@@ -224,7 +224,7 @@ class OutputMaterializationGrant(StrictModel):
     def validate_grant_scope(self) -> OutputMaterializationGrant:
         if not self.active:
             raise ValueError("materialization_grant_revoked")
-        if self.output_class not in {"code_configuration", "skill_instructions"}:
+        if self.output_class not in {"code_configuration"}:
             raise ValueError("materialization_role_output_class_mismatch")
         for path in self.allowed_paths:
             _validate_exact_relative_leaf_path(path)
@@ -262,7 +262,7 @@ class PreparedMaterializationFile(StrictModel):
 class PreparedMaterializationManifest(StrictModel):
     version: Literal[1]
     prepared_id: OpaquePreparedId
-    policy_version: Literal[1]
+    policy_version: Literal[2]
     binding: MaterializationBindingFingerprint
     grant_id: Annotated[StrictStr, Field(min_length=1, max_length=128)]
     grant_revision: Annotated[StrictInt, Field(ge=1)]
@@ -282,7 +282,7 @@ class PreparedMaterializationManifest(StrictModel):
             for field_name in ("version", "policy_version"):
                 if field_name in value:
                     version = value[field_name]
-                    if type(version) is not int or version != 1:
+                    if type(version) is not int or version != (1 if field_name == "version" else 2):
                         raise ValueError("materialization_manifest_version_invalid")
         return value
 

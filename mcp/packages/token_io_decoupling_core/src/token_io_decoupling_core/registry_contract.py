@@ -26,7 +26,10 @@ SUPPORTED_NODE_SHAPES: dict[str, tuple[str, tuple[str, ...]]] = {
         "hybrid",
         ("pass", "failure", "inconclusive", "not applicable with reason"),
     ),
-    "repair": ("hybrid", ("not applicable with reason", "repair", "blocked")),
+    "repair": ("direct", ("ready", "blocked")),
+    "repair_scope": ("direct", ("released", "amend", "blocked")),
+    "repair_execution": ("direct", ("complete", "blocked")),
+    "repair_handoff": ("direct", ("ready", "blocked")),
     "documentation": ("hybrid", ("complete", "not applicable with reason", "blocked")),
     "git": ("hybrid", ("no Git effect", "authorized effect", "blocked")),
     "acceptance": ("hybrid", ("complete", "incomplete", "blocked")),
@@ -44,7 +47,7 @@ SUPPORTED_NODE_SHAPES: dict[str, tuple[str, tuple[str, ...]]] = {
 
 # Exact checkpoint facts and evidence are part of the executable contract. This
 # digest is reviewed with the registry and implementation when that contract moves.
-SUPPORTED_REQUIREMENTS_SHA256 = "73f2a96895a3d022530a6ea905c345dfe93fd3956ec043728daeb0d1c445fcbe"
+SUPPORTED_REQUIREMENTS_SHA256 = "7d1300d8bdd7a3da61fc6735aed2a5b8e7d1f390f4d0805f581d4fe885671d10"
 
 
 def validate_supported_registry_shape(registry: dict[str, Any]) -> None:
@@ -81,6 +84,11 @@ def validate_supported_registry_shape(registry: dict[str, Any]) -> None:
                 raise UnsupportedRegistryShapeError(
                     f"{node_id}.{field} must remain an array of strings"
                 )
+        successors = node.get("next_checkpoint_ids")
+        if not isinstance(successors, list) or any(
+            not isinstance(successor, str) or successor not in by_id for successor in successors
+        ):
+            raise UnsupportedRegistryShapeError(f"invalid successor checkpoint for {node_id}")
         if not isinstance(node.get("owner_path"), str) or not isinstance(
             node.get("owner_section"), str
         ):
@@ -102,6 +110,7 @@ def validate_supported_registry_shape(registry: dict[str, Any]) -> None:
                 "legal_branches",
                 "required_facts",
                 "required_evidence",
+                "next_checkpoint_ids",
             )
         }
         for node_id in sorted(by_id)
@@ -111,5 +120,5 @@ def validate_supported_registry_shape(registry: dict[str, Any]) -> None:
     ).encode("utf-8")
     if hashlib.sha256(encoded).hexdigest() != SUPPORTED_REQUIREMENTS_SHA256:
         raise UnsupportedRegistryShapeError(
-            "required facts or evidence changed without a supported contract update"
+            "required facts, evidence or successors changed without a supported contract update"
         )

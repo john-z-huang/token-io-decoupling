@@ -9,10 +9,10 @@ from collections.abc import Callable
 from typing import Annotated, Any, Literal, cast
 
 from pydantic import Field, StrictBool, StrictStr, field_validator
+
 from token_io_decoupling_core.models import StrictModel
 from token_io_decoupling_core.rules import RuleLoader, RuleLoadError
 from token_io_decoupling_transport.payloads import payload_model
-
 from token_io_decoupling_workflow.api_recovery import (
     RecoveryGuidance,
     classify_provider_failure,
@@ -118,9 +118,8 @@ class DecisionContextGenerator:
             return _blocked("outbound_data_not_permitted", input_hash, payload.output_kind)
 
         try:
-            policy_text, source_policy_hash = self._rules.load_delegation_policy(
-                "decision-context-generation"
-            )
+            policy = self._rules.load_delegation_policy("decision-context-generation")
+            policy_text, source_policy_hash = policy.text, policy.content_sha256
         except (RuleLoadError, OSError, ValueError):
             return _blocked("policy_unavailable", input_hash, payload.output_kind)
 
@@ -214,9 +213,9 @@ class DecisionContextGenerator:
             return blocked("invalid_response")
 
         try:
-            _, current_policy_hash = self._rules.load_delegation_policy(
+            current_policy_hash = self._rules.load_delegation_policy(
                 "decision-context-generation"
-            )
+            ).content_sha256
         except (RuleLoadError, OSError, ValueError):
             return blocked("stale_policy")
         if current_policy_hash != source_policy_hash:

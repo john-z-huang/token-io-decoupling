@@ -135,6 +135,8 @@ class RuleRegistry(StrictModel):
 
 
 class RuleContext(StrictModel):
+    schema_version: Literal[2] = 2
+    build_id: Sha256
     node_id: NonEmptyString
     language: Language
     owner_path: NonEmptyString
@@ -204,7 +206,8 @@ class RuleContextOwnerReference(StrictModel):
 
 
 class RuleContextBundle(StrictModel):
-    schema_version: Literal[1]
+    schema_version: Literal[2]
+    build_id: Sha256
     index_sha256: Sha256
     node_id: NonEmptyString
     language: Language

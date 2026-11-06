@@ -1,27 +1,5 @@
-# MCP Server development instructions
+# MCP development entrypoint
 
 [English](AGENTS.md) | [简体中文](AGENTS_zh_cn.md)
 
-This file owns the client-support boundary for the MCP Server, packages, tests, metadata, and documentation under `mcp/`. Read the repository's [multilingual rules](../MULTI_LINGUAL.md) before documentation changes.
-
-## Supported clients
-
-- The MCP Server targets a locally available Codex CLI, including the local Codex CLI/app-server path used by local Work. Cloud ChatGPT conversations and remote Work are not direct clients, and other Code Agents are not supported as direct clients.
-- When another Agent runs in its own environment with Codex CLI installed and configures this MCP Server there by following this repository's instructions, the supported route is that environment's local Codex CLI only; this does not add an adapter or direct support for the other Agent or a cloud surface. The server does not ask callers to select or classify an environment.
-- When changing code under `mcp/`, consider Codex CLI behavior across those contexts. Do not add compatibility branches, adapters, configuration, examples, tests, or tool instructions for other Code Agents. Repository-wide cross-provider parity checks do not apply to this directory.
-- Remove obsolete unsupported-client paths and claims instead of maintaining fallback routes. Shared protocol or operating-system abstractions do not establish support for additional clients.
-- Stateless navigation and structural evaluation do not require identity binding or persist allocation state. For protected operations, use local stdio request scope and apply the current role, allocation, application path, and operation-authorization checks. Do not require a privileged host integration or claim independent authentication; protected materialization retains its trusted binding, grant and path checks.
-
-## Scope and authority
-
-### Codex SDK is test-only
-
-Follow the repository's [Codex SDK final-test boundary](../AGENTS.md#codex-sdk-final-test-boundary). Keep `openai-codex` only in `codex-test`, outside all runtime dependencies and production imports. `tests/support/codex_sdk.py` is the sole SDK import/launch adapter; only `tests/support/final_codex_check.py` may invoke its real final inspection after all other checks and the current build's `uv tool` installation succeed. Ordinary unit tests may use fakes to verify these boundaries but must not start the SDK. The fresh CLI performs only version, discovery, capability, and rule inspection, with zero model turns. Preserve the mandatory environment reuse, fixed model/effort, isolated configuration, and failure boundaries from the root instructions.
-
-
-This restriction applies to the MCP Server and does not remove native runtime instructions outside `mcp/`. It grants no additional filesystem, network, credential, Agent-creation, or Git authorization.
-
-## Related documents
-
-- [MCP development guide](DEVELOPMENT.md)
-- [Codex caller matching](CODEX_CALLER_CONTEXT.md)
+Load the [MCP development instructions](../.agents/skills/token-io-decoupling-dev/references/mcp/AGENTS.md) and [repository rules](../AGENTS.md). This server supports local Codex CLI only; preserve actual identity, capability, permission and guard checks. Codex SDK is test-only and final inspection follows the private ordered coordinator.

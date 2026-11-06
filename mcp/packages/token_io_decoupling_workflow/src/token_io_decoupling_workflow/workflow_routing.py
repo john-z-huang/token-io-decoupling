@@ -9,6 +9,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Annotated, Any, Literal, TypeAlias, cast
 
 from pydantic import Field, StrictBool, StrictInt, StrictStr, field_validator, model_validator
+
 from token_io_decoupling_core.models import (
     CodingMode,
     Language,
@@ -18,7 +19,6 @@ from token_io_decoupling_core.models import (
     StrictModel,
 )
 from token_io_decoupling_core.rules import DEFAULT_CONTEXT_TEXT_BUDGET, RuleLoader
-
 from token_io_decoupling_workflow.api_recovery import (
     FailureClass,
     ProviderErrorCode,
@@ -265,6 +265,7 @@ class DecouplingWorkflowResult(StrictModel):
     rule_hash: Sha256 | None = None
     index_sha256: Sha256 | None = None
     rule_evidence: list[RuleContextEvidence] = Field(default_factory=list)
+    instructions: dict[str, Any] | None = None
     missing_facts: list[StrictStr] = Field(default_factory=list)
     capability_evidence: list[CapabilityEvidence] = Field(default_factory=list)
     failure_class: FailureClass | None = None
@@ -291,7 +292,14 @@ _STAGE_RULE_NODES: dict[WorkflowStage, tuple[str, ...]] = {
     "session_readiness": ("mode", "task_intent", "output_class"),
     "work_definition": ("contract", "context", "decision", "slice"),
     "execution": ("mode", "implementation", "control"),
-    "verification_repair": ("verification", "control", "repair"),
+    "verification_repair": (
+        "verification",
+        "control",
+        "repair",
+        "repair_scope",
+        "repair_execution",
+        "repair_handoff",
+    ),
     "documentation": ("documentation",),
     "delivery_acceptance": ("git", "acceptance"),
 }
@@ -412,10 +420,9 @@ def _route_reference(request: DecouplingWorkflowRequest) -> RouteReference:
     else:
         route_id = "coding-multi-agent"
         stem = "coding-multi-agent"
-    suffix = "_zh_cn" if request.language == "zh_cn" else ""
     return RouteReference(
         route_id=route_id,
-        route_path=f"docs/skill/references/coding/layer-04-workflows/{stem}{suffix}.md",
+        route_path=f"compiled:{stem}:{request.language}",
         mode_count=request.mode_count,
     )
 
@@ -1086,6 +1093,21 @@ class WorkflowRouter:
         total_tokens: int | None = None,
     ) -> DecouplingWorkflowResult:
         rule_bundles = bundles or {}
+        instructions = None
+        if stage is not None and status == "available" and route_reference is not None:
+            try:
+                instructions = self._rules.load_stage(
+                    route_reference.route_id, stage, language=request.language
+                )
+            except Exception:
+                status, reason = "blocked", "rules_unavailable"
+                missing_facts = [*(missing_facts or []), "restore_compatible_compiled_resources"]
+            else:
+                if any(
+                    bundle.build_id != instructions["build_id"] for bundle in rule_bundles.values()
+                ):
+                    status, reason, instructions = "stale", "stale_rule_context", None
+                    missing_facts = [*(missing_facts or []), "refresh_current_rule_context"]
         index_hashes = {item.index_sha256 for item in rule_bundles.values()}
         index_hash = next(iter(index_hashes)) if len(index_hashes) == 1 else None
         return DecouplingWorkflowResult(
@@ -1102,6 +1124,7 @@ class WorkflowRouter:
             rule_hash=_combined_rule_hash(rule_bundles) if rule_bundles else None,
             index_sha256=index_hash,
             rule_evidence=_evidence_list(rule_bundles),
+            instructions=instructions,
             missing_facts=missing_facts or [],
             capability_evidence=capability_evidence or _capability_evidence(request),
             failure_class=failure_class,
