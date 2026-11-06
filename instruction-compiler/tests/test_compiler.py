@@ -92,6 +92,7 @@ class SourceBoundaryTests(unittest.TestCase):
         compiler.report = {"closures": {}, "source_hashes": {}}
         compiler._content_cache = {}
         compiler.units = {}
+        compiler._document_sources = {}
         compiler.node_map = {}
         (Path(temp) / "SKILL.md").write_text(
             "# Skill\n\n## Hard constraints\nCheck authorization.\n"
@@ -128,6 +129,30 @@ class SourceBoundaryTests(unittest.TestCase):
             with self.assertRaisesRegex(CompilationError, "missing operational policy target"):
                 compiler.closure(["first.md"], "en")
 
+    def test_document_links_keep_author_labels_while_mcp_keeps_exact_unit_lookups(self):
+        with tempfile.TemporaryDirectory() as temp:
+            compiler = self.compiler(temp)
+            for language, suffix, labels in (
+                ("en", "", ("Second policy", "The same policy")),
+                ("zh_cn", "_zh_cn", ("第二项政策", "同一项政策")),
+            ):
+                source = f"first{suffix}.md"
+                target = f"second{suffix}.md"
+                text = f"# First\nApply [{labels[0]}]({target}) and [{labels[1]}]({target}).\n"
+                (Path(temp) / source).write_text(text)
+                (Path(temp) / target).write_text("# Second\nCheck authorization.\n")
+                document = compiler.closure([source], language, "documents")["text"]
+                expected_target = "../" + compiler.document_path("second.md", language)
+                for label in labels:
+                    self.assertIn(f"[{label}]({expected_target})", document)
+                self.assertNotIn("instruction continuation:", document)
+                self.assertNotRegex(document, r"\[unit\.[a-f0-9]+\]")
+                mcp = compiler.closure([source], language)["text"]
+                unit_id, _ = compiler.register_unit("second.md")
+                self.assertIn(f'"fragment_ids":["{unit_id}"]', mcp)
+                self.assertIn("rules_get_context(payload=", mcp)
+                self.assertNotIn(expected_target, mcp)
+
     def test_budget_failure_never_truncates_required_instruction(self):
         with tempfile.TemporaryDirectory() as temp:
             compiler = self.compiler(temp)
@@ -142,6 +167,34 @@ class SourceBoundaryTests(unittest.TestCase):
             english = compiler.register_unit("references/owner.md")
             chinese = compiler.register_unit("references/owner_zh_cn.md")
             self.assertEqual(english, chinese)
+
+    def test_readable_document_names_preserve_source_and_section_identity(self):
+        with tempfile.TemporaryDirectory() as temp:
+            compiler = self.compiler(temp)
+            source = "references/coding/layer-02-workflow-concepts/entry-and-context/contract.md"
+            self.assertEqual(
+                "instructions/workflow-concepts--entry-and-context--contract.md",
+                compiler.document_path(source, "en"),
+            )
+            self.assertEqual(
+                compiler.document_path(source, "zh_cn"),
+                compiler.document_path(source.replace(".md", "_zh_cn.md"), "zh_cn"),
+            )
+            self.assertNotEqual(
+                compiler.document_path(source, "en"),
+                compiler.document_path(source + "#Actions", "en"),
+            )
+            self.assertNotEqual(
+                compiler.document_path("references/first/policy.md", "en"),
+                compiler.document_path("references/second/policy.md", "en"),
+            )
+
+    def test_readable_name_collision_fails_instead_of_merging_sources(self):
+        with tempfile.TemporaryDirectory() as temp:
+            compiler = self.compiler(temp)
+            compiler.document_path("references/first_owner.md", "en")
+            with self.assertRaisesRegex(CompilationError, "document path collision"):
+                compiler.document_path("references/first-owner.md", "en")
 
     def test_unique_repair_owner_keeps_its_exact_checkpoint_node(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -249,6 +302,28 @@ class OptionalExportTests(unittest.TestCase):
             self.assertEqual(expected, (self.preview / path).read_bytes())
         compile_repository(self.root, check=True)
 
+    def test_compile_retires_only_unmodified_files_from_the_previous_manifest(self):
+        retired = self.preview / "instructions/unit.0123456789abcdef.md"
+        retired.write_text("old generated instruction\n")
+        manifest_path = self.preview / "manifest.json"
+        manifest = json.loads(manifest_path.read_bytes())
+        manifest["files"][retired.relative_to(self.preview).as_posix()] = digest(
+            retired.read_bytes()
+        )
+        manifest_path.write_text(json.dumps(manifest))
+        retired.write_text("local edits\n")
+        with self.assertRaisesRegex(
+            CompilationError, "obsolete exported document has local changes"
+        ):
+            compile_repository(self.root)
+        self.assertEqual("local edits\n", retired.read_text())
+        retired.write_text("old generated instruction\n")
+        compile_repository(self.root)
+        self.assertFalse(retired.exists())
+        compile_repository(self.root, check=True)
+        compile_repository(self.root)
+        compile_repository(self.root, check=True)
+
 
 class ProductResourceTests(unittest.TestCase):
     @classmethod
@@ -280,10 +355,12 @@ class ProductResourceTests(unittest.TestCase):
         return root, json.loads(path.read_text())
 
     def without_continuations(self, text):
+        text = text.replace(" (instruction continuation: workflow_capabilities())", "")
         text = re.sub(
             r" \(instruction continuation: `rules_get_context\(payload=\{[^\n]+?\}\)`\)", "", text
         )
-        return re.sub(r" \(instruction continuation: \[[^\]]+\]\([^)]+\)\)", "", text)
+        text = re.sub(r" \(instruction continuation: \[[^\]]+\]\([^)]+\)\)", "", text)
+        return re.sub(r"\[([^\]]+)\]\((?:\.\./)?(?:instructions|steps|routes)/[^)]+\)", r"\1", text)
 
     def test_generic_preflight_instructions_match_product_scope(self):
         _root, instructions = self.resource()
@@ -302,9 +379,7 @@ class ProductResourceTests(unittest.TestCase):
         skill_root = self.skill_root
         manifest = json.loads((skill_root / "manifest.json").read_text())
         compiler = Compiler(root)
-        route_entry_id, _ = compiler.register_unit(
-            "references/coding/layer-03-workflow-checkpoints/route-entry.md"
-        )
+        route_entry = "references/coding/layer-03-workflow-checkpoints/route-entry.md"
         for language in ("en", "zh_cn"):
             suffix = "_zh_cn" if language == "zh_cn" else ""
             entry_path = f"SKILL{suffix}.md"
@@ -316,8 +391,8 @@ class ProductResourceTests(unittest.TestCase):
             self.assertIn("context_version=2", entry)
             self.assertIn("decide_decoupling_workflow", entry)
             self.assertIn(
-                f"[Mode](instructions/checkpoint.mode{suffix}.md) → "
-                f"[Route Entry](instructions/{route_entry_id}{suffix}.md)",
+                f"[Mode]({compiler.document_path(compiler.node_path('mode', 'en'), language)}) → "
+                f"[Route Entry]({compiler.document_path(route_entry, language)})",
                 entry,
             )
             self.assertIn(
@@ -564,6 +639,121 @@ class ProductResourceTests(unittest.TestCase):
                 with self.subTest(path=path):
                     content = (skill_root / path).read_bytes()
                     self.assertEqual(content.rstrip() + b"\n", content)
+
+    def test_shared_source_has_one_document_but_distinct_checkpoint_contracts(self):
+        root, instructions = self.resource()
+        compiler = Compiler(root)
+        index = json.loads((self.skill_root / "instruction-index.json").read_bytes())
+        self.assertEqual(1, index["schema_version"])
+        self.assertEqual(set(instructions["nodes"]), set(index["checkpoints"]))
+        for spec in compiler.registry["nodes"]:
+            checkpoint = index["checkpoints"][spec["node_id"]]
+            for key in (
+                "node_id",
+                "required_facts",
+                "required_evidence",
+                "legal_branches",
+                "evaluation_mode",
+                "failure_action",
+                "next_checkpoint_ids",
+            ):
+                self.assertEqual(spec[key], checkpoint[key], (spec["node_id"], key))
+        contract = index["checkpoints"]["contract"]
+        change = index["checkpoints"]["contract_change"]
+        self.assertEqual(contract["documents"], change["documents"])
+        self.assertNotEqual(contract["required_facts"], change["required_facts"])
+        self.assertNotEqual(contract["legal_branches"], change["legal_branches"])
+        self.assertNotEqual(contract["next_checkpoint_ids"], change["next_checkpoint_ids"])
+        unit_id, _ = compiler.register_unit(compiler.node_path("contract", "en"))
+        self.assertEqual(contract["documents"], index["units"][unit_id])
+        # Selected sections of one owner retain separate content and destinations.
+        for language in ("en", "zh_cn"):
+            self.assertNotEqual(
+                index["checkpoints"]["slice"]["documents"][language],
+                index["checkpoints"]["control"]["documents"][language],
+            )
+
+    def test_exported_instruction_bodies_are_unique_and_names_are_readable(self):
+        seen = {}
+        for path in sorted((self.skill_root / "instructions").glob("*.md")):
+            self.assertNotRegex(path.name, r"^(?:unit\.[a-f0-9]{16}|checkpoint\.)")
+            text = path.read_text()
+            title = text.splitlines()[0]
+            self.assertNotRegex(title, r"unit\.[a-f0-9]{16}")
+            body = text.split("\n\n", 2)[2]
+            fingerprint = digest(body)
+            self.assertNotIn(fingerprint, seen, (path.name, seen.get(fingerprint)))
+            seen[fingerprint] = path.name
+
+    def test_instruction_index_is_integrity_bound_and_links_stay_in_language(self):
+        root, instructions = self.resource()
+        compiler = Compiler(root)
+        payload = (self.skill_root / "instruction-index.json").read_bytes()
+        index = json.loads(payload)
+        manifest = json.loads((self.skill_root / "manifest.json").read_bytes())
+        for mapping in (
+            instructions["document_units"],
+            instructions["skill_files"],
+            manifest["files"],
+        ):
+            self.assertEqual(digest(payload), mapping["instruction-index.json"])
+        for unit_id in index["units"]:
+            self.assertIn(unit_id, instructions["fragments"])
+        documents = [item["documents"] for item in index["checkpoints"].values()]
+        documents.extend(index["units"].values())
+        for localized in documents:
+            self.assertEqual(set(localized), {"en", "zh_cn"})
+            english, chinese = localized["en"], localized["zh_cn"]
+            self.assertEqual(english.removesuffix(".md") + "_zh_cn.md", chinese)
+            for path in localized.values():
+                content = (self.skill_root / path).read_text()
+                self.assertEqual(digest(content), manifest["files"][path])
+                self.assertIn(
+                    f"[English]({Path(english).name}) | [简体中文]({Path(chinese).name})", content
+                )
+        for path in self.skill_root.rglob("*.md"):
+            text = path.read_text()
+            # Only the explicitly labelled language switch may cross languages.
+            text = "\n".join(line for line in text.splitlines() if "[English](" not in line)
+            for target in re.findall(r"\]\(([^)]+)\)", text):
+                if "://" in target or not target.split("#", 1)[0].endswith(".md"):
+                    continue
+                self.assertEqual(path.name.endswith("_zh_cn.md"), target.endswith("_zh_cn.md"))
+        for node_id in compiler.node_map:
+            for language in ("en", "zh_cn"):
+                source = compiler.node_path(node_id, language)
+                expected = compiler.clean_text(compiler.operational_source(source, "documents"))
+                card = (
+                    self.skill_root / index["checkpoints"][node_id]["documents"][language]
+                ).read_text()
+                self.assertIn(expected, self.without_continuations(card))
+
+    def test_all_document_links_use_readable_labels_including_shared_requirements(self):
+        for path in self.skill_root.rglob("*.md"):
+            text = path.read_text()
+            self.assertNotRegex(text, r"\[unit\.[a-f0-9]{16}\]")
+            self.assertNotIn("instruction continuation: [", text)
+        for language, suffix in (("en", ""), ("zh_cn", "_zh_cn")):
+            lifecycle = self.skill_root / (
+                "instructions/fundamental-concepts--delegation--delegation-child-lifecycle"
+                f"{suffix}.md"
+            )
+            label = (
+                "Runtime and Model Provider Support"
+                if language == "en"
+                else "运行环境与模型厂商支持"
+            )
+            target = (
+                "../instructions/fundamental-concepts--session-runtime--runtime-provider-support"
+                f"{suffix}.md"
+            )
+            self.assertIn(f"[{label}]({target})", lifecycle.read_text())
+            for prefix in ("SM", "MM"):
+                step = (self.skill_root / f"steps/{prefix}01{suffix}.md").read_text()
+                hard = "Hard constraints" if language == "en" else "硬约束"
+                returns = "Prerequisite return map" if language == "en" else "前置返回映射"
+                self.assertIn(f"[{hard}](../instructions/common.hard_constraints{suffix}.md)", step)
+                self.assertIn(f"[{returns}](../instructions/route.", step)
 
     def test_zip_is_reproducible_and_manifest_is_at_skill_root(self):
         files = {"SKILL.md": b"entry", "manifest.json": b"{}", "steps/a.md": b"action"}

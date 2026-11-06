@@ -22,7 +22,7 @@ from typing import Any
 from urllib.parse import unquote, urlsplit
 
 SCHEMA_VERSION = 2
-COMPILER_VERSION = "1"
+COMPILER_VERSION = "2"
 LANGUAGES = ("en", "zh_cn")
 MAX_INSTRUCTION_CHARS = 120_000
 _LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
@@ -356,6 +356,7 @@ class Compiler:
         self.report: dict[str, Any] = {"closures": {}, "source_hashes": {}}
         self._content_cache: dict[tuple[str, str], str] = {}
         self.units: dict[str, tuple[str, str]] = {}
+        self._document_sources: dict[str, str] = {}
 
     def register_unit(self, path: str) -> tuple[str, str]:
         english = path.removesuffix("_zh_cn.md") + ".md" if path.endswith("_zh_cn.md") else path
@@ -404,6 +405,50 @@ class Compiler:
                 }:
                     return "selection." + node_id
         return "unit." + digest(english + ("#" + heading if separator else ""))[:16]
+
+    def document_path(self, source: str, language: str) -> str:
+        """Give one source selection a readable document, independent of runtime IDs."""
+        path, separator, section = source.partition("#")
+        english = path.removesuffix("_zh_cn.md") + ".md" if path.endswith("_zh_cn.md") else path
+        relative = re.sub(r"^references/coding/layer-\d+-", "", english)
+        parts = Path(relative).with_suffix("").parts
+        slug = "--".join(re.sub(r"[^a-z0-9]+", "-", part.lower()).strip("-") for part in parts)
+        if separator:
+            slug += "--section-" + re.sub(r"[^a-z0-9]+", "-", section.lower()).strip("-")
+        destination = mirror(f"instructions/{slug}.md", language)
+        identity = english + ("#" + section if separator else "")
+        previous = self._document_sources.setdefault(destination, identity)
+        if previous != identity:
+            raise CompilationError(f"readable document path collision: {destination}")
+        return destination
+
+    def document_index(self) -> dict[str, Any]:
+        """Keep checkpoint contracts distinct even when their document is shared."""
+        checkpoints = {}
+        for node_id, spec in self.node_map.items():
+            checkpoints[node_id] = {
+                key: value
+                for key, value in spec.items()
+                if key not in {"owner_path", "owner_section", "owner_mirrors", "resource_paths"}
+            }
+            checkpoints[node_id]["documents"] = {
+                language: self.document_path(self.node_path(node_id, "en"), language)
+                for language in LANGUAGES
+            }
+        units = {
+            unit_id: {language: self.document_path(source, language) for language in LANGUAGES}
+            for unit_id, (source, _node_id) in sorted(self.units.items())
+        }
+        units.update(
+            {
+                fragment_id: {
+                    language: mirror(f"instructions/{fragment_id}.md", language)
+                    for language in LANGUAGES
+                }
+                for fragment_id in _SHARED_FRAGMENTS
+            }
+        )
+        return {"schema_version": 1, "checkpoints": checkpoints, "units": units}
 
     def source_path(self, path: str) -> str:
         for prefix in ("instruction-compiler/sources/skill/", "docs/skill/"):
@@ -503,11 +548,20 @@ class Compiler:
             result.append((relative, unquote(parts.fragment), match[2]))
         return result
 
-    def clean_text(self, text: str, continuations: dict[str, str] | None = None) -> str:
+    def clean_text(
+        self,
+        text: str,
+        continuations: dict[str, str] | None = None,
+        *,
+        document_targets: dict[str, str] | None = None,
+    ) -> str:
         def replace(match: re.Match[str]) -> str:
             parts = urlsplit(match[2].split(' "', 1)[0].strip().strip("<>"))
             if parts.scheme or parts.netloc:
                 return match[0]
+            target = (document_targets or {}).get(match[2])
+            if target is not None:
+                return f"[{match[1]}]({target})"
             continuation = (continuations or {}).get(match[2])
             return match[1] + (
                 f" (instruction continuation: {continuation})" if continuation else ""
@@ -540,6 +594,7 @@ class Compiler:
         self, path: str, text: str, language: str, profile: str, document_route: str | None = None
     ) -> tuple[str, dict[str, str]]:
         continuations = {}
+        document_targets = {}
         report = {}
         for target, _anchor, raw in self.local_links(path, text):
             stem = Path(target).stem.removesuffix("_zh_cn")
@@ -559,15 +614,16 @@ class Compiler:
                     if document_route and module_number and "/modules/" in target:
                         card = mirror(f"../steps/{document_route}{module_number:02d}.md", language)
                     else:
-                        card = mirror(f"../instructions/{unit_id}.md", language)
-                    continuation = f"[{unit_id}]({card})"
+                        card = "../" + self.document_path(self.units[unit_id][0], language)
+                    document_targets[raw] = card
+                    continuation = card
                 else:
                     continuation = self.lookup_text(
                         self.instruction_lookup(unit_id, owner_node, language)
                     )
             continuations[raw] = continuation
             report[target] = continuation
-        return self.clean_text(text, continuations), report
+        return self.clean_text(text, continuations, document_targets=document_targets), report
 
     def closure(
         self,
@@ -833,8 +889,10 @@ class Compiler:
         if profile == "documents":
             hard_card = mirror("../instructions/common.hard_constraints.md", language)
             return_card = mirror(f"../instructions/route.{route}.return_map.md", language)
-            hard_lookup = f"[common.hard_constraints]({hard_card})"
-            return_lookup = f"[route.{route}.return_map]({return_card})"
+            hard_title = "Hard constraints" if language == "en" else "硬约束"
+            return_title = "Prerequisite return map" if language == "en" else "前置返回映射"
+            hard_lookup = f"[{hard_title}]({hard_card})"
+            return_lookup = f"[{return_title}]({return_card})"
         else:
             hard_lookup = self.lookup_text(hard["lookup"])
             return_lookup = self.lookup_text(recovery["lookup"])
@@ -931,6 +989,13 @@ class Compiler:
     def compile(self) -> tuple[dict[str, Any], dict[str, bytes]]:
         nodes = {}
         skill_cards = {}
+
+        def add_document(source: str, language: str, text: str) -> None:
+            path = self.document_path(source, language)
+            if path in skill_cards and skill_cards[path] != text:
+                raise CompilationError(f"conflicting document body for one source: {path}")
+            skill_cards[path] = text
+
         for node_id in self.node_map:
             nodes[node_id] = {
                 language: self.closure(
@@ -940,9 +1005,7 @@ class Compiler:
             }
             for language in LANGUAGES:
                 card = self.closure([self.node_path(node_id, language)], language, "documents")
-                skill_cards[mirror(f"instructions/checkpoint.{node_id}.md", language)] = card[
-                    "text"
-                ]
+                add_document(self.node_path(node_id, "en"), language, card["text"])
         fragments = {}
         for fragment_id in self.fragment_map:
             fragments[fragment_id] = {}
@@ -1045,7 +1108,7 @@ class Compiler:
                 item["text_sha256"] = item.pop("content_sha256")
                 fragments[unit_id][language] = item
                 card = self.closure([source], language, "documents")
-                skill_cards[mirror(f"instructions/{unit_id}.md", language)] = card["text"]
+                add_document(path, language, card["text"])
             self.index["fragments"].append(
                 {
                     "fragment_id": unit_id,
@@ -1069,7 +1132,7 @@ class Compiler:
         # Include actual entry delivery text in semantic identity. Its fixed
         # build placeholder avoids hashing the eventual build ID into itself.
         normalized_files = self.skill_files(skill_cards, "__BUILD_ID__")
-        for entry in ("SKILL.md", "SKILL_zh_cn.md"):
+        for entry in ("SKILL.md", "SKILL_zh_cn.md", "instruction-index.json"):
             body["document_units"][entry] = digest(normalized_files[entry])
         self.resolve_budgets(body)
         body["build_id"] = digest(canonical(body))
@@ -1154,7 +1217,9 @@ class Compiler:
             english_name = Path(peer if language == "zh_cn" else path).name
             chinese_name = Path(path if language == "zh_cn" else peer).name
             switch = f"[English]({english_name}) | [简体中文]({chinese_name})"
-            files[path] = (f"# {Path(path).stem}\n\n{switch}\n\n{text}\n").encode()
+            heading = re.search(r"^# (.+)$", text, re.MULTILINE)
+            title = heading[1] if heading else Path(path).stem.replace("--", " / ")
+            files[path] = (f"# {title}\n\n{switch}\n\n{text}\n").encode()
         for language in LANGUAGES:
             name = "SKILL.md" if language == "en" else "SKILL_zh_cn.md"
             intro = (
@@ -1221,20 +1286,32 @@ class Compiler:
                 self.document_integrity_notice([name], language, "manifest.json"),
                 "",
             ]
-            contract_card = mirror("instructions/checkpoint.contract.md", language)
-            mode_card = mirror("instructions/checkpoint.mode.md", language)
+            lines.extend(
+                [
+                    "The [instruction index](instruction-index.json) maps stable IDs to readable "
+                    "documents and records each checkpoint's distinct facts, evidence, branches "
+                    "and returns. Sharing a document does not merge checkpoint contracts."
+                    if language == "en"
+                    else "[指令索引](instruction-index.json)将稳定 ID 映射到可读文档，"
+                    "并保留各检查点独立的"
+                    "事实、证据、分支和返回规则。共用文档不表示合并检查点契约。",
+                    "",
+                ]
+            )
+            contract_card = self.document_path(self.node_path("contract", "en"), language)
+            mode_card = self.document_path(self.node_path("mode", "en"), language)
             environment_id, _ = self.register_unit(
                 "references/coding/layer-02-workflow-concepts/entry-and-context/environment.md"
             )
             capabilities_id, _ = self.register_unit(
                 "references/coding/layer-02-workflow-concepts/entry-and-context/environment-capability-inventory.md"
             )
-            environment_card = mirror(f"instructions/{environment_id}.md", language)
-            capabilities_card = mirror(f"instructions/{capabilities_id}.md", language)
+            environment_card = self.document_path(self.units[environment_id][0], language)
+            capabilities_card = self.document_path(self.units[capabilities_id][0], language)
             route_entry_id, _ = self.register_unit(
                 "references/coding/layer-03-workflow-checkpoints/route-entry.md"
             )
-            route_entry_card = mirror(f"instructions/{route_entry_id}.md", language)
+            route_entry_card = self.document_path(self.units[route_entry_id][0], language)
             lines.append(
                 f"Entry: [Contract]({contract_card}) → [Environment]({environment_card}) → "
                 f"[Capability inventory]({capabilities_card}) → [Mode]({mode_card}) → "
@@ -1290,6 +1367,7 @@ class Compiler:
             'interface:\n  display_name: "Token I/O Decoupling"\n'
             '  short_description: "Compiled Coding instructions | Coding 编译指令"\n'.encode()
         )
+        files["instruction-index.json"] = json_bytes(self.document_index())
         manifest = {
             "schema_version": SCHEMA_VERSION,
             "build_id": build_id,
@@ -1355,11 +1433,36 @@ def compile_repository(
         )
     if check and stale:
         raise CompilationError("generated instruction resources are stale: " + ", ".join(stale))
+    obsolete = []
+    previous_manifest = skill_root / "manifest.json"
+    if not check and export_present and previous_manifest.exists():
+        try:
+            previous = json.loads(safe_file(skill_root, "manifest.json").read_bytes())
+        except (ValueError, UnicodeError) as exc:
+            raise CompilationError("invalid previous export manifest") from exc
+        if (
+            not isinstance(previous, dict)
+            or previous.get("schema_version") != SCHEMA_VERSION
+            or not isinstance(previous.get("files"), dict)
+        ):
+            raise CompilationError("invalid previous export manifest")
+        for name, expected_digest in previous["files"].items():
+            if name in skill_files:
+                continue
+            path = skill_root / name
+            if not path.exists() and not path.is_symlink():
+                continue
+            path = safe_file(skill_root, name)
+            if digest(path.read_bytes()) != expected_digest:
+                raise CompilationError(f"obsolete exported document has local changes: {name}")
+            obsolete.append(path)
     if not check:
         for path, data in files.items():
             destination = root / path
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(data)
+        for path in obsolete:
+            path.unlink()
     return {
         "build_id": body["build_id"],
         "generated_files": len(files),

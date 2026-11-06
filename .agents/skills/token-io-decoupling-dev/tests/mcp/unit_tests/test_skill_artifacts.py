@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+import io
+import json
 import os
 import re
 import shutil
@@ -10,8 +12,11 @@ import subprocess
 import sys
 import tarfile
 import unicodedata
+import zipfile
 from pathlib import Path
 from urllib.parse import unquote
+
+import pytest
 
 from token_io_decoupling.skills import validate_skill_bundle
 
@@ -64,6 +69,31 @@ def test_generated_skill_links_stay_inside_delivered_tree(tmp_path):
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(data)
     _assert_local_links(skill, skill)
+
+
+@pytest.mark.parametrize("rewrite_manifest", [False, True])
+def test_instruction_index_tampering_is_rejected_by_bundle_integrity(rewrite_manifest):
+    bundle = REPOSITORY / "mcp/src/token_io_decoupling/_resources/skill_bundle.zip"
+    manifest, contents = validate_skill_bundle(bundle.read_bytes())
+    assert "instruction-index.json" in manifest["files"]
+    contents["instruction-index.json"] = b"{}\n"
+    if rewrite_manifest:
+        changed = json.loads(contents["manifest.json"])
+        changed["files"]["instruction-index.json"] = hashlib.sha256(
+            contents["instruction-index.json"]
+        ).hexdigest()
+        contents["manifest.json"] = json.dumps(changed).encode()
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w") as archive:
+        for name, data in contents.items():
+            archive.writestr(name, data)
+    message = "core instruction map" if rewrite_manifest else "integrity check failed"
+    with pytest.raises(ValueError, match=message):
+        validate_skill_bundle(
+            output.getvalue(),
+            expected_build_id=manifest["build_id"],
+            expected_files=manifest["files"],
+        )
 
 
 def test_detached_sdist_cli_installs_without_checkout(tmp_path):
@@ -176,15 +206,57 @@ print(json.dumps(manifest, sort_keys=True))
     assert b"name: token-io-decoupling-skill" in baseline
     assert (skill / "SKILL_zh_cn.md").is_file()
     assert (skill / "manifest.json").is_file()
+    index = json.loads((skill / "instruction-index.json").read_bytes())
+    contract = index["checkpoints"]["contract"]
+    change = index["checkpoints"]["contract_change"]
+    assert contract["documents"] == change["documents"]
+    assert contract["required_facts"] != change["required_facts"]
+    snapshot = {
+        path.relative_to(skill).as_posix(): path.read_bytes()
+        for path in skill.rglob("*")
+        if path.is_file()
+    }
+    # Model an earlier managed snapshot containing retired export names.
+    retired = skill / "instructions/unit.0123456789abcdef.md"
+    retired.write_text("previous generated document\n")
+    old_manifest = json.loads((skill / "manifest.json").read_bytes())
+    old_manifest["files"][retired.relative_to(skill).as_posix()] = hashlib.sha256(
+        retired.read_bytes()
+    ).hexdigest()
+    (skill / "manifest.json").write_text(json.dumps(old_manifest, sort_keys=True) + "\n")
+    marker = json.loads((skill / ".token-io-skill.json").read_bytes())
+    marker["files"] = {
+        path.relative_to(skill).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in skill.rglob("*")
+        if path.is_file() and path.name != ".token-io-skill.json"
+    }
+    (skill / ".token-io-skill.json").write_text(json.dumps(marker, sort_keys=True))
     _assert_local_links(skill, skill)
     for forbidden in ("_project", "instruction-compiler", ".agents", "tests", "benchmarks"):
         assert not (skill / forbidden).exists()
     shutil.rmtree(project)
     run(cli, "skills", "update", env=env)
+    assert not retired.exists()
+    run(cli, "skills", "update", env=env)
+    assert {
+        path.relative_to(skill).as_posix(): path.read_bytes()
+        for path in skill.rglob("*")
+        if path.is_file()
+    } == snapshot
+    _assert_local_links(skill, skill)
     assert (skill / "SKILL.md").read_bytes() == baseline
     assert config.read_bytes() == config_before
     assert probe() == rules_before
     assert program_snapshot() == program_before
+    index_path = skill / "instruction-index.json"
+    index_before = index_path.read_bytes()
+    index_path.write_text("{}\n")
+    rejected_index = subprocess.run(
+        [cli, "skills", "update"], cwd=tmp_path, env=env, capture_output=True
+    )
+    assert rejected_index.returncode == 2
+    assert index_path.read_text() == "{}\n"
+    index_path.write_bytes(index_before)
     (skill / "SKILL.md").write_text("local Skill edits")
     assert probe() == rules_before
     assert run(cli, "--version", env=env).returncode == 0

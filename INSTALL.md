@@ -36,6 +36,8 @@ The helper reinstalls the tool and workspace dependencies, refreshes the approve
 
 The default Skill name is `token-io-decoupling-skill`. If you selected another name, use the same `--name my-coding-skill` with both Skill commands. An existing Skill requires `update`; a missing Skill requires `install`.
 
+Generated instruction documents use readable source names, such as `instructions/workflow-concepts--entry-and-context--contract.md`. Document links retain the author's readable labels; internal unit IDs remain in the index and MCP lookups. The manifest covers `instruction-index.json`, which maps stable unit IDs and checkpoint IDs to their bilingual documents. Checkpoints may share a document while retaining their distinct required facts, evidence, legal branches and return rules in the index. Updating replaces the managed snapshot, including obsolete document names.
+
 ## Build distributable files only
 
 From the checkout root:
