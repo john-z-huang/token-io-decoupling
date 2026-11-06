@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-import token_io_decoupling.codex_env as codex_env
-from token_io_decoupling.codex_env import (
+import token_io_decoupling_transport.codex_env as codex_env
+from token_io_decoupling_transport.codex_env import (
     CodexEnvError,
     config_path,
     merge_env_vars,

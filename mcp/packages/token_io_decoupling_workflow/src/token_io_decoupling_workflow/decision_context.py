@@ -11,7 +11,6 @@ from typing import Annotated, Any, Literal, cast
 from pydantic import Field, StrictBool, StrictStr, field_validator
 
 from token_io_decoupling_core.models import StrictModel
-from token_io_decoupling_core.rules import RuleLoader, RuleLoadError
 from token_io_decoupling_transport.payloads import payload_model
 from token_io_decoupling_workflow.api_recovery import (
     RecoveryGuidance,
@@ -19,6 +18,7 @@ from token_io_decoupling_workflow.api_recovery import (
     recovery_for_provider_failure,
     recovery_for_reason,
 )
+from token_io_decoupling_workflow.rules import RuleLoader, RuleLoadError
 
 GENERATION_MODEL = "gpt-6-luna"
 GENERATION_TIMEOUT_SECONDS = 20.0

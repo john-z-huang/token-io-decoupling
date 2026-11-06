@@ -11,7 +11,6 @@ import pytest
 from openai import OpenAI
 
 from token_io_decoupling_core.models import CodingMode
-from token_io_decoupling_core.rules import CompiledDelegationPolicy, RuleLoader
 from token_io_decoupling_core.workflow_models import (
     AllocationRole,
 )
@@ -23,6 +22,7 @@ from token_io_decoupling_workflow.delegation_decisions import (
     ExecutorSelectionInput,
     OutputTokenRoutingInput,
 )
+from token_io_decoupling_workflow.rules import CompiledDelegationPolicy, RuleLoader
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[6]
 

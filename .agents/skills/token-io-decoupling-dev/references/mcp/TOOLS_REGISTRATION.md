@@ -1,49 +1,42 @@
-# Two MCP executables and Codex registration
+# Independent MCP services and Codex registration
 
 [English](TOOLS_REGISTRATION.md) | [简体中文](TOOLS_REGISTRATION_zh_cn.md)
 
-This document owns the two standalone MCP executable inventories and their Codex registration. The [development guide](DEVELOPMENT.md) owns building, installing, and final inspection; workflow owners retain policy authority and protected tools retain their operation-specific authorization checks.
+Tools and workflow can be installed, registered and run separately. The [development guide](DEVELOPMENT.md) owns checks and final inspection. Each operation consumes current inputs and resource state; no workflow node, prior tool call or follow-up call is required.
 
-## Two standalone executables
+## Distribution and inventory
 
-The MCP runtime has two separately installed executables. Each starts a stdio MCP server with no startup arguments:
-
-| Executable and Codex registration | Inventory |
+| Distribution / executable | Fixed inventory |
 | --- | --- |
-| `token-io-decoupling-workflow` | The unchanged 17 capability, rule, planning, routing, and evaluation tools. |
-| `token-io-decoupling-tools` | 34 tools: 33 development workflow tools and `materialize_decoupled_output`. |
+| `token-io-decoupling-tools` | 41 operations: 33 upstream helpers, three task-plan operations, two Memory queries, candidate preflight, protected output materialization and optional `tools_capabilities`. |
+| `token-io-decoupling-workflow` | 11 compiled rule, navigation, advisory and structural-evaluation tools. |
+| `token-io-decoupling` | Optional full-installation admin command; no MCP runtime of its own. |
 
-The administrative `token-io-decoupling` command is not an MCP runtime. It provides setup, Skill installation, and environment-forwarding repair. Its `setup codex` command resolves, verifies, and registers the two current MCP executables. It operates only on those two registration tables; it does not recognize or migrate other registrations. Users may also register them separately with their absolute executable paths:
+Runtime packages depend on shared core/transport, never on each other. Compiled resources and the rule loader belong to workflow; core and transport contain no rules. Tools runtime, CLI, schemas and metadata do not load workflow or the Coding Skill. Workflow does not initialize or probe tools backends.
+
+## Selected-service setup
+
+Each runtime distribution owns its console script and can register itself without the admin package:
 
 ```sh
-codex mcp add token-io-decoupling-workflow -- /absolute/path/to/token-io-decoupling-workflow
-codex mcp add token-io-decoupling-tools -- /absolute/path/to/token-io-decoupling-tools
+/absolute/path/to/token-io-decoupling-tools setup codex
+/absolute/path/to/token-io-decoupling-workflow setup codex
 ```
 
-## Inventory and operation boundaries
+The optional admin command accepts `setup codex --server tools|workflow|both`; the default is `both`. Append `--dry-run` for a configuration read and selected-table preflight without discovery or writes. Real setup resolves only the selected distributions' entry-point metadata and executable paths, checks their exact inventories and atomically upserts only their target tables. Unselected and unrelated tables, existing enabled/disabled state, approvals, timeouts, cwd and extra environment names are preserved. Malformed selected configuration and concurrent changes fail rather than being overwritten.
 
-The inventories are fixed in [the tool manifest](../../../../../mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/server_tools.py). The tools executable depends on `dev-workflow-standards-tools` from the fixed commit `ba5ecc95d9f9da77aca22c17e712d6c8d2a05987`, subdirectory `mcp-server`, of [its source repository](https://github.com/john-z-huang/dev-workflow-standards/tree/ba5ecc95d9f9da77aca22c17e712d6c8d2a05987/mcp-server). Building and installing must resolve this pinned dependency and its packaged resources; no adjacent developer checkout or absolute local dependency path is required. Updating it requires reviewing tool signatures, annotations, descriptions, and validation-error redaction against the fixed manifest.
+A full `uv tool install` must expose dependency-owned scripts using `--with-executables-from token-io-decoupling-workflow --with-executables-from token-io-decoupling-tools`. Independent runtime installs expose their own script directly. See the [installation guide](../../../../../INSTALL.md).
 
-Discovery does not grant authority. The 33 development tools retain their own repository-root, side-effect, API-input, and write-authorization checks. `materialize_decoupled_output` is the sole separately guarded output operation; it requires a trusted startup-injected authorization provider, the current per-call Worker binding, an independent grant, pinned roots and current preflight. Without its trusted provider and grant, the tool remains unavailable. See [Worker output materialization](OUTPUT_MATERIALIZATION.md).
+## Operation and configuration boundaries
 
-Development tools retain their repository-root validation, side-effect annotations, API input review, and write-authorization requirements. The tools executable reuses their published schemas, annotations, descriptions, and validation-error redaction. A development tool's availability does not establish identity or authorize Git/GitHub effects. API-backed operations require both nonblank process `OPENAI_API_KEY` and `OPENAI_BASE_URL`, explicitly use fixed `gpt-6-luna`, and have no default credential, endpoint, or model fallback.
+Tools reuse upstream schemas, annotations, callbacks, input review and validation-error redaction from the pinned `dev-workflow-standards-tools` revision. The exposed tool descriptions are local operation contracts; the upstream server's workflow instructions and calling order are not appended. There is no prerequisite diagnostic, route or content-generation call.
 
-The tools executable forwards the API and proxy variable names plus `OPENAI_TIMEOUT_MAX_RETRIES`; it never writes their values. Setup uses empty argument lists for both executables, preserves other settings in either target registration, and leaves unrelated configuration entries untouched. The two MCP processes retain their separate configuration and capability requirements.
+Task plans and Memory are served only by tools. `--task-plan-factory`, `--compliance-factory` and `--output-materializer-factory` are tools startup options; operator code imports their types from `token_io_decoupling_tools`. Workflow rejects the migrated options. Wire payloads and existing plan/Memory data are preserved. Update operator imports and enabled_tools/disabled_tools filters when reloading an older installation.
 
-## Setup safety and idempotency
+Current resource checks remain local: revisions protect plan updates; completion/archive validate existing plan state; materialization validates an existing prepared artifact, trusted per-call identity and assignment, an independent operator grant, pinned paths, baselines, fresh preflight and write-time authority. An existing resource does not establish a prior tool invocation or workflow release. Missing materializer configuration remains unavailable.
 
-`token-io-decoupling setup codex --dry-run` reads the configuration and preflights only the two current target sections, but starts no MCP subprocess and writes nothing. A real setup resolves the installed workflow and tools executables, verifies their current inventories, and updates only their two target tables with empty argument lists. It preserves other settings in those target tables and all unrelated configuration entries. It does not inspect, classify, remove, or migrate other registrations; any one-time cleanup of older installations is an administrative delivery action outside this maintained command. Malformed current target sections, unsupported transport fields, invalid supported setting types, or conflicting environment-variable sources fail closed; there is no override flag. These checks validate the settings setup uses and do not claim broader policy-conflict detection.
-
-Setup writes a regular configuration file atomically, preserves its mode, checks that the file has not changed before replacement, and rejects unsupported TOML layouts instead of silently moving unrelated content. Avoid concurrent configuration writers: the input check is not a global lock. Repeating a successful setup when both target registrations are already correct is a no-op. On failure, report the last confirmed state.
+Local tools need no API configuration. API operations use their required nonblank process `OPENAI_API_KEY` and `OPENAI_BASE_URL`, fixed model and outbound-input review; missing configuration affects only dependent operations. Setup forwards names, not values, and tools also forwards `OPENAI_TIMEOUT_MAX_RETRIES`. Discovery and hashes grant no authority.
 
 ## Verification
 
-Tests compare both inventories with the expected manifests and cover role rejection, external schemas and annotations, redaction, preservation of target and unrelated configuration, setup preview, and safe conflict handling with temporary configuration. Installed stdio checks cover both executables and their exact inventories. The ordered [final inspection](DEVELOPMENT.md#codex-sdk-final-inspection) runs only after all ordinary checks pass, builds and installs the current artifacts, then uses a fresh Codex CLI instance for bounded, read-only inspection of the two executables. It performs no model turn and does not mutate real user configuration.
-
-Registering two executables does not by itself establish measured Token savings; both tool inventories remain available.
-
-## Related concepts
-
-- [MCP development guide](DEVELOPMENT.md)
-- [Codex caller matching](CODEX_CALLER_CONTEXT.md)
-- [Worker output materialization](OUTPUT_MATERIALIZATION.md)
+Tests verify disjoint inventories, sibling/admin import rejection, real independent wheel installation, direct stdio calls, selected-service registration, configuration preservation, redaction and protected-write rejection. Archive tests cover five distributions, no rule resources in core, approved workflow/Skill batches and detached rebuilding. The ordered [final inspection](DEVELOPMENT.md#codex-sdk-final-inspection) runs all applicable checks, builds and installs the current full wheel set in temporary uv directories, then uses a fresh read-only Codex CLI with zero model turns. It does not change real user configuration.

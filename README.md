@@ -2,49 +2,48 @@
 
 [English](README.md) | [简体中文](README_zh_cn.md)
 
-Token I/O Decoupling delivers a Coding workflow through two local MCP servers and a generated Skill. Instructions provide current actions, guards, evidence and exact continuations. Shared or conditional instructions have explicit loading requirements; Agents do not search the author documents to reconstruct a workflow.
+Use independent MCP tools for development, task plans and Memory, with an optional compiled Coding workflow. Each tool accepts its own operation inputs; it requires no workflow node, mode, checkpoint, earlier tool call or follow-up call. Resource validation and host authorization remain local to the operation.
 
-## First installation
+## Install tools only
 
-From the source checkout, with the [prerequisites](INSTALL.md#prerequisites) available:
+From a source checkout, install the tools distribution and its two shared dependencies:
+
+```sh
+uv tool install --force --reinstall --managed-python --python 3.14 \
+  --with ./mcp/packages/token_io_decoupling_core \
+  --with ./mcp/packages/token_io_decoupling_transport \
+  ./mcp/packages/token_io_decoupling_tools
+"$(uv tool dir --bin)/token-io-decoupling-tools" setup codex
+```
+
+This installs and registers only tools: no workflow package, compiled rules or Coding Skill. Reload that MCP service. Choose any tool from its published schema; `tools_capabilities` is an optional dependency diagnostic. Local tools work without API configuration. API operations and configured plan/materialization backends report their own missing dependencies.
+
+The tools service exposes 41 operations: 33 upstream development helpers, task-plan update/complete/archive, two Memory queries, candidate preflight, protected output materialization and diagnostics. The Memory queries use the server startup project's `.serena/memories`; plan storage is configured separately. Protected writes retain identity, independent grant, path, baseline and preflight checks. Existing resource state can come from any compatible writer.
+
+## Optional workflow and full installation
+
+The separate workflow package exposes 11 rule, navigation, advice and evaluation tools. Install it independently using the same two `--with` dependencies and `./mcp/packages/token_io_decoupling_workflow`, then run `token-io-decoupling-workflow setup codex` from the uv tool bin directory. It neither imports nor installs tools.
+
+For the full distribution and optional Coding Skill:
 
 ```sh
 bash scripts/install-codex-mcp.sh
 "$(uv tool dir --bin)/token-io-decoupling" skills install
 ```
 
-The first command checks compiled-resource freshness, builds and installs all four runtime packages, and registers both MCP executables with Codex. The second installs the same-batch Skill to `~/.agents/skills/token-io-decoupling-skill`. Reload the two MCP servers and start a new Agent session.
+Use `skills update` for an existing managed Skill. The full installer registers both services; `token-io-decoupling setup codex --server tools` or `--server workflow` selects one. Loading the Coding Skill explicitly adopts its workflow. Tools-only tasks do not load it or enter its route.
 
-## Update
+MCP support remains local Codex CLI, including its local app-server path. Other Agents may consume the generated workflow documents; this does not add direct MCP client support. Instructions, hashes and diagnostics do not authorize effects or prove completion.
 
-After obtaining the desired checkout revision, run from its root:
+## Repository boundaries
 
-```sh
-bash scripts/install-codex-mcp.sh
-"$(uv tool dir --bin)/token-io-decoupling" skills update
-```
+| Part | Responsibility |
+| --- | --- |
+| `mcp/packages/token_io_decoupling_tools` | Independent tools, plans, Memory, preflight and protected materialization. |
+| `mcp/packages/token_io_decoupling_workflow` | Independent workflow runtime and approved compiled rule resources. |
+| `mcp/packages/token_io_decoupling_core` and `token_io_decoupling_transport` | Shared contracts, guards, transport and selected-service setup; no workflow resources or service imports. |
+| `mcp/` root distribution | Compatible full installation, administration and optional Skill ZIP. |
+| [Private development Skill](.agents/skills/token-io-decoupling-dev/SKILL.md) | Repository guidance, tests and release checks. |
+| `instruction-compiler/` | Private author policies and deterministic compilation. |
 
-Updating the tool does not update the installed Skill automatically. Use `install` for a first Skill installation and `update` for an existing managed snapshot. The [installation guide](INSTALL.md) owns prerequisites, building distributable files, wheel-only installation, verification and recovery.
-
-## Start a Coding task
-
-Load the installed `token-io-decoupling-skill` after following the [installation guide](INSTALL.md). With MCP, begin with `workflow_capabilities`, then `rules_get_context` using `node_id=contract` and `context_version=2`. Follow the returned exact instructions and obtain triggered shared units before dependent actions. Explicit nonempty `fragment_ids` return only those units; omit them for a complete default checkpoint. Version 1 is rejected.
-
-The MCP servers support local Codex CLI, including local Work through that CLI. Other Code Agents may use the generated documents without these MCP servers. Static rule queries need no API credentials or network. Optional API-backed tools require the configured environment and per-call authorization described in the installation guide.
-
-Instructions, hashes, capability reports and structural review statuses do not establish identity, authorize effects or prove completion. Protected operations retain their own guards. Runtime use needs neither author sources nor the private compiler and development Skill.
-
-## Repository components
-
-| Part | Location and responsibility |
-|---|---|
-| Product | `mcp/` runtime packages; executable tools, guards, compiled core resources and the packaged Skill ZIP. |
-| Private development Skill | [Development entry](.agents/skills/token-io-decoupling-dev/SKILL.md); project guidance, checks, product tests and release coordination. |
-| Private compiler | `instruction-compiler/`; author policy, execution dependencies, deterministic generation and compiler tests. |
-
-Private development and compiler inputs are excluded from wheels, Skill ZIPs and sdists. Do not hand-edit generated resources. Root `scripts/` contains only the installation entry; development scripts and documentation tests live in the private development Skill.
-
-## Related documents
-
-- [Installation and updates](INSTALL.md).
-- [Project development](.agents/skills/token-io-decoupling-dev/SKILL.md).
+Private development files and compiler sources are excluded from product archives. Generated resources must not be edited by hand. See [installation and migration](INSTALL.md).

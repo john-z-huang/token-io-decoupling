@@ -48,12 +48,12 @@ from token_io_decoupling_core.workflow_models import (
     HostGuard,
     SessionRole,
 )
-from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
-from token_io_decoupling_workflow.materialization_storage import (
+from token_io_decoupling_tools.compliance_preflight import CompliancePreflightService
+from token_io_decoupling_tools.materialization_storage import (
     MaterializationStorage,
     MaterializationStorageError,
 )
-from token_io_decoupling_workflow.materialization_templates import (
+from token_io_decoupling_tools.materialization_templates import (
     MaterializationTemplateError,
     MaterializationTemplateRenderer,
 )

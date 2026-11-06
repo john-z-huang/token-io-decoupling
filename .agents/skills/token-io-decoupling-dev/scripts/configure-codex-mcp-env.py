@@ -11,9 +11,12 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "mcp" / "src"))
+sys.path.insert(
+    0,
+    str(Path(__file__).resolve().parents[4] / "mcp/packages/token_io_decoupling_transport/src"),
+)
 
-from token_io_decoupling.codex_env import (  # noqa: E402
+from token_io_decoupling_transport.codex_env import (  # noqa: E402
     DEFAULT_ENV_VARS,
     CodexEnvError,
     config_path,

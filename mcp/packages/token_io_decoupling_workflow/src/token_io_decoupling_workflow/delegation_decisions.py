@@ -11,7 +11,6 @@ from typing import Annotated, Any, Literal, cast
 from pydantic import Field, StrictBool, StrictInt, StrictStr, field_validator, model_validator
 
 from token_io_decoupling_core.models import CodingMode, StrictModel
-from token_io_decoupling_core.rules import CompiledDelegationPolicy, RuleLoader, RuleLoadError
 from token_io_decoupling_core.workflow_models import AllocationRole
 from token_io_decoupling_workflow.api_recovery import (
     RecoveryGuidance,
@@ -19,6 +18,7 @@ from token_io_decoupling_workflow.api_recovery import (
     recovery_for_provider_failure,
     recovery_for_reason,
 )
+from token_io_decoupling_workflow.rules import CompiledDelegationPolicy, RuleLoader, RuleLoadError
 
 DECISIONS_MODEL = "gpt-6-luna"
 DECISIONS_TIMEOUT_SECONDS = 20.0

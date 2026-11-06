@@ -12,7 +12,7 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 class RuleResourcesBuildHook(BuildHookInterface):
     def initialize(self, version, build_data):
         del version, build_data
-        resources = Path(self.root) / "src/token_io_decoupling_core/_resources"
+        resources = Path(self.root) / "src/token_io_decoupling_workflow/_resources"
         try:
             if resources.is_symlink() or not resources.is_dir():
                 raise ValueError("compiled resources are unavailable")

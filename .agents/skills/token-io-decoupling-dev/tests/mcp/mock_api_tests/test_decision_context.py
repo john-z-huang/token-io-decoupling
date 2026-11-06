@@ -10,7 +10,6 @@ import httpx2
 import pytest
 from openai import OpenAI
 
-from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_workflow.decision_context import (
     GENERATION_MODEL,
     DecisionContextGenerator,
@@ -18,6 +17,7 @@ from token_io_decoupling_workflow.decision_context import (
     DecisionContextStructuredOutput,
     _input_hash,
 )
+from token_io_decoupling_workflow.rules import RuleLoader
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[6]
 

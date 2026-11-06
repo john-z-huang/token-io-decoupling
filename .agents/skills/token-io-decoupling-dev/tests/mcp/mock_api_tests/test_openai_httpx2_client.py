@@ -11,12 +11,12 @@ import httpx2
 import pytest
 from openai import APIConnectionError, OpenAI
 
+from token_io_decoupling_tools import materialization_templates
 from token_io_decoupling_workflow import (
     child_effort,
     decision_context,
     decisions,
     delegation_decisions,
-    materialization_templates,
     workflow_routing,
 )
 from token_io_decoupling_workflow.openai_client import make_openai_client

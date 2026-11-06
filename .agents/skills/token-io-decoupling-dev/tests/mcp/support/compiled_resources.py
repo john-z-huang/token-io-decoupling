@@ -9,12 +9,12 @@ from typing import Any
 
 import pytest
 
-from token_io_decoupling_core import rules
+from token_io_decoupling_workflow import rules
 
 
 class CompiledResources:
     def __init__(self, root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        installed = rules.resources.files("token_io_decoupling_core").joinpath("_resources")
+        installed = rules.resources.files("token_io_decoupling_workflow").joinpath("_resources")
         self.document: dict[str, Any] = json.loads(
             installed.joinpath("instructions.json").read_bytes()
         )

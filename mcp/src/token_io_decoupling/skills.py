@@ -96,7 +96,7 @@ def validate_skill_bundle(
 def _compiled_skill_identity() -> tuple[str, dict[str, str]]:
     """Read and verify the installed core batch without consulting author sources."""
     try:
-        resources = files("token_io_decoupling_core").joinpath("_resources")
+        resources = files("token_io_decoupling_workflow").joinpath("_resources")
         manifest = json.loads(resources.joinpath("manifest.json").read_bytes())
         payload = resources.joinpath("instructions.json").read_bytes()
         instructions = json.loads(payload)

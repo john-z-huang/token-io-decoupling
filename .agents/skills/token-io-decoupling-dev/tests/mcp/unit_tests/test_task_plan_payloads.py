@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from token_io_decoupling_workflow.task_plan_payloads import (
+from token_io_decoupling_tools.task_plan_payloads import (
     TaskPlanArchivePayload,
     TaskPlanCompletePayload,
     TaskPlanUpdatePayload,

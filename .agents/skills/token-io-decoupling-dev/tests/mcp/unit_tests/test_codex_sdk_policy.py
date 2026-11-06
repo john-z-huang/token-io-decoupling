@@ -226,7 +226,7 @@ def _standard_capability_report():
             "schema_version": 3,
             "support": {
                 "identity_bound_operations": detail(
-                    "unavailable", "trusted_provider_not_configured"
+                    "unavailable", "workflow_has_no_identity_bound_operations"
                 )
             },
             "runtime": {
@@ -237,11 +237,7 @@ def _standard_capability_report():
                     "The standard executable has no caller identity or workflow state store.",
                 ),
             },
-            "configuration": {
-                "output_materialization": detail(
-                    "unavailable", "output_materializer_not_configured"
-                )
-            },
+            "configuration": {},
         },
     }
 
@@ -252,7 +248,7 @@ def test_standard_capability_diagnostics_report_verified_current_boundary():
         "trusted_binding": "unverified",
         "binding_reason": "provider_not_configured",
         "server_mode": "public_only",
-        "materialization": "unavailable",
+        "materialization": "separate_service",
     }
 
 
@@ -265,9 +261,9 @@ def test_standard_capability_diagnostics_report_verified_current_boundary():
         lambda report: report["capability_details"]["support"]["identity_bound_operations"].update(
             status="available"
         ),
-        lambda report: report["capability_details"]["configuration"][
-            "output_materialization"
-        ].update(status="available"),
+        lambda report: report["capability_details"]["configuration"].update(
+            output_materialization={"status": "available"}
+        ),
     ],
 )
 def test_standard_capability_diagnostics_reject_stale_or_missing_schema(mutate):
@@ -344,7 +340,7 @@ def test_final_inspection_cannot_start_model_turns_or_arbitrary_commands():
 
 
 def test_compiled_rule_validation_requires_no_sdk_or_author_tree():
-    from token_io_decoupling_core.rules import RuleLoader
+    from token_io_decoupling_workflow.rules import RuleLoader
 
     context = RuleLoader().load_context_bundle("contract").model_dump(mode="json")
     assert adapter.validate_compiled_rule_bundle(context, "en") == context["build_id"]
@@ -363,7 +359,7 @@ def test_compiled_rule_validation_requires_no_sdk_or_author_tree():
     ],
 )
 def test_compiled_rule_validation_rejects_incomplete_or_corrupt_results(mutate):
-    from token_io_decoupling_core.rules import RuleLoader
+    from token_io_decoupling_workflow.rules import RuleLoader
 
     context = RuleLoader().load_context_bundle("contract").model_dump(mode="json")
     mutate(context)

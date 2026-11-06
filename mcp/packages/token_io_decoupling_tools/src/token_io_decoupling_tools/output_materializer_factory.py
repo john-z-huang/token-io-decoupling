@@ -5,7 +5,7 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
-from token_io_decoupling_workflow.output_materialization import OutputMaterializerConfig
+from token_io_decoupling_tools.output_materialization import OutputMaterializerConfig
 
 
 class OutputMaterializerFactoryError(RuntimeError):

@@ -1,11 +1,13 @@
 ---
 name: token-io-decoupling-skill
-description: "面向 Coding 的高体量 Agent Token I/O 解耦：将输入侧高价值推理、实现输出、独立改动验证，以及负责获准文档/注释与非简单仓库 Git 工作的 Documentation/Comments & Git Operations 角色分离，同时让 Core 的角色与 Session 规则保持对具体 Code Agent 产品和模型无关；运行环境绑定和能力检查由 Coding 工作流声明。"
+description: "可选的 Coding 编译工作流；独立工具不要求此 Skill"
 ---
 
 # Token I/O Decoupling
 
 [English](SKILL.md) | [简体中文](SKILL_zh_cn.md)
+
+仅在选择完整 Coding 工作流时加载此 Skill。独立工具、任务计划和 Memory 不要求此 Skill、其检查点或调用顺序；各操作自身的契约及当前宿主授权继续适用。
 
 当前本 Skill 只维护一套可执行工作流：Coding。它用于把高价值语义决策与高体量项目状态消费、输出物化分离。Multimodal 和 Mixed 内容目前不作为本仓库中的可执行工作流维护。
 

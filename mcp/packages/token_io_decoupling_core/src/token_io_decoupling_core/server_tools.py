@@ -6,13 +6,7 @@ TOOLS_SERVER_NAME = "token-io-decoupling-tools"
 WORKFLOW_TOOLS = frozenset(
     {
         "workflow_capabilities",
-        "task_plan_update",
-        "task_plan_complete",
-        "task_plan_archive",
-        "serena_memory_tail_read",
-        "serena_memory_write_check",
         "rules_get_context",
-        "validate_decoupling_compliance",
         "decide_decoupling_workflow",
         "workflow_select_child_effort",
         "workflow_generate_decision_context",
@@ -69,7 +63,18 @@ DEV_WORKFLOW_TOOLS = frozenset(
     }
 )
 
-TOOLS_SERVER_TOOLS = WORKER_TOOLS | DEV_WORKFLOW_TOOLS
+LOCAL_TOOLS = frozenset(
+    {
+        "tools_capabilities",
+        "task_plan_update",
+        "task_plan_complete",
+        "task_plan_archive",
+        "serena_memory_tail_read",
+        "serena_memory_write_check",
+        "validate_decoupling_compliance",
+    }
+)
+TOOLS_SERVER_TOOLS = WORKER_TOOLS | DEV_WORKFLOW_TOOLS | LOCAL_TOOLS
 
-if len(WORKFLOW_TOOLS) != 17 or len(TOOLS_SERVER_TOOLS) != 34:
+if len(WORKFLOW_TOOLS) != 11 or len(TOOLS_SERVER_TOOLS) != 41:
     raise RuntimeError("fixed MCP server tool inventories do not match their contract")

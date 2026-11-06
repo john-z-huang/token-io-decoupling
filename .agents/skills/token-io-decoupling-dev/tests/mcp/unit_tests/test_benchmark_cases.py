@@ -11,11 +11,11 @@ from support import benchmark_cases as cases
 
 from token_io_decoupling_core.materialization_models import MaterializationInspectRequest
 from token_io_decoupling_core.models import CodingMode
-from token_io_decoupling_core.rules import RuleLoader
-from token_io_decoupling_workflow.compliance_preflight import (
+from token_io_decoupling_tools.compliance_preflight import (
     CompliancePreflightService,
     validate_decoupling_compliance,
 )
+from token_io_decoupling_workflow.rules import RuleLoader
 from token_io_decoupling_workflow.workflow_routing import (
     DecouplingWorkflowRequest,
     WorkflowRouter,

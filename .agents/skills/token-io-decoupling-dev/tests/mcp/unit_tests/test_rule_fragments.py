@@ -6,8 +6,8 @@ import pytest
 from pydantic import ValidationError
 from support.compiled_resources import CompiledResources
 
-from token_io_decoupling_core.rules import RuleLoader, RuleLoadError
-from token_io_decoupling_transport.payloads import RuleContextPayload
+from token_io_decoupling_workflow.payloads import RuleContextPayload
+from token_io_decoupling_workflow.rules import RuleLoader, RuleLoadError
 
 
 def test_default_bundle_and_internal_checkpoint_use_one_instruction_hash() -> None:

@@ -6,7 +6,7 @@ This guide owns the two read-only Memory tools' inputs, local path rules, result
 
 ## Tools
 
-Both tools are exposed by the `token-io-decoupling-workflow` executable and take direct arguments.
+Both tools are exposed by the `token-io-decoupling-tools` executable and take direct arguments.
 
 | Tool | Arguments | Result |
 | --- | --- | --- |

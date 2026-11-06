@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import os
 import sysconfig
@@ -15,7 +16,13 @@ import tomlkit
 from mcp import Client, StdioServerParameters
 from tomlkit.exceptions import ParseError
 
-from token_io_decoupling.codex_env import (
+from token_io_decoupling_core.server_tools import (
+    TOOLS_SERVER_NAME,
+    TOOLS_SERVER_TOOLS,
+    WORKFLOW_SERVER_NAME,
+    WORKFLOW_TOOLS,
+)
+from token_io_decoupling_transport.codex_env import (
     DEFAULT_ENV_VARS,
     TOOLS_ENV_VARS,
     CodexEnvError,
@@ -24,21 +31,15 @@ from token_io_decoupling.codex_env import (
     config_path,
     read_config_snapshot,
 )
-from token_io_decoupling_core.server_tools import (
-    TOOLS_SERVER_NAME,
-    TOOLS_SERVER_TOOLS,
-    WORKFLOW_SERVER_NAME,
-    WORKFLOW_TOOLS,
-)
 from token_io_decoupling_transport.tool_metadata import STANDARD_INSTALL_NOTICE
 
 _TIMEOUT_SECONDS = 20
 _ENTRY_POINTS = {
     WORKFLOW_SERVER_NAME: (
         "token-io-decoupling-workflow",
-        "token_io_decoupling.cli:workflow_main",
+        "token_io_decoupling_workflow.cli:main",
     ),
-    TOOLS_SERVER_NAME: ("token-io-decoupling-tools", "token_io_decoupling.cli:tools_main"),
+    TOOLS_SERVER_NAME: ("token-io-decoupling-tools", "token_io_decoupling_tools.cli:main"),
 }
 
 
@@ -56,7 +57,7 @@ class SetupPlan:
 
 def _installed_executable(name: str, value: str) -> Path:
     try:
-        distribution = metadata.distribution("token-io-decoupling")
+        distribution = metadata.distribution(name)
         scripts = Path(sysconfig.get_path("scripts"))
     except (metadata.PackageNotFoundError, OSError, TypeError, ValueError) as exc:
         raise SetupError("installed executable metadata is unavailable") from exc
@@ -85,9 +86,16 @@ def _installed_executable(name: str, value: str) -> Path:
     return resolved
 
 
-def _installed_servers() -> dict[str, Path]:
-    paths = {server: _installed_executable(*entry) for server, entry in _ENTRY_POINTS.items()}
-    if len(set(paths.values())) != 2:
+def _installed_servers(selection: str = "both") -> dict[str, Path]:
+    names = {
+        "both": (WORKFLOW_SERVER_NAME, TOOLS_SERVER_NAME),
+        "workflow": (WORKFLOW_SERVER_NAME,),
+        "tools": (TOOLS_SERVER_NAME,),
+    }.get(selection)
+    if names is None:
+        raise SetupError("unknown server selection")
+    paths = {name: _installed_executable(*_ENTRY_POINTS[name]) for name in names}
+    if len(set(paths.values())) != len(paths):
         raise SetupError("workflow and tools must resolve to distinct installed executables")
     return paths
 
@@ -192,12 +200,12 @@ def _parse(snapshot: ConfigSnapshot) -> Any:
         raise SetupError("Codex config is not valid UTF-8 TOML") from exc
 
 
-def _without_current_tables(document: Any) -> bytes:
+def _without_current_tables(document: Any, names: Any = _ENTRY_POINTS) -> bytes:
     copy = deepcopy(document)
     servers = copy.get("mcp_servers")
     if isinstance(servers, dict):
-        servers.pop(WORKFLOW_SERVER_NAME, None)
-        servers.pop(TOOLS_SERVER_NAME, None)
+        for name in names:
+            servers.pop(name, None)
         if not servers:
             copy.pop("mcp_servers", None)
     return tomlkit.dumps(copy).encode("utf-8")
@@ -215,7 +223,8 @@ def _build_plan(paths: dict[str, Path], path: Path) -> SetupPlan:
         WORKFLOW_SERVER_NAME: DEFAULT_ENV_VARS,
         TOOLS_SERVER_NAME: TOOLS_ENV_VARS,
     }
-    for name, env_names in env_names_by_server.items():
+    for name in paths:
+        env_names = env_names_by_server[name]
         server = _current_table(servers, name)
         if server is None:
             server = tomlkit.table()
@@ -223,7 +232,7 @@ def _build_plan(paths: dict[str, Path], path: Path) -> SetupPlan:
             servers[name] = server
         _set_launch(server, paths[name])
         _append_default_env(server, name, env_names)
-    if _without_current_tables(original) != _without_current_tables(document):
+    if _without_current_tables(original, paths) != _without_current_tables(document, paths):
         raise SetupError("Codex config validation failed; unrelated settings would change")
     rendered = tomlkit.dumps(document).encode("utf-8")
     if rendered != snapshot.raw and snapshot.raw:
@@ -250,27 +259,23 @@ async def _discover(path: Path, expected: frozenset[str], name: str) -> None:
 
 
 def _validate_installed_discovery(paths: dict[str, Path]) -> None:
-    if len(WORKFLOW_TOOLS) != 17 or len(TOOLS_SERVER_TOOLS) != 34:
+    if len(WORKFLOW_TOOLS) != 11 or len(TOOLS_SERVER_TOOLS) != 41:
         raise SetupError("fixed MCP tool manifests do not match the required inventory")
-    asyncio.run(_discover(paths[WORKFLOW_SERVER_NAME], WORKFLOW_TOOLS, WORKFLOW_SERVER_NAME))
-    asyncio.run(_discover(paths[TOOLS_SERVER_NAME], TOOLS_SERVER_TOOLS, TOOLS_SERVER_NAME))
+    inventories = {WORKFLOW_SERVER_NAME: WORKFLOW_TOOLS, TOOLS_SERVER_NAME: TOOLS_SERVER_TOOLS}
+    for name, path in paths.items():
+        asyncio.run(_discover(path, inventories[name], name))
 
 
-def setup_codex(*, dry_run: bool = False) -> int:
-    paths = _installed_servers()
+def setup_codex(*, dry_run: bool = False, server: str = "both") -> int:
+    paths = _installed_servers(server)
     plan = _build_plan(paths, config_path())
     if dry_run:
         print("Dry run: no MCP executable was started and no Codex configuration was written.")
-        for name in (WORKFLOW_SERVER_NAME, TOOLS_SERVER_NAME):
+        for name in paths:
             print(f"Would configure {name}: {paths[name]} (args=[])")
-        print(
-            f"Would merge environment variable names for {WORKFLOW_SERVER_NAME}: "
-            + ", ".join(DEFAULT_ENV_VARS)
-        )
-        print(
-            f"Would merge environment variable names for {TOOLS_SERVER_NAME}: "
-            + ", ".join(TOOLS_ENV_VARS)
-        )
+        for name in paths:
+            env_names = TOOLS_ENV_VARS if name == TOOLS_SERVER_NAME else DEFAULT_ENV_VARS
+            print(f"Would merge environment variable names for {name}: " + ", ".join(env_names))
         print(STANDARD_INSTALL_NOTICE)
         return 0
 
@@ -282,9 +287,21 @@ def setup_codex(*, dry_run: bool = False) -> int:
                 raise SetupError("Codex config changed after the atomic update; review it manually")
         except CodexEnvError as exc:
             raise SetupError(f"Codex config update failed: {exc}") from exc
-        print(f"configured: {WORKFLOW_SERVER_NAME}, {TOOLS_SERVER_NAME}")
-        print("updated environment forwarding for both registrations")
+        print("configured: " + ", ".join(paths))
+        print("updated environment forwarding for selected registrations")
     else:
-        print(f"already configured: {WORKFLOW_SERVER_NAME}, {TOOLS_SERVER_NAME}")
+        print("already configured: " + ", ".join(paths))
     print(STANDARD_INSTALL_NOTICE)
     return 0
+
+
+def dispatch_setup(server: str, argv: list[str]) -> int:
+    """Configure just the executable belonging to the calling distribution."""
+    parser = argparse.ArgumentParser(prog=f"token-io-decoupling-{server} setup codex")
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args(argv)
+    try:
+        return setup_codex(server=server, dry_run=args.dry_run)
+    except SetupError as exc:
+        print(f"setup failed: {exc}")
+        return 2

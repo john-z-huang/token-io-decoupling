@@ -2,49 +2,48 @@
 
 [English](README.md) | [简体中文](README_zh_cn.md)
 
-Token I/O Decoupling 通过两个本地 MCP Server 和生成的 Skill 交付 Coding 工作流。指令提供当前动作、守卫、证据和精确续接；共享或条件指令具有明确的加载要求，Agent 无需搜索作者文档来重建工作流。
+提供可独立使用的开发、任务计划和 Memory MCP 工具，以及可选的编译 Coding 工作流。每个工具按自身操作输入调用，不要求工作流节点、模式、检查点、先前工具调用或后续调用。资源校验和宿主授权在当前操作内执行。
 
-## 首次安装
+## 仅安装 tools
 
-准备好[前置依赖](INSTALL_zh_cn.md#前置依赖)后，在源码 checkout 根目录运行：
+在源码 checkout 根目录安装 tools 分发包及两个共享依赖：
+
+```sh
+uv tool install --force --reinstall --managed-python --python 3.14 \
+  --with ./mcp/packages/token_io_decoupling_core \
+  --with ./mcp/packages/token_io_decoupling_transport \
+  ./mcp/packages/token_io_decoupling_tools
+"$(uv tool dir --bin)/token-io-decoupling-tools" setup codex
+```
+
+只安装和注册 tools，不安装 workflow 包、编译规则或 Coding Skill。重载该 MCP 服务后，可按公开 schema 选择任意工具；`tools_capabilities` 是可选的依赖诊断。本地工具不需要 API 配置；API 操作及计划／物化后端分别报告自身缺失的配置。
+
+Tools 服务提供 41 项操作：33 个上游开发助手、任务计划更新／完成／归档、两个 Memory 查询、候选 preflight、受保护输出物化及诊断。Memory 查询读取服务启动项目的 `.serena/memories`；计划存储另行配置。受保护写入保留身份、独立授权、路径、基线和 preflight 校验。已有资源状态可由任意兼容写入方提供。
+
+## 可选 workflow 与完整安装
+
+独立的 workflow 包提供 11 个规则、导航、建议和评估工具。使用相同的两个 `--with` 依赖与 `./mcp/packages/token_io_decoupling_workflow` 单独安装，再通过 uv tool bin 目录中的 `token-io-decoupling-workflow setup codex` 注册。它不导入或安装 tools。
+
+需要完整分发包及可选 Coding Skill 时：
 
 ```sh
 bash scripts/install-codex-mcp.sh
 "$(uv tool dir --bin)/token-io-decoupling" skills install
 ```
 
-第一条命令检查编译资源新鲜度，构建并安装全部四个运行时包，将两个 MCP 可执行程序注册到 Codex。第二条命令把同批次 Skill 安装到 `~/.agents/skills/token-io-decoupling-skill`。之后重载两个 MCP 服务并开启新 Agent 会话。
+已有受管 Skill 使用 `skills update`。完整安装器注册两个服务；`token-io-decoupling setup codex --server tools` 或 `--server workflow` 可只选择一个。加载 Coding Skill 表示明确采用该工作流；仅使用 tools 的任务不加载它，也不进入其路线。
 
-## 更新
+MCP 继续支持本地 Codex CLI，包括其本地 app-server 路径。其他 Agent 可消费生成的工作流文档，但不因此成为直接 MCP 客户端。指令、哈希和诊断不能授权副作用或证明完成。
 
-取得所需 checkout 版本后，在其根目录运行：
+## 仓库边界
 
-```sh
-bash scripts/install-codex-mcp.sh
-"$(uv tool dir --bin)/token-io-decoupling" skills update
-```
+| 部分 | 职责 |
+| --- | --- |
+| `mcp/packages/token_io_decoupling_tools` | 独立工具、计划、Memory、preflight 和受保护物化。 |
+| `mcp/packages/token_io_decoupling_workflow` | 独立工作流运行时及批准的编译规则资源。 |
+| `mcp/packages/token_io_decoupling_core` 与 `token_io_decoupling_transport` | 共享契约、守卫、传输和按服务选择的 setup；不包含工作流资源或服务导入。 |
+| `mcp/` 根分发包 | 兼容的完整安装、管理入口及可选 Skill ZIP。 |
+| [私有开发 Skill](.agents/skills/token-io-decoupling-dev/SKILL_zh_cn.md) | 仓库指导、测试和发布检查。 |
+| `instruction-compiler/` | 私有作者政策与确定性编译。 |
 
-更新工具不会自动更新已安装 Skill。首次安装 Skill 使用 `install`，已有受管快照使用 `update`。[安装指南](INSTALL_zh_cn.md)统一说明前置依赖、发行文件构建、仅使用 wheel 的安装、验证和恢复。
-
-## 开始 Coding 任务
-
-按[安装指南](INSTALL_zh_cn.md)完成安装后，加载已安装的 `token-io-decoupling-skill`。使用 MCP 时，先调用 `workflow_capabilities`，再以 `node_id=contract`、`context_version=2` 调用 `rules_get_context`。遵循返回的准确指令，在依赖动作前取得已触发的共享单元。显式非空 `fragment_ids` 只返回指定单元；省略时返回完整默认检查点。版本 1 被拒绝。
-
-MCP Server 支持本地 Codex CLI，包括经该 CLI 使用的本地 Work。其它 Code Agent 可以不使用这两个 MCP Server，直接使用生成文档。静态规则查询不需要 API 凭据或网络；可选 API 工具需要安装指南说明的环境配置和逐次授权。
-
-指令、哈希、能力报告及结构审阅状态不能证明身份、授权副作用或完成结果；受保护操作保留各自守卫。运行时无需作者源、私有编译器或开发 Skill。
-
-## 仓库三部分
-
-| 部分 | 位置与职责 |
-|---|---|
-| 产品 | `mcp/` 运行时包；可执行工具、守卫、core 编译资源及包内 Skill ZIP。 |
-| 私有开发 Skill | [开发入口](.agents/skills/token-io-decoupling-dev/SKILL_zh_cn.md)；项目指导、检查器、产品测试和发布协调。 |
-| 私有编译器 | `instruction-compiler/`；作者政策、执行依赖、确定性生成及编译器测试。 |
-
-私有开发与编译输入不进入 wheel、Skill ZIP 或 sdist。不得手工编辑生成资源。根 `scripts/` 仅包含安装入口；开发脚本与文档测试位于私有开发 Skill。
-
-## 相关文档
-
-- [安装与更新](INSTALL_zh_cn.md)。
-- [项目开发](.agents/skills/token-io-decoupling-dev/SKILL_zh_cn.md)。
+私有开发文件和编译器源不进入产品归档，禁止手工编辑生成资源。参见[安装与迁移](INSTALL_zh_cn.md)。

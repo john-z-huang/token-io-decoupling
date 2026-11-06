@@ -8,7 +8,7 @@ The MCP Server targets a locally available Codex CLI, including the local Codex 
 
 ## Environment and checks
 
-The workspace contains the root distribution and three independently buildable member distributions (`core`, `transport`, and `workflow`), plus one shared `uv.lock`. The root distribution, `token-io-decoupling`, exports the administrative `token-io-decoupling` command and the two MCP executables `token-io-decoupling-workflow` and `token-io-decoupling-tools`. Run these commands from `mcp/` using managed Python and locked dependencies:
+The workspace has five distributions: optional root admin/full installation, shared core/transport, and independently installable tools/workflow runtimes. Runtime members own their console scripts and never depend on each other. Workflow owns compiled rules; tools owns plans, Memory, preflight and materialization. Run these commands from `mcp/` using managed Python and locked dependencies:
 
 ```sh
 uv sync --managed-python --locked --all-packages --group dev --group codex-test
@@ -38,8 +38,8 @@ The MCP runtime consists of two installed executables. Each starts its own stdio
 
 | MCP executable / Codex registration | Tools |
 | --- | --- |
-| `token-io-decoupling-workflow` | 17 stateless workflow capability, rule, planning, routing, and evaluation tools. |
-| `token-io-decoupling-tools` | 34 tools: 33 development workflow tools and `materialize_decoupled_output`; see [Two MCP executables and Codex registration](TOOLS_REGISTRATION.md). |
+| `token-io-decoupling-workflow` | 11 workflow capability, rule, planning, routing, and evaluation tools. |
+| `token-io-decoupling-tools` | 41 standalone development, plan, Memory, preflight, materialization and diagnostic tools; see [Two MCP executables and Codex registration](TOOLS_REGISTRATION.md). |
 
 The one-call registration command adds both executables:
 
@@ -62,7 +62,7 @@ The Worker-only `materialize_decoupled_output` tool prepares and inspects bounde
 
 Each executable has a fixed discovery inventory; discovery does not grant authority. The rule/workflow path is stateless and does not require a database or host binding. `workflow_evaluate` and `evaluate_control_checkpoint` check only the supplied typed facts and declared input structure; their results do not authenticate, authorize, pass a checkpoint, persist state, or sequence later calls. Output materialization remains unavailable without its trusted startup-injected authorization provider and separate grant.
 
-The three task-plan tools use a separately configured, checkout-bound Serena MemoryManager backend. Its capability result reports `project_root`, `storage_scope`, `repository_id`, `namespace`, and `archive_namespace`; the default project scope can be configured as global storage so linked worktrees share plans while independent repositories remain separate. The tools remain `unavailable` unless a trusted startup factory explicitly injects the service. Their payloads, configuration, identity/path mapping, deterministic checks, tests, and protection limits are owned by [Task plan lifecycle tools](TASK_PLAN_TOOLS.md). No automatic Serena configuration loading or model request is involved.
+The tools server's three task-plan tools use a separately configured, checkout-bound Serena MemoryManager backend. Its capability result reports `project_root`, `storage_scope`, `repository_id`, `namespace`, and `archive_namespace`; the default project scope can be configured as global storage so linked worktrees share plans while independent repositories remain separate. The tools remain `unavailable` unless a trusted startup factory explicitly injects the service. Their payloads, configuration, identity/path mapping, deterministic checks, tests, and protection limits are owned by [Task plan lifecycle tools](TASK_PLAN_TOOLS.md). No automatic Serena configuration loading or model request is involved.
 
 Canonical Python implementations use the independent package names shown in the architecture contract. The two MCP executables remain separately installed and expose their fixed manifests.
 
@@ -70,7 +70,7 @@ The [Memory tools guide](SERENA_MEMORY_TOOLS.md) owns direct tail-read/write-che
 
 ## Capability report diagnostics
 
-`workflow_capabilities({})` is public and takes no arguments. `capability_details.schema_version=3` reports static support and configured dependencies without probing API readiness. The top-level `trusted_binding` is `unverified` for the standard executable and reflects the injected provider for embedded use. `capability_details.runtime.server_mode` reports `public_only` or `embedded`; `binding_transport` is `unavailable` without an injected provider and `unverified` when embedded. These diagnostics do not authenticate callers or authorize operations. Configuration details separately report plan backend, Memory paths, compliance reader, API and materialization conditions; unprobed dependencies are not readiness evidence.
+`workflow_capabilities` reports workflow-local static support, optional API configuration and safe binding diagnostics (schema version 3). It never imports or probes tools services, Memory, plan stores, preflight or materialization. No diagnostic grants identity or authorization. `tools_capabilities` optionally reports configured tools backends, local Memory binding, preflight and materialization; it is not a prerequisite for any operation. A missing plan backend causes no Git or Memory-path probe; a configured global store may revalidate its existing Git identity/root without creating paths.
 
 ### Installed client runtime checks
 
@@ -118,13 +118,15 @@ Optional advice is a separate stateless API operation; structural checkpoint eva
 Keep the source checkout in a normal development directory, outside `~/.agents/skills/`. With `uv` available, install the root package from its `mcp/` workspace directory; the absolute source path allows this command to run from any working directory:
 
 ```sh
-uv tool install --force --reinstall --managed-python --python 3.14 /absolute/path/to/token-io-decoupling/mcp
+uv tool install --force --reinstall --managed-python --python 3.14 --with-executables-from token-io-decoupling-workflow --with-executables-from token-io-decoupling-tools /absolute/path/to/token-io-decoupling/mcp
 ```
 
 uv builds and installs the executable and its declared local workspace dependencies in an isolated tool environment. `--reinstall` refreshes dependencies and approved compiled instruction resources as well as the launcher. This step installs the program; it does not register MCP servers or install Skill instructions. To install built wheels instead, supply all four exact wheel paths from one approved batch (see [artifact checks](#build-rule-resources-and-installed-checks)):
 
 ```sh
 uv tool install --force --reinstall --managed-python --python 3.14 \
+  --with-executables-from token-io-decoupling-workflow \
+  --with-executables-from token-io-decoupling-tools \
   --with /absolute/path/to/wheels/token_io_decoupling_core-0.1.0-py3-none-any.whl \
   --with /absolute/path/to/wheels/token_io_decoupling_transport-0.1.0-py3-none-any.whl \
   --with /absolute/path/to/wheels/token_io_decoupling_workflow-0.1.0-py3-none-any.whl \
@@ -341,11 +343,11 @@ uv run --project instruction-compiler token-io-compile compile
 uv run --project instruction-compiler token-io-compile compile --check
 ~~~
 
-The compiler persists core `_resources/instructions.json` and `manifest.json`, `mcp/src/token_io_decoupling/_resources/skill_bundle.zip`, and `instruction-compiler/build-report.json`. The local `skills/token-io-decoupling` tree is an optional export for inspection, ignored by Git and unnecessary for building or installing the product. When this export is absent, `compile --check` verifies the persistent core resources, ZIP and report against the current compiler inputs without creating the export; when present, it also checks its complete inventory and content. The core and packaged Skill manifests use `schema_version: 2` and the same `build_id`; their `files` maps bind complete bytes using SHA-256. Generated outputs must not be edited by hand. Hashes establish content identity, not semantic correctness; compiler scenarios and independent instruction review remain required.
+The compiler persists workflow `_resources/instructions.json` and `manifest.json`, `mcp/src/token_io_decoupling/_resources/skill_bundle.zip`, and `instruction-compiler/build-report.json`. The local `skills/token-io-decoupling` tree is an optional export for inspection, ignored by Git and unnecessary for building or installing the product. When this export is absent, `compile --check` verifies the persistent workflow resources, ZIP and report against the current compiler inputs without creating the export; when present, it also checks its complete inventory and content. The core and packaged Skill manifests use `schema_version: 2` and the same `build_id`; their `files` maps bind complete bytes using SHA-256. Generated outputs must not be edited by hand. Hashes establish content identity, not semantic correctness; compiler scenarios and independent instruction review remain required.
 
 Build hooks validate approved resources without importing the compiler, reading author documents, extracting headings or collecting repository attachments. Source development and installed runtimes use the same compiled format. Missing, corrupt, stale or incompatible resources stop dependent execution, with no author-file fallback. Rule/routing responses contain the current step's complete executable body, conditions, evidence, failure/return boundaries and next step. Metadata and capability results remain concise within their own responsibilities.
 
-From `mcp/`, build four wheels and four sdists:
+From `mcp/`, build five wheels and five sdists:
 
 ~~~sh
 uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-dist
@@ -353,13 +355,13 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 Product archives exclude the private development Skill, compiler, author tree, tests, benchmarks and former repository projections. Sdists include approved resources and minimum product build inputs, so detached rebuilds require neither compiler nor author source. Third-party build dependencies must already be available; this does not promise offline dependency installation.
 
-The generated Skill and core resources form one approved batch. Before any destination write, the installer validates archive paths, the complete inventory, hashes and installed core build identity. It retains legacy-checkout protection, local-change detection, concurrency locking and update rollback. Installation-name substitution updates installed manifest hashes while preserving the policy batch. Compatibility cannot restore original-owner lookup.
+The generated Skill and workflow resources form one approved batch. Before any destination write, the installer validates archive paths, the complete inventory, hashes and installed workflow build identity. It retains legacy-checkout protection, local-change detection, concurrency locking and update rollback. Installation-name substitution updates installed manifest hashes while preserving the policy batch. Compatibility cannot restore original-owner lookup.
 
 The source-checkout helper verifies compiler freshness before `uv tool install`; stale resources fail rather than being regenerated during installation. Its dry-run performs no compiler, installation, network or configuration operation. Updating the executable, registering MCP and updating the installed Skill remain separate actions. Install the same batch, update the Skill, reload affected MCP servers and start a fresh Agent session. Re-read instruction/policy hashes and re-evaluate stale results while preserving history. Editing an installed Skill cannot change MCP resources.
 
 [MCP CI](../../../../../.github/workflows/mcp.yml) covers supported Python versions, compiler freshness, runtime tests and installed-wheel stdio. [Documentation CI](../../../../../.github/workflows/multilingual-docs.yml) covers compiler scenarios, bilingual author/development documents, links, layers, routes and fixtures. Triggers include private/compiler/generated changes. Run development checks and documentation regressions directly from the private Skill. The root scripts directory retains only the installation entrypoint; development/test forwarding aliases are removed.
 
-[Artifact regressions](../../tests/mcp/unit_tests/test_build_artifacts.py) verify four distributions, private-content exclusion, same-batch resources, corruption rejection and detached rebuilding. [Installation regressions](../../tests/mcp/unit_tests/test_skill_artifacts.py) verify checkout-independent installation and independence from installed Skill edits. Temporary tool checks use task-local `UV_TOOL_DIR`/`UV_TOOL_BIN_DIR` and the [stdio smoke script](../../tests/mcp/support/installed_stdio_smoke.py).
+[Artifact regressions](../../tests/mcp/unit_tests/test_build_artifacts.py) verify five distributions, private-content exclusion, same-batch resources, corruption rejection and detached rebuilding. [Installation regressions](../../tests/mcp/unit_tests/test_skill_artifacts.py) verify checkout-independent installation and independence from installed Skill edits. Temporary tool checks use task-local `UV_TOOL_DIR`/`UV_TOOL_BIN_DIR` and the [stdio smoke script](../../tests/mcp/support/installed_stdio_smoke.py).
 
 The final SDK inspection must follow the ordered coordinator above: all applicable checks, current build, isolated tool installation, installed stdio, then fresh read-only CLI inspection. Stop at the first failed prerequisite or inspection stage.
 

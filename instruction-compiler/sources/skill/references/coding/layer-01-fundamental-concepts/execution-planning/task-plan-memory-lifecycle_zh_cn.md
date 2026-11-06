@@ -65,7 +65,7 @@
 
 ### 已配置的确定性生命周期工具
 
-workflow MCP profile 暴露已授权且已配置的 Serena 后端时，使用 `task_plan_update`、`task_plan_complete`、`task_plan_archive` 修改计划。仅发现工具不足以继续：须确认后端可用、准确配置 checkout，以及返回的存储 scope/仓库映射。共享全局模式由操作者以实际 Serena `MemoryManager` 显式构建 `SerenaMemoryStore(memory_manager, project_root, storage_scope="global")`；兼容默认值仍为 `storage_scope="project"`。通过显式服务注入或受信任启动 factory 提供该服务。实际全局根须已存在；服务不会初始化或猜测其位置。不得为了让调用通过而虚构 factory、从工具参数加载任意代码、安装依赖或猜测 `.serena` 目录。服务不会自动加载或迁移 Serena 配置。
+独立 tools MCP 服务提供这些操作，不要求工作流节点或先前工具调用。可选 tools_capabilities 报告后端及存储绑定，workflow_capabilities 不探测计划或 Memory。在本可选 Coding 工作流中，已授权且已配置的 Serena 后端可用时，使用 `task_plan_update`、`task_plan_complete`、`task_plan_archive` 修改计划。仅发现工具不足以继续：须确认后端可用、准确配置 checkout，以及返回的存储 scope/仓库映射。共享全局模式由操作者以实际 Serena `MemoryManager` 显式构建 `SerenaMemoryStore(memory_manager, project_root, storage_scope="global")`；兼容默认值仍为 `storage_scope="project"`。通过显式服务注入或受信任启动 factory 提供该服务。实际全局根须已存在；服务不会初始化或猜测其位置。不得为了让调用通过而虚构 factory、从工具参数加载任意代码、安装依赖或猜测 `.serena` 目录。服务不会自动加载或迁移 Serena 配置。
 
 每个请求仍提供该服务绑定 checkout 的准确绝对 `project_root`，不能选择其他仓库或切换存储 scope。主工作区及 linked worktrees 分别配置的服务派生同一全局仓库身份、history、revision 和 replay scope。检查返回的带项目层级 `memory_name`，不要重建裸名称。全局 history 使用明确仓库身份；旧项目 history 仍绑定 checkout。服务在全局 Memory 效果前重新核对仓库身份，发生改变则失败。capability/receipt 证据不认证调用者，也不授予其他仓库访问权。Git 共同目录语义见 [git-rev-parse](https://git-scm.com/docs/git-rev-parse) 和[仓库布局](https://git-scm.com/docs/gitrepository-layout)。
 

@@ -1,24 +1,10 @@
-"""Public capability reports: static support, configuration, and current binding evidence."""
-
-from __future__ import annotations
+"""Workflow-local diagnostics; never import or probe tools services."""
 
 from collections.abc import Callable
 from typing import Any
 
-from token_io_decoupling_core.binding import BindingProvider, DenyingBindingProvider
-from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
-from token_io_decoupling_workflow.serena_memory import SerenaMemoryReadService
-from token_io_decoupling_workflow.task_plan_core import TaskPlanService
-
-
-def _detail(status: str, code: str, message: str, source: str, next_step: str) -> dict[str, str]:
-    return {
-        "status": status,
-        "reason_code": code,
-        "message": message,
-        "source": source,
-        "next_step": next_step,
-    }
+from token_io_decoupling_core.binding import BindingProvider
+from token_io_decoupling_core.server_tools import WORKFLOW_TOOLS
 
 
 def capability_report(
@@ -28,83 +14,30 @@ def capability_report(
     require_codex_context: bool,
     api_decisions_enabled: bool,
     diagnose_binding: Callable[[BindingProvider], dict[str, str]],
-    task_plan_service: TaskPlanService | None = None,
-    compliance_service: CompliancePreflightService | None = None,
-    output_materialization: dict[str, str] | None = None,
-    serena_memory_service: SerenaMemoryReadService | None = None,
 ) -> dict[str, Any]:
-    """Read binding evidence and task-plan diagnostics without state mutation or API calls.
-
-    An absent task-plan service causes no Git or Memory-path probe. A configured global plan
-    service may perform a bounded local Git identity check and verify its already-bound Serena
-    root; it never creates or initializes Memory paths here.
-    """
     binding = diagnose_binding(provider)
-    memory_read_details = (serena_memory_service or SerenaMemoryReadService()).capability()
-    caller_match = "required" if require_codex_context else "disabled"
-    api_decisions = "enabled" if api_decisions_enabled else "disabled"
-    task_plan_details = (
-        task_plan_service.capability()
-        if task_plan_service is not None
-        else {
-            "status": "unavailable",
-            "reason_code": "task_plan_backend_not_configured",
-            "project_root": None,
-            "storage_scope": None,
-            "repository_id": None,
-            "namespace": None,
-            "archive_namespace": None,
-        }
-    )
-    compliance_details = (
-        compliance_service.capability()
-        if compliance_service is not None
-        else {
-            "status": "unavailable",
-            "reason_code": "compliance_backend_not_configured",
-            "policy_scopes": [],
-        }
-    )
-    output_details = output_materialization or {
-        "status": "unavailable",
-        "reason_code": "output_materializer_not_configured",
+    detail = {
+        "status": "available",
+        "reason_code": "fixed_codex_cli",
+        "message": "Local Codex CLI rule navigation and supplied-fact structural checks.",
+        "source": "static_support.agent_runtime",
+        "next_step": "Use complete returned instructions when choosing this workflow.",
     }
-    # Never serialize provider attributes: even transport labels can contain secrets or raise.
-    transport = "stdio" if not embedded else "embedded_provider"
-    transport_detail = _detail(
-        "unavailable" if not embedded else "unverified",
-        "stdio_without_identity_provider" if not embedded else "transport_not_reported",
-        "The standard stdio executable does not establish caller identity."
-        if not embedded
-        else "Injected context is not independently authenticated by this diagnostic.",
-        "server.default_provider" if not embedded else "provider_type",
-        "Identity-bound operations remain unavailable without a trusted provider."
-        if not embedded
-        else "Check the configured context; a transport label is not authority.",
-    )
-    if type(provider) is DenyingBindingProvider:
-        transport_detail = _detail(
-            "unavailable",
-            "provider_not_configured",
-            "No trusted request identity provider is configured.",
-            "server.default_provider",
-            "Use stateless rule tools, or inject a trusted provider for identity-bound operations.",
-        )
     return {
         "subsystem": "token-io-mcp",
-        "supported_transports": ["stdio"],
         "agent_runtime": "codex_cli",
-        "trusted_binding": (
-            "unverified"
-            if not embedded
-            else "available"
-            if binding["status"] == "available"
-            else "unavailable"
-        ),
-        "binding_transport": transport if embedded else "unavailable",
-        "caller_match": caller_match,
-        "api_decisions": api_decisions,
+        "supported_transports": ["stdio"],
+        "tool_count": len(WORKFLOW_TOOLS),
+        "trusted_binding": ("available" if binding["status"] == "available" else "unavailable")
+        if embedded
+        else "unverified",
+        "binding_transport": "embedded_provider" if embedded else "unavailable",
+        "caller_match": "required" if require_codex_context else "disabled",
+        "api_decisions": "enabled" if api_decisions_enabled else "disabled",
         "workflow_routing": "available_per_invocation",
+        "child_effort_decisions": "available_per_invocation",
+        "delegation_decisions": "available_per_invocation",
+        "decision_context_generation": "available_per_invocation",
         "instruction_delivery": {
             "schema_version": 2,
             "format": "compiled_json",
@@ -114,156 +47,64 @@ def capability_report(
                 "tool": "rules_get_context",
                 "payload": {"node_id": "contract", "context_version": 2},
             },
-            "interpretation": (
-                "Use complete returned instruction bodies; compiled IDs are not files to read. "
-                "Missing facts and grants remain separate prerequisites."
-            ),
+            "interpretation": "Compiled instructions are not authority or completion evidence.",
         },
-        "child_effort_decisions": "available_per_invocation",
-        "delegation_decisions": "available_per_invocation",
-        "decision_context_generation": "available_per_invocation",
-        "task_plan_tools": task_plan_details.get("status", "unavailable"),
-        "serena_memory_reads": memory_read_details.get("status", "unavailable"),
-        "serena_memory_binding": memory_read_details,
-        "decoupling_compliance": compliance_details.get("status", "unavailable"),
-        "compliance_policy_scopes": compliance_details.get("policy_scopes", []),
-        "output_materialization": output_details.get("status", "unavailable"),
         "protocol_target": "2026-07-28",
         "capability_details": {
             "schema_version": 3,
             "support": {
-                "agent_runtime": _detail(
-                    "available",
-                    "fixed_codex_cli",
-                    "This MCP server targets Codex CLI, including its app-server use from Desktop "
-                    "and local Work.",
-                    "static_support.agent_runtime",
-                    "Use Codex CLI; verify host identity, caller context, and guards separately.",
-                ),
-                "identity_bound_operations": _detail(
-                    "unavailable" if not embedded else binding.get("status", "unverified"),
-                    "trusted_provider_not_configured"
-                    if not embedded
-                    else binding.get("reason_code", "binding_unavailable"),
-                    "The standard executable does not establish caller identity or workflow "
-                    "allocations. Stateless rule/navigation tools do not depend on identity; "
-                    "protected materialization "
-                    "requires a trusted per-call binding and assignment provider.",
-                    "server.binding_provider",
-                    "Inject a trusted binding and assignment source for protected operations; "
-                    "without one, "
-                    "they remain unavailable.",
-                ),
+                "agent_runtime": detail,
+                "identity_bound_operations": {
+                    **detail,
+                    "status": "unavailable",
+                    "reason_code": "workflow_has_no_identity_bound_operations",
+                    "message": "This server exposes only stateless workflow operations.",
+                    "next_step": "Use each independent operation's current authorization contract.",
+                },
             },
             "configuration": {
-                "public_interfaces": _detail(
-                    "unverified",
-                    "tool_dependencies_not_probed",
-                    "Public means no caller-identity binding requirement, not configured or "
-                    "authorized. "
-                    "Capability/rule diagnostics, local Memory reads, task plans, "
-                    "candidate compliance, workflow routing and stateless selection/context "
-                    "tools are public. Stateless checkpoint checks validate caller-supplied "
-                    "evidence shape and "
-                    "current rule hashes; they do not authenticate facts, persist workflow state, "
-                    "authorize execution, sequence calls or establish acceptance.",
-                    "workflow.public_tool_contracts",
-                    "Check each tool: Memory requires existing startup-project files; plans "
-                    "require an injected backend; compliance requires an operator-configured "
-                    "reader/root/policy. API-backed selection/context and automatic routing "
-                    "require nonblank OPENAI_API_KEY and OPENAI_BASE_URL and per-call outbound "
-                    "authorization; explicit-stage routing is local. Materialization additionally "
-                    "requires a trusted per-call binding/assignment provider and independent "
-                    "operator grant. "
-                    "No API or execution-readiness probe was made.",
-                ),
-                "serena_memory_reads": _detail(
-                    str(memory_read_details.get("status", "unavailable")),
-                    str(memory_read_details.get("reason_code", "serena_memory_unavailable")),
-                    "Read-only tail and literal write-check tools read files only under "
-                    "<workflow server startup cwd>/.serena/memories. They use Python standard "
-                    "library file operations and do not require Serena-Agent or another local "
-                    "program. Missing directories/files are unavailable; no model/API request.",
-                    "server.serena_memory_service",
-                    "Start the workflow server with the intended project as its runtime working "
-                    "directory. It captures that cwd at startup and reads only "
-                    "its .serena/memories "
-                    "directory; tool arguments do not select project paths. Inspect the "
-                    "returned binding and limits before reading.",
-                ),
-                "task_plan_tools": _detail(
-                    task_plan_details.get("status", "unavailable"),
-                    task_plan_details.get("reason_code", "task_plan_backend_unavailable"),
-                    "Plan tools use only an explicitly injected Serena "
-                    "MemoryManager-backed service. Without a configured service, "
-                    "no Git or Memory path is probed. A configured global store "
-                    "revalidates its local Git identity and existing global root "
-                    "without creating paths.",
-                    "server.task_plan_service",
-                    "Use an explicitly configured trusted task-plan "
-                    "factory or keep plan tools unavailable.",
-                ),
-                "decoupling_compliance": _detail(
-                    compliance_details.get("status", "unavailable"),
-                    compliance_details.get("reason_code", "compliance_backend_unavailable"),
-                    "Compliance preflight is read-only and uses only an explicitly injected "
-                    "operator-configured root and policy-scope allowlist. Without a configured "
-                    "reader, it does not probe paths and reports disk evidence as unknown.",
-                    "server.compliance_service",
-                    "Configure a trusted compliance factory at startup; inspect unknown checks. "
-                    "This tool does not run candidate or target-repository scripts.",
-                ),
-                "output_materialization": _detail(
-                    output_details.get("status", "unavailable"),
-                    output_details.get("reason_code", "output_materializer_not_configured"),
-                    "Output materialization requires an explicit trusted factory with a per-call "
-                    "binding/assignment provider, the same pinned read-only preflight root, and a "
-                    "fresh operator grant per action. "
-                    "Caller role labels do not establish a verified binding. Capability reporting "
-                    "does not probe paths or assert current authority.",
-                    "server.output_materializer_config",
-                    "Use the tool only for a confirmed Primary Output assignment "
-                    "with code_configuration output and a matching "
-                    "operator grant, pinned roots, and fresh passing preflight; inspect any "
-                    "unavailable result.",
-                ),
-                "caller_match": _detail(
-                    caller_match,
-                    "configured_required" if require_codex_context else "configured_disabled",
-                    "Caller matching is configured at server startup; disabled is not an error.",
-                    "server.require_codex_context",
-                    "Check caller metadata per protected request; this call does not verify it.",
-                ),
-                "api_decisions": _detail(
-                    api_decisions,
-                    "configured_enabled" if api_decisions_enabled else "configured_disabled",
-                    "API advice is configured separately from stateless per-invocation checks.",
-                    "server.decisions_config.enabled",
-                    "No API probe; per-call tools require permission and configuration.",
-                ),
-                "workflow_routing": _detail(
-                    "available",
-                    "stateless_local_or_decisions_advice",
-                    "Explicit stages use local rule context; auto stage selection may use one "
-                    "bounded Decisions choice. The tool never verifies readiness or grants "
-                    "authority.",
-                    "workflow.decide_decoupling_workflow",
-                    "Inspect the returned route, module, facts, and rule hashes; follow the "
-                    "returned compiled instructions and capability gates.",
-                ),
+                "public_interfaces": {
+                    **detail,
+                    "status": "unverified",
+                    "reason_code": "tool_dependencies_not_probed",
+                    "message": "Structural checks do not authenticate facts or authorize effects.",
+                    "next_step": "Check each operation's inputs and optional API configuration.",
+                },
+                "caller_match": {
+                    **detail,
+                    "status": "required" if require_codex_context else "disabled",
+                    "reason_code": "configured_required"
+                    if require_codex_context
+                    else "configured_disabled",
+                },
+                "api_decisions": {
+                    **detail,
+                    "status": "enabled" if api_decisions_enabled else "disabled",
+                    "reason_code": "configured_enabled"
+                    if api_decisions_enabled
+                    else "configured_disabled",
+                    "message": "Optional API advice is separate; no API readiness probe.",
+                },
             },
             "runtime": {
                 "binding": binding,
-                "binding_transport": transport_detail,
-                "server_mode": _detail(
-                    "embedded" if embedded else "public_only",
-                    "startup_binding_accepted" if embedded else "startup_binding_unverified",
-                    "The fixed workflow and tools executables select their own inventories. "
-                    "The standard executable has no caller identity or workflow state store.",
-                    "server.create_workflow_server/create_tools_server",
-                    "Use the current request role, path scope and explicit operation "
-                    "authorization.",
-                ),
+                "binding_transport": {
+                    **detail,
+                    "status": "unverified" if embedded else "unavailable",
+                    "reason_code": "transport_not_reported"
+                    if embedded
+                    else "provider_not_configured",
+                },
+                "server_mode": {
+                    **detail,
+                    "status": "embedded" if embedded else "public_only",
+                    "reason_code": "startup_binding_verified"
+                    if embedded
+                    else "startup_binding_unverified",
+                    "message": "No caller identity or workflow state store is established here."
+                    if not embedded
+                    else "Injected scope is not independent host authentication.",
+                },
             },
         },
     }

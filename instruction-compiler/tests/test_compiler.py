@@ -239,7 +239,7 @@ class OptionalExportTests(unittest.TestCase):
         self.preview = self.root / "skills/token-io-decoupling"
         resource = (
             repository
-            / "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/_resources"
+            / "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/_resources"
         )
         instructions = json.loads((resource / "instructions.json").read_bytes())
         bundle = repository / "mcp/src/token_io_decoupling/_resources/skill_bundle.zip"
@@ -349,7 +349,7 @@ class ProductResourceTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[2]
         path = (
             root
-            / "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core"
+            / "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow"
             / "_resources/instructions.json"
         )
         return root, json.loads(path.read_text())
@@ -766,7 +766,7 @@ class ProductResourceTests(unittest.TestCase):
     def test_generated_batch_and_all_continuation_ids_are_complete(self):
         root = Path(__file__).resolve().parents[2]
         resource = (
-            root / "mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/_resources"
+            root / "mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/_resources"
         )
         data = (resource / "instructions.json").read_bytes()
         instructions = json.loads(data)

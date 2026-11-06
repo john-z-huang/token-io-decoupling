@@ -1223,6 +1223,9 @@ class Compiler:
         for language in LANGUAGES:
             name = "SKILL.md" if language == "en" else "SKILL_zh_cn.md"
             intro = (
+                "This optional Skill applies only when choosing the complete Coding workflow. "
+                "Standalone tools, task plans and Memory require neither this Skill nor its "
+                "checkpoints or calling order. Their own operation contracts still apply. "
                 "This generated Skill delivers executable Coding instructions. "
                 "Record the task goal, "
                 "authorized effects, constraints and acceptance criteria; verify available "
@@ -1243,7 +1246,9 @@ class Compiler:
                 "current state; changed epochs return to verification. Optional operations require "
                 "an explicit Not applicable reason when omitted."
                 if language == "en"
-                else "本生成 Skill 交付可执行的 Coding 指令。"
+                else "本可选 Skill 仅适用于明确选择完整 Coding 工作流的任务。"
+                "独立工具、任务计划和 Memory 不要求此 Skill、其检查点或调用顺序，"
+                "各操作自身的契约继续适用。本生成 Skill 交付可执行的 Coding 指令。"
                 "先记录任务目标、授权副作用、约束与验收标准，核实可用能力，"
                 "再确认当前会话已释放的执行模式。缺事实或权限时停止依赖动作。"
                 "禁止 Computer Use。编译指令或 hash 不代表授权或完成证据。"
@@ -1259,8 +1264,8 @@ class Compiler:
             lines = [
                 "---",
                 "name: token-io-decoupling",
-                'description: "Execute Coding tasks with bounded, compiled instructions | '
-                '使用有界编译指令执行 Coding 任务"',
+                'description: "Optional compiled Coding workflow; standalone tools need no Skill | '
+                '可选 Coding 编译工作流；独立工具不要求此 Skill"',
                 "---",
                 "",
                 "# Token I/O Decoupling",
@@ -1365,7 +1370,8 @@ class Compiler:
             files[name] = ("\n".join(lines).rstrip() + "\n").encode()
         files["agents/openai.yaml"] = (
             'interface:\n  display_name: "Token I/O Decoupling"\n'
-            '  short_description: "Compiled Coding instructions | Coding 编译指令"\n'.encode()
+            '  short_description: "Optional compiled Coding workflow | 可选 Coding 编译工作流"\n'
+            '\npolicy:\n  allow_implicit_invocation: false\n'.encode()
         )
         files["instruction-index.json"] = json_bytes(self.document_index())
         manifest = {
@@ -1393,7 +1399,7 @@ def compile_repository(
 ) -> dict[str, Any]:
     compiler = Compiler(root, max_chars=max_chars)
     body, skill_files = compiler.compile()
-    resource = Path("mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/_resources")
+    resource = Path("mcp/packages/token_io_decoupling_workflow/src/token_io_decoupling_workflow/_resources")
     instructions = json_bytes(body)
     files = {
         resource / "instructions.json": instructions,

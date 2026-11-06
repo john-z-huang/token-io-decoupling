@@ -8,7 +8,6 @@ from typing import Any, cast
 import pytest
 from pydantic import ValidationError
 
-from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.workflow_models import (
     CheckpointEvidenceRef,
     CheckpointFact,
@@ -24,6 +23,7 @@ from token_io_decoupling_core.workflow_models import (
 )
 from token_io_decoupling_workflow.checkpoint_evaluation import evaluate_checkpoint
 from token_io_decoupling_workflow.payloads import EvaluatePayload
+from token_io_decoupling_workflow.rules import RuleLoader
 
 
 def _submission(
@@ -341,15 +341,10 @@ def test_evaluation_callback_passes_same_language_to_fake_advisor() -> None:
     advisor = FakeAdvisor()
     cast(Any, register_workflow_tools)(
         registrar,
-        task_plan_service=object(),
-        compliance_service=None,
         rules=rules,
         advisor=advisor,
         decisions_config=None,
-        provider=object(),
-        embedded=False,
-        require_codex_context=False,
-        binding_details=lambda _provider: {},
+        capability_callback=lambda: {},
     )
     language = "zh_cn"
     expected = rules.load_context(CheckpointNode.TASK_INTENT.value, language=language)

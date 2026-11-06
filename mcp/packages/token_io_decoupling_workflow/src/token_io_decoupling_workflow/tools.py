@@ -2,23 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import Any
 
-from token_io_decoupling_core.binding import BindingProvider
-from token_io_decoupling_core.rules import DEFAULT_CONTEXT_TEXT_BUDGET, RuleLoader
 from token_io_decoupling_core.workflow_models import CheckpointNode
-from token_io_decoupling_transport.payloads import _RULE_CONTEXT
 from token_io_decoupling_transport.registration import ToolRegistrar
-from token_io_decoupling_workflow.capabilities import capability_report
 from token_io_decoupling_workflow.checkpoint_evaluation import evaluate_checkpoint
 from token_io_decoupling_workflow.child_effort import (
     ChildEffortPayload,
     ChildEffortSelector,
-)
-from token_io_decoupling_workflow.compliance_preflight import (
-    CompliancePreflightService,
-    validate_decoupling_compliance,
 )
 from token_io_decoupling_workflow.decision_context import (
     DecisionContextGenerator,
@@ -32,20 +23,12 @@ from token_io_decoupling_workflow.delegation_decisions import (
     ExecutorSelectionPayload,
     OutputTokenRoutingPayload,
 )
-from token_io_decoupling_workflow.output_materialization import OutputMaterializationService
 from token_io_decoupling_workflow.payloads import (
-    _COMPLIANCE_PREFLIGHT,
     _CONTROL_EVALUATE,
     _EVALUATE,
+    _RULE_CONTEXT,
 )
-from token_io_decoupling_workflow.serena_memory import SerenaMemoryReadService
-from token_io_decoupling_workflow.serena_memory_tools import register_serena_memory_tools
-from token_io_decoupling_workflow.task_plan_core import TaskPlanService
-from token_io_decoupling_workflow.task_plan_payloads import (
-    TaskPlanArchivePayload,
-    TaskPlanCompletePayload,
-    TaskPlanUpdatePayload,
-)
+from token_io_decoupling_workflow.rules import DEFAULT_CONTEXT_TEXT_BUDGET, RuleLoader
 from token_io_decoupling_workflow.workflow_routing import (
     WorkflowRouter,
     WorkflowRoutingPayload,
@@ -55,21 +38,11 @@ from token_io_decoupling_workflow.workflow_routing import (
 def register_workflow_tools(
     registrar: ToolRegistrar,
     *,
-    task_plan_service: TaskPlanService,
-    compliance_service: CompliancePreflightService | None,
     rules: RuleLoader,
     advisor: DecisionsAdvisor,
     decisions_config: DecisionsRuntimeConfig | None,
-    provider: BindingProvider,
-    embedded: bool,
-    require_codex_context: bool,
-    binding_details: Callable[[BindingProvider], dict[str, str]],
-    output_materialization_details: dict[str, str] | None = None,
-    serena_memory_service: SerenaMemoryReadService | None = None,
-    output_materializer: OutputMaterializationService | None = None,
+    capability_callback,
 ) -> None:
-    memory_reads = serena_memory_service or SerenaMemoryReadService()
-    register_serena_memory_tools(registrar, memory_reads)
     effort_selector = ChildEffortSelector()
     context_generator = DecisionContextGenerator(rules=rules)
     delegation_selector = DelegationDecisionSelector(rules)
@@ -83,48 +56,11 @@ def register_workflow_tools(
             max_chars=payload.max_chars or DEFAULT_CONTEXT_TEXT_BUDGET,
         )
 
-    registrar.register_no_args(
-        "workflow_capabilities",
-        lambda: capability_report(
-            provider,
-            embedded=embedded,
-            require_codex_context=require_codex_context,
-            api_decisions_enabled=bool(decisions_config and decisions_config.enabled),
-            diagnose_binding=binding_details,
-            task_plan_service=task_plan_service,
-            serena_memory_service=memory_reads,
-            compliance_service=compliance_service,
-            output_materialization=output_materialization_details,
-        ),
-    )
-    registrar.register(
-        "task_plan_update",
-        TaskPlanUpdatePayload,
-        lambda payload: task_plan_service.update(payload.request.model_dump(mode="json")),
-        enhanced=False,
-    )
-    registrar.register(
-        "task_plan_complete",
-        TaskPlanCompletePayload,
-        lambda payload: task_plan_service.complete(payload.request.model_dump(mode="json")),
-        enhanced=False,
-    )
-    registrar.register(
-        "task_plan_archive",
-        TaskPlanArchivePayload,
-        lambda payload: task_plan_service.archive(payload.request.model_dump(mode="json")),
-        enhanced=False,
-    )
+    registrar.register_no_args("workflow_capabilities", capability_callback)
     registrar.register(
         "rules_get_context",
         _RULE_CONTEXT,
         get_rule_context,
-        enhanced=False,
-    )
-    registrar.register(
-        "validate_decoupling_compliance",
-        _COMPLIANCE_PREFLIGHT,
-        lambda payload: validate_decoupling_compliance(compliance_service, payload.request),
         enhanced=False,
     )
     registrar.register(
@@ -217,23 +153,4 @@ def register_workflow_tools(
     registrar.register("workflow_evaluate", _EVALUATE, evaluate_node, enhanced=False)
     registrar.register(
         "evaluate_control_checkpoint", _CONTROL_EVALUATE, evaluate_control, enhanced=False
-    )
-
-    def materialize_output(payload: Any) -> Any:
-        if output_materializer is None:
-            return {
-                "status": "unavailable",
-                "reason_code": "trusted_authorization_context_unavailable",
-            }
-        return output_materializer.execute(
-            payload.request, expected_binding=provider.current_binding()
-        )
-
-    from token_io_decoupling_core.materialization_models import MaterializeDecoupledOutputPayload
-
-    registrar.register(
-        "materialize_decoupled_output",
-        MaterializeDecoupledOutputPayload,
-        materialize_output,
-        role="worker",
     )

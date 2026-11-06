@@ -44,22 +44,20 @@ def _standard_capability_diagnostics(report):
     identity = support.get("identity_bound_operations")
     binding = runtime.get("binding")
     server_mode = runtime.get("server_mode")
-    materialization = configuration.get("output_materialization")
-    if not all(
-        isinstance(value, dict) for value in (identity, binding, server_mode, materialization)
-    ):
+    if not all(isinstance(value, dict) for value in (identity, binding, server_mode)):
         raise CodexTestError("fresh CLI omitted default protection diagnostics")
     if (
         identity.get("status") != "unavailable"
-        or identity.get("reason_code") != "trusted_provider_not_configured"
+        or identity.get("reason_code") != "workflow_has_no_identity_bound_operations"
         or binding.get("status") != "unverified"
         or binding.get("reason_code") != "provider_not_configured"
         or server_mode.get("status") != "public_only"
         or server_mode.get("reason_code") != "startup_binding_unverified"
         or "no caller identity" not in server_mode.get("message", "").lower()
         or "workflow state store" not in server_mode.get("message", "").lower()
-        or materialization.get("status") != "unavailable"
-        or materialization.get("reason_code") != "output_materializer_not_configured"
+        or "task_plan_tools" in configuration
+        or "serena_memory_reads" in configuration
+        or "output_materialization" in configuration
         or report.get("trusted_binding") != "unverified"
     ):
         raise CodexTestError("fresh CLI omitted stateless/default-protection diagnostics")
@@ -68,7 +66,7 @@ def _standard_capability_diagnostics(report):
         "trusted_binding": report["trusted_binding"],
         "binding_reason": binding["reason_code"],
         "server_mode": server_mode["status"],
-        "materialization": materialization["status"],
+        "materialization": "separate_service",
     }
 
 

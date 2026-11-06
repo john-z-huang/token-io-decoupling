@@ -16,11 +16,11 @@ def validate_compiled_skill(project: Path) -> None:
         raise RuntimeError("approved compiled Skill bundle is unavailable")
     if {path.name for path in bundle.parent.iterdir()} != {"skill_bundle.zip"}:
         raise RuntimeError("compiled Skill resource inventory does not match its allowlist")
-    core_project = project / "packages/token_io_decoupling_core"
+    workflow_project = project / "packages/token_io_decoupling_workflow"
     expected_build_id = None
     expected_files = None
-    if core_project.exists():
-        resources = core_project / "src/token_io_decoupling_core/_resources"
+    if workflow_project.exists():
+        resources = workflow_project / "src/token_io_decoupling_workflow/_resources"
         try:
             if resources.is_symlink() or any(
                 path.is_symlink() or not path.is_file()

@@ -14,7 +14,6 @@ from pydantic import BaseModel, TypeAdapter, ValidationError, WithJsonSchema
 from token_io_decoupling_core.binding import BindingError, BindingProvider
 from token_io_decoupling_core.codex_context import CodexCallerBoundProvider
 from token_io_decoupling_transport.payloads import inline_schema
-from token_io_decoupling_transport.tool_metadata import tool_description
 
 
 class ToolRegistrar:
@@ -29,6 +28,7 @@ class ToolRegistrar:
         allowed_tools: frozenset[str],
         require_codex_context: bool,
         bound_role_for: Callable[[BindingProvider], str | None],
+        description_for: Callable[[str], str],
     ) -> None:
         self.server = server
         self.provider = provider
@@ -36,6 +36,7 @@ class ToolRegistrar:
         self.allowed_tools = allowed_tools
         self.require_codex_context = require_codex_context
         self._bound_role_for = bound_role_for
+        self.description_for = description_for
 
     def include(self, name: str) -> bool:
         return name in self.allowed_tools
@@ -122,7 +123,7 @@ class ToolRegistrar:
                 )
 
         handler.__name__ = name
-        handler.__doc__ = tool_description(name)
+        handler.__doc__ = self.description_for(name)
         annotations: dict[str, Any] = {
             "payload": Annotated[dict[str, Any], WithJsonSchema(inline_schema(payload_type))],
             "return": dict[str, Any],
@@ -130,9 +131,9 @@ class ToolRegistrar:
         if needs_context:
             annotations["context"] = MCPContext
         handler.__annotations__ = annotations
-        self.server.tool(name=name, description=tool_description(name), structured_output=False)(
-            handler
-        )
+        self.server.tool(
+            name=name, description=self.description_for(name), structured_output=False
+        )(handler)
 
     def register_no_args(
         self,
@@ -147,30 +148,24 @@ class ToolRegistrar:
         if codex_guard:
 
             def handler(context: MCPContext) -> Any:
-                enforce_role = name != "workflow_capabilities"
                 return self.with_codex_context(
                     context,
-                    lambda: self._call_safely(
-                        lambda: self.check_operation_role(role, callback, enforce=enforce_role)
-                    ),
+                    lambda: self._call_safely(lambda: self.check_operation_role(role, callback)),
                 )
         else:
 
             def handler() -> Any:
-                enforce_role = name != "workflow_capabilities"
-                return self._call_safely(
-                    lambda: self.check_operation_role(role, callback, enforce=enforce_role)
-                )
+                return self._call_safely(lambda: self.check_operation_role(role, callback))
 
         handler.__name__ = name
-        handler.__doc__ = tool_description(name)
+        handler.__doc__ = self.description_for(name)
         annotations: dict[str, Any] = {"return": dict[str, Any]}
         if codex_guard:
             annotations["context"] = MCPContext
         handler.__annotations__ = annotations
-        self.server.tool(name=name, description=tool_description(name), structured_output=False)(
-            handler
-        )
+        self.server.tool(
+            name=name, description=self.description_for(name), structured_output=False
+        )(handler)
 
     def register_enhanced_no_args(
         self, name: str, callback: Callable[[], Any], *, role: str
@@ -190,14 +185,14 @@ class ToolRegistrar:
                 return self._call_safely(lambda: self.check_operation_role(role, callback))
 
         handler.__name__ = name
-        handler.__doc__ = tool_description(name)
+        handler.__doc__ = self.description_for(name)
         annotations: dict[str, Any] = {"return": dict[str, Any]}
         if self.require_codex_context:
             annotations["context"] = MCPContext
         handler.__annotations__ = annotations
-        self.server.tool(name=name, description=tool_description(name), structured_output=False)(
-            handler
-        )
+        self.server.tool(
+            name=name, description=self.description_for(name), structured_output=False
+        )(handler)
 
 
 def _jsonable(value: Any) -> Any:

@@ -18,7 +18,6 @@ from token_io_decoupling_core.models import (
     RuleContextOwnerReference,
     StrictModel,
 )
-from token_io_decoupling_core.rules import DEFAULT_CONTEXT_TEXT_BUDGET, RuleLoader
 from token_io_decoupling_workflow.api_recovery import (
     FailureClass,
     ProviderErrorCode,
@@ -32,6 +31,7 @@ from token_io_decoupling_workflow.decisions import (
     DECISIONS_TIMEOUT_SECONDS,
     DecisionsRuntimeConfig,
 )
+from token_io_decoupling_workflow.rules import DEFAULT_CONTEXT_TEXT_BUDGET, RuleLoader
 
 MAX_ROUTING_REQUEST_CHARS = 32_000
 MAX_DECISION_REQUEST_CHARS = 42_000

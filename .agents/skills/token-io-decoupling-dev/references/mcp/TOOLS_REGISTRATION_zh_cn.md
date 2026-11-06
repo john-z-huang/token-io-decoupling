@@ -1,49 +1,42 @@
-# 两个 MCP 程序与 Codex 注册
+# 独立 MCP 服务与 Codex 注册
 
 [English](TOOLS_REGISTRATION.md) | [简体中文](TOOLS_REGISTRATION_zh_cn.md)
 
-本文负责两个独立 MCP 可执行程序的工具清单和 Codex 注册。[开发指南](DEVELOPMENT_zh_cn.md)负责构建、安装和最终检查；工作流 owner 保留策略权威，受保护工具保留其操作专属授权检查。
+Tools 与 workflow 可分别安装、注册和运行。[开发指南](DEVELOPMENT_zh_cn.md)负责检查与最终检验。各操作消费当前输入和资源状态，不要求工作流节点、先前工具或后续工具调用。
 
-## 两个独立可执行程序
+## 分发包与清单
 
-MCP 运行时由两个分别安装的可执行程序组成。每个程序都不需要启动参数，即可启动 stdio MCP Server：
-
-| 可执行程序与 Codex 注册名 | 清单 |
+| 分发包／可执行入口 | 固定清单 |
 | --- | --- |
-| `token-io-decoupling-workflow` | 保持不变的 17 个能力、规则、规划、路由与评估工具。 |
-| `token-io-decoupling-tools` | 共 34 个工具：33 个开发工作流工具和 `materialize_decoupled_output`。 |
+| `token-io-decoupling-tools` | 41 项操作：33 个上游助手、三个任务计划操作、两个 Memory 查询、候选 preflight、受保护输出物化及可选 tools_capabilities。 |
+| `token-io-decoupling-workflow` | 11 个编译规则、导航、建议和结构评估工具。 |
+| `token-io-decoupling` | 可选完整安装的管理命令，自身不提供 MCP 运行时。 |
 
-管理命令 `token-io-decoupling` 不是 MCP 运行时，负责 setup、Skill 安装和环境变量转发修复。它的 `setup codex` 命令会解析、核验并注册当前两个 MCP 可执行程序。它只操作这两个注册表，不会识别或迁移其他注册。用户也可使用绝对可执行文件路径分别注册：
+两个运行时只依赖共享 core/transport，不依赖对方。编译资源和规则加载器属于 workflow；core 和 transport 不含规则。Tools 的运行时、CLI、schema 和 metadata 不加载 workflow 或 Coding Skill；workflow 不初始化或探测 tools 后端。
+
+## 按服务选择 setup
+
+每个运行时分发包拥有自己的 console script，不安装管理包也可注册自身：
 
 ```sh
-codex mcp add token-io-decoupling-workflow -- /absolute/path/to/token-io-decoupling-workflow
-codex mcp add token-io-decoupling-tools -- /absolute/path/to/token-io-decoupling-tools
+/absolute/path/to/token-io-decoupling-tools setup codex
+/absolute/path/to/token-io-decoupling-workflow setup codex
 ```
 
-## 清单与操作边界
+可选管理命令接受 `setup codex --server tools|workflow|both`，默认为 `both`。追加 `--dry-run` 只读取配置并预检所选配置段，不发现工具或写入。实际 setup 只解析所选分发包的入口 metadata 与可执行路径，检查准确工具清单，原子更新所选注册项。未选和无关配置段、已有启用／禁用状态、审批、超时、cwd 及额外环境名称均保留。所选配置无效或检测到并发变化时拒绝覆盖。
 
-固定工具清单由[工具清单文件](../../../../../mcp/packages/token_io_decoupling_core/src/token_io_decoupling_core/server_tools.py)负责。tools 可执行程序依赖 `dev-workflow-standards-tools`，来源固定为[其源仓库](https://github.com/john-z-huang/dev-workflow-standards/tree/ba5ecc95d9f9da77aca22c17e712d6c8d2a05987/mcp-server)提交 `ba5ecc95d9f9da77aca22c17e712d6c8d2a05987` 的 `mcp-server` 子目录。构建和安装必须解析该固定依赖及其封装资源，无需相邻开发 checkout 或绝对本地依赖路径。更新依赖时，必须按固定清单审阅工具签名、注解、描述和参数校验错误脱敏。
+完整 `uv tool install` 需通过 `--with-executables-from token-io-decoupling-workflow --with-executables-from token-io-decoupling-tools` 暴露依赖拥有的脚本；单独安装运行时则直接暴露自己的入口。参见[安装指南](../../../../../INSTALL_zh_cn.md)。
 
-工具发现不授予权限。33 个开发工具保留各自的仓库根、副作用、API 输入和写入授权检查。`materialize_decoupled_output` 是唯一单独受守卫的输出操作；它需要可信启动时注入的授权 provider、当前逐次调用 Worker 绑定、独立授权、固定根目录和当前预检。若无可信 provider 和授权，该工具不可用。详见 [Worker 输出材料化](OUTPUT_MATERIALIZATION_zh_cn.md)。
+## 操作与配置边界
 
-开发工具保留各自的仓库根验证、副作用注解、API 输入审核和写入授权要求。tools 可执行程序复用其已发布的 schema、注解、描述与参数校验错误脱敏。开发工具可用不能证明身份，也不授权 Git/GitHub 副作用。API 操作要求进程中非空的 `OPENAI_API_KEY` 与 `OPENAI_BASE_URL`，显式使用固定 `gpt-6-luna`，不回退到默认凭据、地址或其他模型。
+Tools 复用固定版本 dev-workflow-standards-tools 的 schema、annotation、callback、输入审核及参数错误脱敏。公开工具说明由本地操作契约提供，不附加上游服务的工作流指令与调用顺序。不要求先调用诊断、路由或内容生成工具。
 
-tools 可执行程序转发 API 和代理变量名以及 `OPENAI_TIMEOUT_MAX_RETRIES`，不写入变量值。Setup 为两个可执行程序使用空参数列表，保留两个目标注册表中的其他设置，并保留无关配置项。两个 MCP 进程保留各自的配置与能力要求。
+任务计划和 Memory 仅由 tools 提供。`--task-plan-factory`、`--compliance-factory` 和 `--output-materializer-factory` 属于 tools 启动选项；操作者代码从 token_io_decoupling_tools 导入相关类型。Workflow 拒绝迁移后的旧选项。Wire payload 及现有计划／Memory 数据保留；重载旧安装时更新 factory 导入和 enabled_tools/disabled_tools 筛选。
 
-## Setup 安全与幂等性
+当前资源检查保留在各操作内：版本保护计划更新；完成／归档校验已有计划状态；物化校验已有 prepared artifact、可信逐次身份与分配、独立操作者授权、固定路径、基线、新鲜 preflight 及写入时权限。已有资源不证明先前工具调用或工作流放行。缺少物化配置时仍不可用。
 
-`token-io-decoupling setup codex --dry-run` 会读取配置并仅预检当前两个目标表，但不启动 MCP 子进程，也不写入。真实 setup 会解析已安装的 workflow 和 tools 可执行程序，核验其当前清单，并仅更新这两个目标表，且使用空参数列表。它保留目标表中的其他设置及所有无关配置项。它不会检查、分类、删除或迁移其他注册；旧安装的一次性清理由维护命令之外的交付操作负责。当前目标表格式错误、包含不支持的传输字段、受支持设置的类型无效或环境变量来源冲突时会失败关闭，且没有覆盖选项。这些检查只核验 setup 使用的设置，不表示会检测更广泛的策略冲突。
-
-Setup 以原子方式写入常规配置文件，保留文件权限模式，在替换前检查文件是否已改变，并拒绝会导致无关内容被静默移动的不支持 TOML 布局。避免并发配置写入：输入检查不是全局锁。两个目标注册均正确时，重复成功运行不会产生变更。失败时按最后确认的状态报告。
+本地工具不需要 API 配置。API 操作使用必需的非空进程 OPENAI_API_KEY 与 OPENAI_BASE_URL、固定模型和外发审核；缺配置只影响依赖它的操作。Setup 仅转发变量名，不转发值；tools 另转发 OPENAI_TIMEOUT_MAX_RETRIES。发现和哈希不授予权限。
 
 ## 验证
 
-测试会将两个清单与预期 manifest 比较，并使用临时配置覆盖角色拒绝、外部 schema 和注解、脱敏、目标与无关配置保留、setup 预览及安全冲突处理。安装版 stdio 检查覆盖两个可执行程序及其精确清单。有序[最终检查](DEVELOPMENT_zh_cn.md#codex-sdk-最终查看)仅在全部普通检查通过后运行，构建并安装当前产物，再使用全新 Codex CLI 实例对两个可执行程序进行有界只读检查。它不执行模型轮，也不修改真实用户配置。
-
-注册两个可执行程序本身不能证明已测量的 Token 节省；两个工具清单仍然可用。
-
-## 相关概念
-
-- [MCP 开发指南](DEVELOPMENT_zh_cn.md)
-- [Codex 调用方匹配](CODEX_CALLER_CONTEXT_zh_cn.md)
-- [Worker 输出材料化](OUTPUT_MATERIALIZATION_zh_cn.md)
+测试验证清单互斥、拒绝 sibling/admin 导入、真实独立 wheel 安装、直接 stdio 调用、单服务注册、配置保留、脱敏和受保护写入拒绝。归档测试覆盖五个分发包、core 不含规则资源、批准的 workflow/Skill 批次及独立重建。按顺序的[最终检验](DEVELOPMENT_zh_cn.md#codex-sdk-最终检验)执行全部适用检查，在临时 uv 目录构建安装当前完整 wheel 集合，再用新的只读 Codex CLI 检验，模型 turn 为零，不修改真实用户配置。
