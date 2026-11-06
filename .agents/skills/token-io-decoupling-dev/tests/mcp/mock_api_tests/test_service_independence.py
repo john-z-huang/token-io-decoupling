@@ -28,6 +28,8 @@ sibling = "workflow" if service == "tools" else "tools"
 
 class DenySibling(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
+        if fullname == "dev_workflow_standards_tools.server":
+            raise AssertionError("runtime imported an upstream server composition root")
         if fullname == "token_io_decoupling" or fullname.startswith(
             "token_io_decoupling."
         ):

@@ -103,7 +103,13 @@ def test_five_distributions_have_disjoint_product_payloads(artifacts):
                     owners[name] = wheel.name
     assert "token_io_decoupling/cli.py" in owners
     assert "token_io_decoupling_workflow/_resources/instructions.json" in owners
-    assert "token_io_decoupling_transport/registration.py" in owners
+    assert "token_io_decoupling_transport/tool.py" in owners
+    assert "token_io_decoupling_tools/tool.py" in owners
+    assert "token_io_decoupling_workflow/tool.py" in owners
+    assert "token_io_decoupling_transport/registration.py" not in owners
+    assert "token_io_decoupling_tools/serena_memory_tools.py" not in owners
+    assert "token_io_decoupling_tools/tools.py" not in owners
+    assert "token_io_decoupling_workflow/tools.py" not in owners
     assert "token_io_decoupling_workflow/checkpoint_evaluation.py" in owners
     assert "token_io_decoupling_tools/task_plan_core.py" in owners
     assert "token_io_decoupling_tools/serena_memory.py" in owners

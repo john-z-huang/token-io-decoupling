@@ -9,16 +9,16 @@ from token_io_decoupling_core.binding import BindingError, BindingProvider, Deny
 from token_io_decoupling_core.codex_context import CodexCallerBoundProvider
 from token_io_decoupling_core.server_tools import WORKFLOW_SERVER_NAME, WORKFLOW_TOOLS
 from token_io_decoupling_transport.identity import binding_details, bound_role
-from token_io_decoupling_transport.registration import ToolRegistrar
+from token_io_decoupling_transport.tool import ToolRegistrar
 from token_io_decoupling_workflow.capabilities import capability_report
 from token_io_decoupling_workflow.decisions import DecisionsAdvisor, DecisionsRuntimeConfig
 from token_io_decoupling_workflow.rules import RuleLoader
+from token_io_decoupling_workflow.tool import register_tools
 from token_io_decoupling_workflow.tool_metadata import (
     tool_description,
     workflow_server_description,
     workflow_server_instructions,
 )
-from token_io_decoupling_workflow.tools import register_workflow_tools
 
 
 def create_workflow_server(
@@ -52,7 +52,7 @@ def create_workflow_server(
         bound_role_for=bound_role,
         description_for=tool_description,
     )
-    register_workflow_tools(
+    register_tools(
         registrar,
         rules=rules,
         advisor=DecisionsAdvisor(rules, config, client_factory=decisions_client_factory),

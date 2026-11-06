@@ -1,11 +1,11 @@
-"""Registration for public workflow information and workflow evaluation tools."""
+"""Canonical workflow tool definitions using the shared registration template."""
 
 from __future__ import annotations
 
 from typing import Any
 
 from token_io_decoupling_core.workflow_models import CheckpointNode
-from token_io_decoupling_transport.registration import ToolRegistrar
+from token_io_decoupling_transport.tool import ToolDefinition, ToolRegistrar
 from token_io_decoupling_workflow.checkpoint_evaluation import evaluate_checkpoint
 from token_io_decoupling_workflow.child_effort import (
     ChildEffortPayload,
@@ -35,7 +35,7 @@ from token_io_decoupling_workflow.workflow_routing import (
 )
 
 
-def register_workflow_tools(
+def register_tools(
     registrar: ToolRegistrar,
     *,
     rules: RuleLoader,
@@ -55,56 +55,6 @@ def register_workflow_tools(
             fragment_ids=payload.fragment_ids,
             max_chars=payload.max_chars or DEFAULT_CONTEXT_TEXT_BUDGET,
         )
-
-    registrar.register_no_args("workflow_capabilities", capability_callback)
-    registrar.register(
-        "rules_get_context",
-        _RULE_CONTEXT,
-        get_rule_context,
-        enhanced=False,
-    )
-    registrar.register(
-        "workflow_select_child_effort",
-        ChildEffortPayload,
-        lambda payload: effort_selector.select(payload.request),
-        enhanced=False,
-    )
-    registrar.register(
-        "workflow_generate_decision_context",
-        DecisionContextPayload,
-        lambda payload: context_generator.generate(payload.request),
-        enhanced=False,
-    )
-    registrar.register(
-        "decide_decoupling_workflow",
-        WorkflowRoutingPayload,
-        lambda payload: workflow_router.decide(payload.request),
-        enhanced=False,
-    )
-    registrar.register(
-        "workflow_select_child_role",
-        ChildRoleSelectionPayload,
-        lambda payload: delegation_selector.select_child_role(payload.request),
-        enhanced=False,
-    )
-    registrar.register(
-        "workflow_select_executor",
-        ExecutorSelectionPayload,
-        lambda payload: delegation_selector.select_executor(payload.request),
-        enhanced=False,
-    )
-    registrar.register(
-        "workflow_select_child",
-        ChildCandidateSelectionPayload,
-        lambda payload: delegation_selector.select_child_candidate(payload.request),
-        enhanced=False,
-    )
-    registrar.register(
-        "workflow_assess_output_tokens",
-        OutputTokenRoutingPayload,
-        lambda payload: delegation_selector.assess_output_tokens(payload.request),
-        enhanced=False,
-    )
 
     def evaluate_node(payload: Any) -> Any:
         if payload.submission.node_id is not payload.node_id:
@@ -150,7 +100,64 @@ def register_workflow_tools(
             ).model_dump(mode="json")
         return output
 
-    registrar.register("workflow_evaluate", _EVALUATE, evaluate_node, enhanced=False)
-    registrar.register(
-        "evaluate_control_checkpoint", _CONTROL_EVALUATE, evaluate_control, enhanced=False
+    registrar.register_all(
+        (
+            ToolDefinition(
+                name="workflow_capabilities",
+                callback=capability_callback,
+                bounded_errors=True,
+            ),
+            ToolDefinition(
+                name="rules_get_context",
+                callback=get_rule_context,
+                payload_type=_RULE_CONTEXT,
+            ),
+            ToolDefinition(
+                name="workflow_select_child_effort",
+                callback=lambda payload: effort_selector.select(payload.request),
+                payload_type=ChildEffortPayload,
+            ),
+            ToolDefinition(
+                name="workflow_generate_decision_context",
+                callback=lambda payload: context_generator.generate(payload.request),
+                payload_type=DecisionContextPayload,
+            ),
+            ToolDefinition(
+                name="decide_decoupling_workflow",
+                callback=lambda payload: workflow_router.decide(payload.request),
+                payload_type=WorkflowRoutingPayload,
+            ),
+            ToolDefinition(
+                name="workflow_select_child_role",
+                callback=lambda payload: delegation_selector.select_child_role(payload.request),
+                payload_type=ChildRoleSelectionPayload,
+            ),
+            ToolDefinition(
+                name="workflow_select_executor",
+                callback=lambda payload: delegation_selector.select_executor(payload.request),
+                payload_type=ExecutorSelectionPayload,
+            ),
+            ToolDefinition(
+                name="workflow_select_child",
+                callback=lambda payload: delegation_selector.select_child_candidate(
+                    payload.request
+                ),
+                payload_type=ChildCandidateSelectionPayload,
+            ),
+            ToolDefinition(
+                name="workflow_assess_output_tokens",
+                callback=lambda payload: delegation_selector.assess_output_tokens(payload.request),
+                payload_type=OutputTokenRoutingPayload,
+            ),
+            ToolDefinition(
+                name="workflow_evaluate",
+                callback=evaluate_node,
+                payload_type=_EVALUATE,
+            ),
+            ToolDefinition(
+                name="evaluate_control_checkpoint",
+                callback=evaluate_control,
+                payload_type=_CONTROL_EVALUATE,
+            ),
+        )
     )

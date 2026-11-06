@@ -2,12 +2,6 @@
 
 from typing import Any, cast
 
-from dev_workflow_standards_tools.server import _SafeMCPServer
-from dev_workflow_standards_tools.tools.ai_workflow import register_ai_workflow_tools
-from dev_workflow_standards_tools.tools.codex_session_facts import register_codex_session_fact_tools
-from dev_workflow_standards_tools.tools.git import register_git_tools
-from dev_workflow_standards_tools.tools.github import register_github_tools
-from dev_workflow_standards_tools.tools.repository import register_repository_tools
 from mcp.server import MCPServer
 
 from token_io_decoupling_core.binding import BindingError, BindingProvider, DenyingBindingProvider
@@ -20,14 +14,15 @@ from token_io_decoupling_tools.output_materialization import (
 )
 from token_io_decoupling_tools.serena_memory import SerenaMemoryReadService
 from token_io_decoupling_tools.task_plan_core import TaskPlanService
+from token_io_decoupling_tools.tool import register_tools
 from token_io_decoupling_tools.tool_metadata import (
     SERVER_DESCRIPTION,
     SERVER_INSTRUCTIONS,
     tool_description,
 )
-from token_io_decoupling_tools.tools import register_local_tools
 from token_io_decoupling_transport.identity import bound_role
-from token_io_decoupling_transport.registration import ToolRegistrar
+from token_io_decoupling_transport.server import SafeMCPServer
+from token_io_decoupling_transport.tool import ToolRegistrar
 
 
 def create_tools_server(
@@ -53,7 +48,7 @@ def create_tools_server(
     ):
         if service is not None and not isinstance(service, expected):
             raise TypeError("configured service has the wrong type")
-    server = _SafeMCPServer(
+    server = SafeMCPServer(
         name=TOOLS_SERVER_NAME,
         version="0.1.0",
         description=SERVER_DESCRIPTION,
@@ -87,7 +82,7 @@ def create_tools_server(
             else "output_materializer_not_configured",
         }
     )
-    register_local_tools(
+    register_tools(
         registrar,
         provider=provider,
         task_plan_service=task_plan_service or TaskPlanService(),
@@ -96,20 +91,9 @@ def create_tools_server(
         output_materializer=materializer,
         output_materialization_details=details,
     )
-    for register in (
-        register_git_tools,
-        register_repository_tools,
-        register_github_tools,
-        register_codex_session_fact_tools,
-        register_ai_workflow_tools,
-    ):
-        register(server)
-    # Publish operation contracts, without the upstream service's workflow instructions.
     discovered = server._tool_manager.list_tools()
     names = [tool.name for tool in discovered]
     if len(names) != len(set(names)) or set(names) != TOOLS_SERVER_TOOLS:
         raise ValueError("standalone tool inventory differs from its manifest")
-    for tool in discovered:
-        tool.description = tool_description(tool.name)
     cast(Any, server)._output_materializer = materializer
     return server

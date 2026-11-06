@@ -14,6 +14,24 @@ Tools and workflow can be installed, registered and run separately. The [develop
 
 Runtime packages depend on shared core/transport, never on each other. Compiled resources and the rule loader belong to workflow; core and transport contain no rules. Tools runtime, CLI, schemas and metadata do not load workflow or the Coding Skill. Workflow does not initialize or probe tools backends.
 
+## Code layout and registration template
+
+Each runtime's `server.py` constructs the server and configured services, then calls `register_tools` in its own `tool.py`. `token_io_decoupling_tools/tool.py` defines all 41 tools, including upstream business callbacks, plans, Memory, preflight and materialization. `token_io_decoupling_workflow/tool.py` defines its 11 workflow tools independently.
+
+Every operation uses the same `ToolDefinition` template from `token_io_decoupling_transport/tool.py`. `ToolRegistrar.register_all` checks the complete fixed inventory and applies the only SDK `server.tool(...)` registration call. Flat signatures, payload envelopes, parameter descriptions, annotations, structured-output settings and operation guards are definition data. Shared transport imports neither runtime. Argument-validation redaction lives in `token_io_decoupling_transport/server.py`; tools does not import the upstream server or call its registration functions.
+
+To add an operation, implement its business logic in its owning module, add a definition to the owning `tool.py`, update the fixed manifest and local description, then verify the published contract. For example:
+
+```python
+ToolDefinition(
+    name="task_plan_update",
+    callback=lambda payload: task_plan_service.update(payload.request.model_dump(mode="json")),
+    payload_type=TaskPlanUpdatePayload,
+)
+```
+
+Native callbacks keep their existing flat arguments; payload callbacks retain their existing envelope. Optional caller-context and role guards apply only where the operation requires them. This structure adds no workflow prerequisite.
+
 ## Selected-service setup
 
 Each runtime distribution owns its console script and can register itself without the admin package:
@@ -29,7 +47,7 @@ A full `uv tool install` must expose dependency-owned scripts using `--with-exec
 
 ## Operation and configuration boundaries
 
-Tools reuse upstream schemas, annotations, callbacks, input review and validation-error redaction from the pinned `dev-workflow-standards-tools` revision. The exposed tool descriptions are local operation contracts; the upstream server's workflow instructions and calling order are not appended. There is no prerequisite diagnostic, route or content-generation call.
+Tools reuse upstream schemas, annotations, callbacks and input review from the pinned `dev-workflow-standards-tools` revision, while shared transport preserves the same validation-error redaction. The exposed tool descriptions are local operation contracts; the upstream server's workflow instructions and calling order are not appended. There is no prerequisite diagnostic, route or content-generation call.
 
 Task plans and Memory are served only by tools. `--task-plan-factory`, `--compliance-factory` and `--output-materializer-factory` are tools startup options; operator code imports their types from `token_io_decoupling_tools`. Workflow rejects the migrated options. Wire payloads and existing plan/Memory data are preserved. Update operator imports and enabled_tools/disabled_tools filters when reloading an older installation.
 
