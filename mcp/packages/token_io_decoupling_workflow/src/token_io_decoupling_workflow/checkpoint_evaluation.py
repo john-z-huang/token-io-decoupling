@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from pydantic import Field
-from token_io_decoupling_core.models import StrictModel
+
+from token_io_decoupling_core.models import RuleContext, StrictModel
 from token_io_decoupling_core.rules import RuleLoader
 from token_io_decoupling_core.workflow_models import (
     EvidenceSubmission,
@@ -23,6 +24,8 @@ class StatelessCheckpointResult(StrictModel):
     reason: str
     source_input_hash: str
     rule_hash: str
+    instructions: RuleContext | None = None
+    next_checkpoint_ids: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(
         default_factory=lambda: [
             "caller supplied facts and evidence are not authenticated",
@@ -112,4 +115,6 @@ def evaluate_checkpoint(
         reason="requirements_missing" if incomplete else "requirements_structurally_present",
         source_input_hash=source_hash,
         rule_hash=context.context_hash,
+        instructions=context,
+        next_checkpoint_ids=context.next_checkpoint_ids,
     )

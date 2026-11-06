@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Literal, TypeAlias
 
 from pydantic import Field
+
 from token_io_decoupling_core.models import StrictModel
 
 FailureClass: TypeAlias = Literal[

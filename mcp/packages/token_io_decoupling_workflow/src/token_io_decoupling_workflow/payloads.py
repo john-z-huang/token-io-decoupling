@@ -6,11 +6,11 @@ import json
 from typing import Annotated, Literal
 
 from pydantic import Field, StrictStr, StringConstraints, field_validator, model_validator
+
 from token_io_decoupling_core.compliance_core import validate_candidate_list
 from token_io_decoupling_core.models import Sha256, StrictModel
 from token_io_decoupling_core.workflow_models import ActiveCheckpointNode, EvidenceSubmission
 from token_io_decoupling_transport.payloads import payload_model
-
 from token_io_decoupling_workflow.decisions import DecisionAdvisoryInput
 
 MAX_CHECKPOINT_EVALUATION_REQUEST_BYTES = 32 * 1024
@@ -78,7 +78,7 @@ class ComplianceCandidate(StrictModel):
 
 
 class ComplianceRequest(StrictModel):
-    policy_scope: Literal["skill_maintenance", "generic_project"]
+    policy_scope: Literal["generic_project"]
     candidates: Annotated[list[ComplianceCandidate], Field(min_length=1, max_length=64)]
 
     @model_validator(mode="after")

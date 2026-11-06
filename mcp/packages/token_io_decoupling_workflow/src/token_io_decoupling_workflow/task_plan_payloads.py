@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import Field, StringConstraints, field_validator, model_validator
+
 from token_io_decoupling_core.models import StrictModel
 
 PlanId = Annotated[

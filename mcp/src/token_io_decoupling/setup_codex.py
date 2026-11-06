@@ -13,13 +13,6 @@ from typing import Any
 
 import tomlkit
 from mcp import Client, StdioServerParameters
-from token_io_decoupling_core.server_tools import (
-    TOOLS_SERVER_NAME,
-    TOOLS_SERVER_TOOLS,
-    WORKFLOW_SERVER_NAME,
-    WORKFLOW_TOOLS,
-)
-from token_io_decoupling_transport.tool_metadata import STANDARD_INSTALL_NOTICE
 from tomlkit.exceptions import ParseError
 
 from token_io_decoupling.codex_env import (
@@ -31,6 +24,13 @@ from token_io_decoupling.codex_env import (
     config_path,
     read_config_snapshot,
 )
+from token_io_decoupling_core.server_tools import (
+    TOOLS_SERVER_NAME,
+    TOOLS_SERVER_TOOLS,
+    WORKFLOW_SERVER_NAME,
+    WORKFLOW_TOOLS,
+)
+from token_io_decoupling_transport.tool_metadata import STANDARD_INSTALL_NOTICE
 
 _TIMEOUT_SECONDS = 20
 _ENTRY_POINTS = {

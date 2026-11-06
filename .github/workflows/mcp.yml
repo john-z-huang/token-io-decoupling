@@ -4,14 +4,16 @@ on:
   pull_request:
     paths:
       - "mcp/**"
-      - "docs/skill/**"
+      - "instruction-compiler/**"
+      - ".agents/skills/token-io-decoupling-dev/**"
       - ".github/workflows/mcp.yml"
   push:
     branches:
       - main
     paths:
       - "mcp/**"
-      - "docs/skill/**"
+      - "instruction-compiler/**"
+      - ".agents/skills/token-io-decoupling-dev/**"
       - ".github/workflows/mcp.yml"
 
 permissions:
@@ -26,7 +28,7 @@ jobs:
         python-version: ["3.11", "3.14"]
     env:
       PYTHONDONTWRITEBYTECODE: "1"
-      UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/token-io-mcp-env-${{ matrix.python-version }}
+      UV_PROJECT_ENVIRONMENT: ${{ github.workspace }}/mcp/.venv
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,31 +41,37 @@ jobs:
       - name: Install managed Python
         run: uv python install "${{ matrix.python-version }}" --managed-python
 
+      - name: Verify compiled instruction freshness
+        run: python3 instruction-compiler/compile.py compile --check
+
+      - name: Run instruction compiler regressions
+        run: python3 -m unittest discover -s instruction-compiler/tests -p 'test_*.py'
+
       - name: Sync locked development environment
         working-directory: mcp
         run: uv sync --locked --managed-python --python "${{ matrix.python-version }}" --group dev --group codex-test
 
       - name: Run complete MCP tests
         working-directory: mcp
-        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test pytest -q tests/unit_tests tests/mock_api_tests tests/real_api_tests
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test pytest -c pyproject.toml -q ../.agents/skills/token-io-decoupling-dev/tests/mcp/unit_tests ../.agents/skills/token-io-decoupling-dev/tests/mcp/mock_api_tests ../.agents/skills/token-io-decoupling-dev/tests/mcp/real_api_tests
 
       - name: Check Ruff lint
         working-directory: mcp
-        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test ruff check
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test ruff check --config pyproject.toml . ../.agents/skills/token-io-decoupling-dev/tests/mcp
 
       - name: Check Ruff formatting
         working-directory: mcp
-        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test ruff format --check
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test ruff format --config pyproject.toml --check . ../.agents/skills/token-io-decoupling-dev/tests/mcp
 
       - name: Check types
         working-directory: mcp
-        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test ty check
+        run: uv run --locked --managed-python --python "${{ matrix.python-version }}" --group codex-test ty check src packages ../.agents/skills/token-io-decoupling-dev/tests/mcp
 
   installed-wheel-stdio:
     runs-on: ubuntu-latest
     env:
       PYTHONDONTWRITEBYTECODE: "1"
-      UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/token-io-mcp-wheel-env
+      UV_PROJECT_ENVIRONMENT: ${{ github.workspace }}/mcp/.venv
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -75,6 +83,12 @@ jobs:
 
       - name: Install managed Python 3.14
         run: uv python install 3.14 --managed-python
+
+      - name: Verify compiled instruction freshness
+        run: python3 instruction-compiler/compile.py compile --check
+
+      - name: Run instruction compiler regressions
+        run: python3 -m unittest discover -s instruction-compiler/tests -p 'test_*.py'
 
       - name: Sync locked development environment
         working-directory: mcp
@@ -98,5 +112,5 @@ jobs:
       - name: Exercise installed wheel through negotiated stdio SDK
         working-directory: ${{ runner.temp }}
         run: |
-          uv run --project "$GITHUB_WORKSPACE/mcp" --locked --managed-python --python 3.14 python "$GITHUB_WORKSPACE/mcp/tests/support/installed_stdio_smoke.py" \
+          uv run --project "$GITHUB_WORKSPACE/mcp" --locked --managed-python --python 3.14 python "$GITHUB_WORKSPACE/.agents/skills/token-io-decoupling-dev/tests/mcp/support/installed_stdio_smoke.py" \
             --cli "$RUNNER_TEMP/token-io-tool-bin/token-io-decoupling"

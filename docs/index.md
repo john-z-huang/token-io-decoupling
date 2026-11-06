@@ -8,61 +8,8 @@ lang: en-US
 
 # Token I/O Decoupling
 
-An Agent orchestration Skill for separating semantic decisions, state consumption, and output execution.
+The project delivers a Coding workflow through local Codex CLI MCP tools and a generated bilingual Skill. Current-step instructions include actions, conditions, evidence, failure boundaries and exact continuations without original-owner lookups.
 
-## What it provides
+Use the [product overview](https://github.com/john-z-huang/token-io-decoupling/blob/main/README.md), follow the [installation guide](https://github.com/john-z-huang/token-io-decoupling/blob/main/INSTALL.md), then load the installed `token-io-decoupling-skill`. Other Code Agents can use the document-only Skill within their available capabilities.
 
-The Skill routes a task to the flow that owns its primary state, then defines the responsibilities and information boundaries used during execution.
-
-It provides one executable flow:
-
-- **Coding Flow** for repository and development work.
-
-Multimodal material is retained as reference content only; it is not an executable flow in this Skill.
-
-## Coding Flow
-
-Coding Flow covers repository and development tasks:
-
-- progressive exploration of source and project state;
-- code and configuration implementation;
-- focused implementation checks;
-- independent final change verification;
-- approved documentation and Git operations.
-
-Start with [`SKILL.md`](skill/SKILL.md), then follow the Coding references selected for the current stage.
-
-## Multimodal reference material
-
-The repository retains reference material for tasks that consume visual or temporal state:
-
-- GUI and browser interaction;
-- image and screenshot observation;
-- video and other temporal state;
-- visual-state verification;
-- a narrow handoff to Coding when repository changes are required.
-
-These references do not define a separately executable route. Start with the [Coding entry](skill/SKILL.md).
-
-## Responsibilities
-
-| Responsibility | Function |
-| --- | --- |
-| Input-side Reasoning | Defines the goal, constraints, decisions, and acceptance criteria. |
-| Primary Output | Explores the relevant state and materializes the approved implementation. |
-| Change Verification | Independently checks the final changed state against the acceptance criteria. |
-| Documentation / Git Operations | Handles approved documentation and repository Git operations. |
-
-## Execution sequence
-
-1. Route the task to the Coding flow; consult retained Multimodal references only when the Coding workflow explicitly names them.
-2. Define a Semantic Contract containing the goal, constraints, decisions, and acceptance criteria.
-3. Let the responsible output role explore state and materialize the approved direction.
-4. Pass only the necessary context across responsibility boundaries.
-5. Verify the final state against the acceptance criteria.
-
-## Repository references
-
-- [Reference library](https://github.com/john-z-huang/token-io-decoupling/tree/main/references) contains the detailed Coding, runtime, session, and execution references.
-- [Multilingual rules](https://github.com/john-z-huang/token-io-decoupling/blob/main/MULTI_LINGUAL.md) define the repository's bilingual documentation rules.
-- [GitHub repository](https://github.com/john-z-huang/token-io-decoupling)
+Product runtime is separate from the private development Skill and instruction compiler. Development rules, scripts, tests and author sources are excluded from released product archives. Read the [development Skill](https://github.com/john-z-huang/token-io-decoupling/blob/main/.agents/skills/token-io-decoupling-dev/SKILL.md) only when maintaining this project.

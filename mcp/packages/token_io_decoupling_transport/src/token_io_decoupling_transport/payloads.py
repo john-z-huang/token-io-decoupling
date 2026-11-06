@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, StrictInt, StringConstraints, create_model, model_validator
+
 from token_io_decoupling_core.models import StrictModel
 from token_io_decoupling_core.workflow_models import ActiveCheckpointNode
 
@@ -45,11 +46,17 @@ _NO_ARGUMENTS = payload_model("NoArguments")
 class RuleContextPayload(ToolPayload):
     node_id: ActiveCheckpointNode
     language: Literal["en", "zh_cn"] = "en"
-    context_version: Literal[1] | None = None
+    context_version: Literal[2] = 2
     fragment_ids: Annotated[
         list[Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=128)]]
         | None,
-        Field(max_length=128),
+        Field(
+            max_length=128,
+            description=(
+                "Nonempty selects only these complete compiled units; "
+                "omitted/empty returns the default node."
+            ),
+        ),
     ] = None
     max_chars: Annotated[StrictInt, Field(ge=256, le=60_000)] | None = None
 
@@ -57,17 +64,13 @@ class RuleContextPayload(ToolPayload):
     @classmethod
     def require_strict_context_version(cls, value: Any) -> Any:
         if isinstance(value, dict):
-            version = value.get("context_version")
-            if version is not None and (type(version) is not int or version != 1):
-                raise ValueError("context_version must be the integer 1")
+            version = value.get("context_version", 2)
+            if type(version) is not int or version != 2:
+                raise ValueError("context_version must be the integer 2; version 1 is retired")
         return value
 
     @model_validator(mode="after")
     def require_explicit_context_version(self) -> RuleContextPayload:
-        if self.context_version is None and (
-            self.fragment_ids is not None or self.max_chars is not None
-        ):
-            raise ValueError("fragment_ids and max_chars require context_version=1")
         if self.fragment_ids is not None and len(self.fragment_ids) != len(set(self.fragment_ids)):
             raise ValueError("fragment_ids must not contain duplicates")
         return self

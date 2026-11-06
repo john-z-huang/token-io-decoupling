@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from mcp.server import MCPServer
+
 from token_io_decoupling_core.binding import BindingError, BindingProvider, DenyingBindingProvider
 from token_io_decoupling_core.codex_context import CodexCallerBoundProvider
 from token_io_decoupling_core.rules import RuleLoader

@@ -59,8 +59,9 @@ _DECISION_RESULT = (
     "context_input_hash, source_policy_hashes, optional model/total_tokens, and "
     "optional recovery (retry_eligible, action, failure_class, total_attempt_limit). "
     "authority=advisory_only. Before acting, compare returned request/context/policy hashes and "
-    "fact revision/fingerprint with the exact current caller facts, reviewed context, and owner "
-    "text. On stale, refresh current facts and owner text, regenerate/review context if needed, "
+    "fact revision/fingerprint with the exact current caller facts, reviewed context, and compiled "
+    "policy identity. On stale, refresh current facts and compiled policy, "
+    "regenerate/review context if needed, "
     "and obtain a new result; never reuse it or convert it to fallback. A Decisions request "
     "requires per-call outbound_data_permitted=true plus nonblank OPENAI_API_KEY and "
     "OPENAI_BASE_URL; the tool reads and explicitly uses both with fixed model gpt-6-luna, "
@@ -233,43 +234,39 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "filesystem primitives fail closed; interruptions return uncertain/reconciliation status.",
     ),
     "rules_get_context": _description(
-        "Load a checkpoint's legacy owner context or an explicit version-1",
-        "indexed fragment bundle.",
-        "Legacy payload: node_id (registered checkpoint enum) and language",
-        "(en by default; en or zh_cn).",
-        "When context_version and all extension fields are omitted, return the unchanged legacy",
-        "RuleContext fields, owner text, and context hash. fragment_ids and max_chars require",
-        "context_version=1; unknown fields and unsupported versions fail validation.",
-        "Version 1 starts with the node's indexed default fragments, adds any",
-        "explicit fragment_ids,",
-        "and resolves only the index's declared dependency edges in deterministic order.",
-        "The response contains bounded node metadata and whole text fragments;",
-        "node metadata is not",
-        "charged to max_chars. max_chars counts Unicode characters",
-        "in fragment text only, defaults",
-        "to 12000, and is limited to 256..60000. No fragment is truncated.",
-        "index_sha256 binds the canonical versioned index; context_hash binds it",
-        "with node metadata, returned fragment text/hashes, the budget result, and",
-        "the remaining-owner-reference report.",
-        "complete=true means every requested fragment in the explicit index closure was loaded; it",
-        "does not mean the task's other direct owners or linked documents have been read.",
-        "remaining_owner_refs is a bounded list of local Markdown links found in",
-        "returned fragments whose target section is not in the returned closure;",
-        "it marks references to read separately,",
-        "not rules already included. The list is capped at 16 with a truncation flag.",
-        "Budget omissions and missing owner files/headings appear in missing_fragments with",
-        "complete=false and an incomplete status. Invalid paths/symlinks, unknown IDs, duplicate",
-        "index IDs, dependency cycles, and duplicate real headings fail closed.",
-        "owner_path is repository-relative source provenance under docs/skill, not",
-        "an installed Skill",
-        "file path. Installed servers use their packaged versioned index and normalized fragments;",
-        "fragment hashes cover the same trimmed text returned by either source.",
+        "Return a checkpoint's complete compiled instruction bundle, without source-file lookups.",
+        "Payload: node_id (registered checkpoint enum), language (en default or zh_cn),",
+        "context_version (integer 2, the default), optional fragment_ids and max_chars.",
+        "Version 1 is retired and rejected; old context hashes are invalid after "
+        "this schema/build change.",
+        "Each returned unit already contains its compiler-verified execution dependencies.",
+        "Omitted or empty fragment_ids return the complete default node. Nonempty fragment_ids "
+        "return only those complete compiled units, without repeating the default node; "
+        "the runtime never interprets Markdown.",
+        "max_chars counts returned instruction-text Unicode characters only, defaults to 12000,",
+        "and is limited to 256..60000. When the whole result exceeds it, complete=false,",
+        "status=incomplete_budget and fragments is empty: review diagnostics, "
+        "then request a sufficient supported budget.",
+        "Never execute an incomplete result or repair it by reading original owners.",
+        "Missing, corrupt, mixed-build or incompatible resources fail clearly "
+        "without source fallback.",
+        "A complete result supplies executable text, required facts/evidence, legal branches, "
+        "failure handling and next checkpoint IDs.",
+        "Verify current facts, capabilities and authorization separately.",
+        "owner_path/owner_section are compatibility fields containing compiled instruction "
+        "IDs/titles, not paths to read.",
+        "remaining_owner_refs is retained empty. build_id binds the compilation batch; "
+        "context_hash identifies full node/selected-unit text and metadata "
+        "independently of budget.",
+        "Use the default node bundle's context_hash for checkpoint/semantic expected_rule_hash;",
+        "hashes for explicit fragment selections identify a different selection. "
+        "No API call or mutation.",
     ),
     "validate_decoupling_compliance": _description(
         "Run a bounded, read-only preflight over a candidate document overlay before an "
         "authorized write.",
         _PAYLOAD,
-        "Payload envelope: request.policy_scope is skill_maintenance or generic_project; "
+        "Payload envelope: request.policy_scope is generic_project only; "
         "request.candidates has 1-64 unique entries. Each entry has a canonical "
         "repository-relative POSIX path (at most 512 characters), operation=create/replace/delete, "
         "baseline={state:absent} for create or {state:sha256,value:<64 lowercase hex>} for "
@@ -280,17 +277,16 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "and current working directory cannot choose a root. Without a configured reader, the "
         "tool performs no path probe and disk/baseline evidence is unknown. A disallowed scope "
         "is not evaluated.",
-        "For skill_maintenance, checks cover the changed file's bilingual mirror, candidate "
-        "Markdown language and layer links with direct-target checks, and Layer-01 three-section "
-        "structure when applicable. The overlay includes all candidates in this request. "
-        "generic_project returns not_applicable for Skill-maintenance checks. The implementation "
-        "never imports or executes candidate-repository scripts.",
+        "Checks cover generic canonical paths, baselines, candidate overlays and configured "
+        "read-only evidence. Project-specific bilingual/layer/Skill maintenance checks are "
+        "private development functions, not product capabilities. The implementation never "
+        "imports or executes candidate-repository scripts.",
         "Returns overall status fail/unknown/pass/not_applicable, policy_version=1, bounded "
         "per-rule check objects with rule_id, path/line/reason evidence, and an explicit "
         "evidence_missing list, limits, and not_evaluated entries. Unknown checks name the "
         "missing evidence; other checks use an empty list. Overall precedence is fail, then "
-        "unknown, then pass; not_applicable checks do not mask active results. Link-target and "
-        "output-check limits turn omitted evidence into unknown.",
+        "unknown, then pass; not_applicable checks do not mask active results. "
+        "Output-check limits turn omitted evidence into unknown.",
         "This is a read-only lookup: no target file writes, API request, subprocess, reverse "
         "inbound-link scan, semantic English/Chinese comparison, or full CI run. Unknown means "
         "the relevant disk evidence could not be safely verified; correct scope, baseline, path, "
@@ -396,17 +392,22 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "call Decisions. stage=auto requires source facts, outbound_data_permitted=true, and "
         "enabled Decisions configuration; it uses one fixed-choice Decisions call with the "
         "seven existing stage IDs plus insufficient_evidence.",
-        "Every required RuleLoader bundle is loaded through its declared dependency closure. "
+        "Every required RuleLoader bundle contains its compiler-expanded execution closure. "
         "Results return the locked Native route reference, selected module when usable, "
         "conditional "
         "check IDs, capability statuses (missing means unknown), source/input/rule hashes, bundle "
-        "IDs, missing fragments, and remaining owner references; fragment text is not repeated.",
-        "rule_hash binds only the returned RuleLoader bundle/index evidence, not the Layer-04 "
-        "route "
-        "Markdown. complete refers only to those declared fragment closures. These are navigation "
-        "suggestions, not a second policy source, readiness result, authorization, tool call, "
-        "child "
-        "creation, or dispatch. Follow the referenced current route owners and record conditional "
+        "IDs and missing fragments. An available result also returns instructions containing the "
+        "selected stage's executable text, build identity, module and continuation. "
+        "shared_requirements gives exact rules_get_context payloads and text hashes for common "
+        "hard constraints (required before any action) and the prerequisite return map "
+        "(required when prerequisites are missing). Fetch and apply each triggered unit first; "
+        "reuse only an exact held unit from this build with the matching hash. Missing or "
+        "mismatched content blocks the dependent action. Explicit fragment selection returns "
+        "only those units, avoiding repeated default-node prose.",
+        "Compiled route IDs are identifiers rather than files to read. Resources must belong to "
+        "the same approved build; corrupt, missing or mixed-build resources block execution. "
+        "These are suggestions, not readiness, authorization, child creation or dispatch. "
+        "Follow returned instructions under current capability and permission checks, recording "
         "Not applicable reasons.",
         "Every auto call explicitly reads nonblank OPENAI_API_KEY and OPENAI_BASE_URL and uses "
         "them with fixed model gpt-6-luna and max_retries=0. Refusal, wrong model, invalid choice, "
@@ -424,8 +425,8 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "workflow_generate_decision_context first. An explicit user creation instruction skips",
         "Decisions and uses its explicit role or Primary Output fallback, subject to mode,",
         "Fork, same-role, budget, permission, and Root checks.",
-        "The tool loads current child-role-selection and session-role-ownership owner text from",
-        "the repository or packaged resources and returns policy/request hashes, a role suggestion",
+        "The tool loads compiled child-role-selection and session-role-ownership policy resources",
+        "without author-document access and returns policy/request hashes, a role suggestion",
         "or Primary fallback, guard reason, and next action. An API call reads both",
         "environment values and uses fixed model gpt-6-luna with zero automatic retries. A",
         "transient candidate may be re-invoked under still-valid task authorization after current",
@@ -525,7 +526,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "Stateless structural checkpoint check. Payload has node_id, submission, optional "
         "language (en or zh_cn, default en), optional expected_rule_hash, optional node-matched "
         "semantic_input, and current_facts. expected_rule_hash must be the full registered-node "
-        "rules_get_context result for that language, with no context_version; version-1 fragment "
+        "default version-2 rules_get_context bundle for that language; extra-fragment selections "
         "bundle hashes and index_sha256 are different values and are rejected as stale. Submission "
         "facts contain 1–128 unique typed fact keys; top-level evidence references are limited to "
         "128, coverage dimensions to 3, evidence references per determined fact to 16, and named "
@@ -552,7 +553,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "language (en or zh_cn, default en), optional expected_rule_hash, optional Control "
         "semantic_input, "
         "and current_facts. expected_rule_hash must be the full Control rules_get_context result "
-        "for that language, with no context_version; version-1 fragment bundle hashes and "
+        "from the default version-2 bundle for that language; extra-fragment bundle hashes and "
         "index_sha256 are distinct and rejected as stale. It uses the same "
         "1–128 facts, 128 top-level evidence references, 3 coverage dimensions, 16 nested "
         "evidence references, 16 missing-evidence items, 512-character URI, and 128-character "
@@ -572,13 +573,15 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "Prepare, inspect, or apply 1–16 files per request using an explicitly configured trusted "
         "output-materializer factory. The typed payload has an action (prepare/inspect/apply), a "
         "bounded batch of file specifications, and action-specific manifest or receipt hashes; "
+        "output_target is code_configuration and policy_scope is generic_project only. "
+        "Project Skill-instruction maintenance is not a production materialization target. "
         "it cannot supply caller identity, assignment, grant, or authorized=true. Each file is "
         "limited to an authorized project-relative path, operation, template, and bounded content, "
         "and prepare also enforces the batch byte limit. The server requires the current bound "
         "Worker role, passes the per-call binding to the materializer, and independently verifies "
         "the startup-injected authorization provider's current assignment and hash plus a separate "
         "operator grant. It rechecks authority between phases and enforces pinned roots, allowed "
-        "paths/operations/templates, a fresh whole-batch 185 result before writes, candidate "
+        "paths/operations/templates, a fresh whole-batch preflight before writes, candidate "
         "baselines, receipts, and Same-service cooperative locking. Without both trusted providers "
         "the tool is unavailable or denied before writes."
     ),
@@ -654,8 +657,10 @@ def tools_server_description() -> str:
 
 def workflow_server_instructions() -> str:
     return (
-        "Start with workflow_capabilities, then load the exact rule context with "
-        "rules_get_context. "
+        "Call workflow_capabilities, then rules_get_context with node_id=contract and "
+        "context_version=2 (language=en by default, or zh_cn). Read its complete returned "
+        "instruction body; compiled IDs are not source paths. Follow the current step and "
+        "its fact, evidence and capability gates; incomplete resources cannot be executed. "
         "Workflow routing and checkpoint checks are stateless suggestions/checks: they do not "
         "authenticate supplied facts, authorize execution, persist workflow state, or establish "
         "Agent acceptance. Continue to apply current user authorization and project instructions. "

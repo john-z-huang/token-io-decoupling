@@ -20,6 +20,7 @@ from pydantic import (
     ValidationError,
     field_validator,
 )
+
 from token_io_decoupling_core.materialization_models import (
     DEFAULT_INSPECT_CHARS,
     MAX_MATERIALIZATION_BATCH_UTF8_BYTES,
@@ -47,7 +48,6 @@ from token_io_decoupling_core.workflow_models import (
     HostGuard,
     SessionRole,
 )
-
 from token_io_decoupling_workflow.compliance_preflight import CompliancePreflightService
 from token_io_decoupling_workflow.materialization_storage import (
     MaterializationStorage,
@@ -75,7 +75,7 @@ class MaterializationAssignment(StrictModel):
     worker_session_id: NonEmptyString
     allocation_id: NonEmptyString
     role: Literal["Primary Output"]
-    output_class: Literal["code_configuration", "skill_instructions"]
+    output_class: Literal["code_configuration"]
     slice_id: NonEmptyString
     authorized_paths: Annotated[
         tuple[Annotated[str, StringConstraints(min_length=1, max_length=512)], ...],
@@ -276,7 +276,7 @@ class OutputMaterializationService:
         manifest = PreparedMaterializationManifest(
             version=1,
             prepared_id=prepared_id,
-            policy_version=1,
+            policy_version=2,
             binding=authority["binding_fingerprint"],
             grant_id=authority["grant"].grant_id,
             grant_revision=authority["grant"].revision,
@@ -302,7 +302,7 @@ class OutputMaterializationService:
             "status": "prepared",
             "prepared_id": prepared_id,
             "manifest_sha256": manifest_hash,
-            "policy_version": 1,
+            "policy_version": 2,
             "files": [
                 {
                     "file_index": index,
@@ -395,7 +395,7 @@ class OutputMaterializationService:
                 )
                 if (
                     type(preflight.get("policy_version")) is not int
-                    or preflight.get("policy_version") != 1
+                    or preflight.get("policy_version") != 2
                     or preflight.get("status") != "pass"
                     or self._compliance_service.root_identity()
                     != (
@@ -662,7 +662,6 @@ class OutputMaterializationService:
             raise _MaterializationFailure("worker_assignment_binding_mismatch")
         if role != "Primary Output" or output_class not in {
             "code_configuration",
-            "skill_instructions",
         }:
             raise _MaterializationFailure("worker_role_output_class_unsupported")
         try:
