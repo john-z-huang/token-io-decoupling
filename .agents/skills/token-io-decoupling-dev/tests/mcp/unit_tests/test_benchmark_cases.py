@@ -8,19 +8,14 @@ from pathlib import Path
 
 import pytest
 from support import benchmark_cases as cases
+from support.event_cases import checker, request
 
 from token_io_decoupling_core.materialization_models import MaterializationInspectRequest
-from token_io_decoupling_core.models import CodingMode
 from token_io_decoupling_tools.compliance_preflight import (
     CompliancePreflightService,
     validate_decoupling_compliance,
 )
 from token_io_decoupling_workflow.rules import RuleLoader
-from token_io_decoupling_workflow.workflow_routing import (
-    DecouplingWorkflowRequest,
-    WorkflowRouter,
-    source_facts_hash,
-)
 
 
 class _ForbiddenRecorder:
@@ -79,30 +74,16 @@ def test_current_rule_lookup_returns_complete_compiled_instructions_without_sour
     assert bundle.node_metadata.owner_path.startswith("compiled:")
 
 
-def test_current_explicit_routing_returns_current_step_without_api_or_owner_lookup(monkeypatch):
+def test_current_event_returns_current_instructions_without_api_or_owner_lookup(monkeypatch):
+    """基准入口直接返回当前编译事件，不请求模型或要求跟读作者文件。"""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
-    request = DecouplingWorkflowRequest.model_validate(
-        {
-            "task_id": "synthetic-current-routing-regression",
-            "task_summary": "Inspect the explicitly requested current stage.",
-            "stage": "execution",
-            "language": "en",
-            "mode_locked": True,
-            "mode_count": {"mode": CodingMode.SINGLE_AGENT, "child_count": 0},
-            "capabilities": [],
-            "hard_constraints": [],
-            "source_facts": [],
-            "source_facts_hash": source_facts_hash([]),
-            "outbound_data_permitted": False,
-        }
-    )
-    result = WorkflowRouter(RuleLoader(), None).decide(request)
-    assert result.status == "available"
-    assert result.instructions is not None
-    assert result.instructions["module_id"] == "SM04"
-    assert result.instructions["text"]
-    assert result.advisory_only is True
+    result = checker().check(request("action_observed"))
+    assert result.status == "checked"
+    assert result.instructions is not None and result.instructions.complete
+    assert result.instructions.event.text
+    assert result.advice.status == "not_requested"
+    assert result.authority == "advisory_only"
 
 
 def test_current_generic_preflight_is_read_only_and_retired_scope_is_rejected(tmp_path):

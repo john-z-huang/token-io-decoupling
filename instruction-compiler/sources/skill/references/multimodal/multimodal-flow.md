@@ -1,76 +1,76 @@
 # Multimodal Flow
 
-This is a compact descriptive module for non-Coding multimodal work; it is not an executable workflow or an Agent-creation policy. The caller supplies the available roles, Sessions, tools, permissions, and lifecycle.
+本模块是非 Coding 多模态工作的精简描述，不是可执行工作流，也不负责 Agent 创建策略。调用方提供可用角色、Session、工具、权限和生命周期。
 
-## Role ownership
+## 角色 ownership
 
 ### Decision Agent
 
-Owns visual/interaction intent, semantic and safety constraints, the Semantic Contract, analysis focus, semantic checkpoints, creative direction, amendments, and final acceptance. In Creative Visual Authoring it personally reviews curated evidence and owns composition, hierarchy, style, color/light, and overall quality. It does not continuously ingest full screenshots, video frames, OCR/DOM dumps, or routine navigation state.
+负责视觉/交互意图、语义和安全约束、Semantic Contract、分析重点、语义检查点、创作方向、amendment 和最终验收。在 Creative Visual Authoring 中，必须亲自检查精选证据，并负责构图、层次、风格、色彩/光线和整体质量。它不持续摄入完整截图、视频帧、OCR/DOM dump 或常规导航状态。
 
 ### Primary Observation Agent
 
-Owns high-volume screenshots, images, references, rendered UI, video frames, Computer Use observations, OCR, DOM/accessibility state, screening, deduplication, temporal localization, focused inspection, and ephemeral world-state tracking. It returns a compact Visual/State Digest. It may perform ordinary low-risk Routine Interaction and one approved bounded Creative pass, but cannot redefine creative direction or semantic intent.
+负责高体量截图、图片、参考资料、渲染 UI、视频帧、Computer Use 观察、OCR、DOM/accessibility 状态，以及筛选、去重、时间定位、定向检查和临时世界状态。它返回精简 Visual/State Digest。它可以执行普通低风险 Routine Interaction 和一个已批准的有界 Creative pass，但不能重新定义创作方向或语义意图。
 
 ### Optional Primary Output Agent
 
-When the caller assigns a separate materialization role for a non-Coding report or artifact, it receives the Contract, Observation Digest, and targeted evidence. It materializes only the approved output and does not reanalyze the full visual history. Repository or code work leaves this module through a narrow Coding handoff.
+当调用方为非 Coding 报告或产物分配独立物化职责时，它接收 Contract、Observation Digest 和定向证据。它只物化已批准的输出，不重新分析完整视觉历史。仓库或代码工作通过窄 Coding handoff 离开本模块。
 
 ## Observation Firewall
 
-Continuous screenshots, large image sets, video-frame sets, OCR text, DOM/accessibility dumps, Computer Use history, and repeated localization evidence stay with Observation. The Decision Agent receives only findings, risks, open questions, and selected evidence needed for the next decision. A small bounded visual state may be inspected directly when it will not create a context dump. Use targeted evidence requests rather than forwarding raw collections.
+连续截图、大型图片集、视频帧集、OCR 文本、DOM/accessibility dump、Computer Use 历史和重复定位证据留在 Observation 侧。Decision 只接收下一步决策所需的发现、风险、开放问题和精选证据。严格有界的小型视觉状态如果不会造成上下文倾倒，可以由 Decision 直接检查。需要更多信息时使用定向证据请求，不转发原始集合。
 
-## Working modes
+## 工作模式
 
-- **Routine Interaction**: browsing, localization, scrolling, form filling, menu operations, parameter changes, and bounded edits from a clear plan. Observation may keep the observe → act → observe loop inside its Session.
-- **Creative Visual Authoring**: drawing, editing, compositing, layout, design, stylization, or any task whose next step may change composition, hierarchy, color/light, material, whitespace, or overall visual quality.
+- **Routine Interaction**：按明确计划执行浏览、定位、滚动、填表、菜单操作、参数调整和有界编辑。Observation 可以在自己的 Session 内保持 observe → act → observe 循环。
+- **Creative Visual Authoring**：绘制、编辑、合成、布局、设计、风格化，或下一步可能改变构图、层次、色彩/光线、材质、留白或整体视觉质量的工作。
 
-If a task becomes Creative, stabilize a short `Creative Brief/Visual Plan` before continuing. Routine navigation and local mechanical adjustments may remain within Observation, but do not replace Creative review.
+任务转为 Creative 后，必须先稳定简短的 `Creative Brief/Visual Plan`。Routine 导航和局部机械调整可以留在 Observation 内，但不能替代 Creative review。
 
-## Creative control loop
+## Creative 控制循环
 
-1. Decision stabilizes goal, composition/hierarchy, visual language, stage order, checkpoints, and acceptance.
-2. Observation executes one bounded pass with an explicit changed region, preserved intent, completion condition, and pause boundary.
-3. Observation returns a small curated set of current screenshots/crops and minimal status at the material milestone.
-4. Decision personally reviews the evidence and returns `Keep`, `Change`, `Next pass`, updated acceptance, and approval to continue.
-5. Observation cannot cross an unapproved milestone, redefine core direction, or turn a local repair into a new design. If curated evidence cannot reach Decision, stop open-ended Creative work and report the capability block.
+1. Decision 固化目标、构图/层次、视觉语言、阶段顺序、检查点和验收。
+2. Observation 执行一个有界 pass，明确可变区域、必须保持的意图、完成条件和暂停边界。
+3. 在实质视觉里程碑处，Observation 返回少量当前截图/裁剪图和最小状态。
+4. Decision 亲自检查证据，返回 `Keep`、`Change`、`Next pass`、更新后的验收条件和继续批准。
+5. Observation 不得跨越未批准里程碑、重定义核心方向或把局部修复扩大为新设计。如果精选证据无法传达给 Decision，应停止开放式 Creative 工作并报告 capability block。
 
-Curated evidence is the narrow exception to the firewall: do not send continuous screenshots, click sequences, full layer state, or complete GUI history. Typical milestones are structure, color/lighting, detail/material, and final review; merge or split them to fit complexity, but do not cross several unreviewed material milestones.
+精选证据是 Firewall 的窄例外：不得发送连续截图、点击序列、完整图层状态或完整 GUI 历史。典型里程碑是结构、色彩/光线、细节/材质和最终检查；可按复杂度合并或拆分，但不能跨越多个未审查的实质里程碑。
 
-## Progressive disclosure
+## 渐进式披露
 
-For large visual inputs use:
-
-```text
-inventory → coarse screening → dedup/group → candidate selection → focused inspection → local evidence
-```
-
-For video or temporal streams use sampling, segment localization, key-frame selection, repeated-frame removal, focused inspection, and a Temporal Digest. Increase density around relevant ranges instead of inspecting every input at maximum detail.
-
-## Session state and Routine safety
-
-Observation normally owns screen coordinates, scroll position, dynamic layout, popups, current page/video position, and other ephemeral localization. Keep this state out of long-lived semantic records. Observation may perform ordinary navigation and no-side-effect actions under the approved Contract; pause before sending, publishing, payment, deletion, permission/security changes, external resource creation, or another hard-to-reverse side effect unless explicitly authorized by the Contract and runtime.
-
-## Digest and verification
-
-Use only informative fields:
+大型视觉输入使用：
 
 ```text
-State: <current state>
-Findings: <facts relevant to the next decision>
-Evidence: <selected image/frame/time references>
-Issue: <risk or anomaly>
-Need: <decision required>
+inventory → 粗筛 → 去重/分组 → 候选选择 → 定向检查 → 局部证据
 ```
 
-Observation owns mechanical visual/temporal checks; Decision owns semantic acceptance and, in Creative mode, visual design acceptance at every material milestone. Do not treat an Observation “done” message as semantic acceptance. Re-evaluate changed final state rather than carrying forward an earlier verdict.
+视频或时间流使用采样、片段定位、关键帧选择、重复帧删除、定向检查和 Temporal Digest。先在相关时间范围提高密度，不要对全部输入一开始就使用最大细节。
 
-## Narrow Coding handoff
+## Session 状态与 Routine 安全
 
-When the next work is code, repository, configuration, or Coding verification, end the visual stage and pass only:
+Observation 通常拥有屏幕坐标、滚动位置、动态布局、popup、当前页面/视频位置和其他临时定位状态。不要把它们写入长期语义记录。在已批准 Contract 下，Observation 可以执行普通导航和无副作用动作；发送、发布、支付、删除、权限/安全变更、创建外部资源或其他不可逆影响前必须暂停，除非 Contract 与 Runtime 都明确授权。
+
+## Digest 与验证
+
+只使用有信息量的字段：
+
+```text
+State: <当前状态>
+Findings: <与下一步决策相关的事实>
+Evidence: <精选图片/帧/时间引用>
+Issue: <风险或异常>
+Need: <需要的决策>
+```
+
+Observation 负责机械视觉/时间检查；Decision 负责语义验收，并在 Creative 模式的每个实质里程碑负责视觉设计验收。不能把 Observation 的“完成”消息当作语义验收。最终状态发生变化时必须重新评估，不能沿用此前结论。
+
+## 窄 Coding handoff
+
+下一步是代码、仓库、配置或 Coding 验证时，结束视觉阶段，只传递：
 
 ```text
 Goal; Required changes; Constraints; Evidence references; Acceptance
 ```
 
-Do not copy full image sets, video frames, OCR, DOM, or observation history. After Coding, reuse the assigned Observation context for visual verification when possible.
+不得复制完整图片集、视频帧、OCR、DOM 或观察历史。Coding 完成后，尽可能复用已分配的 Observation 上下文进行视觉验证。

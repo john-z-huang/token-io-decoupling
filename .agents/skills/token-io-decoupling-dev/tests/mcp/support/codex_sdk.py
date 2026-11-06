@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
-import re
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
+
+if __package__:
+    from . import compiled_instruction_checks
+else:
+    import compiled_instruction_checks
 
 from token_io_decoupling_core.server_tools import (
     TOOLS_SERVER_NAME,
@@ -22,6 +25,20 @@ EFFORT = "medium"
 PROVIDER = "token_io_test"
 _FINAL_INSPECTION = object()
 INVENTORIES = {WORKFLOW_SERVER_NAME: WORKFLOW_TOOLS, TOOLS_SERVER_NAME: TOOLS_SERVER_TOOLS}
+RESOURCE_INSPECTION = """
+import hashlib
+import json
+from importlib.resources import files
+root = files('token_io_decoupling_workflow').joinpath('_resources')
+raw = root.joinpath('instructions.json').read_bytes()
+document = json.loads(raw)
+manifest = json.loads(root.joinpath('manifest.json').read_bytes())
+assert manifest['files']['instructions.json'] == hashlib.sha256(raw).hexdigest()
+assert document['build_id'] == manifest['build_id']
+assert document['schema_version'] == manifest['schema_version'] == 3
+assert document['language'] == manifest['language'] == 'zh_cn'
+print(json.dumps({key: document[key] for key in ('schema_version', 'language', 'build_id')}))
+"""
 
 
 class CodexTestError(RuntimeError):
@@ -29,6 +46,7 @@ class CodexTestError(RuntimeError):
 
 
 def _standard_capability_diagnostics(report):
+    """核对全新安装的未绑定身份与无状态诊断，文案和机器分类均须符合当前契约。"""
     details = report.get("capability_details")
     if (
         report.get("agent_runtime") != "codex_cli"
@@ -53,8 +71,8 @@ def _standard_capability_diagnostics(report):
         or binding.get("reason_code") != "provider_not_configured"
         or server_mode.get("status") != "public_only"
         or server_mode.get("reason_code") != "startup_binding_unverified"
-        or "no caller identity" not in server_mode.get("message", "").lower()
-        or "workflow state store" not in server_mode.get("message", "").lower()
+        or "不建立调用方身份" not in server_mode.get("message", "")
+        or "workflow 状态存储" not in server_mode.get("message", "")
         or "task_plan_tools" in configuration
         or "serena_memory_reads" in configuration
         or "output_materialization" in configuration
@@ -71,49 +89,11 @@ def _standard_capability_diagnostics(report):
 
 
 def validate_compiled_rule_bundle(context, language):
-    """Check bounded delivered instructions without accessing the author tree or SDK."""
-    metadata = context.get("node_metadata")
-    fragments = context.get("fragments")
-    if (
-        context.get("schema_version") != 2
-        or context.get("node_id") != "contract"
-        or context.get("language") != language
-        or context.get("complete") is not True
-        or context.get("status") != "complete"
-        or context.get("remaining_owner_refs") != []
-        or context.get("remaining_owner_refs_truncated") is not False
-        or not isinstance(metadata, dict)
-        or metadata.get("next_checkpoint_ids") != ["mode"]
-        or not metadata.get("owner_path", "").startswith("compiled:")
-        or not isinstance(fragments, list)
-        or not fragments
-    ):
-        raise CodexTestError("unexpected compiled MCP instruction bundle")
-    for field in ("build_id", "context_hash"):
-        if not isinstance(context.get(field), str) or not re.fullmatch(
-            r"[0-9a-f]{64}", context[field]
-        ):
-            raise CodexTestError("invalid compiled MCP instruction identity")
-    for fragment in fragments:
-        text = fragment.get("text")
-        if (
-            not isinstance(text, str)
-            or not text.strip()
-            or not fragment.get("owner_path", "").startswith("compiled:")
-            or fragment.get("text_sha256") != hashlib.sha256(text.encode("utf-8")).hexdigest()
-        ):
-            raise CodexTestError("incomplete or corrupt compiled MCP instruction text")
-    total = sum(len(fragment["text"]) for fragment in fragments)
-    if (
-        context.get("text_characters") != total
-        or context.get("required_text_characters") != total
-        or type(context.get("text_budget")) is not int
-        or total > context["text_budget"]
-        or context.get("required_fragment_ids")
-        != [fragment.get("fragment_id") for fragment in fragments]
-    ):
-        raise CodexTestError("compiled MCP instruction budget/completeness mismatch")
-    return context["build_id"]
+    """把交付校验失败转换为既有 SDK 检验边界错误。"""
+    try:
+        return compiled_instruction_checks.validate_compiled_rule_bundle(context, language)
+    except compiled_instruction_checks.CompiledInstructionError as exc:
+        raise CodexTestError(str(exc)) from exc
 
 
 def launch_settings(executable: Path, directory: Path, bin_dir: Path):
@@ -181,6 +161,8 @@ def _sdk():
 
 
 class FixedCodexSession:
+    """只在最终安装检验阶段使用的 SDK 会话，限制配置、工具清单与零模型轮次。"""
+
     def __init__(self, client, types, directory, base_url, bin_dir=None):
         self._client = client
         self._types = types
@@ -256,26 +238,20 @@ class FixedCodexSession:
                 f"import_error={import_error})"
             )
 
-    def check_mcp(self):
-        self.verify_configuration()
-        if self._bin_dir is None:
-            raise CodexTestError("newly installed MCP bin directory is required")
-        for name in INVENTORIES:
-            self._check_version(self._bin_dir / name)
-        self.start_thread()
+    def _check_inventory(self):
+        """逐服务核对实际 SDK 发现结果，不能只凭版本号推断工具已经可用。"""
         for name, expected in INVENTORIES.items():
             status = self._client.request(
                 "mcpServerStatus/list",
-                {
-                    "threadId": self._thread_id,
-                    "serverName": name,
-                    "detail": "toolsAndAuthOnly",
-                },
+                {"threadId": self._thread_id, "serverName": name, "detail": "toolsAndAuthOnly"},
                 response_model=self._types[1],
             )
             servers = [server for server in status.data if server.name == name]
             if len(servers) != 1 or set(servers[0].tools) != expected:
                 raise CodexTestError(f"installed MCP inventory mismatch: {name}")
+
+    def _capability_report(self):
+        """只调用固定的无副作用能力诊断，不暴露任意工具调用通道。"""
         result = self._client.request(
             "mcpServer/tool/call",
             {
@@ -287,41 +263,69 @@ class FixedCodexSession:
             response_model=self._types[2],
         )
         if result.is_error:
-            raise CodexTestError("MCP capabilities call failed")
-        report = json.loads(result.content[0]["text"])
-        diagnostics = _standard_capability_diagnostics(report)
-        instruction_build_id = None
-        for language in ("en", "zh_cn"):
-            rules = self._client.request(
-                "mcpServer/tool/call",
-                {
-                    "threadId": self._thread_id,
-                    "server": WORKFLOW_SERVER_NAME,
-                    "tool": "rules_get_context",
-                    "arguments": {
-                        "payload": {
-                            "node_id": "contract",
-                            "language": language,
-                            "context_version": 2,
-                        }
-                    },
+            raise CodexTestError("packaged MCP capabilities inspection failed")
+        return json.loads(result.content[0]["text"])
+
+    def _contract_bundle(self):
+        """通过实际安装的 MCP 读取中文 Contract，保持外部 context_version 为2。"""
+        result = self._client.request(
+            "mcpServer/tool/call",
+            {
+                "threadId": self._thread_id,
+                "server": WORKFLOW_SERVER_NAME,
+                "tool": "rules_get_context",
+                "arguments": {
+                    "payload": {"node_id": "contract", "language": "zh_cn", "context_version": 2}
                 },
-                response_model=self._types[2],
-            )
-            if rules.is_error:
-                raise CodexTestError("packaged MCP rule lookup failed")
-            context = json.loads(rules.content[0]["text"])
-            build_id = validate_compiled_rule_bundle(context, language)
-            if instruction_build_id is not None and build_id != instruction_build_id:
-                raise CodexTestError("mixed-build bilingual MCP instruction resources")
-            instruction_build_id = build_id
+            },
+            response_model=self._types[2],
+        )
+        if result.is_error:
+            raise CodexTestError("packaged MCP Contract inspection failed")
+        return json.loads(result.content[0]["text"])
+
+    def _check_resource_identity(self, build_id):
+        """核对实际安装资源的哈希、schema 3 与同批 build，区分外部 bundle 2。"""
+        if self._bin_dir is None:
+            raise CodexTestError("newly installed MCP bin directory is required")
+        python = (self._bin_dir / WORKFLOW_SERVER_NAME).resolve().parent / "python"
+        command = self._client.request(
+            "command/exec",
+            {
+                "command": [str(python), "-c", RESOURCE_INSPECTION],
+                "cwd": str(self._directory),
+                "sandboxPolicy": {"type": "readOnly"},
+                "timeoutMs": 10000,
+            },
+            response_model=self._types[3],
+        )
+        if command.exit_code != 0:
+            raise CodexTestError("installed instruction resource inspection failed")
+        identity = json.loads(command.stdout)
+        if identity != {"schema_version": 3, "language": "zh_cn", "build_id": build_id}:
+            raise CodexTestError("installed instruction resource identity mismatch")
+
+    def check_mcp(self):
+        """先验证固定配置与发现，再核对交付正文和安装资源；全过程不启动模型轮次。"""
+        self.verify_configuration()
+        if self._bin_dir is None:
+            raise CodexTestError("newly installed MCP bin directory is required")
+        for name in INVENTORIES:
+            self._check_version(self._bin_dir / name)
+        self.start_thread()
+        self._check_inventory()
+        diagnostics = _standard_capability_diagnostics(self._capability_report())
+        context = self._contract_bundle()
+        instruction_build_id = validate_compiled_rule_bundle(context, "zh_cn")
+        self._check_resource_identity(instruction_build_id)
         return {
             "model": MODEL,
             "effort": EFFORT,
             "mcp": "passed",
             "inventories": {name: len(tools) for name, tools in INVENTORIES.items()},
             "model_turns": 0,
-            "instruction_schema_version": 2,
+            "context_schema_version": 2,
+            "resource_schema_version": 3,
             "instruction_build_id": instruction_build_id,
             **diagnostics,
         }

@@ -59,11 +59,12 @@ def _diagnosis(*, blocker: bool = False) -> dict[str, Any]:
     }
 
 
-@pytest.mark.parametrize("language", ["en", "zh_cn"])
+@pytest.mark.parametrize("language", ["zh_cn"])
 @pytest.mark.parametrize("blocker", [False, True])
 def test_diagnosis_is_reviewable_without_future_repair_effects(
     language: str, blocker: bool
 ) -> None:
+    """有无 blocker 都不应要求尚未发生的修复效果；诊断就绪不授予执行权限。"""
     result = evaluate_checkpoint(
         _submission(_diagnosis(blocker=blocker)),
         rules=RuleLoader(),
@@ -71,7 +72,7 @@ def test_diagnosis_is_reviewable_without_future_repair_effects(
     )
     assert result.status == "ready_for_agent_review"
     assert result.authority == "structural_check_only"
-    assert result.next_checkpoint_ids == ["repair_scope"]
+    assert result.next_checkpoint_ids == []
     assert result.missing_evidence == []
     assert "caller supplied facts and evidence are not authenticated" in result.limitations
 
@@ -80,6 +81,7 @@ def test_diagnosis_is_reviewable_without_future_repair_effects(
     "key", ["classified failure", "affected repair paths", "repair diagnosis or blocker"]
 )
 def test_diagnosis_reports_each_missing_fact(key: str) -> None:
+    """逐项删除当前诊断必需事实，缺口必须准确指回被删事实。"""
     payload = _diagnosis()
     payload["facts"] = [fact for fact in payload["facts"] if fact["fact_key"] != key]
     result = evaluate_checkpoint(_submission(payload), rules=RuleLoader())
@@ -89,6 +91,7 @@ def test_diagnosis_reports_each_missing_fact(key: str) -> None:
 
 @pytest.mark.parametrize("kind", ["failure evidence", "repair diagnosis or blocker"])
 def test_future_repair_evidence_cannot_replace_diagnostic_evidence(kind: str) -> None:
+    """未来修复结果不能替代当次诊断所需证据，避免循环完成条件。"""
     payload = _diagnosis()
     payload["evidence_refs"] = [ref for ref in payload["evidence_refs"] if ref["kind"] != kind]
     payload["evidence_refs"] += [
@@ -101,6 +104,7 @@ def test_future_repair_evidence_cannot_replace_diagnostic_evidence(kind: str) ->
 
 
 def test_diagnostic_readiness_does_not_satisfy_scope_authorization() -> None:
+    """诊断材料齐全仍不能满足独立的范围授权检查。"""
     payload = {
         "node_id": "repair_scope",
         "facts": [
@@ -113,11 +117,12 @@ def test_diagnostic_readiness_does_not_satisfy_scope_authorization() -> None:
     assert result.status == "incomplete_for_agent_review"
     assert result.missing_facts == ["authorized repair scope"]
     assert result.missing_evidence == ["repair authorization"]
-    assert result.next_checkpoint_ids == ["repair_execution"]
+    assert result.next_checkpoint_ids == []
     assert result.authority == "structural_check_only"
 
 
 def test_repair_handoff_queues_verification_without_requiring_its_future_result() -> None:
+    """修复交接只需当前结果和待验证范围，不能要求未来验证结果先存在。"""
     payload = {
         "node_id": "repair_handoff",
         "facts": [
@@ -131,19 +136,15 @@ def test_repair_handoff_queues_verification_without_requiring_its_future_result(
     }
     result = evaluate_checkpoint(_submission(payload), rules=RuleLoader())
     assert result.status == "ready_for_agent_review"
-    assert result.next_checkpoint_ids == ["verification"]
+    assert result.next_checkpoint_ids == []
     assert result.authority == "structural_check_only"
 
 
-def test_repair_phase_successors_are_exact_and_old_hash_is_rejected() -> None:
+def test_repair_lookups_have_no_successor_and_old_hash_is_rejected() -> None:
+    """修复查询只返回当前政策，后继为空；原有指纹失效时不能继续使用。"""
     rules = RuleLoader()
-    for node, successor in [
-        ("repair", "repair_scope"),
-        ("repair_scope", "repair_execution"),
-        ("repair_execution", "repair_handoff"),
-        ("repair_handoff", "verification"),
-    ]:
-        assert rules.load_context(node).next_checkpoint_ids == [successor]
+    for node in ("repair", "repair_scope", "repair_execution", "repair_handoff"):
+        assert rules.load_context(node).next_checkpoint_ids == []
     result = evaluate_checkpoint(
         _submission(_diagnosis()), rules=rules, expected_rule_hash="e" * 64
     )
@@ -152,6 +153,7 @@ def test_repair_phase_successors_are_exact_and_old_hash_is_rejected() -> None:
 
 @pytest.mark.parametrize("target", ["verification", "nonexistent_checkpoint"])
 def test_supported_contract_rejects_repair_successor_drift(target: str) -> None:
+    """即使资源重算 Hash，增加修复后继边仍违反无固定推进链的消费者契约。"""
     root = next(
         path
         for path in Path(__file__).resolve().parents

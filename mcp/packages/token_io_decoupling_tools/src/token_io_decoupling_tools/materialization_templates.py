@@ -22,14 +22,13 @@ TIMEOUT_SECONDS = 30.0
 MAX_INPUT_CHARS = 48_000
 MAX_OUTPUT_TOKENS = 4_000
 _SYSTEM_INSTRUCTIONS = (
-    "Order only the supplied fact IDs within their existing heading. "
-    "Return every supplied fact ID exactly once, grouped by file_index. "
-    "Do not add, omit, rename, or explain any ID or produce source text."
+    "仅在原有标题内排列已提供的事实 ID，按 file_index 分组，每个 ID 准确返回一次。"
+    "不得增加、遗漏、重命名、解释 ID，也不生成源码文本。"
 )
 
 
 class MaterializationTemplateError(Exception):
-    """Sanitized rendering or provider failure with a stable reason code."""
+    """以稳定原因码报告渲染或供应商故障，不暴露原始敏感消息。"""
 
     def __init__(self, reason: str) -> None:
         super().__init__(reason)
@@ -37,6 +36,8 @@ class MaterializationTemplateError(Exception):
 
 
 class MaterializationTemplateRenderer:
+    """按受限模板渲染候选内容；模型只排序已提供事实，不生成文件正文。"""
+
     def render_all(
         self,
         templates: list[tuple[int, MaterializationTemplate]],
@@ -44,6 +45,7 @@ class MaterializationTemplateRenderer:
         grant: OutputMaterializationGrant,
         outbound_data_permitted: bool,
     ) -> dict[int, str]:
+        """渲染完整候选批次并复核大小，不在此方法内写入项目文件。"""
         response_templates = [
             (index, template)
             for index, template in templates

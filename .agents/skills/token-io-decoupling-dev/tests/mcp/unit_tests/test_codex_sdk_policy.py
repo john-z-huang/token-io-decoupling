@@ -3,20 +3,16 @@
 from __future__ import annotations
 
 import ast
-import importlib.util
 import tomllib
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from support import codex_sdk as adapter
 
 WORKSPACE = Path(__file__).resolve().parents[6] / "mcp"
 MCP_TESTS = Path(__file__).resolve().parents[1]
 ADAPTER = MCP_TESTS / "support/codex_sdk.py"
-spec = importlib.util.spec_from_file_location("sdk_test_adapter", ADAPTER)
-assert spec and spec.loader
-adapter = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(adapter)
 
 
 @pytest.fixture
@@ -190,6 +186,8 @@ def test_raw_sdk_failures_do_not_expose_credentials(settings, monkeypatch):
 
 
 def test_version_failure_reports_only_bounded_classifications(settings, monkeypatch):
+    """版本子进程失败只报告固定分类，原始诊断中的凭据或端点不能泄漏。"""
+
     class FailedVersionClient:
         def request(self, *_args, **_kwargs):
             return SimpleNamespace(
@@ -205,11 +203,15 @@ def test_version_failure_reports_only_bounded_classifications(settings, monkeypa
     with pytest.raises(adapter.CodexTestError) as error:
         session.check_mcp()
     message = str(error.value)
-    assert "exit=126" in message and "permission_denied=True" in message
-    assert "synthetic-test-key" not in message and "synthetic.invalid" not in message
+    assert "exit=126" in message
+    assert "permission_denied=True" in message
+    assert "synthetic-test-key" not in message
+    assert "synthetic.invalid" not in message
 
 
 def _standard_capability_report():
+    """提供当前中文诊断样例，供版本和保护边界的逐项损坏测试使用。"""
+
     def detail(status, reason, message="configured diagnostic"):
         return {
             "status": status,
@@ -234,7 +236,7 @@ def _standard_capability_report():
                 "server_mode": detail(
                     "public_only",
                     "startup_binding_unverified",
-                    "The standard executable has no caller identity or workflow state store.",
+                    "此处不建立调用方身份或 workflow 状态存储。",
                 ),
             },
             "configuration": {},
@@ -340,16 +342,18 @@ def test_final_inspection_cannot_start_model_turns_or_arbitrary_commands():
 
 
 def test_compiled_rule_validation_requires_no_sdk_or_author_tree():
+    """正文校验只消费外部bundle，不依赖 SDK 启动或作者仓库。"""
     from token_io_decoupling_workflow.rules import RuleLoader
 
     context = RuleLoader().load_context_bundle("contract").model_dump(mode="json")
-    assert adapter.validate_compiled_rule_bundle(context, "en") == context["build_id"]
+    assert adapter.validate_compiled_rule_bundle(context, "zh_cn") == context["build_id"]
 
 
 @pytest.mark.parametrize(
     "mutate",
     [
         lambda context: context.update(schema_version=1),
+        lambda context: context.update(language="en"),
         lambda context: context.update(complete=False),
         lambda context: context.update(remaining_owner_refs=[{"path": "original-owner.md"}]),
         lambda context: context.update(build_id="unknown-build"),
@@ -359,9 +363,10 @@ def test_compiled_rule_validation_requires_no_sdk_or_author_tree():
     ],
 )
 def test_compiled_rule_validation_rejects_incomplete_or_corrupt_results(mutate):
+    """分别破坏版本、语言、身份、正文或预算，均不得被验收为完整指令。"""
     from token_io_decoupling_workflow.rules import RuleLoader
 
     context = RuleLoader().load_context_bundle("contract").model_dump(mode="json")
     mutate(context)
     with pytest.raises(adapter.CodexTestError):
-        adapter.validate_compiled_rule_bundle(context, "en")
+        adapter.validate_compiled_rule_bundle(context, "zh_cn")

@@ -11,8 +11,9 @@ from token_io_decoupling_workflow.rules import RuleLoader, RuleLoadError
 
 
 def test_default_bundle_and_internal_checkpoint_use_one_instruction_hash() -> None:
+    """默认 bundle 与内部节点需共享正文、批次及指纹，避免调用方拿到不同的校验依据。"""
     loader = RuleLoader()
-    for language in ("en", "zh_cn"):
+    for language in (None, "zh_cn"):
         bundle = loader.load_context_bundle("contract", language=language, max_chars=60_000)
         context = loader.load_context("contract", language=language)
         assert bundle.schema_version == 2
@@ -28,8 +29,9 @@ def test_default_bundle_and_internal_checkpoint_use_one_instruction_hash() -> No
 def test_budget_failure_returns_no_executable_partial_result(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """容量不足只能返回缺口，不能交付可被误执行的半份节点指令。"""
     staged = CompiledResources(tmp_path, monkeypatch)
-    staged.set_text("nodes", "contract", "en", ("Complete action and gates. " * 40).strip())
+    staged.set_text("nodes", "contract", ("完整动作与边界。" * 100).strip())
     loader = RuleLoader()
     small = loader.load_context_bundle("contract", max_chars=256)
     sufficient = loader.load_context_bundle("contract", max_chars=60_000)
@@ -46,6 +48,7 @@ def test_budget_failure_returns_no_executable_partial_result(
 def test_optional_selection_returns_complete_units_with_distinct_identity(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """显式选择单元有独立身份；重复或不存在的 ID 必须拒绝，不能隐式补默认节点。"""
     staged = CompiledResources(tmp_path, monkeypatch)
     fragment_id = next(iter(staged.document["fragments"]))
     loader = RuleLoader()
@@ -55,15 +58,16 @@ def test_optional_selection_returns_complete_units_with_distinct_identity(
     assert default.required_fragment_ids == ["contract.compiled"]
     assert selected.required_fragment_ids == [fragment_id]
     assert len(selected.fragments) == 1
-    assert selected.fragments[0].text == staged.document["fragments"][fragment_id]["en"]["text"]
+    assert selected.fragments[0].text == staged.document["fragments"][fragment_id]["text"]
     assert default.context_hash != selected.context_hash
     with pytest.raises(RuleLoadError, match="duplicates"):
         loader.load_context_bundle("contract", fragment_ids=[fragment_id, fragment_id])
-    with pytest.raises(RuleLoadError, match="missing compiled"):
+    with pytest.raises(RuleLoadError, match="unknown compiled fragment"):
         loader.load_context_bundle("contract", fragment_ids=["does.not.exist"])
 
 
 def test_payload_defaults_to_compiled_schema_and_rejects_retired_version() -> None:
+    """公开查询保持版本 2，默认值可用，而退役或非整数版本不能被宽松转换。"""
     payload = RuleContextPayload.model_validate_json('{"node_id":"contract"}')
     assert payload.context_version == 2
     assert (

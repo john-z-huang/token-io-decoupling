@@ -121,6 +121,7 @@ def test_five_distributions_have_disjoint_product_payloads(artifacts):
 
 
 def test_skill_and_core_are_one_complete_compiled_batch(artifacts):
+    """wheel中的资源与Skill必须同build、同文件哈希及schema3，不能混入另一批导航文档。"""
     with zipfile.ZipFile(_wheel(artifacts, "token_io_decoupling_workflow")) as core:
         prefix = "token_io_decoupling_workflow/_resources/"
         resources = {
@@ -130,16 +131,18 @@ def test_skill_and_core_are_one_complete_compiled_batch(artifacts):
         payload = core.read(prefix + "instructions.json")
         manifest = json.loads(core.read(prefix + "manifest.json"))
         instructions = json.loads(payload)
-        assert manifest["schema_version"] == instructions["schema_version"] == 2
-        assert manifest["build_id"] == instructions["build_id"]
-        assert manifest["files"] == {"instructions.json": hashlib.sha256(payload).hexdigest()}
+    assert manifest["schema_version"] == instructions["schema_version"] == 3
+    assert manifest["language"] == instructions["language"] == "zh_cn"
+    assert manifest["build_id"] == instructions["build_id"]
+    assert manifest["files"] == {"instructions.json": hashlib.sha256(payload).hexdigest()}
     with zipfile.ZipFile(_wheel(artifacts, "token_io_decoupling")) as root:
         bundle = root.read("token_io_decoupling/_resources/skill_bundle.zip")
     skill_manifest, contents = validate_skill_bundle(
         bundle, expected_build_id=manifest["build_id"], expected_files=instructions["skill_files"]
     )
     _assert_product_names(contents)
-    assert skill_manifest["schema_version"] == 2
+    assert skill_manifest["schema_version"] == 3
+    assert skill_manifest["language"] == "zh_cn"
     assert (
         bundle == (WORKSPACE / "src/token_io_decoupling/_resources/skill_bundle.zip").read_bytes()
     )

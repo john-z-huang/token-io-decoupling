@@ -17,8 +17,8 @@ from token_io_decoupling_workflow import (
     decision_context,
     decisions,
     delegation_decisions,
-    workflow_routing,
 )
+from token_io_decoupling_workflow.events import advice
 from token_io_decoupling_workflow.openai_client import make_openai_client
 
 _FACTORIES = (
@@ -35,7 +35,7 @@ _FACTORIES = (
         materialization_templates.TIMEOUT_SECONDS,
         False,
     ),
-    (workflow_routing.WorkflowRouter, workflow_routing.DECISIONS_TIMEOUT_SECONDS, True),
+    (advice.EventAdvisor, advice.DECISIONS_TIMEOUT_SECONDS, True),
 )
 _PROXY_ENV_NAMES = (
     "HTTP_PROXY",

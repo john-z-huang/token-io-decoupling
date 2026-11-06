@@ -216,7 +216,10 @@ def path_layer(path: PurePosixPath) -> str:
         return "checkpoint"
     if parts[:2] == ("workflows", "exist-workflow"):
         return "exist-workflow"
-    if str(path) in {"instruction-compiler/sources/skill/workflows/coding.md", "instruction-compiler/sources/skill/workflows/coding_zh_cn.md"}:
+    if str(path) in {
+        "instruction-compiler/sources/skill/workflows/coding.md",
+        "instruction-compiler/sources/skill/workflows/coding_zh_cn.md",
+    }:
         return "coding-selector"
     return "entry"
 
@@ -258,7 +261,9 @@ def allowed_link(
     if source in {"exist-workflow", "layer-03"}:
         return same_layer_navigation or target in {"shared-protocols", "layer-01", "layer-02"}
     if source == "layer-04-route":
-        module_root = PurePosixPath("instruction-compiler/sources/skill/references/coding/layer-04-workflows/modules")
+        module_root = PurePosixPath(
+            "instruction-compiler/sources/skill/references/coding/layer-04-workflows/modules"
+        )
         canonical_modules = {
             module_root / f"{module}{suffix}.md" for module in _MODULES for suffix in ("", "_zh_cn")
         }
@@ -273,7 +278,9 @@ def allowed_link(
             return True
         if target != "layer-04-module" or source_path is None or target_path is None:
             return False
-        route_root = PurePosixPath("instruction-compiler/sources/skill/references/coding/layer-04-workflows")
+        route_root = PurePosixPath(
+            "instruction-compiler/sources/skill/references/coding/layer-04-workflows"
+        )
         route_name = source_path.stem.removesuffix("_zh_cn")
         canonical_route = route_root / f"{route_name}.md"
         if source_path not in {canonical_route, route_root / f"{route_name}_zh_cn.md"}:
@@ -435,50 +442,94 @@ def document_link_findings(
     return findings
 
 
-def document_link_issues(
-    documents: Mapping[str, str], *, target_present: Callable[[str], bool] | None = None
+def _resolve_document_link(
+    source: PurePosixPath,
+    link: tuple[int, str, str],
+    is_present: Callable[[str], bool],
+) -> tuple[PurePosixPath | None, list[str]]:
+    """按仓库边界解析本地链接；不存在、符号链接或越界目标都保留为可报告的问题。"""
+    target_text = link[2].split("#", 1)[0].split("?", 1)[0]
+    if (
+        not target_text
+        or "://" in target_text
+        or target_text.startswith(("mailto:", "{{"))
+        or not target_text.endswith(".md")
+    ):
+        return None, []
+    target = normalize_markdown_target(source, link[2])
+    if target == "":
+        return None, [f"target escapes repository: {source}:{link[0]} -> {target_text}"]
+    assert target is not None
+    if not is_present(target):
+        return None, [f"missing local target: {source}:{link[0]} -> {target}"]
+    return PurePosixPath(target), []
+
+
+def _document_dependency_issues(
+    source: PurePosixPath,
+    link: tuple[int, str, str],
+    target: PurePosixPath,
+    additional_allowed_link: Callable[[str, str], bool] | None,
 ) -> list[str]:
-    """CLI-compatible messages for the full repository Markdown link validator."""
+    """在目标已经安全解析后检查语言与分层关系，只允许调用方明确审核的额外边。"""
+    issues = []
+    line_number, label = link[0], link[1]
+    is_mirror = target == counterpart(source)
+    if path_language(target) != path_language(source) and not (
+        is_language_switch(label) and is_mirror
+    ):
+        issues.append(f"cross-language dependency: {source}:{line_number} -> {target}")
+    source_layer, target_layer = path_layer(source), path_layer(target)
+    is_navigation = (
+        is_mirror
+        or (target == source and is_language_switch(label))
+        or is_navigation_document(source)
+    )
+    permitted_extension = additional_allowed_link is not None and additional_allowed_link(
+        source.as_posix(), target.as_posix()
+    )
+    if not permitted_extension and not allowed_link(
+        source_layer, target_layer, is_navigation, source, target
+    ):
+        issues.append(
+            f"layer violation: {source}:{line_number} ({source_layer}) -> {target} ({target_layer})"
+        )
+    return issues
+
+
+def _single_document_link_issues(
+    path: str,
+    content: str,
+    is_present: Callable[[str], bool],
+    additional_allowed_link: Callable[[str, str], bool] | None,
+) -> list[str]:
+    """逐条检查一篇维护中文档的链接，将定位信息与依赖错误一起返回。"""
+    source = PurePosixPath(path)
+    issues = []
+    for link in links_in_markdown(content):
+        target, resolution_issues = _resolve_document_link(source, link, is_present)
+        issues.extend(resolution_issues)
+        if target is not None:
+            issues.extend(
+                _document_dependency_issues(source, link, target, additional_allowed_link)
+            )
+    return issues
+
+
+def document_link_issues(
+    documents: Mapping[str, str],
+    *,
+    target_present: Callable[[str], bool] | None = None,
+    additional_allowed_link: Callable[[str, str], bool] | None = None,
+) -> list[str]:
+    """校验链接安全与分层；调用方只能额外指定精确的已审核依赖边。"""
     present_paths = set(documents)
     is_present = target_present or present_paths.__contains__
     issues: list[str] = []
     for path, content in sorted(documents.items()):
-        source = PurePosixPath(path)
-        source_layer = path_layer(source)
-        source_language = path_language(source)
-        for line_number, label, raw_target in links_in_markdown(content):
-            target_text = raw_target.split("#", 1)[0].split("?", 1)[0]
-            if (
-                not target_text
-                or "://" in target_text
-                or target_text.startswith(("mailto:", "{{"))
-                or not target_text.endswith(".md")
-            ):
-                continue
-            target = normalize_markdown_target(source, raw_target)
-            if target == "":
-                issues.append(f"target escapes repository: {path}:{line_number} -> {target_text}")
-                continue
-            assert target is not None
-            if not is_present(target):
-                issues.append(f"missing local target: {path}:{line_number} -> {target}")
-                continue
-            target_path = PurePosixPath(target)
-            target_language = path_language(target_path)
-            is_mirror = target_path == counterpart(source)
-            if target_language != source_language and not (is_language_switch(label) and is_mirror):
-                issues.append(f"cross-language dependency: {path}:{line_number} -> {target}")
-            target_layer = path_layer(target_path)
-            is_navigation = (
-                is_mirror
-                or (target_path == source and is_language_switch(label))
-                or is_navigation_document(source)
-            )
-            if not allowed_link(source_layer, target_layer, is_navigation, source, target_path):
-                issues.append(
-                    f"layer violation: {path}:{line_number} ({source_layer}) -> "
-                    f"{target} ({target_layer})"
-                )
+        issues.extend(
+            _single_document_link_issues(path, content, is_present, additional_allowed_link)
+        )
     return issues
 
 

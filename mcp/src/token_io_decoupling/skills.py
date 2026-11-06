@@ -3,98 +3,25 @@
 from __future__ import annotations
 
 import hashlib
-import io
 import json
 import os
 import re
-import stat
+import shutil
 import tempfile
-import zipfile
 from importlib.metadata import version
 from importlib.resources import files
-from pathlib import Path, PurePosixPath, PureWindowsPath
+from pathlib import Path, PurePosixPath
+
+# 保留既有公开导入入口；实际归档校验由同一业务包的独立模块负责。
+from token_io_decoupling.skill_bundle import SkillManifest, validate_skill_bundle
 
 DEFAULT_NAME = "token-io-decoupling-skill"
 LEGACY_NAME = "token-io-decoupling"
 MARKER = ".token-io-skill.json"
 
 
-def validate_skill_bundle(
-    payload: bytes,
-    *,
-    expected_build_id: str | None = None,
-    expected_files: dict[str, str] | None = None,
-) -> tuple[dict, dict[str, bytes]]:
-    """Validate the complete compiled archive before installation or packaging writes."""
-    forbidden = {
-        "_project",
-        "rule_sources",
-        "instruction-compiler",
-        "tests",
-        "benchmarks",
-        "scripts",
-        "sources",
-    }
-    try:
-        contents = {}
-        with zipfile.ZipFile(io.BytesIO(payload)) as archive:
-            for entry in archive.infolist():
-                name = entry.filename
-                path = PurePosixPath(name)
-                if (
-                    not name
-                    or "\\" in name
-                    or ":" in name
-                    or "\x00" in name
-                    or path.is_absolute()
-                    or PureWindowsPath(name).drive
-                    or path.as_posix() != name
-                    or any(part.startswith(".") or part in forbidden for part in path.parts)
-                    or entry.is_dir()
-                    or stat.S_ISLNK(entry.external_attr >> 16)
-                    or name in contents
-                    or path.suffix not in {".md", ".yaml", ".json"}
-                ):
-                    raise ValueError("unsafe or non-product packaged Skill entry")
-                contents[name] = archive.read(entry)
-        manifest = json.loads(contents.get("manifest.json", b""))
-        if not isinstance(manifest, dict):
-            raise ValueError("compiled Skill manifest must be an object")
-        build_id = manifest.get("build_id")
-        declared = manifest.get("files")
-        if (
-            manifest.get("schema_version") != 2
-            or not isinstance(build_id, str)
-            or not build_id.strip()
-            or not isinstance(declared, dict)
-            or set(declared) != set(contents) - {"manifest.json"}
-        ):
-            raise ValueError("incompatible or incomplete compiled Skill manifest")
-        if expected_build_id is not None and build_id != expected_build_id:
-            raise ValueError("compiled Skill and core resources belong to different batches")
-        for name, digest in declared.items():
-            if not isinstance(digest, str) or digest != hashlib.sha256(contents[name]).hexdigest():
-                raise ValueError("compiled Skill integrity check failed")
-        if expected_files is not None and declared != expected_files:
-            raise ValueError("compiled Skill files do not match the core instruction map")
-        for name in ("SKILL.md", "SKILL_zh_cn.md", "agents/openai.yaml"):
-            if not contents.get(name, b"").strip():
-                raise ValueError("required compiled Skill content is missing or empty")
-        return manifest, contents
-    except (
-        OSError,
-        UnicodeError,
-        KeyError,
-        TypeError,
-        RuntimeError,
-        NotImplementedError,
-        zipfile.BadZipFile,
-    ) as exc:
-        raise ValueError("compiled Skill bundle is malformed or unavailable") from exc
-
-
 def _compiled_skill_identity() -> tuple[str, dict[str, str]]:
-    """Read and verify the installed core batch without consulting author sources."""
+    """从已安装 workflow 读取同批身份，不把旧 Skill 快照作为执行规则。"""
     try:
         resources = files("token_io_decoupling_workflow").joinpath("_resources")
         manifest = json.loads(resources.joinpath("manifest.json").read_bytes())
@@ -104,8 +31,12 @@ def _compiled_skill_identity() -> tuple[str, dict[str, str]]:
             raise ValueError("compiled core resources must be objects")
         build_id = manifest.get("build_id")
         if (
-            manifest.get("schema_version") != 2
-            or instructions.get("schema_version") != 2
+            type(manifest.get("schema_version")) is not int
+            or manifest["schema_version"] != 3
+            or type(instructions.get("schema_version")) is not int
+            or instructions["schema_version"] != 3
+            or manifest.get("language") != "zh_cn"
+            or instructions.get("language") != "zh_cn"
             or not isinstance(build_id, str)
             or not build_id.strip()
             or instructions.get("build_id") != build_id
@@ -141,117 +72,151 @@ def _fingerprints(root: Path) -> dict[str, str]:
     return result
 
 
-def install_skill(*, name: str = DEFAULT_NAME, update: bool = False) -> Path:
-    """Publish only within the user's skills root; never accept an arbitrary destination."""
+def _skill_destination(name: str) -> Path:
+    """限定固定用户根并保护旧 checkout，先拒绝符号链接和相互覆盖。"""
     if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", name) or name == LEGACY_NAME:
         raise ValueError("choose a new lower-case Skill name; the legacy name is protected")
     home = Path.home()
     root = home / ".agents/skills"
-    legacy = root / LEGACY_NAME
-    target = root / name
-    # Reject redirected roots too: do not write through a skills-root symlink into a checkout.
+    target, legacy = root / name, root / LEGACY_NAME
     for path in (home / ".agents", root, target):
         if path.is_symlink():
             raise ValueError("symbolic links in the installation path are refused")
-    resolved = target.resolve()
-    old = legacy.resolve()
+    resolved, old = target.resolve(), legacy.resolve()
     if resolved == old or resolved.is_relative_to(old) or old.is_relative_to(resolved):
         raise ValueError("destination overlaps the protected legacy project")
-    if target.exists():
-        if not update:
-            raise ValueError(
-                "destination already exists; use skills update for a managed installation"
+    return target
+
+
+def _managed_metadata(target: Path, name: str, update: bool) -> dict | None:
+    """只在归属及全部旧字节仍匹配时允许更新，不忽略用户本地修改。"""
+    if not target.exists():
+        if update:
+            raise ValueError("no installed Skill to update; use skills install first")
+        return None
+    if not update:
+        raise ValueError("destination already exists; use skills update for a managed installation")
+    if not target.is_dir() or (target / ".git").exists():
+        raise ValueError("refusing to update a repository or unknown destination")
+    marker = target / MARKER
+    if marker.is_symlink() or not marker.is_file():
+        raise ValueError("destination is not a managed installation")
+    metadata = json.loads(marker.read_text(encoding="utf-8"))
+    if (
+        not isinstance(metadata, dict)
+        or metadata.get("format") != 1
+        or metadata.get("name") != name
+        or metadata.get("files") != _fingerprints(target)
+    ):
+        raise ValueError("installation has local changes or invalid ownership metadata")
+    return metadata
+
+
+def _write_installed_metadata(staged: Path, name: str, manifest: SkillManifest) -> None:
+    """安装名称变化只重算本地字节指纹，批准的政策批次保持不变。"""
+    installed_manifest = {
+        **manifest,
+        "files": {
+            key: digest for key, digest in _fingerprints(staged).items() if key != "manifest.json"
+        },
+    }
+    (staged / "manifest.json").write_text(
+        json.dumps(installed_manifest, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    metadata = {
+        "format": 1,
+        "name": name,
+        "version": version("token-io-decoupling"),
+        "build_id": manifest["build_id"],
+        "files": _fingerprints(staged),
+    }
+    (staged / MARKER).write_text(json.dumps(metadata, sort_keys=True), encoding="utf-8")
+
+
+def _stage_skill(
+    staged: Path, name: str, manifest: SkillManifest, contents: dict[str, bytes]
+) -> None:
+    """准备完整新快照并重算安装元数据，此阶段不替换现有受管目标。"""
+    staged.mkdir()
+    for entry_name, data in contents.items():
+        path = PurePosixPath(entry_name)
+        destination = staged / path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if path.name == "SKILL.md" and len(path.parts) == 1:
+            data = re.sub(
+                rb"(?m)^name: token-io-decoupling(?:-skill)?$",
+                b"name: " + name.encode(),
+                data,
             )
-        if not target.is_dir() or (target / ".git").exists():
-            raise ValueError("refusing to update a repository or unknown destination")
-        marker = target / MARKER
-        if marker.is_symlink() or not marker.is_file():
-            raise ValueError("destination is not a managed installation")
-        metadata = json.loads(marker.read_text())
-        if (
-            not isinstance(metadata, dict)
-            or metadata.get("format") != 1
-            or metadata.get("name") != name
-            or metadata.get("files") != _fingerprints(target)
-        ):
-            raise ValueError("installation has local changes or invalid ownership metadata")
-    elif update:
-        raise ValueError("no installed Skill to update; use skills install first")
+        destination.write_bytes(data)
+    _write_installed_metadata(staged, name, manifest)
+
+
+def _replace_skill_snapshot(staged: Path, target: Path) -> None:
+    # 旧副本不放入自动清理的 staging 目录，双重故障时仍可由操作者恢复。
+    """发布失败先回滚；双重失败时保留自动清理范围外的完整旧副本。"""
+    backup_root = Path(tempfile.mkdtemp(prefix=f".{target.name}-backup-", dir=target.parent))
+    backup = backup_root / "previous"
+    try:
+        target.rename(backup)
+    except OSError:
+        backup_root.rmdir()
+        raise
+    try:
+        staged.rename(target)
+    except OSError:
+        try:
+            backup.rename(target)
+        except OSError as exc:
+            raise OSError(
+                f"Skill update and rollback failed; previous snapshot preserved at {backup}"
+            ) from exc
+        backup_root.rmdir()
+        raise
+    shutil.rmtree(backup_root)
+
+
+def _publish_skill(staged: Path, target: Path, metadata: dict | None) -> None:
+    """在锁内再次核对目标归属，再进入可恢复的快照替换事务。"""
+    if target.is_symlink():
+        raise ValueError("destination changed during installation")
+    if metadata is None:
+        if target.exists():
+            raise ValueError("destination appeared during installation")
+        staged.rename(target)
+        return
+    if (
+        json.loads((target / MARKER).read_text(encoding="utf-8")) != metadata
+        or _fingerprints(target) != metadata["files"]
+    ):
+        raise ValueError("installation changed during update")
+    _replace_skill_snapshot(staged, target)
+
+
+def install_skill(*, name: str = DEFAULT_NAME, update: bool = False) -> Path:
+    """只在固定用户 skills 根目录发布完整中文快照，不接受任意目标路径。"""
+    target = _skill_destination(name)
+    metadata = _managed_metadata(target, name, update)
     payload = files("token_io_decoupling").joinpath("_resources/skill_bundle.zip").read_bytes()
     build_id, skill_files = _compiled_skill_identity()
     manifest, contents = validate_skill_bundle(
         payload, expected_build_id=build_id, expected_files=skill_files
     )
+    root = target.parent
     root.mkdir(parents=True, exist_ok=True)
-    # Cooperating installers serialize before rechecking/publishing, never clobber a collision.
     lock = root / f".{name}.lock"
     try:
-        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     except FileExistsError as exc:
         raise ValueError(
             "another installation is in progress; inspect the lock before retrying"
         ) from exc
-    os.close(fd)
+    os.close(descriptor)
     try:
         with tempfile.TemporaryDirectory(prefix=f".{name}-", dir=root) as work:
             staged = Path(work) / "new"
-            staged.mkdir()
-            for entry_name, data in contents.items():
-                path = PurePosixPath(entry_name)
-                dest = staged / path
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                if path.name in ("SKILL.md", "SKILL_zh_cn.md") and len(path.parts) == 1:
-                    data = re.sub(
-                        rb"(?m)^name: token-io-decoupling(?:-skill)?$",
-                        b"name: " + name.encode(),
-                        data,
-                    )
-                dest.write_bytes(data)
-            if not (staged / "SKILL.md").is_file():
-                raise ValueError("packaged Skill entry missing")
-            # The approved policy batch is unchanged by an installation-name substitution.
-            installed_manifest = {
-                **manifest,
-                "files": {
-                    key: digest
-                    for key, digest in _fingerprints(staged).items()
-                    if key != "manifest.json"
-                },
-            }
-            (staged / "manifest.json").write_text(
-                json.dumps(installed_manifest, sort_keys=True) + "\n", encoding="utf-8"
-            )
-            (staged / MARKER).write_text(
-                json.dumps(
-                    {
-                        "format": 1,
-                        "name": name,
-                        "version": version("token-io-decoupling"),
-                        "build_id": manifest["build_id"],
-                        "files": _fingerprints(staged),
-                    },
-                    sort_keys=True,
-                )
-            )
-            if target.is_symlink():
-                raise ValueError("destination changed during installation")
-            if update:
-                if (
-                    json.loads((target / MARKER).read_text()) != metadata
-                    or _fingerprints(target) != metadata["files"]
-                ):
-                    raise ValueError("installation changed during update")
-                backup = Path(work) / "previous"
-                target.rename(backup)
-                try:
-                    staged.rename(target)
-                except OSError:
-                    backup.rename(target)
-                    raise
-            else:
-                if target.exists():
-                    raise ValueError("destination appeared during installation")
-                staged.rename(target)
+            _stage_skill(staged, name, manifest, contents)
+            _publish_skill(staged, target, metadata)
     finally:
         lock.unlink()
     return target

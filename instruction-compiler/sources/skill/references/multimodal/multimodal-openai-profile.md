@@ -1,21 +1,21 @@
 # Multimodal OpenAI Deployment Profile
 
-This file preserves current deployment-specific OpenAI bindings for Multimodal Flow after those deployment details were removed from the root `SKILL.md`. It is intentionally a small deployment-specific document, not a generalized Multimodal runtime abstraction, and is outside the currently maintained Coding workflow.
+本文件用于在根 `SKILL.md` 移除具体部署细节后，继续保留 Multimodal Flow 当前部署专属的 OpenAI 模型绑定。它有意保持为小型部署专属文档，不尝试建立通用 Multimodal Runtime 抽象，也不属于当前维护的 Coding 工作流。
 
-This profile is self-contained for the concrete OpenAI bindings listed below. It does not select a visual workflow or import architecture rules from another document.
+本 Profile 对下面列出的具体 OpenAI 绑定保持自包含。它不选择视觉工作流，也不从其他文档导入架构规则。
 
-## Current bindings
+## 当前绑定
 
-- **Decision Agent**: the current advanced parent model.
-- **Primary Observation Agent**: `gpt-6-luna`; use `reasoning_effort=medium` by default, including substantive image/video/Computer Use Observation analysis.
-- **Optional Primary Output Agent**: `gpt-6-luna`; use `reasoning_effort=medium` by default for substantive long output and other high-volume materialization.
-- Primary Observation and Optional Primary Output are different responsibilities with different Session Affinity. Even when both are bound to Luna, do not merge their high-volume contexts by default.
+- **Decision Agent**：当前高级父模型。
+- **Primary Observation Agent**：`gpt-6-luna`；默认使用 `reasoning_effort=medium`，包括实质性图片、视频帧、Computer Use Observation 分析。
+- **Optional Primary Output Agent**：`gpt-6-luna`；实质性长输出与其他高体量物化默认使用 `reasoning_effort=medium`。
+- Primary Observation 与 Optional Primary Output 是不同职责和不同 Session Affinity；即使两者都绑定到 Luna，也不默认合并各自的高体量上下文。
 
-## Deployment constraints
+## 部署约束
 
-- Do not silently replace a Multimodal role that this profile requires to use Luna with another model.
-- Raise only the affected task to `reasoning_effort=high` when concrete complexity or verification-failure evidence warrants it, then return to `medium`.
-- If an independent Luna role is required but `gpt-6-luna` identity cannot be confirmed, the model cannot be selected explicitly, or the runtime environment cannot satisfy the profile's default or evidence-supported reasoning-effort tier for that dispatch, stop the corresponding substantive Multimodal work and briefly report the capability block.
-- Purely read-only, strictly bounded diagnosis or observation may continue when Luna identity is confirmed but the runtime environment cannot set reasoning effort. Do not use that exception to move complex high-volume Observation/materialization back to the advanced parent model or to silently substitute a model or reasoning tier.
+- 不得把本 Profile 要求使用 Luna 的 Multimodal 角色静默替换为其他模型。
+- 只有具体复杂性或验证失败证据足以支持时，才将受影响任务局部提高至 `reasoning_effort=high`，随后恢复 `medium`。
+- 若需要独立 Luna 角色但无法确认 `gpt-6-luna` 身份、无法显式选择该模型，或宿主不能满足 Profile 默认或有证据支持的 reasoning-effort 档位，则停止对应实质性 Multimodal 工作并简短报告 capability block。
+- 纯只读、严格有界的诊断或 Observation，在能够确认 Luna 身份但宿主无法设置 reasoning effort 时可以继续；不得因此把复杂高体量 Observation/物化回退给高级父模型，也不得静默替换模型或推理强度。
 
-This profile is preserved without claiming portability to other Code Agent products or model families. Future Multimodal portability work should be based on actual testing rather than inferred from the Coding runtime architecture.
+本 Profile 只保留当前部署行为，不声明对其他 Code Agent 产品或模型族具有可移植性。未来 Multimodal 的跨产品工作应以真实测试为基础，而不是从 Coding Runtime 架构推断。

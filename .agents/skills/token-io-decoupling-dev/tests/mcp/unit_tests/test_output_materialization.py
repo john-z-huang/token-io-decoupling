@@ -1054,6 +1054,7 @@ def test_invalid_responses_result_creates_no_candidate_artifact(tmp_path, monkey
 def test_worker_stdio_exposes_bounded_action_schema_and_applies_only_with_factory(
     tmp_path,
 ) -> None:
+    """真实MCP入口保留有界物化schema；只有可信工厂配置的Worker操作才产生获准文件。"""
     path = "src/output.txt"
     project, artifacts, state, provider, preflight, grant_provider, config, materializer = (
         _workspace(tmp_path, [path])
@@ -1066,13 +1067,14 @@ def test_worker_stdio_exposes_bounded_action_schema_and_applies_only_with_factor
     )
 
     async def run() -> None:
+        """通过同一真实会话核对准备、审阅、preflight与apply，以及过期授权后的拒绝。"""
         async with Client(server, mode="auto") as client:
             tools = {tool.name: tool for tool in (await client.list_tools()).tools}
             assert "materialize_decoupled_output" in tools
             description = tools["materialize_decoupled_output"].description or ""
-            assert "1–16 files" in description
-            assert "fresh whole-batch preflight" in description
-            assert "Same-service cooperative locking" in description
+            assert "1–16个" in description
+            assert "全批次新鲜 preflight" in description
+            assert "同服务协作锁" in description
             request_schema = tools["materialize_decoupled_output"].input_schema["properties"][
                 "payload"
             ]["properties"]["request"]

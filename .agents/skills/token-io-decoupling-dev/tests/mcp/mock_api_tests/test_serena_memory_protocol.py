@@ -38,7 +38,10 @@ class Reader(SerenaMemoryReadService):
 
 
 def test_flat_wire_contract_and_configured_dispatch() -> None:
+    """Memory 工具按扁平参数暴露并调用已配置后端，不接受额外 payload 信封。"""
+
     async def run() -> None:
+        """通过真实 MCP 会话同时核对工具 schema、调用参数与后端实际返回。"""
         reader = Reader()
         async with Client(create_tools_server(serena_memory_service=reader)) as client:
             tools = {tool.name: tool for tool in (await client.list_tools()).tools}
@@ -50,7 +53,8 @@ def test_flat_wire_contract_and_configured_dispatch() -> None:
                 schema = tool.model_dump(by_alias=True)["inputSchema"]
                 assert set(schema["properties"]) == set(schema["required"]) == fields
                 assert tool.annotations is not None and tool.annotations.read_only_hint
-                assert tool.description is not None and "payload envelope" in tool.description
+            assert tool.description is not None
+            assert "payload 信封" in tool.description
             caps = receipt(await client.call_tool("tools_capabilities", {}))
             assert caps["serena_memory_reads"] == "configured"
             tail = receipt(
@@ -78,7 +82,10 @@ def test_flat_wire_contract_and_configured_dispatch() -> None:
     asyncio.run(run())
 
 
-def test_unconfigured_tools_are_discoverable_but_unavailable() -> None:
+def test_unconfigured_tools_are_discoverable_but_unavailable(monkeypatch, tmp_path) -> None:
+    """缺少后端时工具仍可发现，但执行必须明确不可用而不是编造结果。"""
+    monkeypatch.chdir(tmp_path)
+
     async def run() -> None:
         async with Client(create_tools_server()) as client:
             caps = receipt(await client.call_tool("tools_capabilities", {}))

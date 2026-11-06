@@ -71,3 +71,14 @@ def discover_markdown(root: Path) -> list[Path]:
                 discovered.append(candidate)
 
     return sorted(discovered, key=lambda path: path.relative_to(root).as_posix())
+
+
+if __name__ == "__main__":
+    import argparse
+    import json
+
+    parser = argparse.ArgumentParser(description="列出维护中的 Markdown，忽略生成物和符号链接树。")
+    parser.add_argument("--root", type=Path, required=True)
+    arguments = parser.parse_args()
+    root = arguments.root.resolve()
+    print(json.dumps([path.relative_to(root).as_posix() for path in discover_markdown(root)]))

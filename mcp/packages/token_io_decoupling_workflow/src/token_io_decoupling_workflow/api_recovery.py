@@ -42,23 +42,19 @@ RecoveryAction: TypeAlias = Literal[
 
 
 class RecoveryGuidance(StrictModel):
-    """Caller guidance only; the server never tracks attempts or invokes another request."""
+    """仅供调用方参考；服务不跟踪尝试次数，也不自动再次请求。"""
 
-    retry_eligible: bool = Field(
-        description="A bounded retry candidate, not an instruction or automatic retry."
-    )
+    retry_eligible: bool = Field(description="仅标记有界重试候选，不构成执行指令，也不会自动重试。")
     action: RecoveryAction
     failure_class: FailureClass | None = None
     total_attempt_limit: Annotated[int, Field(ge=1, le=3)] | None = Field(
         default=None,
-        description=(
-            "Maximum calls in the caller-tracked recovery process, including the first call."
-        ),
+        description=("调用方跟踪的当前恢复过程调用上限，包含首次调用。"),
     )
 
 
 class ProviderFailure(StrictModel):
-    """Allowlisted, non-sensitive classification of an SDK exception."""
+    """只保存允许公开的故障分类，不保留 SDK 原始异常内容。"""
 
     reason: Literal["provider_error", "timeout"]
     failure_class: FailureClass
@@ -96,7 +92,7 @@ def _safe_error_code(exc: Exception) -> tuple[str | None, bool]:
 
 
 def classify_provider_failure(exc: Exception) -> ProviderFailure:
-    """Classify only known exception names and validated status/code fields; never echo input."""
+    """依据已知异常类别和合法状态码分类；不回显输入或猜测瞬态错误。"""
     error_name = type(exc).__name__
     raw_status, safe_status = _safe_attribute(exc, "status_code")
     if raw_status is not None and (type(raw_status) is not int or not 100 <= raw_status <= 599):
@@ -169,7 +165,7 @@ def classify_provider_failure(exc: Exception) -> ProviderFailure:
 
 
 def recovery_for_provider_failure(failure: ProviderFailure) -> RecoveryGuidance:
-    """Permit only a narrow set of explicitly transient failures to be considered for retry."""
+    """仅将明确瞬态故障标为待调用方复核的重试候选，不执行重试。"""
     retry_eligible = failure.failure_class in {"transport", "api"} and (
         failure.failure_class == "transport"
         or failure.http_status is not None
@@ -205,7 +201,7 @@ def recovery_for_provider_failure(failure: ProviderFailure) -> RecoveryGuidance:
 
 
 def recovery_for_reason(reason: str) -> RecoveryGuidance:
-    """Describe non-provider exits without promoting them to transient failures."""
+    """解释非供应商退出原因，不将其自动升级为瞬态可重试故障。"""
     if reason in {"stale_policy", "stale_context", "source_policy_changed_during_request"}:
         action: RecoveryAction = "refresh_current_facts_and_policy"
     elif reason in {"missing_credentials", "policy_unavailable", "policy_contract_invalid"}:

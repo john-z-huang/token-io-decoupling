@@ -19,7 +19,8 @@ from token_io_decoupling_tools.task_plan_factory import TaskPlanFactoryError, lo
 
 
 def run(prog: str, argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(prog=prog, description="Start the aggregate tools MCP server.")
+    """按明确 factory 配置启动 tools 服务，并在退出时释放本次创建的资源。"""
+    parser = argparse.ArgumentParser(prog=prog, description="启动聚合 tools MCP 服务。")
     try:
         package_version = version("token-io-decoupling-tools")
     except PackageNotFoundError:
@@ -29,15 +30,12 @@ def run(prog: str, argv: list[str]) -> int:
     parser.add_argument(
         "--compliance-factory",
         metavar="MODULE:CALLABLE",
-        help="explicitly load trusted operator code that returns a read-only compliance service",
+        help="明确加载可信操作者代码，返回只读合规检查服务",
     )
     parser.add_argument(
         "--output-materializer-factory",
         metavar="MODULE:CALLABLE",
-        help=(
-            "explicitly load trusted operator code that returns a bounded output-materializer "
-            "configuration"
-        ),
+        help=("明确加载可信操作者代码，返回有界输出物化配置"),
     )
     args = parser.parse_args(argv)
 

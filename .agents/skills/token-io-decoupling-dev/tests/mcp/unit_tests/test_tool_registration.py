@@ -13,6 +13,7 @@ import pytest
 from mcp import Client
 from mcp.server import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
+from mcp.types import CallToolResult, TextContent
 from pydantic import BaseModel, Field
 
 from token_io_decoupling_core.binding import DenyingBindingProvider
@@ -37,7 +38,8 @@ def _registrar(server: MCPServer[Any], names: set[str]) -> ToolRegistrar:
 
 
 @pytest.mark.parametrize("service", ["tools", "workflow"])
-def test_complete_public_contract_matches_before_refactor(service: str) -> None:
+def test_complete_public_contract_matches_reviewed_current_contract(service: str) -> None:
+    """将完整公开descriptor与已审核指纹对照，任何字段或中文描述漂移都会失败。"""
     fixture = json.loads(
         (Path(__file__).parent / "fixtures/tool_registration_contracts.json").read_text()
     )
@@ -57,7 +59,7 @@ def test_complete_public_contract_matches_before_refactor(service: str) -> None:
             ).hexdigest()
             for tool in tools
         }
-        # The fixture predates the implementation; it covers schemas and all metadata.
+        # 批准的中文文案和单语言输入变更仍使用完整 descriptor 指纹约束。
         assert actual == fixture["contracts"][service]
 
     asyncio.run(run())
@@ -95,7 +97,16 @@ class _Payload(BaseModel):
     value: Annotated[int, Field(strict=True)]
 
 
+def _text_result(result: CallToolResult) -> str:
+    """确认成功文本响应后再解码，避免把其他MCP内容类型当作正常JSON。"""
+    assert not result.is_error
+    content = result.content[0]
+    assert isinstance(content, TextContent)
+    return content.text
+
+
 def test_native_payload_and_no_arg_callbacks_share_registration_and_keep_contracts() -> None:
+    """原生参数、payload信封和无参数调用共享注册机制，但各自输入与错误契约必须保留。"""
     calls = []
 
     def native(value: Annotated[int, Field(strict=True)], label: str = "default") -> dict[str, Any]:
@@ -121,6 +132,7 @@ def test_native_payload_and_no_arg_callbacks_share_registration_and_keep_contrac
     )
 
     async def run() -> None:
+        """通过真实MCP调用三类工具，并验证非法敏感输入被拒且不泄漏。"""
         async with Client(server) as client:
             tools = {tool.name: tool for tool in (await client.list_tools()).tools}
             assert tools["native"].output_schema is not None
@@ -130,8 +142,8 @@ def test_native_payload_and_no_arg_callbacks_share_registration_and_keep_contrac
             native_result = await client.call_tool("native", {"value": 7})
             assert native_result.structured_content == {"value": 7, "label": "default"}
             result = await client.call_tool("payload", {"payload": {"value": 9}})
-            assert json.loads(result.content[0].text) == {"value": 9}
-            assert json.loads((await client.call_tool("no_args")).content[0].text) == {"ok": True}
+            assert json.loads(_text_result(result)) == {"value": 9}
+            assert json.loads(_text_result(await client.call_tool("no_args"))) == {"ok": True}
         for name, arguments, message in (
             ("native", {"value": "sensitive-input"}, "Invalid tool arguments"),
             ("payload", {"payload": {"value": "sensitive-input"}}, "typed operation contract"),
