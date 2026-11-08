@@ -7,7 +7,7 @@ MCP Server 面向本地可用的 Codex CLI，包括本地 Work 使用的本地 C
 
 ## 环境与检查
 
-Workspace 包含五个分发包：可选根管理／完整安装、共享 core/transport，以及可独立安装的 tools/workflow 运行时。运行时成员拥有各自 console script，互不依赖。Workflow 拥有编译规则；tools 拥有计划、Memory、preflight 与物化。以下命令在 mcp/ 中使用托管 Python 和锁定依赖执行：
+Workspace 包含六个分发包：可选根管理／完整安装、共享 core/transport、可独立安装的 tools/workflow 运行时，以及可选 hooks 适配入口。两个 MCP 运行时拥有各自 console script，互不依赖；hooks 依赖 workflow，复用其事件检查器和规则。Workflow 拥有编译规则；tools 拥有计划、Memory、preflight 与物化。以下命令在 mcp/ 中使用托管 Python 和锁定依赖执行：
 
 ```sh
 uv sync --managed-python --locked --all-packages --group dev
@@ -306,7 +306,7 @@ uv run --project instruction-compiler token-io-compile compile --check
 
 构建 hook 仅验证批准资源，不导入编译器、不读作者文档、不抽取标题、不收集仓库附件。源码开发和安装后运行时使用同一编译格式。资源缺失、损坏、陈旧或不兼容时阻塞依赖执行，不回退作者文件。事件响应完整交付共享／当前 Hook 指令及显式选择的短流程，结构缺口和可选建议分别报告，不定义 next-stage 游标；元数据、能力结果在各自职责内保持精简。
 
-从 `mcp/` 构建五个 wheel 和五个 sdist：
+从 `mcp/` 构建六个 wheel 和六个 sdist（包含可选 hooks 包）：
 
 ~~~sh
 uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-dist
@@ -322,7 +322,7 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 开发检查和文档回归直接使用私有 Skill 的实际入口；项目根目录 tid 提供安装入口，开发及测试转发别名均已移除。
 
-[产物回归](../../tests/mcp/unit_tests/test_build_artifacts.py)验证五个分发包、私有内容排除、同批次资源、损坏拒绝及独立重建。[安装回归](../../tests/mcp/unit_tests/test_skill_artifacts.py)验证无需 checkout 的安装及其不受已安装 Skill 编辑影响。临时工具检查使用任务局部 `UV_TOOL_DIR`、`UV_TOOL_BIN_DIR` 和 [stdio smoke 脚本](../../tests/mcp/support/installed_stdio_smoke.py)。
+[产物回归](../../tests/mcp/unit_tests/test_build_artifacts.py)验证六个分发包、私有内容排除、同批次资源、损坏拒绝及独立重建。[安装回归](../../tests/mcp/unit_tests/test_skill_artifacts.py)验证无需 checkout 的安装及其不受已安装 Skill 编辑影响。临时工具检查使用任务局部 `UV_TOOL_DIR`、`UV_TOOL_BIN_DIR` 和 [stdio smoke 脚本](../../tests/mcp/support/installed_stdio_smoke.py)。
 
 App Server 最终查看必须按上文有序协调器执行：全部适用检查、当前构建、隔离工具安装、已安装 stdio、全新只读 CLI 查看。首个前置或检查阶段失败即停止。
 

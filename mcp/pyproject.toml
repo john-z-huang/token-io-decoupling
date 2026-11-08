@@ -51,7 +51,7 @@ target-version = "py311"
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["token_io_decoupling", "token_io_decoupling_core", "token_io_decoupling_transport", "token_io_decoupling_workflow", "token_io_decoupling_tools"]
+known-first-party = ["token_io_decoupling", "token_io_decoupling_core", "token_io_decoupling_transport", "token_io_decoupling_workflow", "token_io_decoupling_tools", "token_io_decoupling_hooks"]
 known-third-party = ["mcp"]
 
 [tool.ty.environment]

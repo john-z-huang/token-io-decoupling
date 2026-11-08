@@ -113,8 +113,24 @@ Setup 成功表示已检查两个 MCP 工具清单：workflow 为 11 个工具�
 可选原生命令从 stdin 读取一个有界 JSON 对象并写出一个原生响应：
 
 ```sh
-"$(uv tool dir --bin)/token-io-decoupling-workflow" hook --mode single-agent
+"$(uv tool dir --bin)/token-io-decoupling-hooks" --mode single-agent
 ```
+
+`token-io-decoupling-hooks` 是独立的 uv tool 分发包，复用 workflow 包中的事件检查器与批准规则，不安装 tools 或管理命令。旧 `token-io-decoupling-workflow hook` 入口继续兼容。源码安装时，从 checkout 根目录运行：
+
+```sh
+uv tool install --python 3.14 \
+  --with ./mcp/packages/token_io_decoupling_core \
+  --with ./mcp/packages/token_io_decoupling_transport \
+  --with ./mcp/packages/token_io_decoupling_workflow \
+  ./mcp/packages/token_io_decoupling_hooks
+"$(uv tool dir --bin)/token-io-decoupling-hooks" setup codex --dry-run
+"$(uv tool dir --bin)/token-io-decoupling-hooks" setup codex
+```
+
+仅安装 wheel 时，将上述四个本地目录分别替换为匹配版本的 wheel 路径。安装不会注册 Hook；只有显式执行 `setup codex` 才修改 `${CODEX_HOME:-~/.codex}/hooks.json`，也可通过 `--hooks-file /absolute/path/hooks.json` 指定项目配置。注册使用已安装环境中的绝对命令路径，保留其它 Hook 和配置；重复执行不增加相同命令。修改已有文件前保存同目录唯一 `.bak` 备份，然后原子替换，格式错误或符号链接会被拒绝。
+
+注册默认覆盖下列六种事件，采用本地静态检查，不固定 Agent 模式、不启用 API 请求或 Stop 阻塞、不修改信任记录。Codex 的非受管 Hook 需要在 `/hooks` 中审阅和信任当前定义后才会运行；配置更新后重新检查该状态。若只希望在某个项目使用，应通过 `--hooks-file` 注册项目级配置。
 
 在自行审阅的 Hook 配置中，仅映射已支持的 Codex 事件：
 
@@ -127,7 +143,7 @@ Setup 成功表示已检查两个 MCP 工具清单：workflow 为 11 个工具�
 | `Stop` | `completion_requested` |
 | `SessionStart` | `session_resumed` |
 
-安装和 setup 不安装原生 Hook。适配器无法判断原生会话是否采用本 workflow，调用方须将命令限定到已采用的会话；无法可靠限定时，使用 Agent 主动 `workflow_check_event` 调用。不提供全局注册或采用状态文件，也不为独立工具增加前置检查。适配器不读取 transcript 或任意文件，不持久化状态，也不输出权限 `allow`。默认 Stop/SubagentStop 响应使用 `systemMessage`，不会把契约回灌模型；Agent 须通过 Skill 或 MCP 工具主动消费完成／进展检查。
+MCP 安装及其 setup 不注册原生 Hook；独立 hooks 命令的 `setup codex` 提供上述显式注册。适配器无法判断原生会话是否采用本 workflow，注册位置由操作员选择，不记录采用状态，也不为独立工具增加前置检查。无需原生注册时，使用 Agent 主动 `workflow_check_event` 调用。事件适配器不读取 transcript 或任意文件，不持久化状态，也不输出权限 `allow`。默认 Stop/SubagentStop 响应使用 `systemMessage`，不会把契约回灌模型；Agent 须通过 Skill 或 MCP 工具主动消费完成／进展检查。
 
 Hook 选项错误、输入错误及运行故障均返回退出码 1；argparse 的错误码 2 会转换为 1，避免被原生宿主误作阻塞。`--help` 返回 0。只有下述显式 JSON 响应会请求阻塞。
 

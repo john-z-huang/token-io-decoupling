@@ -46,7 +46,7 @@ MCP 工具通过 `payload.request` 调用：
 
 ## 可选原生命令
 
-`token-io-decoupling-workflow hook [--mode single-agent|multi-agent] [--language zh_cn]` 从 stdin 读取一个最多 32 KiB 的 JSON 对象，输出一个最多 128 KiB 的响应。不读取 transcript 或任意文件，不接受凭据／端点旗标。`--max-chars` 仅控制指令交付容量。
+独立分发包提供 `token-io-decoupling-hooks [--mode single-agent|multi-agent] [--language zh_cn]`，旧 `token-io-decoupling-workflow hook` 入口保持兼容。命令从 stdin 读取一个最多 32 KiB 的 JSON 对象，输出一个最多 128 KiB 的响应。不读取 transcript 或任意文件，不接受凭据／端点旗标。`--max-chars` 仅控制指令交付容量。
 
 | Codex 事件 | 逻辑事件 | 默认响应 |
 | --- | --- | --- |
@@ -59,11 +59,11 @@ MCP 工具通过 `payload.request` 调用：
 
 这是已支持的本地 Codex schema，不是通用 MCP 客户端适配器。Stop/SubagentStop 不允许 additionalContext，默认 systemMessage 不会把规则回灌模型，也不证明逻辑检查已被消费；Skill 要求 Agent 主动调用完成／进展检查。原生观察不完整，permission_mode 和 session ID 不能证明授权或恢复任务历史。
 
-调用方必须将命令限定到已采用本 workflow 的会话。适配器无法从原生输入确认采用状态，不默认注册全局 Hook，也不记录采用状态。无法可靠限定时改用主动 MCP 调用。独立工具保留自身的当前输入契约，不要求先调用 Hook。
+适配器无法从原生输入确认采用状态，不记录采用状态。独立 hooks 包支持显式 `setup codex [--hooks-file PATH] [--dry-run]`；操作员选择用户级或项目级范围，默认静态注册六种事件，不固定模式、不启用语义请求、不修改宿主信任记录。保留无关配置，重复注册不增加相同命令；写入前备份，拒绝格式错误和符号链接。无需原生注册时改用主动 MCP 调用。独立工具保留自身的当前输入契约，不要求先调用 Hook。
 
 原生语义模式须提供 `--semantic --outbound-data-permitted`。显式选择 `--block-once` 后，只有 Stop/SubagentStop 的原生 `stop_hook_active` 严格为 false、完整新鲜指令已检查、有效建议为 `needs_evidence` 或 `amend`，才输出 `decision: block`。true／缺失／非布尔标志、等待／停止结果、缺失／故障／陈旧建议均不阻塞。reason 包含结构缺口与完整规则，不伪造语义理由。此宿主续跑标志不证明预算、身份、授权或整个会话有界，也不自动重试。
 
-Hook 选项／输入／运行错误返回退出码 1，argparse 非零错误从 2 转为 1，以免宿主意外阻塞；帮助返回 0。只有合法显式 JSON 会请求阻塞。安装和 setup 不修改真实 Hook 配置。
+Hook 选项／输入／运行错误返回退出码 1，argparse 非零错误从 2 转为 1，以免宿主意外阻塞；帮助返回 0。只有合法显式 JSON 会请求阻塞。安装和 MCP setup 不修改真实 Hook 配置；独立 hooks setup 是显式配置写入入口。
 
 ## 迁移与验证
 

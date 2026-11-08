@@ -11,6 +11,7 @@ resolution-markers = [
 members = [
     "token-io-decoupling",
     "token-io-decoupling-core",
+    "token-io-decoupling-hooks",
     "token-io-decoupling-tools",
     "token-io-decoupling-transport",
     "token-io-decoupling-workflow",
@@ -1042,6 +1043,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "pydantic", specifier = ">=2.12,<3" }]
+
+[[package]]
+name = "token-io-decoupling-hooks"
+version = "0.1.0"
+source = { editable = "packages/token_io_decoupling_hooks" }
+dependencies = [
+    { name = "token-io-decoupling-workflow" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "token-io-decoupling-workflow", editable = "packages/token_io_decoupling_workflow" }]
 
 [[package]]
 name = "token-io-decoupling-tools"

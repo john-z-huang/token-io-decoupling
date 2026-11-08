@@ -63,8 +63,8 @@ def artifacts(tmp_path_factory):
     output = tmp_path_factory.mktemp("compiled-product-artifacts")
     built = _build(WORKSPACE, output, "--all-packages")
     assert built.returncode == 0, built.stderr
-    assert len(list(output.glob("*.whl"))) == 5
-    assert len(list(output.glob("*.tar.gz"))) == 5
+    assert len(list(output.glob("*.whl"))) == 6
+    assert len(list(output.glob("*.tar.gz"))) == 6
     return output
 
 
@@ -91,7 +91,7 @@ def _assert_product_names(names):
         }, name
 
 
-def test_five_distributions_have_disjoint_product_payloads(artifacts):
+def test_six_distributions_have_disjoint_product_payloads(artifacts):
     owners = {}
     for wheel in artifacts.glob("*.whl"):
         with zipfile.ZipFile(wheel) as archive:
@@ -108,6 +108,7 @@ def test_five_distributions_have_disjoint_product_payloads(artifacts):
                     assert name not in owners, (name, owners.get(name), wheel.name)
                     owners[name] = wheel.name
     assert "token_io_decoupling/cli.py" in owners
+    assert "token_io_decoupling_hooks/cli.py" in owners
     assert "token_io_decoupling_workflow/_resources/instructions.json" in owners
     assert "token_io_decoupling_transport/tool.py" in owners
     assert "token_io_decoupling_tools/tool.py" in owners
@@ -170,6 +171,24 @@ def test_detached_sdist_rebuild_preserves_approved_resources(artifacts, tmp_path
         assert names
         for name in names:
             assert rebuilt.read(name) == original.read(name)
+
+
+def test_detached_hooks_sdist_preserves_cli_and_registration(artifacts, tmp_path):
+    """独立源码分发重建后保留 Hook 实现与 console script，不依赖 checkout。"""
+    distribution = "token_io_decoupling_hooks"
+    project = _detach(artifacts, distribution, tmp_path / "detached")
+    output = tmp_path / "rebuilt"
+    built = _build(project, output, "--wheel")
+    assert built.returncode == 0, built.stderr
+    with (
+        zipfile.ZipFile(_wheel(artifacts, distribution)) as original,
+        zipfile.ZipFile(_wheel(output, distribution)) as rebuilt,
+    ):
+        assert set(original.namelist()) == set(rebuilt.namelist())
+        for name in original.namelist():
+            assert rebuilt.read(name) == original.read(name)
+        entrypoints = original.read(f"{distribution}-0.1.0.dist-info/entry_points.txt")
+    assert b"token-io-decoupling-hooks = token_io_decoupling_hooks.cli:main" in entrypoints
 
 
 @pytest.mark.parametrize("distribution", ["token_io_decoupling", "token_io_decoupling_workflow"])
