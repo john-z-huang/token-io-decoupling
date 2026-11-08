@@ -56,4 +56,4 @@ Tools 复用固定版本 dev-workflow-standards-tools 的 schema、annotation、
 
 ## 验证
 
-测试验证清单互斥、拒绝 sibling/admin 导入、真实独立 wheel 安装、直接 stdio 调用、单服务注册、配置保留、脱敏和受保护写入拒绝。归档测试覆盖五个分发包、core 不含规则资源、批准的 workflow/Skill 批次及独立重建。按顺序的[最终检验](DEVELOPMENT.md#codex-sdk-最终查看)执行全部适用检查，在临时 uv 目录构建安装当前完整 wheel 集合，再用新的只读 Codex CLI 检验，模型 turn 为零，不修改真实用户配置。
+测试验证清单互斥、拒绝 sibling/admin 导入、真实独立 wheel 安装、直接 stdio 调用、单服务注册、配置保留、脱敏和受保护写入拒绝。归档测试覆盖五个分发包、core 不含规则资源、批准的 workflow/Skill 批次及独立重建。按顺序的[最终检验](DEVELOPMENT.md#codex-app-server-最终查看)执行全部适用检查，在临时 uv 目录构建安装当前完整 wheel 集合，再用新的只读 Codex CLI 检验，模型 turn 为零，不修改真实用户配置。

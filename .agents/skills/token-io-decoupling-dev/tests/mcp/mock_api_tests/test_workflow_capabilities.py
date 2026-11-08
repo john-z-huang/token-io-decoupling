@@ -10,7 +10,7 @@ from typing import Any, cast
 import pytest
 from mcp import Client
 from mcp.types import TextContent
-from support.codex_sdk import _standard_capability_diagnostics
+from support.codex_app_server import _standard_capability_diagnostics
 
 from token_io_decoupling.server import create_workflow_server
 from token_io_decoupling_core.binding import BindingError, DenyingBindingProvider

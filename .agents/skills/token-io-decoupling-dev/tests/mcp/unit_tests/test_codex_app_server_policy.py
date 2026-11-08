@@ -1,4 +1,4 @@
-"""Keep SDK usage in tests and make model/credential constraints non-optional."""
+"""Keep App Server usage in tests and make model/credential constraints non-optional."""
 
 from __future__ import annotations
 
@@ -8,11 +8,11 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from support import codex_sdk as adapter
+from support import codex_app_server as adapter
 
 WORKSPACE = Path(__file__).resolve().parents[6] / "mcp"
 MCP_TESTS = Path(__file__).resolve().parents[1]
-ADAPTER = MCP_TESTS / "support/codex_sdk.py"
+ADAPTER = MCP_TESTS / "support/codex_app_server.py"
 
 
 @pytest.fixture
@@ -24,9 +24,10 @@ def settings(tmp_path, monkeypatch):
     return executable, tmp_path, tmp_path / "bin"
 
 
-def test_sdk_is_only_a_test_dependency_and_single_import_boundary():
+def test_codex_python_sdk_is_not_a_dependency_or_import():
     project = tomllib.loads((WORKSPACE / "pyproject.toml").read_text())
-    assert any(d.startswith("openai-codex") for d in project["dependency-groups"]["codex-test"])
+    assert "codex-test" not in project["dependency-groups"]
+    assert "openai-codex" not in (WORKSPACE / "uv.lock").read_text()
     for path in (WORKSPACE / "src").rglob("*.py"):
         assert "openai_codex" not in path.read_text(), path
     for path in WORKSPACE.rglob("pyproject.toml"):
@@ -38,8 +39,6 @@ def test_sdk_is_only_a_test_dependency_and_single_import_boundary():
             runtime.extend(optional)
         assert not any("openai-codex" in d for d in runtime), path
     for path in [*(WORKSPACE / "packages").rglob("*.py"), *MCP_TESTS.rglob("*.py")]:
-        if path == ADAPTER:
-            continue
         for node in ast.walk(ast.parse(path.read_text())):
             if isinstance(node, ast.ImportFrom):
                 assert not (node.module or "").startswith("openai_codex"), path
@@ -49,15 +48,17 @@ def test_sdk_is_only_a_test_dependency_and_single_import_boundary():
 
 @pytest.mark.parametrize("name", ["OPENAI_API_KEY", "OPENAI_BASE_URL"])
 @pytest.mark.parametrize("value", [None, "", "   "])
-def test_missing_credentials_fail_before_sdk_import(settings, monkeypatch, name, value):
+def test_missing_credentials_fail_before_app_server_import(settings, monkeypatch, name, value):
     if value is None:
         monkeypatch.delenv(name)
     else:
         monkeypatch.setenv(name, value)
     monkeypatch.setattr(
         adapter,
-        "_sdk",
-        lambda: (_ for _ in ()).throw(AssertionError("SDK imported before config check")),
+        "AppServerClient",
+        lambda *args: (_ for _ in ()).throw(
+            AssertionError("App Server imported before config check")
+        ),
     )
     with pytest.raises(adapter.CodexTestError, match=name):
         with adapter.fixed_codex_session(settings[0], settings[2], phase=adapter._FINAL_INSPECTION):
@@ -99,16 +100,14 @@ def test_configuration_accepts_only_the_fixed_provider():
         "requires_openai_auth": False,
         "wire_api": "responses",
     }
-    config = SimpleNamespace(
-        model=adapter.MODEL,
-        model_reasoning_effort=adapter.EFFORT,
-        model_provider=adapter.PROVIDER,
-        model_dump=lambda: {"model_providers": {adapter.PROVIDER: provider}},
-    )
-    client = SimpleNamespace(request=lambda *a, **kw: SimpleNamespace(config=config))
-    session = adapter.FixedCodexSession(
-        client, [None], Path("/tmp"), "https://synthetic.invalid/v1"
-    )
+    config = {
+        "model": adapter.MODEL,
+        "model_reasoning_effort": adapter.EFFORT,
+        "model_provider": adapter.PROVIDER,
+        "model_providers": {adapter.PROVIDER: provider},
+    }
+    client = SimpleNamespace(request=lambda *a, **kw: {"config": config})
+    session = adapter.FixedCodexSession(client, Path("/tmp"), "https://synthetic.invalid/v1")
     session.verify_configuration()
 
 
@@ -123,19 +122,17 @@ def test_effective_configuration_cannot_override_policy(field, value):
         "model_provider": adapter.PROVIDER,
     }
     fields[field] = value
-    client = SimpleNamespace(
-        request=lambda *a, **kw: SimpleNamespace(config=SimpleNamespace(**fields))
-    )
-    session = adapter.FixedCodexSession(client, [None], Path("/tmp"), "unused")
+    client = SimpleNamespace(request=lambda *a, **kw: {"config": fields})
+    session = adapter.FixedCodexSession(client, Path("/tmp"), "unused")
     with pytest.raises(adapter.CodexTestError, match="violates test policy"):
         session.verify_configuration()
 
 
-def test_sdk_launch_requires_final_inspection_phase(settings, monkeypatch):
-    def unexpected_import():
-        raise AssertionError("SDK imported before final phase")
+def test_app_server_launch_requires_final_inspection_phase(settings, monkeypatch):
+    def unexpected_import(*args):
+        raise AssertionError("App Server imported before final phase")
 
-    monkeypatch.setattr(adapter, "_sdk", unexpected_import)
+    monkeypatch.setattr(adapter, "AppServerClient", unexpected_import)
     with pytest.raises(adapter.CodexTestError, match="final post-install"):
         with adapter.fixed_codex_session(settings[0], settings[2]):
             raise AssertionError("unexpected launch")
@@ -158,26 +155,24 @@ def test_effective_provider_cannot_fall_back(field, value):
         "wire_api": "responses",
     }
     provider[field] = value
-    config = SimpleNamespace(
-        model=adapter.MODEL,
-        model_reasoning_effort=adapter.EFFORT,
-        model_provider=adapter.PROVIDER,
-        model_dump=lambda: {"model_providers": {adapter.PROVIDER: provider}},
-    )
-    client = SimpleNamespace(request=lambda *a, **kw: SimpleNamespace(config=config))
-    session = adapter.FixedCodexSession(
-        client, [None], Path("/tmp"), "https://synthetic.invalid/v1"
-    )
+    config = {
+        "model": adapter.MODEL,
+        "model_reasoning_effort": adapter.EFFORT,
+        "model_provider": adapter.PROVIDER,
+        "model_providers": {adapter.PROVIDER: provider},
+    }
+    client = SimpleNamespace(request=lambda *a, **kw: {"config": config})
+    session = adapter.FixedCodexSession(client, Path("/tmp"), "https://synthetic.invalid/v1")
     with pytest.raises(adapter.CodexTestError, match="API provider violates"):
         session.verify_configuration()
 
 
-def test_raw_sdk_failures_do_not_expose_credentials(settings, monkeypatch):
+def test_raw_app_server_failures_do_not_expose_credentials(settings, monkeypatch):
     class BrokenClient:
-        def __init__(self, config):
+        def __init__(self, *args):
             raise RuntimeError("synthetic-test-key https://synthetic.invalid/v1")
 
-    monkeypatch.setattr(adapter, "_sdk", lambda: (BrokenClient, lambda **kw: kw))
+    monkeypatch.setattr(adapter, "AppServerClient", BrokenClient)
     with pytest.raises(adapter.CodexTestError) as error:
         with adapter.fixed_codex_session(settings[0], settings[2], phase=adapter._FINAL_INSPECTION):
             (_ for _ in ()).throw(AssertionError("unexpected launch"))
@@ -190,15 +185,13 @@ def test_version_failure_reports_only_bounded_classifications(settings, monkeypa
 
     class FailedVersionClient:
         def request(self, *_args, **_kwargs):
-            return SimpleNamespace(
-                exit_code=126,
-                stdout="synthetic-test-key",
-                stderr="Permission denied: https://synthetic.invalid/v1",
-            )
+            return {
+                "exitCode": 126,
+                "stdout": "synthetic-test-key",
+                "stderr": "Permission denied: https://synthetic.invalid/v1",
+            }
 
-    session = adapter.FixedCodexSession(
-        FailedVersionClient(), [None] * 4, settings[1], "unused", settings[2]
-    )
+    session = adapter.FixedCodexSession(FailedVersionClient(), settings[1], "unused", settings[2])
     monkeypatch.setattr(session, "verify_configuration", lambda: None)
     with pytest.raises(adapter.CodexTestError) as error:
         session.check_mcp()
@@ -275,34 +268,25 @@ def test_standard_capability_diagnostics_reject_stale_or_missing_schema(mutate):
         adapter._standard_capability_diagnostics(report)
 
 
-def test_sdk_factory_gets_explicit_cli_and_isolated_fixed_configuration(settings, monkeypatch):
+def test_app_server_factory_gets_explicit_cli_and_isolated_fixed_configuration(
+    settings, monkeypatch
+):
     captured = {}
 
     class FakeClient:
-        def __init__(self, config):
-            captured.update(config)
-
-        def start(self):
-            pass
+        def __init__(self, executable, overrides, environment, directory):
+            captured.update(codex_bin=str(executable), config_overrides=overrides, env=environment)
 
         def initialize(self):
             pass
 
         def request(self, *args, **kwargs):
-            parsed = tomllib.loads("\n".join(captured["config_overrides"]))
-            return SimpleNamespace(
-                config=SimpleNamespace(
-                    model=parsed["model"],
-                    model_provider=parsed["model_provider"],
-                    model_reasoning_effort=parsed["model_reasoning_effort"],
-                    model_dump=lambda: parsed,
-                )
-            )
+            return {"config": tomllib.loads("\n".join(captured["config_overrides"]))}
 
         def close(self):
             captured["closed"] = True
 
-    monkeypatch.setattr(adapter, "_sdk", lambda: (FakeClient, lambda **kw: kw, None))
+    monkeypatch.setattr(adapter, "AppServerClient", FakeClient)
     with adapter.fixed_codex_session(settings[0], settings[2], phase=adapter._FINAL_INSPECTION):
         assert captured["codex_bin"] == str(settings[0])
         assert captured["env"]["OPENAI_API_KEY"] == "synthetic-test-key"
@@ -334,6 +318,7 @@ def test_final_inspection_cannot_start_model_turns_or_arbitrary_commands():
                             tools.append(value.value)
     assert set(requests) == {
         "config/read",
+        "thread/start",
         "command/exec",
         "mcpServerStatus/list",
         "mcpServer/tool/call",
@@ -341,8 +326,8 @@ def test_final_inspection_cannot_start_model_turns_or_arbitrary_commands():
     assert set(tools) == {"workflow_capabilities", "rules_get_context"}
 
 
-def test_compiled_rule_validation_requires_no_sdk_or_author_tree():
-    """正文校验只消费外部bundle，不依赖 SDK 启动或作者仓库。"""
+def test_compiled_rule_validation_requires_no_app_server_or_author_tree():
+    """正文校验只消费外部bundle，不依赖 App Server 启动或作者仓库。"""
     from token_io_decoupling_workflow.rules import RuleLoader
 
     context = RuleLoader().load_context_bundle("contract").model_dump(mode="json")

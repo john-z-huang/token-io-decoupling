@@ -10,7 +10,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from codex_sdk import _FINAL_INSPECTION, fixed_codex_session
+from codex_app_server import _FINAL_INSPECTION, fixed_codex_session
 
 WORKSPACE = Path(__file__).resolve().parents[6] / "mcp"
 REPOSITORY = WORKSPACE.parent
@@ -21,7 +21,7 @@ COMPILER = REPOSITORY / "instruction-compiler"
 
 
 def check_commands():
-    """声明有序验收清单：先新鲜度和普通检查，再允许安装与独立 SDK 检验。"""
+    """声明有序验收清单：先新鲜度和普通检查，再允许安装与独立 App Server 检验。"""
     python = sys.executable
     targets = ["src", "packages", str(MCP_TESTS)]
     commands = [
@@ -137,7 +137,7 @@ def check_commands():
 def execute(label, command, cwd, env=None):
     result = subprocess.run(command, cwd=cwd, env=env, capture_output=True, text=True)
     if result.returncode:
-        raise RuntimeError(f"{label} failed; final SDK phase was not accepted")
+        raise RuntimeError(f"{label} failed; final App Server phase was not accepted")
     print(f"PASS: {label}", flush=True)
 
 
@@ -201,7 +201,7 @@ def update_tool(directory):
 
 
 def run_final(checks, runner, installer, inspector):
-    # No skip-checks path: an exception prevents installation and SDK launch.
+    # No skip-checks path: an exception prevents installation and App Server launch.
     for label, command, cwd in checks:
         runner(label, command, cwd)
     installed = installer()
@@ -235,8 +235,8 @@ def main():
             print(json.dumps(report))
         return 0
     except Exception as error:
-        # Only our bounded errors may be reported; never expose SDK config/stderr.
-        from codex_sdk import CodexTestError
+        # Only our bounded errors may be reported; never expose App Server config/stderr.
+        from codex_app_server import CodexTestError
 
         if isinstance(error, CodexTestError) or type(error) is RuntimeError:
             print(f"FAIL: {error}")

@@ -1,4 +1,4 @@
-"""Test-only Codex SDK boundary. No configurable model, effort or credentials."""
+"""仅测试使用的 Codex App Server 边界，固定模型、强度与凭据来源。"""
 
 from __future__ import annotations
 
@@ -10,8 +10,10 @@ from pathlib import Path
 
 if __package__:
     from . import compiled_instruction_checks
+    from .codex_app_server_rpc import AppServerClient
 else:
     import compiled_instruction_checks
+    from codex_app_server_rpc import AppServerClient
 
 from token_io_decoupling_core.server_tools import (
     TOOLS_SERVER_NAME,
@@ -42,7 +44,7 @@ print(json.dumps({key: document[key] for key in ('schema_version', 'language', '
 
 
 class CodexTestError(RuntimeError):
-    """Safe failure without SDK stderr, configuration values or credential data."""
+    """安全错误不包含 App Server stderr、配置值或凭据。"""
 
 
 def _standard_capability_diagnostics(report):
@@ -89,7 +91,7 @@ def _standard_capability_diagnostics(report):
 
 
 def validate_compiled_rule_bundle(context, language):
-    """把交付校验失败转换为既有 SDK 检验边界错误。"""
+    """把交付校验失败转换为App Server 检验边界错误。"""
     try:
         return compiled_instruction_checks.validate_compiled_rule_bundle(context, language)
     except compiled_instruction_checks.CompiledInstructionError as exc:
@@ -129,7 +131,7 @@ def launch_settings(executable: Path, directory: Path, bin_dir: Path):
         )
         + "}",
     )
-    # SDK merges this into its process environment; isolate config/auth/plugin state.
+    # 子进程覆盖这些环境项，隔离配置、认证和插件状态。
     environment = {
         "OPENAI_API_KEY": key,
         "OPENAI_BASE_URL": base_url,
@@ -140,48 +142,25 @@ def launch_settings(executable: Path, directory: Path, bin_dir: Path):
     return overrides, environment
 
 
-def _sdk():
-    # The sole permitted SDK import site in this repository.
-    from openai_codex.client import CodexClient, CodexConfig
-    from openai_codex.generated.v2_all import (
-        CommandExecResponse,
-        ConfigReadResponse,
-        ListMcpServerStatusResponse,
-        McpServerToolCallResponse,
-    )
-
-    return (
-        CodexClient,
-        CodexConfig,
-        ConfigReadResponse,
-        ListMcpServerStatusResponse,
-        McpServerToolCallResponse,
-        CommandExecResponse,
-    )
-
-
 class FixedCodexSession:
-    """只在最终安装检验阶段使用的 SDK 会话，限制配置、工具清单与零模型轮次。"""
+    """只在最终安装检验阶段使用的 App Server 会话，限制配置、工具清单与零模型轮次。"""
 
-    def __init__(self, client, types, directory, base_url, bin_dir=None):
+    def __init__(self, client, directory, base_url, bin_dir=None):
         self._client = client
-        self._types = types
         self._directory = directory
         self._base_url = base_url
         self._thread_id = None
         self._bin_dir = bin_dir
 
     def verify_configuration(self):
-        config = self._client.request(
-            "config/read", {"includeLayers": False}, response_model=self._types[0]
-        ).config
+        config = self._client.request("config/read", {"includeLayers": False})["config"]
         if (
-            config.model != MODEL
-            or config.model_provider != PROVIDER
-            or config.model_reasoning_effort != EFFORT
+            config.get("model") != MODEL
+            or config.get("model_provider") != PROVIDER
+            or config.get("model_reasoning_effort") != EFFORT
         ):
             raise CodexTestError("effective model/provider/effort violates test policy")
-        providers = config.model_dump().get("model_providers", {})
+        providers = config.get("model_providers", {})
         provider = providers.get(PROVIDER, {})
         if (
             provider.get("base_url") != self._base_url
@@ -193,7 +172,8 @@ class FixedCodexSession:
 
     def start_thread(self):
         self.verify_configuration()
-        started = self._client.thread_start(
+        started = self._client.request(
+            "thread/start",
             {
                 "cwd": str(self._directory),
                 "ephemeral": True,
@@ -202,15 +182,15 @@ class FixedCodexSession:
                 "config": {"model_reasoning_effort": EFFORT},
                 "approvalPolicy": "never",
                 "sandbox": "read-only",
-            }
+            },
         )
         if (
-            started.model != MODEL
-            or started.model_provider != PROVIDER
-            or started.reasoning_effort != EFFORT
+            started.get("model") != MODEL
+            or started.get("modelProvider") != PROVIDER
+            or started.get("reasoningEffort") != EFFORT
         ):
             raise CodexTestError("thread model/provider/effort violates test policy")
-        self._thread_id = started.thread.id
+        self._thread_id = started["thread"]["id"]
 
     def _check_version(self, executable):
         command = self._client.request(
@@ -221,33 +201,31 @@ class FixedCodexSession:
                 "sandboxPolicy": {"type": "readOnly"},
                 "timeoutMs": 10000,
             },
-            response_model=self._types[3],
         )
-        if command.exit_code != 0 or not command.stdout.startswith(f"{executable.name} "):
-            # Report only fixed classifications; SDK stdout/stderr can contain secrets.
-            diagnostic = (command.stderr or "").lower()
+        if command["exitCode"] != 0 or not command["stdout"].startswith(f"{executable.name} "):
+            # Report only fixed classifications; App Server stdout/stderr can contain secrets.
+            diagnostic = (command["stderr"] or "").lower()
             permission_denied = (
                 "operation not permitted" in diagnostic or "permission denied" in diagnostic
             )
             import_error = "modulenotfounderror" in diagnostic or "importerror" in diagnostic
             raise CodexTestError(
                 "installed MCP executable version check failed "
-                f"(exit={command.exit_code}, "
+                f"(exit={command['exitCode']}, "
                 f"permission_denied={permission_denied}, "
                 f"missing_file={'no such file' in diagnostic}, "
                 f"import_error={import_error})"
             )
 
     def _check_inventory(self):
-        """逐服务核对实际 SDK 发现结果，不能只凭版本号推断工具已经可用。"""
+        """逐服务核对实际 App Server 发现结果，不能只凭版本号推断工具已经可用。"""
         for name, expected in INVENTORIES.items():
             status = self._client.request(
                 "mcpServerStatus/list",
                 {"threadId": self._thread_id, "serverName": name, "detail": "toolsAndAuthOnly"},
-                response_model=self._types[1],
             )
-            servers = [server for server in status.data if server.name == name]
-            if len(servers) != 1 or set(servers[0].tools) != expected:
+            servers = [server for server in status["data"] if server["name"] == name]
+            if len(servers) != 1 or set(servers[0]["tools"]) != expected:
                 raise CodexTestError(f"installed MCP inventory mismatch: {name}")
 
     def _capability_report(self):
@@ -260,11 +238,10 @@ class FixedCodexSession:
                 "tool": "workflow_capabilities",
                 "arguments": {},
             },
-            response_model=self._types[2],
         )
-        if result.is_error:
+        if result.get("isError"):
             raise CodexTestError("packaged MCP capabilities inspection failed")
-        return json.loads(result.content[0]["text"])
+        return json.loads(result["content"][0]["text"])
 
     def _contract_bundle(self):
         """通过实际安装的 MCP 读取中文 Contract，保持外部 context_version 为2。"""
@@ -278,11 +255,10 @@ class FixedCodexSession:
                     "payload": {"node_id": "contract", "language": "zh_cn", "context_version": 2}
                 },
             },
-            response_model=self._types[2],
         )
-        if result.is_error:
+        if result.get("isError"):
             raise CodexTestError("packaged MCP Contract inspection failed")
-        return json.loads(result.content[0]["text"])
+        return json.loads(result["content"][0]["text"])
 
     def _check_resource_identity(self, build_id):
         """核对实际安装资源的哈希、schema 3 与同批 build，区分外部 bundle 2。"""
@@ -297,11 +273,10 @@ class FixedCodexSession:
                 "sandboxPolicy": {"type": "readOnly"},
                 "timeoutMs": 10000,
             },
-            response_model=self._types[3],
         )
-        if command.exit_code != 0:
+        if command["exitCode"] != 0:
             raise CodexTestError("installed instruction resource inspection failed")
-        identity = json.loads(command.stdout)
+        identity = json.loads(command["stdout"])
         if identity != {"schema_version": 3, "language": "zh_cn", "build_id": build_id}:
             raise CodexTestError("installed instruction resource identity mismatch")
 
@@ -334,33 +309,23 @@ class FixedCodexSession:
 @contextmanager
 def fixed_codex_session(executable: Path, bin_dir: Path, *, phase=None):
     if phase is not _FINAL_INSPECTION:
-        raise CodexTestError("SDK launch is restricted to the final post-install inspection phase")
-    # No SDK launch or dependency import until both existing values are verified.
-    with tempfile.TemporaryDirectory(prefix="token-io-sdk-test-") as temporary:
+        raise CodexTestError(
+            "App Server launch is restricted to the final post-install inspection phase"
+        )
+    # 在校验必需进程变量之前，不启动 App Server。
+    with tempfile.TemporaryDirectory(prefix="token-io-app-server-test-") as temporary:
         directory = Path(temporary)
         overrides, environment = launch_settings(executable, directory, bin_dir)
         # Codex requires an explicitly configured CODEX_HOME to already exist.
         Path(environment["CODEX_HOME"]).mkdir()
         client = None
-        phase = "import"
+        phase = "configuration"
         try:
-            client_type, config_type, *types = _sdk()
-            phase = "construction"
-            client = client_type(
-                config_type(
-                    codex_bin=str(executable),
-                    config_overrides=overrides,
-                    env=environment,
-                    cwd=str(directory),
-                )
-            )
             phase = "startup"
-            client.start()
+            client = AppServerClient(executable, overrides, environment, directory)
             phase = "initialization"
             client.initialize()
-            session = FixedCodexSession(
-                client, types, directory, environment["OPENAI_BASE_URL"], bin_dir
-            )
+            session = FixedCodexSession(client, directory, environment["OPENAI_BASE_URL"], bin_dir)
             session.verify_configuration()
             phase = "test operation"
             yield session
@@ -368,11 +333,12 @@ def fixed_codex_session(executable: Path, bin_dir: Path, *, phase=None):
             raise
         except Exception as error:
             raise CodexTestError(
-                f"Codex SDK {phase} failed ({type(error).__name__}); raw diagnostics suppressed"
+                f"Codex App Server {phase} failed ({type(error).__name__}); "
+                "raw diagnostics suppressed"
             ) from None
         finally:
             if client is not None:
                 try:
                     client.close()
                 except Exception:
-                    raise CodexTestError("Codex SDK cleanup failed") from None
+                    raise CodexTestError("Codex App Server cleanup failed") from None
