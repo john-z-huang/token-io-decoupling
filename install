@@ -6,22 +6,23 @@ set -euo pipefail
 
 usage() {
   printf '%s\n' \
-    'Usage: bash install-codex-mcp.sh [options]' \
+    '用法：./install [选项]' \
     '' \
-    "Install or update this repository's Token I/O MCP commands and configure Codex." \
+    '安装或更新本仓库的 Token I/O MCP 命令和 Skill，并配置 Codex。' \
     '' \
-    'Options:' \
-    '  --mcp                Install/update MCP commands and register both servers' \
-    '  --skills ACTION      Install/update Skill only (ACTION: install or update)' \
-    '  --name NAME          Skill name (default: token-io-decoupling-skill)' \
-    '  No arguments prints this help; --mcp and --skills may be combined.' \
-    '  --python VERSION     Python version for uv (default: 3.14)' \
-    '  --dry-run            Print the ordered plan without checking prerequisites' \
-    '  -h, --help           Show this help'
+    '选项：' \
+    '  --mcp                安装或更新 MCP 命令，并注册两个服务' \
+    '  --skills ACTION      仅安装或更新 Skill（ACTION：install 或 update）' \
+    '  --name NAME          Skill 名称（默认：token-io-decoupling-skill）' \
+    '  --python VERSION     uv 使用的 Python 版本（默认：3.14）' \
+    '  --dry-run            按执行顺序打印计划，不检查前置依赖或执行安装' \
+    '  -h, --help           显示此帮助' \
+    '' \
+    '不带参数时显示此帮助；--mcp 与 --skills 可组合使用。'
 }
 
 fail() {
-  printf 'install-codex-mcp: %s\n' "$1" >&2
+  printf 'install: %s\n' "$1" >&2
 }
 
 resolve_repo_root() {
@@ -64,7 +65,7 @@ resolve_repo_root() {
     fi
     symlink_hops=$((symlink_hops + 1))
   done
-  if ! CDPATH= cd -P -- "$script_dir/.."; then
+  if ! CDPATH= cd -P -- "$script_dir"; then
     fail 'could not resolve the repository directory'
     return 1
   fi
@@ -235,7 +236,7 @@ resolve_launcher() {
   for command_name in "${command_names[@]}"; do
     executable="$bin_dir/$command_name"
     if [[ ! -f "$executable" || ! -x "$executable" ]]; then
-      printf 'install-codex-mcp: %s the installed command is missing or not executable at %q; no operation was run\n' \
+      printf 'install: %s the installed command is missing or not executable at %q; no operation was run\n' \
         "$context" "$executable" >&2
       exit 1
     fi
