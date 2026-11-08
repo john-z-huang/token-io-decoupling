@@ -40,7 +40,8 @@ def harness(tmp_path: Path) -> dict[str, Path | dict[str, str]]:
     launcher_source.write_text(
         f"#!{py}\nimport json, os, sys\n"
         "with open(os.environ['CALL_LOG'],'a') as f: "
-        "f.write(json.dumps(['setup',*sys.argv[1:]])+'\\n')\n"
+        "f.write(json.dumps(['hooks' if sys.argv[0].endswith('-hooks') else 'setup',"
+        "*sys.argv[1:]])+'\\n')\n"
         "raise SystemExit(int(os.environ.get('SETUP_FAIL','0')))\n",
         encoding="utf-8",
     )
@@ -61,6 +62,11 @@ def harness(tmp_path: Path) -> dict[str, Path | dict[str, str]]:
         "  for key in ('WORKFLOW_LAUNCHER','TOOLS_LAUNCHER'):\n"
         "    if not os.environ.get('MISSING_'+key):\n"
         "      q=pathlib.Path(os.environ[key])\n"
+        "      q.write_bytes(pathlib.Path(os.environ['LAUNCHER_SOURCE']).read_bytes())\n"
+        "      q.chmod(0o755)\n"
+        "  if args[-1].endswith('/token_io_decoupling_hooks'):\n"
+        "    q=p.parent/'token-io-decoupling-hooks'\n"
+        "    if not os.environ.get('MISSING_HOOKS_LAUNCHER'):\n"
         "      q.write_bytes(pathlib.Path(os.environ['LAUNCHER_SOURCE']).read_bytes())\n"
         "      q.chmod(0o755)\n"
         "elif args == ['tool','dir','--bin']:\n"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# 按选定参数安装或更新 MCP Server 与 Skill。兼容 Bash 3.2。
+# 按选定参数安装或更新 MCP Server、Hooks 与 Skill。兼容 Bash 3.2。
 # 参考 Gradle/Maven 启动脚本：从入口定位项目，检查环境，并用数组保留参数边界。
 
 set -euo pipefail
@@ -8,17 +8,19 @@ usage() {
   printf '%s\n' \
     '用法：./tid [选项]' \
     '' \
-    '安装或更新本仓库的 Token I/O MCP 命令和 Skill，并配置 Codex。' \
+    '安装或更新本仓库的 Token I/O MCP 命令、Hooks 和 Skill，并配置 Codex。' \
     '' \
     '选项：' \
     '  --mcp                安装或更新 MCP 命令，并注册两个服务' \
     '  --skills ACTION      仅安装或更新 Skill（ACTION：install 或 update）' \
+    '  --hooks ACTION       安装或更新 Hooks 并注册（ACTION：install 或 update）' \
+    '  --hooks-file PATH    Hooks 配置的绝对路径（须与 --hooks 一起使用）' \
     '  --name NAME          Skill 名称（默认：token-io-decoupling-skill）' \
     '  --python VERSION     uv 使用的 Python 版本（默认：3.14）' \
     '  --dry-run            按执行顺序打印计划，不检查前置依赖或执行安装' \
     '  -h, --help           显示此帮助' \
     '' \
-    '不带参数时显示此帮助；--mcp 与 --skills 可组合使用。'
+    '不带参数时显示此帮助；--mcp、--hooks 与 --skills 可组合使用。'
 }
 
 fail() {
@@ -100,6 +102,22 @@ parse_arguments() {
         skill_action=$2
         shift 2
         ;;
+      --hooks)
+        if (($# < 2)) || [[ "$2" != install && "$2" != update || -n "$hook_action" ]]; then
+          fail '--hooks requires install or update and may be specified only once'
+          exit 2
+        fi
+        hook_action=$2
+        shift 2
+        ;;
+      --hooks-file)
+        if (($# < 2)) || [[ "$2" != /* || -n "$hooks_file" ]]; then
+          fail '--hooks-file requires an absolute path and may be specified only once'
+          exit 2
+        fi
+        hooks_file=$2
+        shift 2
+        ;;
       --name)
         if (($# < 2)) || [[ -z "$2" || "$2" == -* ]] || ((name_seen != 0)); then
           fail '--name requires a non-empty name and may be specified only once'
@@ -132,32 +150,52 @@ parse_arguments() {
         ;;
     esac
   done
-  if [[ -z "$skill_action" ]]; then
-    if ((name_seen != 0)); then
-      fail '--name requires --skills install or --skills update'
-      exit 2
-    fi
+  if [[ -z "$skill_action" ]] && ((name_seen != 0)); then
+    fail '--name requires --skills install or --skills update'
+    exit 2
+  fi
+  if [[ -z "$hook_action" && -n "$hooks_file" ]]; then
+    fail '--hooks-file requires --hooks install or --hooks update'
+    exit 2
+  fi
+  if [[ -z "$skill_action" && -z "$hook_action" ]]; then
     install_mcp=1
-  elif ((install_mcp == 0 && python_seen != 0)); then
-    fail '--python requires --mcp when --skills is selected'
+  elif ((install_mcp == 0 && python_seen != 0)) && [[ -z "$hook_action" ]]; then
+    fail '--python requires --mcp or --hooks when --skills is selected'
     exit 2
   fi
 }
 
 print_plan() {
+  local argument
   printf '%s\n' 'Dry run: no installation/setup commands or Codex configuration reads/writes were run.'
   if ((install_mcp != 0)); then
     printf '1. Install/update the admin, workflow, and tools commands: uv tool install --force --reinstall --managed-python --with-executables-from token-io-decoupling-workflow --with-executables-from token-io-decoupling-tools --python %q %q\n' \
       "$python_version" "$source_root"
-    printf '%s\n' '2. Resolve tool bin directory: uv tool dir --bin'
+  fi
+  if [[ -n "$hook_action" ]]; then
+    printf 'Hooks %s: uv' "$hook_action"
+    for argument in "${hook_install_args[@]}"; do
+      printf ' %q' "$argument"
+    done
+    printf '\n'
+  fi
+  printf '%s\n' 'Resolve tool bin directory: uv tool dir --bin'
+  if ((install_mcp != 0)); then
     printf '%s\n' '   Workflow MCP executable: <uv-tool-bin>/token-io-decoupling-workflow'
     printf '%s\n' '   Tools MCP executable: <uv-tool-bin>/token-io-decoupling-tools'
-    printf '3. Configure both MCP registrations through <uv-tool-bin>/token-io-decoupling'
-    local argument
+    printf 'Configure both MCP registrations through <uv-tool-bin>/token-io-decoupling'
     for argument in "${setup_args[@]}"; do
       printf ' %q' "$argument"
     done
-    printf '\n%s\n' '4. Reload affected MCP servers in Codex.'
+    printf '\n%s\n' 'Reload affected MCP servers in Codex.'
+  fi
+  if [[ -n "$hook_action" ]]; then
+    printf '   <uv-tool-bin>/token-io-decoupling-hooks'
+    for argument in "${hook_setup_args[@]}"; do
+      printf ' %q' "$argument"
+    done
+    printf '\n%s\n' '   请在 Codex /hooks 中审阅并确认当前定义的信任状态。'
   fi
   if [[ -n "$skill_action" ]]; then
     printf 'Skill: <uv-tool-bin>/token-io-decoupling skills %q --name %q\n' \
@@ -172,10 +210,10 @@ check_prerequisites() {
     exit 127
   fi
   # 单独发布 Skill 只使用已安装管理命令，无需 Codex 或源码编译检查。
-  if ((install_mcp == 0)); then
+  if ((install_mcp == 0)) && [[ -z "$hook_action" ]]; then
     return
   fi
-  if ! command -v codex >/dev/null 2>&1; then
+  if ((install_mcp != 0)) && ! command -v codex >/dev/null 2>&1; then
     fail 'Codex CLI was not found on PATH; no installation was attempted'
     exit 127
   fi
@@ -212,15 +250,32 @@ install_commands() {
   fi
 }
 
+install_hooks() {
+  local exit_code
+  if "$uv_path" "${hook_install_args[@]}"; then
+    :
+  else
+    exit_code=$?
+    fail "Hooks $hook_action 失败（退出码 ${exit_code}）；未执行注册。"
+    exit "$exit_code"
+  fi
+}
+
 resolve_launcher() {
   local bin_dir command_name executable exit_code
   local context="installation succeeded, but"
-  if ((install_mcp == 0)); then
+  if ((install_mcp == 0)) && [[ -z "$hook_action" ]]; then
     context="Skill operation requires an installed management command, but"
   fi
-  local command_names=(token-io-decoupling)
+  local command_names=()
+  if ((install_mcp != 0)) || [[ -n "$skill_action" ]]; then
+    command_names+=(token-io-decoupling)
+  fi
   if ((install_mcp != 0)); then
     command_names+=(token-io-decoupling-workflow token-io-decoupling-tools)
+  fi
+  if [[ -n "$hook_action" ]]; then
+    command_names+=(token-io-decoupling-hooks)
   fi
   if bin_dir=$("$uv_path" tool dir --bin); then
     :
@@ -242,6 +297,18 @@ resolve_launcher() {
     fi
   done
   launcher="$bin_dir/token-io-decoupling"
+  hooks_launcher="$bin_dir/token-io-decoupling-hooks"
+}
+
+configure_hooks() {
+  local exit_code
+  if "$hooks_launcher" "${hook_setup_args[@]}"; then
+    printf '%s\n' 'Hooks 注册完成。请在 Codex /hooks 中审阅并确认当前定义的信任状态。'
+  else
+    exit_code=$?
+    fail "Hooks 安装成功，但注册失败（退出码 ${exit_code}）；已安装命令仍可使用，未自动回滚。"
+    exit "$exit_code"
+  fi
 }
 
 configure_codex() {
@@ -273,11 +340,26 @@ main() {
   fi
   local dry_run=0 python_version='3.14' install_mcp=0
   local skill_action='' skill_name='token-io-decoupling-skill'
-  local repo_root source_root uv_path launcher
+  local hook_action='' hooks_file=''
+  local repo_root source_root uv_path launcher hooks_launcher
   local setup_args=(setup codex)
+  local hook_install_args=() hook_setup_args=(setup codex)
   parse_arguments "$@"
   repo_root=$(resolve_repo_root) || exit 1
   source_root="$repo_root/mcp"
+  if [[ -n "$hook_action" ]]; then
+    hook_install_args=(tool install --managed-python --python "$python_version"
+      --with "$source_root/packages/token_io_decoupling_core"
+      --with "$source_root/packages/token_io_decoupling_transport"
+      --with "$source_root/packages/token_io_decoupling_workflow")
+    if [[ "$hook_action" == update ]]; then
+      hook_install_args+=(--force --reinstall)
+    fi
+    hook_install_args+=("$source_root/packages/token_io_decoupling_hooks")
+    if [[ -n "$hooks_file" ]]; then
+      hook_setup_args+=(--hooks-file "$hooks_file")
+    fi
+  fi
   if ((dry_run != 0)); then
     setup_args+=(--dry-run)
     print_plan
@@ -287,9 +369,15 @@ main() {
   if ((install_mcp != 0)); then
     install_commands
   fi
+  if [[ -n "$hook_action" ]]; then
+    install_hooks
+  fi
   resolve_launcher
   if ((install_mcp != 0)); then
     configure_codex
+  fi
+  if [[ -n "$hook_action" ]]; then
+    configure_hooks
   fi
   if [[ -n "$skill_action" ]]; then
     configure_skill
