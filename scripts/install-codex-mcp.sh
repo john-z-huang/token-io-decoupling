@@ -1,28 +1,298 @@
 #!/bin/bash
+# 按选定参数安装或更新 MCP Server 与 Skill。兼容 Bash 3.2。
+# 参考 Gradle/Maven 启动脚本：从入口定位项目，检查环境，并用数组保留参数边界。
+
 set -euo pipefail
 
-entry_path=${BASH_SOURCE[0]}
-[[ "$entry_path" == /* ]] || entry_path="$PWD/$entry_path"
-symlink_hops=0
-while :; do
-  entry_dir=$(CDPATH= cd -P -- "${entry_path%/*}" && pwd -P)
-  entry_path="$entry_dir/${entry_path##*/}"
-  [[ -L "$entry_path" ]] || break
-  if ((symlink_hops >= 40)); then
-    printf '%s\n' 'installer symlink chain exceeded 40 links' >&2
+usage() {
+  printf '%s\n' \
+    'Usage: bash install-codex-mcp.sh [options]' \
+    '' \
+    "Install or update this repository's Token I/O MCP commands and configure Codex." \
+    '' \
+    'Options:' \
+    '  --mcp                Install/update MCP commands and register both servers' \
+    '  --skills ACTION      Install/update Skill only (ACTION: install or update)' \
+    '  --name NAME          Skill name (default: token-io-decoupling-skill)' \
+    '  No arguments prints this help; --mcp and --skills may be combined.' \
+    '  --python VERSION     Python version for uv (default: 3.14)' \
+    '  --dry-run            Print the ordered plan without checking prerequisites' \
+    '  -h, --help           Show this help'
+}
+
+fail() {
+  printf 'install-codex-mcp: %s\n' "$1" >&2
+}
+
+resolve_repo_root() {
+  local script_path script_dir script_name link_target readlink_path symlink_hops
+  script_path=${BASH_SOURCE[0]}
+  if [[ "$script_path" != /* ]]; then
+    script_path="$PWD/$script_path"
+  fi
+  symlink_hops=0
+  while :; do
+    script_dir=${script_path%/*}
+    script_name=${script_path##*/}
+    [[ -n "$script_dir" ]] || script_dir='/'
+    if ! script_dir=$(CDPATH= cd -P -- "$script_dir" && pwd -P); then
+      fail 'could not resolve the installer directory'
+      return 1
+    fi
+    script_path="$script_dir/$script_name"
+    [[ -L "$script_path" ]] || break
+    if ((symlink_hops >= 40)); then
+      fail 'installer symlink chain exceeded 40 links'
+      return 1
+    fi
+    if [[ -x /usr/bin/readlink ]]; then
+      readlink_path=/usr/bin/readlink
+    elif [[ -x /bin/readlink ]]; then
+      readlink_path=/bin/readlink
+    else
+      fail 'readlink is required to resolve a symlinked installer'
+      return 1
+    fi
+    if ! link_target=$("$readlink_path" "$script_path"); then
+      fail 'could not resolve the installer symlink'
+      return 1
+    fi
+    if [[ "$link_target" == /* ]]; then
+      script_path=$link_target
+    else
+      script_path="$script_dir/$link_target"
+    fi
+    symlink_hops=$((symlink_hops + 1))
+  done
+  if ! CDPATH= cd -P -- "$script_dir/.."; then
+    fail 'could not resolve the repository directory'
+    return 1
+  fi
+  pwd -P
+}
+
+parse_arguments() {
+  local python_seen=0 name_seen=0
+  while (($# > 0)); do
+    case "$1" in
+      -h|--help)
+        if (($# != 1)); then
+          fail '--help does not accept additional arguments'
+          exit 2
+        fi
+        usage
+        exit 0
+        ;;
+      --mcp)
+        install_mcp=1
+        shift
+        ;;
+      --skills)
+        if (($# < 2)) || [[ "$2" != install && "$2" != update ]]; then
+          fail '--skills requires install or update'
+          exit 2
+        fi
+        if [[ -n "$skill_action" ]]; then
+          fail '--skills may be specified only once'
+          exit 2
+        fi
+        skill_action=$2
+        shift 2
+        ;;
+      --name)
+        if (($# < 2)) || [[ -z "$2" || "$2" == -* ]] || ((name_seen != 0)); then
+          fail '--name requires a non-empty name and may be specified only once'
+          exit 2
+        fi
+        skill_name=$2
+        name_seen=1
+        shift 2
+        ;;
+      --dry-run)
+        dry_run=1
+        shift
+        ;;
+      --python)
+        if (($# < 2)) || [[ -z "$2" || "$2" == -* ]]; then
+          fail '--python requires a non-empty version that does not start with -'
+          exit 2
+        fi
+        if ((python_seen != 0)); then
+          fail '--python may be specified only once'
+          exit 2
+        fi
+        python_version="$2"
+        python_seen=1
+        shift 2
+        ;;
+      *)
+        fail "unknown argument: $1"
+        exit 2
+        ;;
+    esac
+  done
+  if [[ -z "$skill_action" ]]; then
+    if ((name_seen != 0)); then
+      fail '--name requires --skills install or --skills update'
+      exit 2
+    fi
+    install_mcp=1
+  elif ((install_mcp == 0 && python_seen != 0)); then
+    fail '--python requires --mcp when --skills is selected'
+    exit 2
+  fi
+}
+
+print_plan() {
+  printf '%s\n' 'Dry run: no installation/setup commands or Codex configuration reads/writes were run.'
+  if ((install_mcp != 0)); then
+    printf '1. Install/update the admin, workflow, and tools commands: uv tool install --force --reinstall --managed-python --with-executables-from token-io-decoupling-workflow --with-executables-from token-io-decoupling-tools --python %q %q\n' \
+      "$python_version" "$source_root"
+    printf '%s\n' '2. Resolve tool bin directory: uv tool dir --bin'
+    printf '%s\n' '   Workflow MCP executable: <uv-tool-bin>/token-io-decoupling-workflow'
+    printf '%s\n' '   Tools MCP executable: <uv-tool-bin>/token-io-decoupling-tools'
+    printf '3. Configure both MCP registrations through <uv-tool-bin>/token-io-decoupling'
+    local argument
+    for argument in "${setup_args[@]}"; do
+      printf ' %q' "$argument"
+    done
+    printf '\n%s\n' '4. Reload affected MCP servers in Codex.'
+  fi
+  if [[ -n "$skill_action" ]]; then
+    printf 'Skill: <uv-tool-bin>/token-io-decoupling skills %q --name %q\n' \
+      "$skill_action" "$skill_name"
+  fi
+}
+
+check_prerequisites() {
+  local python3_path compiler_entry exit_code
+  if ! uv_path=$(type -P uv); then
+    fail 'uv was not found on PATH; no installation was attempted'
+    exit 127
+  fi
+  # 单独发布 Skill 只使用已安装管理命令，无需 Codex 或源码编译检查。
+  if ((install_mcp == 0)); then
+    return
+  fi
+  if ! command -v codex >/dev/null 2>&1; then
+    fail 'Codex CLI was not found on PATH; no installation was attempted'
+    exit 127
+  fi
+
+  if ! python3_path=$(type -P python3); then
+    fail 'Python 3.11+ is required to verify compiled resource freshness; no installation was attempted'
+    exit 127
+  fi
+  compiler_entry="$repo_root/instruction-compiler/compile.py"
+  if [[ ! -f "$compiler_entry" ]]; then
+    fail 'the private compiler entrypoint is missing; no installation was attempted'
     exit 1
   fi
-  if [[ -x /usr/bin/readlink ]]; then
-    link_target=$(/usr/bin/readlink "$entry_path")
+  if "$python3_path" "$compiler_entry" compile --check; then
+    :
   else
-    link_target=$(/bin/readlink "$entry_path")
+    exit_code=$?
+    fail "compiled resource freshness check failed (exit $exit_code); no installation was attempted"
+    exit "$exit_code"
   fi
-  if [[ "$link_target" == /* ]]; then
-    entry_path=$link_target
+}
+
+install_commands() {
+  local exit_code
+  if "$uv_path" tool install --force --reinstall --managed-python \
+    --with-executables-from token-io-decoupling-workflow \
+    --with-executables-from token-io-decoupling-tools \
+    --python "$python_version" "$source_root"; then
+    :
   else
-    entry_path="$entry_dir/$link_target"
+    exit_code=$?
+    fail "uv tool installation/update failed (exit $exit_code)"
+    exit "$exit_code"
   fi
-  symlink_hops=$((symlink_hops + 1))
-done
-repo_root=$(CDPATH= cd -P -- "$entry_dir/.." && pwd -P)
-exec /bin/bash "$repo_root/.agents/skills/token-io-decoupling-dev/scripts/install-codex-mcp.sh" "$@"
+}
+
+resolve_launcher() {
+  local bin_dir command_name executable exit_code
+  local context="installation succeeded, but"
+  if ((install_mcp == 0)); then
+    context="Skill operation requires an installed management command, but"
+  fi
+  local command_names=(token-io-decoupling)
+  if ((install_mcp != 0)); then
+    command_names+=(token-io-decoupling-workflow token-io-decoupling-tools)
+  fi
+  if bin_dir=$("$uv_path" tool dir --bin); then
+    :
+  else
+    exit_code=$?
+    fail "$context uv could not locate its tool bin directory (exit $exit_code); Codex setup was not run"
+    exit "$exit_code"
+  fi
+  if [[ -z "$bin_dir" ]]; then
+    fail "$context uv returned an empty tool bin directory; no operation was run"
+    exit 1
+  fi
+  for command_name in "${command_names[@]}"; do
+    executable="$bin_dir/$command_name"
+    if [[ ! -f "$executable" || ! -x "$executable" ]]; then
+      printf 'install-codex-mcp: %s the installed command is missing or not executable at %q; no operation was run\n' \
+        "$context" "$executable" >&2
+      exit 1
+    fi
+  done
+  launcher="$bin_dir/token-io-decoupling"
+}
+
+configure_codex() {
+  local exit_code
+  if "$launcher" "${setup_args[@]}"; then
+    printf '%s\n' 'Codex MCP setup completed. Reload the affected MCP servers in Codex to use the updated registrations.'
+  else
+    exit_code=$?
+    fail "tool installation succeeded, but Codex setup failed (exit $exit_code); the installed tool remains available, and no automatic rollback was attempted"
+    exit "$exit_code"
+  fi
+}
+
+configure_skill() {
+  local exit_code
+  if "$launcher" skills "$skill_action" --name "$skill_name"; then
+    printf '%s\n' 'Skill operation completed. Start a new Agent session to load it.'
+  else
+    exit_code=$?
+    fail "Skill $skill_action failed (exit $exit_code)"
+    exit "$exit_code"
+  fi
+}
+
+main() {
+  if (($# == 0)); then
+    usage
+    return 0
+  fi
+  local dry_run=0 python_version='3.14' install_mcp=0
+  local skill_action='' skill_name='token-io-decoupling-skill'
+  local repo_root source_root uv_path launcher
+  local setup_args=(setup codex)
+  parse_arguments "$@"
+  repo_root=$(resolve_repo_root) || exit 1
+  source_root="$repo_root/mcp"
+  if ((dry_run != 0)); then
+    setup_args+=(--dry-run)
+    print_plan
+    return
+  fi
+  check_prerequisites
+  if ((install_mcp != 0)); then
+    install_commands
+  fi
+  resolve_launcher
+  if ((install_mcp != 0)); then
+    configure_codex
+  fi
+  if [[ -n "$skill_action" ]]; then
+    configure_skill
+  fi
+}
+
+main "$@"

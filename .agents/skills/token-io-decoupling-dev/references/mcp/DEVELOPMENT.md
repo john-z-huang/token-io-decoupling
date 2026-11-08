@@ -153,53 +153,11 @@ Setup 会解析并核验当前 workflow 和 tools 可执行程序，然后使用
 
 Memory 工具不需要额外安装选项或 Serena 包。从目标项目根目录启动 Codex；MCP 使用启动工作目录作为项目根，只读取 `.serena/memories/` 中的文件。它不搜索父级或兄弟项目。Memory 目录和所请求的文件必须已存在；缺失时返回非成功结果，不创建任何内容。文件操作使用 Python 标准库。详见[Memory 工具](SERENA_MEMORY_TOOLS.md)。
 
-### 安装与更新本地 Skill 指令
+### 安装与更新入口
 
-`uv tool` 安装成功后，在任意目录调用已安装的程序：
+MCP 与 Skill 的安装、更新、脚本参数及失败恢复统一见[安装与更新](../../../../../INSTALL.md)。[公共安装脚本](../../../../../scripts/install-codex-mcp.sh)以 `--mcp` 选择 MCP，以 `--skills install|update` 选择 Skill；无参数仅打印帮助。
 
-```sh
-"$(uv tool dir --bin)/token-io-decoupling" skills install
-```
-
-该命令将包内中文单源 Skill 快照安装到 `~/.agents/skills/token-io-decoupling-skill`，包含生成的入口、Hook、简短流程和版本化 manifest，排除作者源、开发脚本与编译器代码。它读取已安装的包，不读取或克隆源码仓库。Skill 名称为 `token-io-decoupling-skill`，请求使用时请采用该名称。
-
-需要其他名称时，可运行 `skills install --name my-coding-skill`，更新时也传入相同的 `--name my-coding-skill`。名称仅允许小写字母、数字以及分隔它们的连字符。旧名称及目录 `~/.agents/skills/token-io-decoupling` 受到保护：安装会拒绝该名称、安装路径中的符号链接和已有未知目标，绝不覆盖或删除旧项目。`skills install` 也会拒绝已有的受管理安装，应显式更新。
-
-修改作者指令后，先重新生成并验证批准资源，再重新执行上面的 `uv tool install --force --reinstall ...`（或安装重新构建的 wheel 集），再更新已安装的 Skill 快照：
-
-```sh
-"$(uv tool dir --bin)/token-io-decoupling" skills update
-```
-
-仅更新可执行程序不会改变此前安装的 Skill。`skills update` 要求目标为已有受管理安装，并拒绝含本地修改的文件；请先另行保留修改。尚未安装 Skill 时使用 `skills install`。工具安装、MCP 注册和 Skill 安装是三个独立操作；`setup codex` 和下面的辅助脚本都不会自动安装 Skill。安装或更新 Skill 指令后请启动新的 Agent 会话。若旧源码仓库仍被发现为 Skill，请保留它并按[旧安装共存说明](../../../../../INSTALL.md#失败与恢复)人工停用旧发现入口；安装器不自动处理重复发现。
-
-### 可选的一体化安装与注册脚本
-
-也可用[安装脚本](../../scripts/install-codex-mcp.sh)替代单独的工具安装及 `setup codex` 命令，一次完成包安装或更新及 Codex 配置。从本仓库根目录运行：
-
-```sh
-bash scripts/install-codex-mcp.sh
-```
-
-安装时不选择或保存 Memory 项目。从目标项目根目录启动 Codex；MCP 使用启动工作目录作为项目根，只读取 `.serena/memories/`，不搜索父级或兄弟项目，也不会创建缺失目录或文件。从本仓库根目录之外运行安装器时，使用绝对脚本路径并将占位替换为实际位置：
-
-```sh
-bash /absolute/path/to/token-io-decoupling/scripts/install-codex-mcp.sh
-```
-
-之后仍按上述方法执行 `skills install` 或 `skills update`。
-
-前置条件为 Bash 3.2 或更新版本（包括 macOS 的 `/bin/bash`）、uv、本地 Codex CLI 和 Python 3.11 或更新版本；Git 用于获取或维护 checkout。安装器要求 `uv`、`codex`、`python3` 位于 `PATH`。编译新鲜度检查使用 `PATH` 中的 `python3`，`--python` 另行选择 uv 管理的工具解释器。脚本相对自身定位 `mcp/`，针对该源码执行 `uv tool install --force --reinstall --managed-python --python 3.14`，通过 `uv tool dir --bin` 获取 bin 目录，再以绝对路径调用安装后的管理命令 `setup codex`。uv 会解析已声明的依赖；即使只修改了依赖的源码或打包规则，`--reinstall` 也会更新它们。工具 bin 目录无需位于 `PATH`，无需激活虚拟环境或另行执行 setup。重复运行会从当前 checkout 更新此工具。
-
-每项操作只需调用脚本一次，在上述命令后追加相应选项即可：
-
-| 选项 | 操作 |
-| --- | --- |
-| `--dry-run` | 安装器只输出安装计划，不安装或调用 setup；真实运行前，未来的工具 bin 路径以符号占位表示。直接运行 `setup codex --dry-run` 时会读取配置并仅预检两个目标表；不启动 MCP 子进程，也不写入。 |
-| `--python VERSION` | 指定 uv 托管的 Python 版本，替代默认的 `3.14`。 |
-| `--help` | 显示用法，不安装或修改配置。 |
-
-脚本在安装前验证参数及必需命令。某阶段失败后停止后续阶段并返回非零状态。安装和注册是不同副作用：若安装后 setup 失败，更新后的工具仍保留安装状态；重新运行前先检查 setup 的部分状态报告。注册设置保留和转发检查仍由现有 setup helper 负责。成功后重新加载受影响的服务；脚本不会重启客户端或提供凭据值。
+修改作者指令后，先通过本开发流程重新生成并验证批准资源，再安装包并更新受管 Skill。安装脚本不重新编译资源；只更新可执行程序不会更新已安装 Skill。更新后重载受影响的 MCP Server，并启动新的 Agent 会话。
 
 Setup 使用两个经过核验的可执行文件绝对路径和空启动参数注册两个 MCP 命令。它合并必需 API 变量和可选代理变量的名称；tools 可执行程序还转发 `OPENAI_TIMEOUT_MAX_RETRIES`。它仅更新这两个目标表，保留其其他设置及无关配置，不会检查或迁移其他注册。见[两个 MCP 程序与 Codex 注册](TOOLS_REGISTRATION.md)。需要分别注册时，可使用上文两个直接 Codex 命令。
 
@@ -213,7 +171,7 @@ Setup 使用两个经过核验的可执行文件绝对路径和空启动参数�
 
 ### Codex stdio 环境变量转发
 
-安装脚本已通过 setup 自动处理转发。若仅修复已有注册的转发，从任意工作目录调用一次[独立修复脚本](../../scripts/configure-codex-mcp-env.py)：
+安装脚本的 `--mcp` 操作通过 setup 自动处理转发。若仅修复已有注册的转发，从任意工作目录调用一次[独立修复脚本](../../scripts/configure-codex-mcp-env.py)：
 
 ```sh
 uv run --managed-python -- /absolute/path/to/repository/.agents/skills/token-io-decoupling-dev/scripts/configure-codex-mcp-env.py --server token-io-decoupling-tools
@@ -246,7 +204,7 @@ env_vars = [
 
 Codex 自身的环境中必须持有这两个非空白 API 变量，以及需要使用的代理变量。`env_vars` 允许将对应变量值转发给各自单独启动的 MCP 进程；它不会读取 Shell 配置或 `.env` 文件，也不会复制其他终端的环境。不要将真实值写入仓库文件、setup 参数、日志或示例。字段含义见 [Codex MCP 配置参考](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。
 
-两个 MCP 注册都会在 setup 时合并转发声明。安装脚本已自动包含 setup；单独执行 `uv tool install` 仍不会注册服务或提供凭据。修改配置后重新加载受影响的 MCP 服务；若客户端没有重载机制，退出后重新打开客户端以创建新服务进程。运行中的进程不会自动获得修改后的配置。
+两个 MCP 注册都会在 setup 时合并转发声明。安装脚本的 `--mcp` 操作包含 setup；单独执行 `uv tool install` 仍不会注册服务或提供凭据。修改配置后重新加载受影响的 MCP 服务；若客户端没有重载机制，退出后重新打开客户端以创建新服务进程。运行中的进程不会自动获得修改后的配置。
 
 终端调用成功而 MCP 请求报告缺配置时，检查客户端进程环境、各注册项的转发变量名，以及服务是否已重新创建。只记录变量存在性及是否非空白。当前 Decisions advisor 在任一必需值缺失或为空白时，在创建 SDK client 之前返回 `fallback`，原因为 `missing_credentials`；不要套用其他服务的 `missing_api_key` 错误名称。转发不会启用 API 请求、授予出站数据权限或建立本地会话上下文；下文的独立要求仍须满足。
 
@@ -360,9 +318,9 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 替换时的旧快照放在目标同级的独立备份目录，不属于自动清理的 staging。发布失败时先恢复旧目录；若恢复也失败，保留全部旧字节并在错误中报告准确恢复路径。成功替换或成功回滚后才清理备份目录。这是安装文件保护，不保存 workflow 运行状态。
 
-源码安装 helper 在 `uv tool install` 前验证编译新鲜度；资源陈旧即失败，不在安装时重新生成。其 dry-run 不进行编译器、安装、网络或配置操作。更新可执行程序、注册 MCP 和更新已安装 Skill 仍是独立动作。安装同批次产物后更新 Skill、重载受影响 MCP Server，并启动新的 Agent 会话。重新读取指令和政策 Hash、重新评估陈旧结果并保留历史；编辑已安装 Skill 不能修改 MCP 资源。
+安装脚本的 `--mcp` 操作在 `uv tool install` 前验证编译新鲜度；资源陈旧即失败，不在安装时重新生成。其 dry-run 不进行编译器、安装、网络或配置操作。更新可执行程序、注册 MCP 和更新已安装 Skill 仍是独立动作。安装同批次产物后更新 Skill、重载受影响 MCP Server，并启动新的 Agent 会话。重新读取指令和政策 Hash、重新评估陈旧结果并保留历史；编辑已安装 Skill 不能修改 MCP 资源。
 
-[MCP CI](../../../../../.github/workflows/mcp.yml)覆盖受支持 Python 版本、编译新鲜度、运行时测试及已安装 wheel stdio。[文档 CI](../../../../../.github/workflows/documentation.yml)覆盖编译场景、中文作者和开发文档、链接、Hooks 及夹具。触发范围包含私有组件、编译器与生成物变化。开发检查和文档回归直接使用私有 Skill 的实际入口；根 scripts 仅保留安装入口，开发及测试转发别名均已移除。
+开发检查和文档回归直接使用私有 Skill 的实际入口；根 scripts 仅保留安装入口，开发及测试转发别名均已移除。
 
 [产物回归](../../tests/mcp/unit_tests/test_build_artifacts.py)验证五个分发包、私有内容排除、同批次资源、损坏拒绝及独立重建。[安装回归](../../tests/mcp/unit_tests/test_skill_artifacts.py)验证无需 checkout 的安装及其不受已安装 Skill 编辑影响。临时工具检查使用任务局部 `UV_TOOL_DIR`、`UV_TOOL_BIN_DIR` 和 [stdio smoke 脚本](../../tests/mcp/support/installed_stdio_smoke.py)。
 

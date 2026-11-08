@@ -118,7 +118,7 @@ def _calls(harness: dict[str, Path | dict[str, str]]) -> list[list[str]]:
 
 
 def test_installs_and_invokes_absolute_launcher_from_unrelated_cwd(harness):
-    result = _run(harness)
+    result = _run(harness, "--mcp")
     assert result.returncode == 0, result.stderr
     calls = _calls(harness)
     assert calls == [
@@ -147,7 +147,7 @@ def test_installs_and_invokes_absolute_launcher_from_unrelated_cwd(harness):
 
 
 def test_default_setup_registers_both_fixed_servers(harness):
-    result = _run(harness)
+    result = _run(harness, "--mcp")
     assert result.returncode == 0, result.stderr
     assert _calls(harness)[-1] == ["setup", "setup", "codex"]
 
@@ -202,7 +202,7 @@ def test_missing_prerequisites_stop_before_install(harness):
     env = harness["env"]
     assert isinstance(env, dict)
     env["PATH"] = "/nonexistent"
-    result = _run(harness)
+    result = _run(harness, "--mcp")
     assert result.returncode == 127
     assert "uv was not found" in result.stderr
     assert _calls(harness) == []
@@ -212,7 +212,7 @@ def test_missing_codex_stops_before_install(harness):
     tools = harness["tools"]
     assert isinstance(tools, Path)
     (tools / "codex").unlink()
-    result = _run(harness)
+    result = _run(harness, "--mcp")
     assert result.returncode == 127
     assert "Codex CLI was not found" in result.stderr
     assert _calls(harness) == []
@@ -230,7 +230,7 @@ def test_failures_stop_and_preserve_status(harness, env_key, value, expected_sta
     env = harness["env"]
     assert isinstance(env, dict)
     env[env_key] = value
-    result = _run(harness)
+    result = _run(harness, "--mcp")
     assert result.returncode == expected_status
     assert message in result.stderr
     calls = _calls(harness)
@@ -256,7 +256,7 @@ def test_unusable_installed_command_stops_before_setup(harness, env_key, message
     env = harness["env"]
     assert isinstance(env, dict)
     env[env_key] = "1"
-    result = _run(harness)
+    result = _run(harness, "--mcp")
     assert result.returncode == 1
     assert message in result.stderr
     calls = _calls(harness)
@@ -270,17 +270,10 @@ def test_script_finds_repo_when_repo_and_cwd_paths_contain_spaces(harness, tmp_p
     scripts.mkdir()
     script = scripts / "install-codex-mcp.sh"
     script.write_bytes(SCRIPT.read_bytes())
-    private_script = (
-        copied_repo / ".agents/skills/token-io-decoupling-dev/scripts/install-codex-mcp.sh"
-    )
-    private_script.parent.mkdir(parents=True)
-    private_script.write_bytes(
-        (REPO / ".agents/skills/token-io-decoupling-dev/scripts/install-codex-mcp.sh").read_bytes()
-    )
     compiler_stub = copied_repo / "instruction-compiler/compile.py"
     compiler_stub.parent.mkdir()
     compiler_stub.write_text("# Source-check fixture; invoked by the fake Python tool.\n")
-    result = _run(harness, script=script)
+    result = _run(harness, "--mcp", script=script)
     assert result.returncode == 0, result.stderr
     assert _calls(harness)[0][-1] == os.fspath(copied_repo / "mcp")
 
@@ -292,13 +285,6 @@ def test_relative_script_invocation_with_spaces_from_unrelated_cwd(harness, tmp_
     scripts.mkdir()
     script = scripts / "install-codex-mcp.sh"
     script.write_bytes(SCRIPT.read_bytes())
-    private_script = (
-        copied_repo / ".agents/skills/token-io-decoupling-dev/scripts/install-codex-mcp.sh"
-    )
-    private_script.parent.mkdir(parents=True)
-    private_script.write_bytes(
-        (REPO / ".agents/skills/token-io-decoupling-dev/scripts/install-codex-mcp.sh").read_bytes()
-    )
     compiler_stub = copied_repo / "instruction-compiler/compile.py"
     compiler_stub.parent.mkdir()
     compiler_stub.write_text("# Source-check fixture; invoked by the fake Python tool.\n")
@@ -329,7 +315,7 @@ def test_symlinked_installer_resolves_repository_with_spaces(harness, tmp_path, 
         link = link_parent / "scripts alias"
         link.symlink_to(SCRIPT.parent, target_is_directory=True)
         link = link / SCRIPT.name
-    result = _run(harness, script=link)
+    result = _run(harness, "--mcp", script=link)
     assert result.returncode == 0, result.stderr
     assert _calls(harness)[0][-1] == os.fspath(REPO / "mcp")
 
@@ -338,7 +324,149 @@ def test_stale_compiled_resources_stop_before_tool_install(harness):
     env = harness["env"]
     assert isinstance(env, dict)
     env["FRESHNESS_FAIL"] = "37"
-    result = _run(harness)
+    result = _run(harness, "--mcp")
     assert result.returncode == 37
     assert "freshness" in result.stderr
     assert _calls(harness) == []
+
+
+@pytest.mark.parametrize("link_count", [3, 41])
+def test_symlink_chain_resolves_or_stops_before_install(harness, tmp_path, link_count):
+    target = SCRIPT
+    for index in range(link_count):
+        link = tmp_path / f"installer link {index}.sh"
+        link.symlink_to(os.path.relpath(target, link.parent) if index % 2 else target)
+        target = link
+    result = _run(harness, "--mcp", script=target)
+    if link_count <= 40:
+        assert result.returncode == 0, result.stderr
+        assert _calls(harness)[0][-1] == os.fspath(REPO / "mcp")
+    else:
+        # 系统可能在 Bash 打开脚本时先拒绝过长链接链，早于脚本内的保护。
+        assert result.returncode in {1, 126}
+        expected_message = (
+            "symlink chain exceeded"
+            if result.returncode == 1
+            else "Too many levels of symbolic links"
+        )
+        assert expected_message in result.stderr
+        assert _calls(harness) == []
+
+
+def test_cdpath_does_not_pollute_repository_resolution(harness, tmp_path):
+    env = harness["env"]
+    assert isinstance(env, dict)
+    env["CDPATH"] = os.fspath(tmp_path)
+    result = _run(harness, "--mcp")
+    assert result.returncode == 0, result.stderr
+    assert _calls(harness)[0][-1] == os.fspath(REPO / "mcp")
+
+
+@pytest.mark.parametrize("action", ["install", "update"])
+def test_skill_only_uses_installed_cli_without_mcp_prerequisites(harness, action):
+    env = harness["env"]
+    assert isinstance(env, dict)
+    _write_executable(Path(env["LAUNCHER"]), Path(env["LAUNCHER_SOURCE"]).read_text())
+    tools = harness["tools"]
+    assert isinstance(tools, Path)
+    (tools / "codex").unlink()
+    (tools / "python3").unlink()
+    result = _run(harness, "--skills", action, "--name", "custom-skill")
+    assert result.returncode == 0, result.stderr
+    assert _calls(harness) == [
+        ["uv", "tool", "dir", "--bin"],
+        ["setup", "skills", action, "--name", "custom-skill"],
+    ]
+
+
+@pytest.mark.parametrize("action", ["install", "update"])
+def test_combined_mcp_and_skill_run_in_order(harness, action):
+    result = _run(harness, "--mcp", "--skills", action)
+    assert result.returncode == 0, result.stderr
+    calls = _calls(harness)
+    assert calls[0][:3] == ["uv", "tool", "install"]
+    assert calls[1:] == [
+        ["uv", "tool", "dir", "--bin"],
+        ["setup", "setup", "codex"],
+        ["setup", "skills", action, "--name", "token-io-decoupling-skill"],
+    ]
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ("--skills",),
+        ("--skills", "remove"),
+        ("--skills", "install", "--skills", "update"),
+        ("--name", "custom-skill"),
+        ("--skills", "install", "--name"),
+        ("--skills", "install", "--name", ""),
+        ("--skills", "install", "--name", "one", "--name", "two"),
+        ("--skills", "update", "--python", "3.14"),
+    ],
+)
+def test_invalid_skill_arguments_have_no_side_effects(harness, args):
+    result = _run(harness, *args)
+    assert result.returncode == 2
+    assert _calls(harness) == []
+
+
+def test_skill_dry_run_does_not_require_tools_or_install_mcp(harness):
+    env = harness["env"]
+    assert isinstance(env, dict)
+    env["PATH"] = "/nonexistent"
+    result = _run(harness, "--skills", "update", "--dry-run")
+    assert result.returncode == 0, result.stderr
+    assert "skills update --name token-io-decoupling-skill" in result.stdout
+    assert "uv tool install" not in result.stdout
+    assert "setup codex" not in result.stdout
+    assert _calls(harness) == []
+
+
+def test_skill_only_requires_installed_management_cli(harness):
+    result = _run(harness, "--skills", "install")
+    assert result.returncode == 1
+    assert "requires an installed management command" in result.stderr
+    assert _calls(harness) == [["uv", "tool", "dir", "--bin"]]
+
+
+@pytest.mark.parametrize("combined", [False, True])
+def test_skill_failure_preserves_status(harness, combined):
+    env = harness["env"]
+    assert isinstance(env, dict)
+    launcher_source = Path(env["LAUNCHER_SOURCE"])
+    source = launcher_source.read_text().replace(
+        "raise SystemExit(int(os.environ.get('SETUP_FAIL','0')))",
+        "raise SystemExit(23 if sys.argv[1] == 'skills' else 0)",
+    )
+    launcher_source.write_text(source)
+    _write_executable(Path(env["LAUNCHER"]), source)
+    args = ["--mcp"] if combined else []
+    result = _run(harness, *args, "--skills", "update")
+    assert result.returncode == 23
+    assert "Skill update failed (exit 23)" in result.stderr
+
+
+def test_mcp_setup_failure_stops_before_skill(harness):
+    env = harness["env"]
+    assert isinstance(env, dict)
+    env["SETUP_FAIL"] = "19"
+    result = _run(harness, "--mcp", "--skills", "install")
+    assert result.returncode == 19
+    assert _calls(harness)[-1] == ["setup", "setup", "codex"]
+
+
+def test_no_arguments_print_help_without_side_effects(harness):
+    env = harness["env"]
+    assert isinstance(env, dict)
+    env["PATH"] = "/nonexistent"
+    result = _run(harness)
+    assert result.returncode == 0, result.stderr
+    assert "Usage:" in result.stdout
+    assert "--mcp" in result.stdout
+    assert "--skills" in result.stdout
+    assert result.stderr == ""
+    assert _calls(harness) == []
+    sentinel = harness["sentinel"]
+    assert isinstance(sentinel, Path)
+    assert sentinel.read_text(encoding="utf-8") == 'mcp_servers = "unchanged"\n'
