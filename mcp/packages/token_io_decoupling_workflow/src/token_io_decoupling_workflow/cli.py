@@ -6,7 +6,7 @@ import argparse
 import sys
 from importlib.metadata import PackageNotFoundError, version
 
-from token_io_decoupling_workflow.decisions import DecisionsRuntimeConfig
+from token_io_decoupling_workflow.advisory.models import DecisionsRuntimeConfig
 from token_io_decoupling_workflow.server import create_workflow_server
 
 

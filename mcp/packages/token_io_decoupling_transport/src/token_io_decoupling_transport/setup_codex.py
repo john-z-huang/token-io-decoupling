@@ -116,18 +116,7 @@ def _servers_table(document: Any) -> Any:
     return servers
 
 
-def _current_table(servers: Any, name: str) -> Any | None:
-    server = servers.get(name)
-    if server is None:
-        return None
-    if not isinstance(server, dict):
-        raise SetupError(f"Codex server section is malformed: {name}")
-    if any(key in server for key in ("url", "http_headers", "env_http_headers")):
-        raise SetupError(f"Codex server is not a supported stdio registration: {name}")
-    command = server.get("command")
-    if not isinstance(command, str) or not command:
-        raise SetupError(f"Codex stdio command is invalid: {name}")
-    _string_list(server.get("args", []), "args", name)
+def _validate_server_options(server: Any, name: str) -> None:
     if "enabled" in server and not isinstance(server["enabled"], bool):
         raise SetupError(f"Codex enabled state is invalid: {name}")
     if "cwd" in server and not isinstance(server["cwd"], str):
@@ -153,6 +142,21 @@ def _current_table(servers: Any, name: str) -> Any | None:
             raise SetupError(f"Codex {field} is invalid: {name}")
     if "required" in server and not isinstance(server["required"], bool):
         raise SetupError(f"Codex required state is invalid: {name}")
+
+
+def _current_table(servers: Any, name: str) -> Any | None:
+    server = servers.get(name)
+    if server is None:
+        return None
+    if not isinstance(server, dict):
+        raise SetupError(f"Codex server section is malformed: {name}")
+    if any(key in server for key in ("url", "http_headers", "env_http_headers")):
+        raise SetupError(f"Codex server is not a supported stdio registration: {name}")
+    command = server.get("command")
+    if not isinstance(command, str) or not command:
+        raise SetupError(f"Codex stdio command is invalid: {name}")
+    _string_list(server.get("args", []), "args", name)
+    _validate_server_options(server, name)
     return server
 
 
@@ -165,6 +169,18 @@ def _set_launch(server: Any, command: Path) -> None:
         server["args"] = tomlkit.array().multiline(False)
 
 
+def _env_var_source(value: Any, name: str) -> tuple[str, str]:
+    if isinstance(value, str):
+        key, source = value, "local"
+    elif isinstance(value, dict):
+        key, source = value.get("name"), value.get("source", "local")
+        if not isinstance(key, str) or source not in {"local", "remote"}:
+            raise SetupError(f"Codex env_vars entry is malformed: {name}")
+    else:
+        raise SetupError(f"Codex env_vars entry is malformed: {name}")
+    return key, source
+
+
 def _append_default_env(server: Any, name: str, env_names: tuple[str, ...]) -> None:
     values = server.get("env_vars")
     if values is None:
@@ -174,14 +190,7 @@ def _append_default_env(server: Any, name: str, env_names: tuple[str, ...]) -> N
         raise SetupError(f"Codex env_vars must be an array: {name}")
     names: dict[str, str] = {}
     for value in values:
-        if isinstance(value, str):
-            key, source = value, "local"
-        elif isinstance(value, dict):
-            key, source = value.get("name"), value.get("source", "local")
-            if not isinstance(key, str) or source not in {"local", "remote"}:
-                raise SetupError(f"Codex env_vars entry is malformed: {name}")
-        else:
-            raise SetupError(f"Codex env_vars entry is malformed: {name}")
+        key, source = _env_var_source(value, name)
         if key in names and names[key] != source:
             raise SetupError(f"Codex env_vars source conflict: {name}")
         names[key] = source

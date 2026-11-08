@@ -35,8 +35,65 @@ class MaterializationTemplateError(Exception):
         self.reason = reason
 
 
+def _unique_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise MaterializationTemplateError("json_duplicate_key")
+        result[key] = value
+    return result
+
+
+def _reject_json_constant(_value: str) -> None:
+    raise MaterializationTemplateError("json_non_finite_number")
+
+
+def _validate_json_tree(node: Any, depth: int = 0, node_count: int = 0) -> int:
+    """按深度优先顺序校验 JSON，将累计节点数显式传给后续兄弟节点。"""
+    node_count += 1
+    if node_count > 4_096:
+        raise MaterializationTemplateError("json_node_limit_exceeded")
+    if depth > 16:
+        raise MaterializationTemplateError("json_depth_limit_exceeded")
+    if isinstance(node, dict):
+        children = node.values()
+    elif isinstance(node, list):
+        children = node
+    else:
+        if isinstance(node, float) and not math.isfinite(node):
+            raise MaterializationTemplateError("json_non_finite_number")
+        return node_count
+
+    for child in children:
+        node_count = _validate_json_tree(child, depth + 1, node_count)
+    return node_count
+
+
 class MaterializationTemplateRenderer:
     """按受限模板渲染候选内容；模型只排序已提供事实，不生成文件正文。"""
+
+    def _render_template(
+        self, template: MaterializationTemplate, ordering: list[str] | None
+    ) -> str:
+        if isinstance(template, FactMarkdownTemplate):
+            result = self._render_fact_markdown(template, ordering)
+        elif isinstance(template, JsonDocumentTemplate):
+            value = self._parse_bounded_json(template.json_text)
+            result = (
+                json.dumps(
+                    value,
+                    ensure_ascii=False,
+                    allow_nan=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n"
+            )
+        elif isinstance(template, LiteralTextTemplate):
+            result = template.text
+        else:
+            raise MaterializationTemplateError("materialization_template_invalid")
+        return result
 
     def render_all(
         self,
@@ -67,24 +124,7 @@ class MaterializationTemplateRenderer:
             ordering = self._order_facts(response_templates)
         rendered: dict[int, str] = {}
         for index, template in templates:
-            if isinstance(template, FactMarkdownTemplate):
-                result = self._render_fact_markdown(template, ordering.get(index))
-            elif isinstance(template, JsonDocumentTemplate):
-                value = self._parse_bounded_json(template.json_text)
-                result = (
-                    json.dumps(
-                        value,
-                        ensure_ascii=False,
-                        allow_nan=False,
-                        sort_keys=True,
-                        separators=(",", ":"),
-                    )
-                    + "\n"
-                )
-            elif isinstance(template, LiteralTextTemplate):
-                result = template.text
-            else:
-                raise MaterializationTemplateError("materialization_template_invalid")
+            result = self._render_template(template, ordering.get(index))
             if len(result) > MAX_MATERIALIZATION_TEXT_CHARS:
                 raise MaterializationTemplateError("candidate_file_char_limit_exceeded")
             try:
@@ -93,6 +133,35 @@ class MaterializationTemplateRenderer:
                 raise MaterializationTemplateError("candidate_content_not_valid_utf8") from exc
             rendered[index] = result
         return rendered
+
+    def _validate_fact_ordering(
+        self, response: object, templates: list[tuple[int, FactMarkdownTemplate]]
+    ) -> dict[int, list[str]]:
+        assert response is not None
+        if (
+            getattr(response, "status", None) != "completed"
+            or getattr(response, "error", None) is not None
+            or getattr(response, "incomplete_details", None) is not None
+            or getattr(response, "model", None) != MODEL
+            or self._is_refusal(response)
+        ):
+            raise MaterializationTemplateError("responses_invalid_or_incomplete")
+        parsed = getattr(response, "output_parsed", None)
+        if type(parsed) is not FactOrderingPlan:
+            raise MaterializationTemplateError("responses_ordering_invalid")
+        expected = {index: {fact.id for fact in template.facts} for index, template in templates}
+        actual_indices = [item.file_index for item in parsed.files]
+        if len(set(actual_indices)) != len(actual_indices) or set(actual_indices) != set(expected):
+            raise MaterializationTemplateError("responses_ordering_invalid")
+        result: dict[int, list[str]] = {}
+        for item in parsed.files:
+            if (
+                len(set(item.fact_ids)) != len(item.fact_ids)
+                or set(item.fact_ids) != expected[item.file_index]
+            ):
+                raise MaterializationTemplateError("responses_ordering_invalid")
+            result[item.file_index] = item.fact_ids
+        return result
 
     def _order_facts(
         self, templates: list[tuple[int, FactMarkdownTemplate]]
@@ -150,31 +219,7 @@ class MaterializationTemplateRenderer:
             # Raise outside the exception handler so no provider exception is
             # available through caller-visible cause or context attributes.
             raise MaterializationTemplateError(provider_failure)
-        assert response is not None
-        if (
-            getattr(response, "status", None) != "completed"
-            or getattr(response, "error", None) is not None
-            or getattr(response, "incomplete_details", None) is not None
-            or getattr(response, "model", None) != MODEL
-            or self._is_refusal(response)
-        ):
-            raise MaterializationTemplateError("responses_invalid_or_incomplete")
-        parsed = getattr(response, "output_parsed", None)
-        if type(parsed) is not FactOrderingPlan:
-            raise MaterializationTemplateError("responses_ordering_invalid")
-        expected = {index: {fact.id for fact in template.facts} for index, template in templates}
-        actual_indices = [item.file_index for item in parsed.files]
-        if len(set(actual_indices)) != len(actual_indices) or set(actual_indices) != set(expected):
-            raise MaterializationTemplateError("responses_ordering_invalid")
-        result: dict[int, list[str]] = {}
-        for item in parsed.files:
-            if (
-                len(set(item.fact_ids)) != len(item.fact_ids)
-                or set(item.fact_ids) != expected[item.file_index]
-            ):
-                raise MaterializationTemplateError("responses_ordering_invalid")
-            result[item.file_index] = item.fact_ids
-        return result
+        return self._validate_fact_ordering(response, templates)
 
     def _make_client(self, api_key: str, base_url: str) -> object:
         from .openai_client import make_openai_client
@@ -202,44 +247,16 @@ class MaterializationTemplateRenderer:
 
     @staticmethod
     def _parse_bounded_json(raw: str) -> Any:
-        def pairs_to_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-            result: dict[str, Any] = {}
-            for key, value in pairs:
-                if key in result:
-                    raise MaterializationTemplateError("json_duplicate_key")
-                result[key] = value
-            return result
-
-        def reject_constant(_value: str) -> None:
-            raise MaterializationTemplateError("json_non_finite_number")
-
+        """先解码并拒绝重复键及非有限常量，再校验整棵树的资源限制。"""
         try:
             value = json.loads(
-                raw, object_pairs_hook=pairs_to_object, parse_constant=reject_constant
+                raw, object_pairs_hook=_unique_json_object, parse_constant=_reject_json_constant
             )
         except MaterializationTemplateError:
             raise
         except (json.JSONDecodeError, RecursionError, ValueError) as exc:
             raise MaterializationTemplateError("json_document_invalid") from exc
-        count = 0
-
-        def inspect(node: Any, depth: int) -> None:
-            nonlocal count
-            count += 1
-            if count > 4_096:
-                raise MaterializationTemplateError("json_node_limit_exceeded")
-            if depth > 16:
-                raise MaterializationTemplateError("json_depth_limit_exceeded")
-            if isinstance(node, dict):
-                for child in node.values():
-                    inspect(child, depth + 1)
-            elif isinstance(node, list):
-                for child in node:
-                    inspect(child, depth + 1)
-            elif isinstance(node, float) and not math.isfinite(node):
-                raise MaterializationTemplateError("json_non_finite_number")
-
-        inspect(value, 0)
+        _validate_json_tree(value)
         return value
 
     @staticmethod

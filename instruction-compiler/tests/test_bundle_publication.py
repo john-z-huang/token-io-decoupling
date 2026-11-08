@@ -34,7 +34,7 @@ class OptionalExportTests(unittest.TestCase):
         report = json.loads((repository / "instruction-compiler/build-report.json").read_bytes())
         report.pop("build_id")
         report.pop("language")
-        compiler_patch = patch("token_io_instruction_compiler.compiler.Compiler")
+        compiler_patch = patch("token_io_instruction_compiler.compilation.pipeline.Compiler")
         compiler = compiler_patch.start().return_value
         self.addCleanup(compiler_patch.stop)
         compiler.compile.return_value = instructions, self.skill_files

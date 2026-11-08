@@ -3,7 +3,7 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
-from token_io_decoupling_tools.task_plan_core import TaskPlanService
+from token_io_decoupling_tools.task_plans.service import TaskPlanService
 
 
 class TaskPlanFactoryError(Exception):

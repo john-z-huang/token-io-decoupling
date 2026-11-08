@@ -10,10 +10,11 @@ from token_io_decoupling_core.codex_context import CodexCallerBoundProvider
 from token_io_decoupling_core.server_tools import WORKFLOW_SERVER_NAME, WORKFLOW_TOOLS
 from token_io_decoupling_transport.identity import binding_details, bound_role
 from token_io_decoupling_transport.tool import ToolRegistrar
+from token_io_decoupling_workflow.advisory.advisor import DecisionsAdvisor
+from token_io_decoupling_workflow.advisory.models import DecisionsRuntimeConfig
 from token_io_decoupling_workflow.capabilities import AdviceAvailability, capability_report
-from token_io_decoupling_workflow.decisions import DecisionsAdvisor, DecisionsRuntimeConfig
+from token_io_decoupling_workflow.compiled_rules.loader import RuleLoader
 from token_io_decoupling_workflow.events.advice import EventAdvisor
-from token_io_decoupling_workflow.rules import RuleLoader
 from token_io_decoupling_workflow.tool import register_tools
 from token_io_decoupling_workflow.tool_metadata import (
     tool_description,

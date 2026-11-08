@@ -91,24 +91,36 @@ def _safe_error_code(exc: Exception) -> tuple[str | None, bool]:
     return None, True
 
 
-def classify_provider_failure(exc: Exception) -> ProviderFailure:
-    """依据已知异常类别和合法状态码分类；不回显输入或猜测瞬态错误。"""
+def _classify_transport_or_api_failure(
+    exc: Exception, status: int | None, raw_code: str | None, code: ProviderErrorCode | None
+) -> tuple[FailureClass, ProviderErrorCode | None]:
     error_name = type(exc).__name__
-    raw_status, safe_status = _safe_attribute(exc, "status_code")
-    if raw_status is not None and (type(raw_status) is not int or not 100 <= raw_status <= 599):
-        return ProviderFailure(reason="provider_error", failure_class="unknown")
-    status = raw_status if type(raw_status) is int and 100 <= raw_status <= 599 else None
-    raw_code, safe_code = _safe_error_code(exc)
-    if not safe_status or not safe_code:
-        return ProviderFailure(reason="provider_error", failure_class="unknown")
-    allowed_codes: dict[str, ProviderErrorCode] = {
-        "invalid_api_key": "invalid_api_key",
-        "model_not_found": "model_not_found",
-        "insufficient_quota": "insufficient_quota",
-        "rate_limit_exceeded": "rate_limit_exceeded",
-    }
-    code = allowed_codes.get(raw_code) if raw_code is not None else None
+    if isinstance(exc, (TypeError, ValueError)):
+        category = "configuration"
+    elif error_name == "APIResponseValidationError":
+        category = "sdk_contract"
+    elif status is not None and status >= 500:
+        category = "api"
+        code = "other" if raw_code is not None and code is None else code
+    elif status is not None:
+        category = "api"
+        code = "other" if raw_code is not None and code is None else code
+    elif error_name in {
+        "APITimeoutError",
+        "APIConnectionError",
+        "APIConnectionTimeoutError",
+        "TimeoutError",
+    }:
+        category = "transport"
+    else:
+        category = "unknown"
 
+    return category, code
+
+
+def _classify_status_failure(
+    exc: Exception, status: int | None, raw_code: str | None, code: ProviderErrorCode | None
+) -> tuple[FailureClass, ProviderErrorCode | None]:
     # Explicit hard failures win over broad transport names or server-status candidates.
     if status == 401 or code == "invalid_api_key":
         category: FailureClass = "authentication"
@@ -131,25 +143,30 @@ def classify_provider_failure(exc: Exception) -> ProviderFailure:
             if code == "rate_limit_exceeded"
             else ("other" if raw_code is not None else None)
         )
-    elif isinstance(exc, (TypeError, ValueError)):
-        category = "configuration"
-    elif error_name == "APIResponseValidationError":
-        category = "sdk_contract"
-    elif status is not None and status >= 500:
-        category = "api"
-        code = "other" if raw_code is not None and code is None else code
-    elif status is not None:
-        category = "api"
-        code = "other" if raw_code is not None and code is None else code
-    elif error_name in {
-        "APITimeoutError",
-        "APIConnectionError",
-        "APIConnectionTimeoutError",
-        "TimeoutError",
-    }:
-        category = "transport"
     else:
-        category = "unknown"
+        category, code = _classify_transport_or_api_failure(exc, status, raw_code, code)
+    return category, code
+
+
+def classify_provider_failure(exc: Exception) -> ProviderFailure:
+    """依据已知异常类别和合法状态码分类；不回显输入或猜测瞬态错误。"""
+    error_name = type(exc).__name__
+    raw_status, safe_status = _safe_attribute(exc, "status_code")
+    if raw_status is not None and (type(raw_status) is not int or not 100 <= raw_status <= 599):
+        return ProviderFailure(reason="provider_error", failure_class="unknown")
+    status = raw_status if type(raw_status) is int and 100 <= raw_status <= 599 else None
+    raw_code, safe_code = _safe_error_code(exc)
+    if not safe_status or not safe_code:
+        return ProviderFailure(reason="provider_error", failure_class="unknown")
+    allowed_codes: dict[str, ProviderErrorCode] = {
+        "invalid_api_key": "invalid_api_key",
+        "model_not_found": "model_not_found",
+        "insufficient_quota": "insufficient_quota",
+        "rate_limit_exceeded": "rate_limit_exceeded",
+    }
+    code = allowed_codes.get(raw_code) if raw_code is not None else None
+
+    category, code = _classify_status_failure(exc, status, raw_code, code)
 
     reason: Literal["provider_error", "timeout"] = (
         "timeout"

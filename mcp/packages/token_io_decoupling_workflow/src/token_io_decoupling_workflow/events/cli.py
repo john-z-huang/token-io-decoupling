@@ -9,7 +9,8 @@ from typing import TextIO
 
 from pydantic import ConfigDict, JsonValue, TypeAdapter, ValidationError
 
-from token_io_decoupling_workflow.decisions import DecisionsRuntimeConfig
+from token_io_decoupling_workflow.advisory.models import DecisionsRuntimeConfig
+from token_io_decoupling_workflow.compiled_rules.loader import RuleLoader
 from token_io_decoupling_workflow.events.advice import EventAdvisor
 from token_io_decoupling_workflow.events.checks import WorkflowEventChecker
 from token_io_decoupling_workflow.events.contracts import DEFAULT_EVENT_TEXT_BUDGET
@@ -23,7 +24,6 @@ from token_io_decoupling_workflow.events.native import (
     native_hook_response,
     normalize_native_event,
 )
-from token_io_decoupling_workflow.rules import RuleLoader
 
 _JSON_OBJECT = TypeAdapter(dict[str, JsonValue], config=ConfigDict(allow_inf_nan=False))
 

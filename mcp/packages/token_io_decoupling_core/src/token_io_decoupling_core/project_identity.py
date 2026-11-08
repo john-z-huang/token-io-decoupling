@@ -28,6 +28,50 @@ def _reject_symlink_components(path: Path) -> None:
             raise ProjectIdentityError("repository identity path cannot be inspected") from exc
 
 
+def _read_git_directory(root: Path, marker: Path) -> Path:
+    if marker.is_dir() and not marker.is_symlink():
+        git_dir = marker
+    elif marker.is_file() and not marker.is_symlink():
+        match = _GITDIR_LINE.fullmatch(marker.read_text(encoding="utf-8").strip())
+        if match is None:
+            raise ProjectIdentityError("worktree .git marker is malformed")
+        git_dir = Path(match.group(1))
+        if not git_dir.is_absolute():
+            git_dir = root / git_dir
+    else:
+        raise ProjectIdentityError("repository has no regular .git metadata")
+    git_dir = Path(os.path.abspath(git_dir))
+    _reject_symlink_components(git_dir)
+    if not git_dir.is_dir():
+        raise ProjectIdentityError("Git directory is unavailable")
+    return git_dir
+
+
+def _read_common_directory(git_dir: Path) -> Path:
+    common_file = git_dir / "commondir"
+    has_commondir = common_file.exists()
+    if has_commondir:
+        if common_file.is_symlink() or not common_file.is_file():
+            raise ProjectIdentityError("Git commondir metadata is unsafe")
+        common_value = common_file.read_text(encoding="utf-8").strip()
+        if not common_value:
+            raise ProjectIdentityError("Git commondir metadata is empty")
+        common_dir = Path(common_value)
+        if not common_dir.is_absolute():
+            common_dir = git_dir / common_dir
+    else:
+        common_dir = git_dir
+    common_dir = Path(os.path.abspath(common_dir))
+    _reject_symlink_components(common_dir)
+    if not common_dir.is_dir():
+        raise ProjectIdentityError("Git common directory is unavailable")
+    if has_commondir and not (
+        git_dir.parent.name == "worktrees" and common_dir == git_dir.parent.parent
+    ):
+        raise ProjectIdentityError("Git common directory is outside its worktree metadata")
+    return common_dir
+
+
 def project_id_from_git_common_dir(
     repository: Path | str, *, trusted_association: str | None = None
 ) -> str:
@@ -43,42 +87,8 @@ def project_id_from_git_common_dir(
         raise ProjectIdentityError("repository root is unavailable")
     marker = root / ".git"
     try:
-        if marker.is_dir() and not marker.is_symlink():
-            git_dir = marker
-        elif marker.is_file() and not marker.is_symlink():
-            match = _GITDIR_LINE.fullmatch(marker.read_text(encoding="utf-8").strip())
-            if match is None:
-                raise ProjectIdentityError("worktree .git marker is malformed")
-            git_dir = Path(match.group(1))
-            if not git_dir.is_absolute():
-                git_dir = root / git_dir
-        else:
-            raise ProjectIdentityError("repository has no regular .git metadata")
-        git_dir = Path(os.path.abspath(git_dir))
-        _reject_symlink_components(git_dir)
-        if not git_dir.is_dir():
-            raise ProjectIdentityError("Git directory is unavailable")
-        common_file = git_dir / "commondir"
-        has_commondir = common_file.exists()
-        if has_commondir:
-            if common_file.is_symlink() or not common_file.is_file():
-                raise ProjectIdentityError("Git commondir metadata is unsafe")
-            common_value = common_file.read_text(encoding="utf-8").strip()
-            if not common_value:
-                raise ProjectIdentityError("Git commondir metadata is empty")
-            common_dir = Path(common_value)
-            if not common_dir.is_absolute():
-                common_dir = git_dir / common_dir
-        else:
-            common_dir = git_dir
-        common_dir = Path(os.path.abspath(common_dir))
-        _reject_symlink_components(common_dir)
-        if not common_dir.is_dir():
-            raise ProjectIdentityError("Git common directory is unavailable")
-        if has_commondir and not (
-            git_dir.parent.name == "worktrees" and common_dir == git_dir.parent.parent
-        ):
-            raise ProjectIdentityError("Git common directory is outside its worktree metadata")
+        git_dir = _read_git_directory(root, marker)
+        common_dir = _read_common_directory(git_dir)
     except OSError as exc:
         raise ProjectIdentityError("Git metadata cannot be read safely") from exc
     if trusted_association is not None:

@@ -49,24 +49,9 @@ def config_path(explicit: Path | None = None) -> Path:
     return root / "config.toml"
 
 
-def _read_target(path: Path, *, allow_missing: bool) -> tuple[bytes, os.stat_result] | None:
-    try:
-        path_info = path.lstat()
-    except FileNotFoundError:
-        if allow_missing:
-            return None
-        raise CodexEnvError("Codex config file does not exist") from None
-    except OSError:
-        raise CodexEnvError("Codex config file could not be inspected") from None
-    if stat.S_ISLNK(path_info.st_mode) or not stat.S_ISREG(path_info.st_mode):
-        raise CodexEnvError("Codex config target must be a regular, non-symlink file")
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
-    try:
-        descriptor = os.open(path, flags)
-    except OSError as exc:
-        if exc.errno == errno.ELOOP:
-            raise CodexEnvError("Codex config target must be a regular, non-symlink file") from None
-        raise CodexEnvError("Codex config file could not be inspected") from None
+def _read_target_descriptor(
+    descriptor: int, path_info: os.stat_result
+) -> tuple[bytes, os.stat_result]:
     try:
         info = os.fstat(descriptor)
         if not stat.S_ISREG(info.st_mode) or (info.st_dev, info.st_ino) != (
@@ -86,6 +71,27 @@ def _read_target(path: Path, *, allow_missing: bool) -> tuple[bytes, os.stat_res
         os.close(descriptor)
 
 
+def _read_target(path: Path, *, allow_missing: bool) -> tuple[bytes, os.stat_result] | None:
+    try:
+        path_info = path.lstat()
+    except FileNotFoundError:
+        if allow_missing:
+            return None
+        raise CodexEnvError("Codex config file does not exist") from None
+    except OSError:
+        raise CodexEnvError("Codex config file could not be inspected") from None
+    if stat.S_ISLNK(path_info.st_mode) or not stat.S_ISREG(path_info.st_mode):
+        raise CodexEnvError("Codex config target must be a regular, non-symlink file")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as exc:
+        if exc.errno == errno.ELOOP:
+            raise CodexEnvError("Codex config target must be a regular, non-symlink file") from None
+        raise CodexEnvError("Codex config file could not be inspected") from None
+    return _read_target_descriptor(descriptor, path_info)
+
+
 def read_config_snapshot(path: Path) -> ConfigSnapshot:
     snapshot = _read_target(path, allow_missing=True)
     if snapshot is None:
@@ -94,24 +100,26 @@ def read_config_snapshot(path: Path) -> ConfigSnapshot:
     return ConfigSnapshot(raw, info)
 
 
+def _config_unchanged(path: Path, snapshot: ConfigSnapshot) -> bool:
+    original, info = snapshot.raw, snapshot.info
+    current = _read_target(path, allow_missing=True)
+    if info is None:
+        return current is None
+    if current is None:
+        return False
+    current_bytes, current_info = current
+    return (
+        (current_info.st_dev, current_info.st_ino) == (info.st_dev, info.st_ino)
+        and stat.S_IMODE(current_info.st_mode) == stat.S_IMODE(info.st_mode)
+        and current_bytes == original
+    )
+
+
 def atomic_write_config(path: Path, snapshot: ConfigSnapshot, rendered: bytes) -> None:
     """Atomically replace a config only when its original identity and bytes still match."""
-    original, info = snapshot.raw, snapshot.info
+    info = snapshot.info
 
-    def unchanged() -> bool:
-        current = _read_target(path, allow_missing=True)
-        if info is None:
-            return current is None
-        if current is None:
-            return False
-        current_bytes, current_info = current
-        return (
-            (current_info.st_dev, current_info.st_ino) == (info.st_dev, info.st_ino)
-            and stat.S_IMODE(current_info.st_mode) == stat.S_IMODE(info.st_mode)
-            and current_bytes == original
-        )
-
-    if not unchanged():
+    if not _config_unchanged(path, snapshot):
         raise CodexEnvError("Codex config changed during update; retry after reviewing it")
     temp_path: Path | None = None
     try:
@@ -126,7 +134,7 @@ def atomic_write_config(path: Path, snapshot: ConfigSnapshot, rendered: bytes) -
             os.chmod(temp_path, stat.S_IMODE(info.st_mode))
         else:
             os.chmod(temp_path, 0o600)
-        if not unchanged():
+        if not _config_unchanged(path, snapshot):
             raise CodexEnvError("Codex config changed during update; retry after reviewing it")
         os.replace(temp_path, path)
         temp_path = None
@@ -147,6 +155,21 @@ def _parse(raw: bytes) -> tomlkit.TOMLDocument:
         return tomlkit.parse(raw.decode("utf-8"))
     except (UnicodeDecodeError, ParseError):
         raise CodexEnvError("Codex config is not valid UTF-8 TOML") from None
+
+
+def _validate_env_vars(server: Any, name: str) -> None:
+    env_vars = server.get("env_vars", [])
+    if not isinstance(env_vars, list):
+        raise CodexEnvError(f"Codex env_vars must be an array: {name}")
+    for item in env_vars:
+        if isinstance(item, str):
+            continue
+        if isinstance(item, dict):
+            var_name, source = item.get("name"), item.get("source", "local")
+            if not isinstance(var_name, str) or source not in ("local", "remote"):
+                raise CodexEnvError(f"Codex env_vars entry is malformed: {name}")
+            continue
+        raise CodexEnvError(f"Codex env_vars entry is malformed: {name}")
 
 
 def _server_table(document: Any, name: str) -> Any:
@@ -171,18 +194,7 @@ def _server_table(document: Any, name: str) -> Any:
         or not all(isinstance(arg, str) for arg in args)
     ):
         raise CodexEnvError(f"Codex server is not a valid stdio registration: {name}")
-    env_vars = server.get("env_vars", [])
-    if not isinstance(env_vars, list):
-        raise CodexEnvError(f"Codex env_vars must be an array: {name}")
-    for item in env_vars:
-        if isinstance(item, str):
-            continue
-        if isinstance(item, dict):
-            var_name, source = item.get("name"), item.get("source", "local")
-            if not isinstance(var_name, str) or source not in ("local", "remote"):
-                raise CodexEnvError(f"Codex env_vars entry is malformed: {name}")
-            continue
-        raise CodexEnvError(f"Codex env_vars entry is malformed: {name}")
+    _validate_env_vars(server, name)
     return server
 
 

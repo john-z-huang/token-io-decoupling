@@ -10,17 +10,18 @@ from typing import Literal, Protocol, TypedDict, runtime_checkable
 
 from pydantic import TypeAdapter
 
+from token_io_decoupling_workflow.advisory.models import (
+    DECISIONS_MODEL,
+    DECISIONS_TIMEOUT_SECONDS,
+    DecisionsRuntimeConfig,
+)
+from token_io_decoupling_workflow.advisory.requests import is_refusal, validated_choice
 from token_io_decoupling_workflow.api_recovery import (
     classify_provider_failure,
     recovery_for_provider_failure,
 )
-from token_io_decoupling_workflow.decisions import (
-    DECISIONS_MODEL,
-    DECISIONS_TIMEOUT_SECONDS,
-    DecisionsRuntimeConfig,
-    is_refusal,
-    validated_choice,
-)
+from token_io_decoupling_workflow.compiled_rules.contracts import RuleLoadError
+from token_io_decoupling_workflow.compiled_rules.loader import RuleLoader
 from token_io_decoupling_workflow.events.contracts import (
     CompiledEvent,
     EventInstructions,
@@ -33,7 +34,6 @@ from token_io_decoupling_workflow.events.models import (
     EventStructuralCheck,
     canonical_event_json,
 )
-from token_io_decoupling_workflow.rules import RuleLoader, RuleLoadError
 
 MAX_EVENT_ADVICE_CHARS = 32_000
 EVENT_QUESTION_NAME = "workflow_event_outcome"
