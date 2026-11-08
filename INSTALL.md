@@ -25,11 +25,16 @@
 | `--mcp` | 安装或更新 MCP 命令，并注册两个服务。 |
 | `--skills install` | 首次安装 Skill。 |
 | `--skills update` | 更新已有受管 Skill。 |
+| `--hooks install` | 通过 uv tool 安装独立 Hooks 包并注册到 Codex。 |
+| `--hooks update` | 从当前 checkout 重装 Hooks 及其依赖，并幂等更新注册。 |
+| `--hooks-file PATH` | 指定 Hooks 配置绝对路径，须与 `--hooks` 一起使用；默认遵循 `CODEX_HOME`。 |
 | `--name NAME` | 指定 Skill 名称，须与 `--skills` 一起使用。 |
-| `--python VERSION` | 指定 MCP 安装使用的 Python 版本，默认 `3.14`。 |
+| `--python VERSION` | 指定 MCP 或 Hooks 安装使用的 Python 版本，默认 `3.14`。 |
 | `--dry-run` | 仅打印所选操作的计划，不检查依赖、执行命令或读写配置。单独使用时预览 MCP 操作。 |
 
 `--mcp` 可与 `--skills install` 或 `--skills update` 组合，按 MCP、Skill 的顺序执行，任一步失败即停止。单独操作 Skill 不重装 MCP 或注册服务；尚未安装管理命令时先运行 `--mcp`。同时安装两者可运行 `./tid --mcp --skills install`，同时更新可运行 `./tid --mcp --skills update`。
+
+Hooks 为可选独立安装，可单独运行 `./tid --hooks install` 或 `./tid --hooks update`，不要求已安装 MCP 管理命令。组合使用时先安装所选 MCP、Hooks 包，再注册 MCP、Hooks，最后操作 Skill，任一步失败即停止。例如 `./tid --mcp --hooks update --skills update`。Hooks 安装前同样检查编译资源新鲜度，更新从当前 checkout 重装三个依赖包，不会自动拉取 Git 更新。
 
 ## 首次安装
 
@@ -113,8 +118,34 @@ Setup 成功表示已检查两个 MCP 工具清单：workflow 为 11 个工具�
 可选原生命令从 stdin 读取一个有界 JSON 对象并写出一个原生响应：
 
 ```sh
-"$(uv tool dir --bin)/token-io-decoupling-workflow" hook --mode single-agent
+"$(uv tool dir --bin)/token-io-decoupling-hooks" --mode single-agent
 ```
+
+`token-io-decoupling-hooks` 是独立的 uv tool 分发包，复用 workflow 包中的事件检查器与批准规则，不安装 tools 或管理命令。旧 `token-io-decoupling-workflow hook` 入口继续兼容。从 checkout 根目录安装或更新并注册：
+
+```sh
+./tid --hooks install
+./tid --hooks update
+./tid --hooks update --dry-run
+```
+
+项目级配置可指定 `./tid --hooks install --hooks-file /absolute/project/.codex/hooks.json`。脚本安装或重装成功后调用 `setup codex`，保留其它 Hook 和配置；安装失败不会执行注册，注册失败保留已安装命令并返回失败状态。信任状态仍需在 Codex 中审阅。
+
+需要分开安装与注册时，可直接执行底层命令：
+
+```sh
+uv tool install --python 3.14 \
+  --with ./mcp/packages/token_io_decoupling_core \
+  --with ./mcp/packages/token_io_decoupling_transport \
+  --with ./mcp/packages/token_io_decoupling_workflow \
+  ./mcp/packages/token_io_decoupling_hooks
+"$(uv tool dir --bin)/token-io-decoupling-hooks" setup codex --dry-run
+"$(uv tool dir --bin)/token-io-decoupling-hooks" setup codex
+```
+
+仅安装 wheel 时，将上述四个本地目录分别替换为匹配版本的 wheel 路径。单独执行 `uv tool install` 不注册 Hook；显式执行 `setup codex`（或上述脚本的 `--hooks` 操作）才修改 `${CODEX_HOME:-~/.codex}/hooks.json`，也可通过 `--hooks-file /absolute/path/hooks.json` 指定项目配置。注册使用已安装环境中的绝对命令路径，保留其它 Hook 和配置；重复执行不增加相同命令。修改已有文件前保存同目录唯一 `.bak` 备份，然后原子替换，格式错误或符号链接会被拒绝。
+
+注册默认覆盖下列六种事件，采用本地静态检查，不固定 Agent 模式、不启用 API 请求或 Stop 阻塞、不修改信任记录。Codex 的非受管 Hook 需要在 `/hooks` 中审阅和信任当前定义后才会运行；配置更新后重新检查该状态。若只希望在某个项目使用，应通过 `--hooks-file` 注册项目级配置。
 
 在自行审阅的 Hook 配置中，仅映射已支持的 Codex 事件：
 
@@ -127,7 +158,7 @@ Setup 成功表示已检查两个 MCP 工具清单：workflow 为 11 个工具�
 | `Stop` | `completion_requested` |
 | `SessionStart` | `session_resumed` |
 
-安装和 setup 不安装原生 Hook。适配器无法判断原生会话是否采用本 workflow，调用方须将命令限定到已采用的会话；无法可靠限定时，使用 Agent 主动 `workflow_check_event` 调用。不提供全局注册或采用状态文件，也不为独立工具增加前置检查。适配器不读取 transcript 或任意文件，不持久化状态，也不输出权限 `allow`。默认 Stop/SubagentStop 响应使用 `systemMessage`，不会把契约回灌模型；Agent 须通过 Skill 或 MCP 工具主动消费完成／进展检查。
+MCP 安装及其 setup 不注册原生 Hook；独立 hooks 命令的 `setup codex` 提供上述显式注册。适配器无法判断原生会话是否采用本 workflow，注册位置由操作员选择，不记录采用状态，也不为独立工具增加前置检查。无需原生注册时，使用 Agent 主动 `workflow_check_event` 调用。事件适配器不读取 transcript 或任意文件，不持久化状态，也不输出权限 `allow`。默认 Stop/SubagentStop 响应使用 `systemMessage`，不会把契约回灌模型；Agent 须通过 Skill 或 MCP 工具主动消费完成／进展检查。
 
 Hook 选项错误、输入错误及运行故障均返回退出码 1；argparse 的错误码 2 会转换为 1，避免被原生宿主误作阻塞。`--help` 返回 0。只有下述显式 JSON 响应会请求阻塞。
 
