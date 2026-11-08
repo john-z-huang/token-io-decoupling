@@ -11,7 +11,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[6]
 
-SCRIPT = REPO / "scripts" / "install-codex-mcp.sh"
+SCRIPT = REPO / "install"
 
 BASH = "/bin/bash" if Path("/bin/bash").is_file() else shutil.which("bash")
 
@@ -94,15 +94,21 @@ def harness(tmp_path: Path) -> dict[str, Path | dict[str, str]]:
 
 
 def _run(
-    harness: dict[str, Path | dict[str, str]], *args: str, script: Path | None = None
+    harness: dict[str, Path | dict[str, str]],
+    *args: str,
+    script: Path | None = None,
+    via_bash: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     cwd = harness["cwd"]
     assert isinstance(cwd, Path)
     cwd.mkdir(exist_ok=True)
     env = harness["env"]
     assert isinstance(env, dict)
+    command = [os.fspath(script or SCRIPT), *args]
+    if via_bash:
+        command.insert(0, BASH or "bash")
     return subprocess.run(
-        [BASH or "bash", os.fspath(script or SCRIPT), *args],
+        command,
         cwd=cwd,
         env=env,
         text=True,
@@ -265,11 +271,9 @@ def test_unusable_installed_command_stops_before_setup(harness, env_key, message
 
 def test_script_finds_repo_when_repo_and_cwd_paths_contain_spaces(harness, tmp_path):
     copied_repo = tmp_path / "repository with spaces"
-    scripts = copied_repo / "scripts"
     (copied_repo / "mcp").mkdir(parents=True)
-    scripts.mkdir()
-    script = scripts / "install-codex-mcp.sh"
-    script.write_bytes(SCRIPT.read_bytes())
+    script = copied_repo / "install"
+    shutil.copy2(SCRIPT, script)
     compiler_stub = copied_repo / "instruction-compiler/compile.py"
     compiler_stub.parent.mkdir()
     compiler_stub.write_text("# Source-check fixture; invoked by the fake Python tool.\n")
@@ -280,11 +284,9 @@ def test_script_finds_repo_when_repo_and_cwd_paths_contain_spaces(harness, tmp_p
 
 def test_relative_script_invocation_with_spaces_from_unrelated_cwd(harness, tmp_path):
     copied_repo = tmp_path / "relative repository with spaces"
-    scripts = copied_repo / "scripts"
     (copied_repo / "mcp").mkdir(parents=True)
-    scripts.mkdir()
-    script = scripts / "install-codex-mcp.sh"
-    script.write_bytes(SCRIPT.read_bytes())
+    script = copied_repo / "install"
+    shutil.copy2(SCRIPT, script)
     compiler_stub = copied_repo / "instruction-compiler/compile.py"
     compiler_stub.parent.mkdir()
     compiler_stub.write_text("# Source-check fixture; invoked by the fake Python tool.\n")
@@ -293,7 +295,7 @@ def test_relative_script_invocation_with_spaces_from_unrelated_cwd(harness, tmp_
     env = harness["env"]
     assert isinstance(env, dict)
     result = subprocess.run(
-        [BASH or "bash", os.path.join("..", "scripts", script.name), "--dry-run"],
+        [os.path.join("..", script.name), "--dry-run"],
         cwd=caller,
         env=env,
         text=True,
@@ -337,7 +339,8 @@ def test_symlink_chain_resolves_or_stops_before_install(harness, tmp_path, link_
         link = tmp_path / f"installer link {index}.sh"
         link.symlink_to(os.path.relpath(target, link.parent) if index % 2 else target)
         target = link
-    result = _run(harness, "--mcp", script=target)
+    # 显式使用 Bash，避免操作系统先拦截超长链接，确保覆盖脚本自身的防护。
+    result = _run(harness, "--mcp", script=target, via_bash=link_count > 40)
     if link_count <= 40:
         assert result.returncode == 0, result.stderr
         assert _calls(harness)[0][-1] == os.fspath(REPO / "mcp")
@@ -462,7 +465,7 @@ def test_no_arguments_print_help_without_side_effects(harness):
     env["PATH"] = "/nonexistent"
     result = _run(harness)
     assert result.returncode == 0, result.stderr
-    assert "Usage:" in result.stdout
+    assert "用法：./install [选项]" in result.stdout
     assert "--mcp" in result.stdout
     assert "--skills" in result.stdout
     assert result.stderr == ""

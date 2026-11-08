@@ -155,7 +155,7 @@ Memory 工具不需要额外安装选项或 Serena 包。从目标项目根目�
 
 ### 安装与更新入口
 
-MCP 与 Skill 的安装、更新、脚本参数及失败恢复统一见[安装与更新](../../../../../INSTALL.md)。[公共安装脚本](../../../../../scripts/install-codex-mcp.sh)以 `--mcp` 选择 MCP，以 `--skills install|update` 选择 Skill；无参数仅打印帮助。
+MCP 与 Skill 的安装、更新、脚本参数及失败恢复统一见[安装与更新](../../../../../INSTALL.md)。[公共安装脚本](../../../../../install)以 `--mcp` 选择 MCP，以 `--skills install|update` 选择 Skill；无参数仅打印帮助。
 
 修改作者指令后，先通过本开发流程重新生成并验证批准资源，再安装包并更新受管 Skill。安装脚本不重新编译资源；只更新可执行程序不会更新已安装 Skill。更新后重载受影响的 MCP Server，并启动新的 Agent 会话。
 
@@ -320,7 +320,7 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 安装脚本的 `--mcp` 操作在 `uv tool install` 前验证编译新鲜度；资源陈旧即失败，不在安装时重新生成。其 dry-run 不进行编译器、安装、网络或配置操作。更新可执行程序、注册 MCP 和更新已安装 Skill 仍是独立动作。安装同批次产物后更新 Skill、重载受影响 MCP Server，并启动新的 Agent 会话。重新读取指令和政策 Hash、重新评估陈旧结果并保留历史；编辑已安装 Skill 不能修改 MCP 资源。
 
-开发检查和文档回归直接使用私有 Skill 的实际入口；根 scripts 仅保留安装入口，开发及测试转发别名均已移除。
+开发检查和文档回归直接使用私有 Skill 的实际入口；项目根目录 install 提供安装入口，开发及测试转发别名均已移除。
 
 [产物回归](../../tests/mcp/unit_tests/test_build_artifacts.py)验证五个分发包、私有内容排除、同批次资源、损坏拒绝及独立重建。[安装回归](../../tests/mcp/unit_tests/test_skill_artifacts.py)验证无需 checkout 的安装及其不受已安装 Skill 编辑影响。临时工具检查使用任务局部 `UV_TOOL_DIR`、`UV_TOOL_BIN_DIR` 和 [stdio smoke 脚本](../../tests/mcp/support/installed_stdio_smoke.py)。
 

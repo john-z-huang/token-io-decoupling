@@ -30,8 +30,8 @@ Agent 根据精简的单代理或多代理指令及六类事件 Hook 动态选�
 需要完整分发包及可选 Coding Skill 时：
 
 ```sh
-bash scripts/install-codex-mcp.sh --mcp
-bash scripts/install-codex-mcp.sh --skills install
+./install --mcp
+./install --skills install
 ```
 
 已有受管 Skill 使用 `--skills update`。脚本无参数运行仅打印帮助；参数组合、预览与恢复见[安装与更新](INSTALL.md)。`--mcp` 注册两个服务；`token-io-decoupling setup codex --server tools` 或 `--server workflow` 可只选择一个。加载 Coding Skill 表示明确采用该工作流；仅使用 tools 的任务不加载它，也不进入其路线。
