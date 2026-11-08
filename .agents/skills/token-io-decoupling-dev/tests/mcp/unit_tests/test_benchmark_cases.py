@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 import hashlib
-import importlib.util
-from pathlib import Path
 
 import pytest
 from support import benchmark_cases as cases
 from support.event_cases import checker, request
 
-from token_io_decoupling_core.materialization_models import MaterializationInspectRequest
 from token_io_decoupling_tools.compliance_preflight import (
     CompliancePreflightService,
     validate_decoupling_compliance,
@@ -21,17 +18,6 @@ from token_io_decoupling_workflow.rules import RuleLoader
 class _ForbiddenRecorder:
     def make_client(self, **_kwargs):
         raise AssertionError("retired cases cannot create a client")
-
-
-def _materialization_fixture():
-    fixture = Path(__file__).with_name("test_output_materialization.py")
-    spec = importlib.util.spec_from_file_location(
-        "_current_generic_materialization_fixture", fixture
-    )
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def test_historical_dataset_and_reports_remain_read_only_and_explicitly_retired(tmp_path):
@@ -109,36 +95,3 @@ def test_current_generic_preflight_is_read_only_and_retired_scope_is_rejected(tm
             )
     finally:
         service.close()
-
-
-def test_current_generic_code_materialization_keeps_prepare_inspect_preflight_apply_guards(
-    tmp_path,
-):
-    fixture = _materialization_fixture()
-    project, _artifacts, _binding, _provider, preflight, _grant, _config, materializer = (
-        fixture._workspace(tmp_path, ["src/current.txt"])
-    )
-    try:
-        prepared = materializer.execute(
-            fixture._literal_prepare("src/current.txt", "current code output\n")
-        )
-        assert prepared["status"] == "prepared"
-        assert not (project / "src/current.txt").exists()
-        inspected = materializer.execute(
-            MaterializationInspectRequest(
-                action="inspect",
-                prepared_id=prepared["prepared_id"],
-                expected_manifest_hash=prepared["manifest_sha256"],
-                file_index=0,
-                max_chars=8192,
-            )
-        )
-        assert inspected["complete"] is True
-        assert inspected["content"] == "current code output\n"
-        applied = fixture._apply(materializer, prepared)
-        assert applied["status"] == "applied"
-        assert applied["fresh_preflight"] == "pass"
-        assert (project / "src/current.txt").read_text() == "current code output\n"
-    finally:
-        materializer.close()
-        preflight.close()

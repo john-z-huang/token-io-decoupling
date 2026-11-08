@@ -39,7 +39,7 @@ path = "hatch_build.py"
 
 [tool.pytest.ini_options]
 testpaths = ["../.agents/skills/token-io-decoupling-dev/tests/mcp/unit_tests", "../.agents/skills/token-io-decoupling-dev/tests/mcp/mock_api_tests", "../.agents/skills/token-io-decoupling-dev/tests/mcp/real_api_tests"]
-pythonpath = ["src", "packages/token_io_decoupling_core/src", "packages/token_io_decoupling_transport/src", "packages/token_io_decoupling_workflow/src", "packages/token_io_decoupling_tools/src", "../.agents/skills/token-io-decoupling-dev/tests/mcp"]
+pythonpath = ["src", "packages/token_io_decoupling_core/src", "packages/token_io_decoupling_transport/src", "packages/token_io_decoupling_workflow/src", "packages/token_io_decoupling_tools/src", "../.agents/skills/token-io-decoupling-dev/tests/mcp", "../.agents/skills/token-io-decoupling-dev/tests/mcp/support"]
 addopts = "-ra"
 markers = [
   "real_api: opt-in live OpenAI API integration tests",

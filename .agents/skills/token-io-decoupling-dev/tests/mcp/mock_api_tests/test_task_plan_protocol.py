@@ -9,6 +9,9 @@ from typing import Any
 
 from mcp import Client
 from mcp.types import TextContent
+from support.task_plan_scenarios import _archive as _archive_request
+from support.task_plan_scenarios import _complete as _complete_request
+from support.task_plan_scenarios import _update as _update_request
 
 from token_io_decoupling.server import create_tools_server
 from token_io_decoupling_tools.task_plan_core import SerenaMemoryStore, TaskPlanService
@@ -73,7 +76,19 @@ def _record(record_id: str, kind: str, *, outcome: str | None = None) -> dict[st
     }
 
 
-def _receipt(result: Any) -> dict[str, Any]:
+def _protocol_creation_request(project_root: str) -> dict[str, object]:
+    return _update_request(
+        project_root,
+        "protocol-plan",
+        None,
+        "op-create",
+        _record("criterion-1", "criterion"),
+        _record("verification-1", "verification", outcome="passed"),
+    )
+
+
+async def _call_plan_tool(client: Client, name: str, request: dict[str, object]) -> dict[str, Any]:
+    result = await client.call_tool(name, {"payload": {"request": request}})
     assert not result.is_error
     assert result.content
     content = result.content[0]
@@ -93,7 +108,7 @@ def _resolve_schema_reference(root: dict[str, Any], schema: dict[str, Any]) -> d
     return schema
 
 
-def test_task_plan_tools_negotiate_schema_default_and_configured_protocol(tmp_path: Path) -> None:
+def test_default_task_plan_schema_and_unconfigured_receipt(tmp_path: Path) -> None:
     project_root = str(tmp_path.resolve())
 
     async def run() -> None:
@@ -120,48 +135,38 @@ def test_task_plan_tools_negotiate_schema_default_and_configured_protocol(tmp_pa
                 "records",
             }
             assert set(request_schema["properties"]) == set(request_schema["required"])
-            unavailable = _receipt(
-                await client.call_tool(
-                    "task_plan_update",
-                    {
-                        "payload": {
-                            "request": {
-                                "project_root": project_root,
-                                "plan_id": "protocol-plan",
-                                "expected_revision": None,
-                                "request_id": "op-default",
-                                "records": [_record("goal-1", "goal")],
-                            }
-                        }
-                    },
-                )
+            unavailable = await _call_plan_tool(
+                client,
+                "task_plan_update",
+                _update_request(
+                    project_root,
+                    "protocol-plan",
+                    None,
+                    "op-default",
+                    _record("goal-1", "goal"),
+                ),
             )
             assert unavailable["status"] == "unavailable"
             assert unavailable["reason"] == "task_plan_backend_not_configured"
             assert unavailable["storage_scope"] is None
             assert unavailable["repository_id"] is None
 
+    asyncio.run(run())
+
+
+def test_configured_task_plan_protocol_completes_and_archives_in_one_session(
+    tmp_path: Path,
+) -> None:
+    project_root = str(tmp_path.resolve())
+
+    async def run() -> None:
         store = _ProtocolStore(project_root)
         configured_server = create_tools_server(task_plan_service=TaskPlanService(store))
         async with Client(configured_server, mode="auto") as client:
-            update = _receipt(
-                await client.call_tool(
-                    "task_plan_update",
-                    {
-                        "payload": {
-                            "request": {
-                                "project_root": project_root,
-                                "plan_id": "protocol-plan",
-                                "expected_revision": None,
-                                "request_id": "op-create",
-                                "records": [
-                                    _record("criterion-1", "criterion"),
-                                    _record("verification-1", "verification", outcome="passed"),
-                                ],
-                            }
-                        }
-                    },
-                )
+            update = await _call_plan_tool(
+                client,
+                "task_plan_update",
+                _protocol_creation_request(project_root),
             )
             assert update["status"] == "updated"
             assert update["project_root"] == project_root
@@ -170,45 +175,27 @@ def test_task_plan_tools_negotiate_schema_default_and_configured_protocol(tmp_pa
             assert update["repository_id"] is None
             revision = update["current_revision"]
 
-            completed = _receipt(
-                await client.call_tool(
-                    "task_plan_complete",
-                    {
-                        "payload": {
-                            "request": {
-                                "project_root": project_root,
-                                "plan_id": "protocol-plan",
-                                "expected_revision": revision,
-                                "request_id": "op-complete",
-                                "criterion_evidence": [
-                                    {
-                                        "criterion_id": "criterion-1",
-                                        "verification_id": "verification-1",
-                                    }
-                                ],
-                                "records": [_record("result-1", "result")],
-                            }
-                        }
-                    },
-                )
+            evidence = [{"criterion_id": "criterion-1", "verification_id": "verification-1"}]
+            completed = await _call_plan_tool(
+                client,
+                "task_plan_complete",
+                _complete_request(
+                    project_root,
+                    "protocol-plan",
+                    revision,
+                    "op-complete",
+                    evidence,
+                    _record("result-1", "result"),
+                ),
             )
             assert completed["status"] == "completed"
             assert completed["plan_state"] == "completed"
             revision = completed["current_revision"]
 
-            archived = _receipt(
-                await client.call_tool(
-                    "task_plan_archive",
-                    {
-                        "payload": {
-                            "request": {
-                                "project_root": project_root,
-                                "plan_id": "protocol-plan",
-                                "expected_revision": revision,
-                            }
-                        }
-                    },
-                )
+            archived = await _call_plan_tool(
+                client,
+                "task_plan_archive",
+                _archive_request(project_root, "protocol-plan", revision),
             )
             assert archived["status"] == "archived"
             assert archived["memory_name"] == "archive-plans/PLAN-protocol-plan"

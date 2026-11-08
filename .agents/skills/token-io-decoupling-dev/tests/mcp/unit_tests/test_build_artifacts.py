@@ -13,6 +13,12 @@ import zipfile
 from pathlib import Path
 
 import pytest
+from support.isolated_runtime import (
+    create_runtime_environment,
+    install_runtime_wheels,
+    run_runtime_probe,
+    runtime_environment,
+)
 
 from token_io_decoupling.skills import validate_skill_bundle
 
@@ -208,111 +214,37 @@ def test_skill_payload_contains_no_executable_or_private_attachment(artifacts):
         assert all(Path(name).suffix in {".md", ".json", ".yaml"} for name in archive.namelist())
 
 
-@pytest.mark.parametrize("service", ["tools", "workflow"])
-def test_runtime_wheel_installs_and_runs_without_sibling_or_admin(artifacts, tmp_path, service):
+def _install_runtime(artifacts: Path, tmp_path: Path, service: str) -> Path:
     environment = tmp_path / "venv"
-    created = subprocess.run(
-        ["uv", "venv", "--offline", "--python", sys.executable, str(environment)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    created = create_runtime_environment(environment)
     assert created.returncode == 0, created.stderr
     interpreter = environment / "bin/python"
-    installed = subprocess.run(
-        [
-            "uv",
-            "pip",
-            "install",
-            "--offline",
-            "--python",
-            str(interpreter),
-            str(_wheel(artifacts, "token_io_decoupling_core")),
-            str(_wheel(artifacts, "token_io_decoupling_transport")),
-            str(_wheel(artifacts, f"token_io_decoupling_{service}")),
-        ],
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    wheels = [
+        _wheel(artifacts, "token_io_decoupling_core"),
+        _wheel(artifacts, "token_io_decoupling_transport"),
+        _wheel(artifacts, f"token_io_decoupling_{service}"),
+    ]
+    installed = install_runtime_wheels(interpreter, wheels, tmp_path)
     assert installed.returncode == 0, installed.stderr
+    return interpreter
+
+
+@pytest.mark.parametrize("service", ["tools", "workflow"])
+def test_runtime_wheel_installs_and_runs_without_sibling_or_admin(artifacts, tmp_path, service):
+    interpreter = _install_runtime(artifacts, tmp_path, service)
     memory = tmp_path / ".serena/memories"
     memory.mkdir(parents=True)
     (memory / "notes.md").write_text("wheel-only Memory\n", encoding="utf-8")
-    code = r"""
-import asyncio
-import importlib.util
-import json
-import sys
-from pathlib import Path
-from mcp import Client, StdioServerParameters
-
-service = sys.argv[1]
-sibling = "workflow" if service == "tools" else "tools"
-assert importlib.util.find_spec("token_io_decoupling_" + sibling) is None
-assert importlib.util.find_spec("token_io_decoupling") is None
-if service == "tools":
-    assert importlib.util.find_spec("token_io_decoupling_core.rules") is None
-else:
-    assert importlib.util.find_spec("dev_workflow_standards_tools") is None
-
-
-async def run():
-    executable = Path(sys.executable).with_name("token-io-decoupling-" + service)
-    async with Client(
-        StdioServerParameters(command=str(executable), args=[])
-    ) as client:
-        tools = (await client.list_tools()).tools
-        assert len(tools) == (41 if service == "tools" else 11)
-        if service == "tools":
-            result = await client.call_tool(
-                "serena_memory_tail_read",
-                {
-                    "memory_path": "notes",
-                    "tail_lines": 1,
-                },
-            )
-            assert not result.is_error
-            assert (
-                json.loads(result.content[0].text)["content"] == "wheel-only Memory\n"
-            )
-        else:
-            result = await client.call_tool(
-                "rules_get_context",
-                {
-                    "payload": {
-                        "node_id": "contract",
-                        "context_version": 2,
-                    }
-                },
-            )
-            assert not result.is_error
-            assert json.loads(result.content[0].text)["complete"]
-
-
-asyncio.run(run())
-"""
-    env = {
-        key: value
-        for key, value in os.environ.items()
-        if key
-        not in {
-            "PYTHONPATH",
-            "OPENAI_API_KEY",
-            "OPENAI_BASE_URL",
-        }
-    }
-    result = subprocess.run(
-        [str(interpreter), "-I", "-c", code, service],
-        cwd=tmp_path,
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=45,
+    result = run_runtime_probe(
+        interpreter, "wheel_independence_probe.py", tmp_path, service, isolated=True
     )
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize("service", ["tools", "workflow"])
+def test_runtime_wheel_setup_preview_configures_only_its_service(artifacts, tmp_path, service):
+    interpreter = _install_runtime(artifacts, tmp_path, service)
+    env = runtime_environment()
     cli = interpreter.with_name(f"token-io-decoupling-{service}")
     preview = subprocess.run(
         [str(cli), "setup", "codex", "--dry-run"],

@@ -11,6 +11,8 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from support.task_plan_scenarios import _archive as _archive_request
+from support.task_plan_scenarios import _complete as _complete_request
 
 from token_io_decoupling_tools import task_plan_core as core
 from token_io_decoupling_tools.task_plan_core import (
@@ -268,19 +270,23 @@ def test_store_keeps_project_default_and_requires_existing_global_root(
     assert global_store.repository_id == core._repository_id_for_checkout(git_checkouts["main"])
 
 
-def test_global_lifecycle_shares_revisions_replay_and_archive_across_worktrees(
+@pytest.fixture
+def global_services(
     git_checkouts: dict[str, Path], tmp_path: Path
-) -> None:
+) -> dict[str, tuple[TaskPlanService, SerenaMemoryStore]]:
+    """只准备共享后端及三个 checkout 的服务，计划更新仍由测试显式执行。"""
     global_root = tmp_path / "serena-global"
     global_root.mkdir()
     manager = _GlobalFilesystemMemoryManager(global_root, tmp_path / "unused-project-memory")
-    main_service, main_store = _global_service(git_checkouts["main"], manager)
-    one_service, one_store = _global_service(git_checkouts["worktree_one"], manager)
-    two_service, two_store = _global_service(git_checkouts["worktree_two"], manager)
-    assert main_store.repository_id == one_store.repository_id == two_store.repository_id
+    return {
+        name: _global_service(git_checkouts[name], manager)
+        for name in ("main", "worktree_one", "worktree_two")
+    }
 
-    initial_request = {
-        "project_root": main_store.project_root,
+
+def _shared_plan_request(project_root: str) -> dict[str, object]:
+    return {
+        "project_root": project_root,
         "plan_id": "shared-plan",
         "expected_revision": None,
         "request_id": "create-shared",
@@ -290,6 +296,14 @@ def test_global_lifecycle_shares_revisions_replay_and_archive_across_worktrees(
             _record("verification-1", "verification", outcome="passed"),
         ],
     }
+
+
+def test_global_history_uses_repository_identity_in_every_worktree(global_services) -> None:
+    main_service, main_store = global_services["main"]
+    _, one_store = global_services["worktree_one"]
+    _, two_store = global_services["worktree_two"]
+    assert main_store.repository_id == one_store.repository_id == two_store.repository_id
+    initial_request = _shared_plan_request(main_store.project_root)
     created = main_service.update(initial_request)
     assert created["status"] == "updated"
     assert created["storage_scope"] == "global"
@@ -315,6 +329,17 @@ def test_global_lifecycle_shares_revisions_replay_and_archive_across_worktrees(
     assert parsed.events[0]["repository_id"] == main_store.repository_id
     assert "project_root" not in parsed.events[0]
 
+
+def test_global_updates_share_revisions_replay_and_reject_stale_writes(
+    git_checkouts, global_services
+) -> None:
+    main_service, main_store = global_services["main"]
+    one_service, one_store = global_services["worktree_one"]
+    two_service, two_store = global_services["worktree_two"]
+    initial_request = _shared_plan_request(main_store.project_root)
+    created = main_service.update(initial_request)
+    active = main_store._fixed_path("shared-plan", False)
+    first_bytes = active.read_bytes()
     replay_request = {**initial_request, "project_root": one_store.project_root}
     replayed = one_service.update(replay_request)
     assert replayed["status"] == "replayed"
@@ -345,27 +370,41 @@ def test_global_lifecycle_shares_revisions_replay_and_archive_across_worktrees(
     assert stale["reason"] == "stale_revision"
     assert active.read_bytes() == changed_bytes
 
-    completed = two_service.complete(
-        {
-            "project_root": two_store.project_root,
-            "plan_id": "shared-plan",
-            "expected_revision": changed["current_revision"],
-            "request_id": "complete-shared",
-            "criterion_evidence": [
-                {"criterion_id": "criterion-1", "verification_id": "verification-1"}
-            ],
-            "records": [_record("result-1", "result")],
-        }
+
+def test_global_completion_archives_across_worktrees_and_replays_archive(
+    git_checkouts, global_services
+) -> None:
+    main_service, main_store = global_services["main"]
+    one_service, one_store = global_services["worktree_one"]
+    two_service, two_store = global_services["worktree_two"]
+    initial_request = _shared_plan_request(main_store.project_root)
+    created = main_service.update(initial_request)
+    active = main_store._fixed_path("shared-plan", False)
+    changed = _update(
+        two_service,
+        git_checkouts["worktree_two"],
+        "shared-plan",
+        created["current_revision"],
+        "worktree-two-progress",
+        _record("progress-1", "progress"),
     )
+    assert changed["status"] == "updated"
+    assert changed["current_revision"] != created["current_revision"]
+    completion_request = _complete_request(
+        two_store.project_root,
+        "shared-plan",
+        changed["current_revision"],
+        "complete-shared",
+        [{"criterion_id": "criterion-1", "verification_id": "verification-1"}],
+        _record("result-1", "result"),
+    )
+    completed = two_service.complete(completion_request)
     assert completed["status"] == "completed"
     completed_bytes = active.read_bytes()
-    archived = main_service.archive(
-        {
-            "project_root": main_store.project_root,
-            "plan_id": "shared-plan",
-            "expected_revision": completed["current_revision"],
-        }
+    archive_request = _archive_request(
+        main_store.project_root, "shared-plan", completed["current_revision"]
     )
+    archived = main_service.archive(archive_request)
     assert archived["status"] == "archived"
     archive_path = main_store._fixed_path("shared-plan", True)
     assert archive_path.read_bytes() == completed_bytes
@@ -376,16 +415,17 @@ def test_global_lifecycle_shares_revisions_replay_and_archive_across_worktrees(
         "archive-plans/PLAN-shared-plan"
     )
     assert (
-        two_service.archive(
-            {
-                "project_root": two_store.project_root,
-                "plan_id": "shared-plan",
-                "expected_revision": completed["current_revision"],
-            }
-        )["status"]
+        two_service.archive({**archive_request, "project_root": two_store.project_root})["status"]
         == "already_archived"
     )
 
+
+def test_global_updates_serialize_concurrent_worktree_revisions(
+    git_checkouts, global_services
+) -> None:
+    main_service, _ = global_services["main"]
+    one_service, _ = global_services["worktree_one"]
+    two_service, _ = global_services["worktree_two"]
     concurrent_seed = _update(
         main_service,
         git_checkouts["main"],
