@@ -10,7 +10,7 @@ MCP Server 面向本地可用的 Codex CLI，包括本地 Work 使用的本地 C
 Workspace 包含五个分发包：可选根管理／完整安装、共享 core/transport，以及可独立安装的 tools/workflow 运行时。运行时成员拥有各自 console script，互不依赖。Workflow 拥有编译规则；tools 拥有计划、Memory、preflight 与物化。以下命令在 mcp/ 中使用托管 Python 和锁定依赖执行：
 
 ```sh
-uv sync --managed-python --locked --all-packages --group dev --group codex-test
+uv sync --managed-python --locked --all-packages --group dev
 uv run --managed-python --locked -- pytest -c pyproject.toml
 uv run --managed-python --locked -- ruff check --config pyproject.toml . ../.agents/skills/token-io-decoupling-dev/tests/mcp
 uv run --managed-python --locked -- ruff format --config pyproject.toml --check . ../.agents/skills/token-io-decoupling-dev/tests/mcp
@@ -85,22 +85,22 @@ CLI 默认使用 `PATH` 中的 `codex`；Desktop 默认使用 `/Applications/Cha
 
 每个用例启动独立的真实 app-server，通过进程内 `mcp_servers` 覆盖值，用安全占位条目禁用继承的已配置 server，并启用当前 workspace 的 workflow server。仅读取已配置 server 名称和传输类型，不复制 URL、参数、环境变量值或凭据。它断言继承的已配置 server 不暴露工具；客户端可保留内置平台服务，测试不调用这些服务。它验证目标的无参 schema 和新版描述，调用 `workflow_capabilities` 并检查结构化诊断，确认 `workflow_evaluate` 拒绝缺少可信绑定的调用。每项使用一个 ephemeral 线程，不启动模型 turn，并通过终止自己创建的进程组释放仅驻内存的线程及 MCP 子进程。不修改用户配置或已安装 MCP 包，此能力检查不需要模型 API 请求。运行环境必须允许启动和清理这些进程。
 
-普通 pytest 跳过两项，不探测已安装客户端。显式启用后，客户端缺失、权限失败、协议错误或旧能力响应都会使测试失败，不跳过，也不回退到模拟客户端。已有 SDK、Mock 和安装版 stdio 检查继续保持各自较窄的证明范围。运行时检查通过不证明既有客户端会话已经重载更新后的 MCP 安装；该会话仍需单独验证安装和重载。
+普通 pytest 跳过两项，不探测已安装客户端。显式启用后，客户端缺失、权限失败、协议错误或旧能力响应都会使测试失败，不跳过，也不回退到模拟客户端。App Server、Mock 和安装版 stdio 检查继续保持各自较窄的证明范围。运行时检查通过不证明既有客户端会话已经重载更新后的 MCP 安装；该会话仍需单独验证安装和重载。
 
-### Codex SDK 最终查看
+### Codex App Server 最终查看
 
-openai-codex 固定在独立 codex-test 依赖组，不进入生产导入与依赖。[测试协调器](../../tests/mcp/support/final_codex_check.py)定义当前测试顺序。从仓库根准备项目环境，并调用唯一有序协调器：
+测试通过标准库直接启动已安装的 `codex app-server`，以 stdio JSON-RPC 交互，无需额外 Codex Python SDK 依赖。[测试协调器](../../tests/mcp/support/final_codex_check.py)定义当前测试顺序。从仓库根准备项目环境，并调用唯一有序协调器：
 
 ~~~sh
-uv sync --project mcp --locked --group dev --group codex-test
+uv sync --project mcp --locked --group dev
 uv run --project mcp --no-sync python .agents/skills/token-io-decoupling-dev/tests/mcp/support/final_codex_check.py
 ~~~
 
-协调器先检查编译新鲜度与编译器回归，再执行全部适用 MCP 测试、lint、格式、类型、文档回归、校验器及空白检查；任一失败即停止序列。仅在其全部通过后，构建当前产物、通过隔离临时 uv tool/bin 目录安装、测试已安装 stdio，再经仅测试使用的 SDK adapter 启动全新 Codex CLI。普通测试使用 fake，绝不启动真实 SDK。可选真实 API/客户端用例保留显式开关，并报告剩余跳过项。
+协调器先检查编译新鲜度与编译器回归，再执行全部适用 MCP 测试、lint、格式、类型、文档回归、校验器及空白检查；任一失败即停止序列。仅在其全部通过后，构建当前产物、通过隔离临时 uv tool/bin 目录安装、测试已安装 stdio，再经仅测试使用的 App Server adapter 启动全新 Codex CLI。普通测试使用 fake，绝不启动真实 App Server。可选真实 API/客户端用例保留显式开关，并报告剩余跳过项。
 
-全新 CLI 仅进行有界只读版本、发现、能力与中文规则检查，零 model turns。不得分配实现、规划、调试、委派、写入或任意 Shell 工作。Adapter 显式复用非空进程 OPENAI_API_KEY、OPENAI_BASE_URL，固定 gpt-6-luna、medium 并核实有效配置；缺失或冲突即失败，不回退到保存登录、其他端点、凭据、模型或强度。不得输出或保存凭据值及原始 SDK 诊断。
+全新 CLI 仅进行有界只读版本、发现、能力与中文规则检查，零 model turns。不得分配实现、规划、调试、委派、写入或任意 Shell 工作。Adapter 显式复用非空进程 OPENAI_API_KEY、OPENAI_BASE_URL，固定 gpt-6-luna、medium 并核实有效配置；缺失或冲突即失败，不回退到保存登录、其他端点、凭据、模型或强度。不得输出或保存凭据值及原始 App Server 诊断。
 
-使用已安装 Codex CLI，可通过 TOKEN_IO_CODEX_CLI_PATH 选择，并隔离临时配置。不得修改用户设置或复用现有实例。当前会话不能动态重载 MCP，因此该检查验证新安装构建，不证明既有会话已重载。CI 仅执行政策和 fake 测试，不启动真实 SDK 查看。
+使用已安装 Codex CLI，可通过 TOKEN_IO_CODEX_CLI_PATH 选择，并隔离临时配置。不得修改用户设置或复用现有实例。当前会话不能动态重载 MCP，因此该检查验证新安装构建，不证明既有会话已重载。CI 仅执行政策和 fake 测试，不启动真实 App Server 查看。
 
 ## API 与工具恢复提示
 
@@ -256,7 +256,7 @@ Codex 自身的环境中必须持有这两个非空白 API 变量，以及需要
 
 Workflow stdio 服务提供有界事件指令与调用方事实的结构校验，不在调用之间维护线程、项目、Root、Worker、allocation 或检查点状态。项目本地 Memory 属于独立 tools 服务；启动路径或调用方 metadata 均不建立身份或授权。
 
-单独的输出 materializer 默认不可用，须具备可信启动上下文、独立操作员授权及匹配的逐次调用绑定。实际 guard 边界见[输出物化 · 边界请求 Hook](../../../../../instruction-compiler/sources/skill/references/coding/hooks/boundary-requested.md#可选资源操作)、[输出物化 · 动作观察 Hook](../../../../../instruction-compiler/sources/skill/references/coding/hooks/action-observed.md#观察效果)和[调用方上下文](CODEX_CALLER_CONTEXT.md)。安装包检查验证 stdio 发现及有界行为；SDK 最终检查仍限版本、发现、能力和规则读取，不执行模型轮次或变更。
+单独的输出 materializer 默认不可用，须具备可信启动上下文、独立操作员授权及匹配的逐次调用绑定。实际 guard 边界见[输出物化 · 边界请求 Hook](../../../../../instruction-compiler/sources/skill/references/coding/hooks/boundary-requested.md#可选资源操作)、[输出物化 · 动作观察 Hook](../../../../../instruction-compiler/sources/skill/references/coding/hooks/action-observed.md#观察效果)和[调用方上下文](CODEX_CALLER_CONTEXT.md)。安装包检查验证 stdio 发现及有界行为；App Server 最终检查仍限版本、发现、能力和规则读取，不执行模型轮次或变更。
 
 ## 真实 API 请求的必需配置
 
@@ -366,7 +366,7 @@ uv build --all-packages --managed-python --python 3.14 --out-dir /tmp/token-io-d
 
 [产物回归](../../tests/mcp/unit_tests/test_build_artifacts.py)验证五个分发包、私有内容排除、同批次资源、损坏拒绝及独立重建。[安装回归](../../tests/mcp/unit_tests/test_skill_artifacts.py)验证无需 checkout 的安装及其不受已安装 Skill 编辑影响。临时工具检查使用任务局部 `UV_TOOL_DIR`、`UV_TOOL_BIN_DIR` 和 [stdio smoke 脚本](../../tests/mcp/support/installed_stdio_smoke.py)。
 
-SDK 最终查看必须按上文有序协调器执行：全部适用检查、当前构建、隔离工具安装、已安装 stdio、全新只读 CLI 查看。首个前置或检查阶段失败即停止。
+App Server 最终查看必须按上文有序协调器执行：全部适用检查、当前构建、隔离工具安装、已安装 stdio、全新只读 CLI 查看。首个前置或检查阶段失败即停止。
 
 ## 相关概念
 

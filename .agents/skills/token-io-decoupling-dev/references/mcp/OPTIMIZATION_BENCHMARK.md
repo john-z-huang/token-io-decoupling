@@ -74,7 +74,7 @@
 uv run --no-sync --package token-io-decoupling python tests/support/optimization_benchmark.py --live --output benchmarks/new_authorized_run.json
 ```
 
-没有 live opt-in 不发送测量请求；输出已存在会在 API 前拒绝。复现只能得到另一描述性样本，不能保证上述数值。此过程不使用 Codex SDK；fresh CLI 检查由独立有序最终入口负责。
+没有 live opt-in 不发送测量请求；输出已存在会在 API 前拒绝。复现只能得到另一描述性样本，不能保证上述数值。此过程不使用 Codex App Server；fresh CLI 检查由独立有序最终入口负责。
 
 ## 相关指南
 

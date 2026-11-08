@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from codex_sdk import validate_compiled_rule_bundle
+from codex_app_server import validate_compiled_rule_bundle
 from mcp import Client
 
 from .protocol import result_text

@@ -13,9 +13,9 @@
 
 ## 范围与权限
 
-### Codex SDK 仅限测试
+### Codex App Server 仅限测试
 
-当前[最终检查协调器](../../tests/mcp/support/final_codex_check.py)和 [SDK adapter](../../tests/mcp/support/codex_sdk.py)实现[开发指南](DEVELOPMENT.md#codex-sdk-最终查看)描述的仅测试 SDK 路径。测试环境将 openai-codex 放在 codex-test 中；协调器完成适用检查及当前构建安装后，再启动全新只读 CLI 查看。普通单元测试使用 fake，不启动 SDK。这些实现检查不授予生产编排或其他任务动作的授权。
+当前[最终检查协调器](../../tests/mcp/support/final_codex_check.py)和 [App Server adapter](../../tests/mcp/support/codex_app_server.py)实现[开发指南](DEVELOPMENT.md#codex-app-server-最终查看)描述的仅测试 App Server 路径。测试使用标准库 stdio JSON-RPC 客户端；协调器完成适用检查及当前构建安装后，再启动全新只读 CLI 查看。普通单元测试使用 fake，不启动 App Server。这些实现检查不授予生产编排或其他任务动作的授权。
 
 
 此限制适用于 MCP Server，不删除 `mcp/` 之外的原生运行时指令，也不增加文件系统、网络、凭据、Agent 创建或 Git 授权。
