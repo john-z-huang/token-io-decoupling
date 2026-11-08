@@ -119,6 +119,46 @@ def test_json_document_is_canonical_and_rejects_duplicate_nonfinite_and_limits()
             )
 
 
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "[" * 16 + "0" + "]" * 16,
+        "[" + ",".join(["0"] * 4_095) + "]",
+    ],
+    ids=["depth-at-limit", "nodes-at-limit-including-root"],
+)
+def test_json_document_accepts_exact_resource_limits(raw: str) -> None:
+    rendered = MaterializationTemplateRenderer().render_all(
+        [(0, JsonDocumentTemplate(kind="json_document", json_text=raw))],
+        grant=_grant(),
+        outbound_data_permitted=False,
+    )
+
+    assert rendered == {0: raw + "\n"}
+
+
+@pytest.mark.parametrize(
+    ("raw", "reason"),
+    [
+        ('{"a":{"x":1,"x":2}}', "json_duplicate_key"),
+        ('{"a":1e999}', "json_non_finite_number"),
+        ('{"a":[0,],"b":1}', "json_document_invalid"),
+        (
+            '{"a":[' + ",".join(["0"] * 2_047) + '],"b":[' + ",".join(["0"] * 2_047) + "]}",
+            "json_node_limit_exceeded",
+        ),
+    ],
+    ids=["nested-duplicate", "float-overflow", "malformed-json", "nodes-counted-across-siblings"],
+)
+def test_json_document_rejects_nested_and_malformed_content(raw: str, reason: str) -> None:
+    with pytest.raises(MaterializationTemplateError, match=f"^{reason}$"):
+        MaterializationTemplateRenderer().render_all(
+            [(0, JsonDocumentTemplate(kind="json_document", json_text=raw))],
+            grant=_grant(),
+            outbound_data_permitted=False,
+        )
+
+
 def test_fact_markdown_renders_original_source_order_without_api() -> None:
     renderer = MaterializationTemplateRenderer()
     rendered = renderer.render_all(

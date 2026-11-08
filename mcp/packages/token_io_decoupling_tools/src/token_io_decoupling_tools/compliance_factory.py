@@ -5,7 +5,7 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
-from token_io_decoupling_tools.compliance_preflight import CompliancePreflightService
+from token_io_decoupling_tools.compliance.service import CompliancePreflightService
 
 
 class ComplianceFactoryError(ValueError):

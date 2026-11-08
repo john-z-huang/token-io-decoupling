@@ -93,13 +93,9 @@ class SerenaMemoryReadService:
             raise _MemoryReadError("memory_path_invalid")
         return "/".join(parts), candidate
 
-    def _read_tail(
-        self, memory_path: str, tail_lines: int
-    ) -> tuple[str, Path, str, int, int, int | None, int | None, bool]:
-        if self._memory_root is None:
-            raise _MemoryReadError(self._startup_reason)
-        memory_name, path = self._resolve_memory(memory_path)
+    def _verify_memory_hierarchy(self, path: Path) -> None:
         # Check each component before resolving so a symlink cannot redirect the read.
+        assert self._memory_root is not None
         current = self._memory_root
         assert self._project_root is not None
         lexical_root = self._project_root / ".serena" / "memories"
@@ -117,25 +113,38 @@ class SerenaMemoryReadService:
             current = current / part
             if current.is_symlink():
                 raise _MemoryReadError("memory_symlink_rejected")
+
+    @staticmethod
+    def _read_memory_lines(path: Path, tail_lines: int) -> tuple[deque[str], int, str]:
+        with path.open("r", encoding="utf-8", newline="") as stream:
+            lines: deque[str] = deque(maxlen=tail_lines)
+            total_lines = 0
+            last_ending = ""
+            if tail_lines == 0:
+                for line in stream:
+                    total_lines += 1
+                    last_ending = line[-1:] if line else ""
+            else:
+                for line in stream:
+                    total_lines += 1
+                    lines.append(line)
+                    last_ending = line[-1:] if line else ""
+        return lines, total_lines, last_ending
+
+    def _read_tail(
+        self, memory_path: str, tail_lines: int
+    ) -> tuple[str, Path, str, int, int, int | None, int | None, bool]:
+        if self._memory_root is None:
+            raise _MemoryReadError(self._startup_reason)
+        memory_name, path = self._resolve_memory(memory_path)
+        self._verify_memory_hierarchy(path)
         try:
             root = self._memory_root.resolve(strict=True)
             resolved = path.resolve(strict=True)
             resolved.relative_to(root)
             if not path.is_file():
                 raise _MemoryReadError("memory_file_not_regular")
-            with path.open("r", encoding="utf-8", newline="") as stream:
-                lines: deque[str] = deque(maxlen=tail_lines)
-                total_lines = 0
-                last_ending = ""
-                if tail_lines == 0:
-                    for line in stream:
-                        total_lines += 1
-                        last_ending = line[-1:] if line else ""
-                else:
-                    for line in stream:
-                        total_lines += 1
-                        lines.append(line)
-                        last_ending = line[-1:] if line else ""
+            lines, total_lines, last_ending = self._read_memory_lines(path, tail_lines)
         except _MemoryReadError:
             raise
         except FileNotFoundError as exc:

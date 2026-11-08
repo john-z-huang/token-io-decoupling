@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
-from token_io_decoupling_core.workflow_models import CheckpointNode
+from token_io_decoupling_core.workflow_contracts.vocabulary import CheckpointNode
 
 
 def _text(*parts: str) -> str:

@@ -9,7 +9,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 
 from token_io_decoupling_core.binding import BindingError, BindingProvider
-from token_io_decoupling_core.workflow_models import BindingIdentity
+from token_io_decoupling_core.workflow_contracts.vocabulary import BindingIdentity
 
 _MAX_CONTEXT_VALUE = 256
 

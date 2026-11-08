@@ -7,14 +7,12 @@ from mcp.server import MCPServer
 from token_io_decoupling_core.binding import BindingError, BindingProvider, DenyingBindingProvider
 from token_io_decoupling_core.codex_context import CodexCallerBoundProvider
 from token_io_decoupling_core.server_tools import TOOLS_SERVER_NAME, TOOLS_SERVER_TOOLS
-from token_io_decoupling_tools.compliance_preflight import CompliancePreflightService
-from token_io_decoupling_tools.output_materialization import (
-    OutputMaterializationService,
-    OutputMaterializerConfig,
-)
+from token_io_decoupling_tools.compliance.service import CompliancePreflightService
+from token_io_decoupling_tools.materialization.models import OutputMaterializerConfig
+from token_io_decoupling_tools.materialization.service import OutputMaterializationService
+from token_io_decoupling_tools.registration.local import register_tools
 from token_io_decoupling_tools.serena_memory import SerenaMemoryReadService
-from token_io_decoupling_tools.task_plan_core import TaskPlanService
-from token_io_decoupling_tools.tool import register_tools
+from token_io_decoupling_tools.task_plans.service import TaskPlanService
 from token_io_decoupling_tools.tool_metadata import (
     SERVER_DESCRIPTION,
     SERVER_INSTRUCTIONS,

@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from token_io_decoupling_core.binding import BindingError, BindingProvider, DenyingBindingProvider
-from token_io_decoupling_core.workflow_models import BindingIdentity, HostGuard, SessionRole
+from token_io_decoupling_core.workflow_contracts.vocabulary import (
+    BindingIdentity,
+    HostGuard,
+    SessionRole,
+)
 
 
 def binding_details(provider: BindingProvider) -> dict[str, str]:

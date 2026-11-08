@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from token_io_decoupling_core.workflow_models import BindingIdentity
+from token_io_decoupling_core.workflow_contracts.vocabulary import BindingIdentity
 
 
 class BindingError(PermissionError):

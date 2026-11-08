@@ -15,8 +15,9 @@ from pydantic import (
 )
 
 from token_io_decoupling_core.models import Sha256, StrictModel
-from token_io_decoupling_core.workflow_models import ActiveCheckpointNode, EvidenceSubmission
-from token_io_decoupling_workflow.decisions import DecisionAdvisoryInput
+from token_io_decoupling_core.workflow_contracts.evidence import EvidenceSubmission
+from token_io_decoupling_core.workflow_contracts.vocabulary import ActiveCheckpointNode
+from token_io_decoupling_workflow.advisory.models import DecisionAdvisoryInput
 
 MAX_CHECKPOINT_EVALUATION_REQUEST_BYTES = 32 * 1024
 CheckpointFactKey = Annotated[StrictStr, StringConstraints(min_length=1, max_length=64)]

@@ -4,9 +4,9 @@ from typing import Any
 
 from token_io_decoupling_core.binding import BindingProvider
 from token_io_decoupling_core.server_tools import TOOLS_SERVER_TOOLS
-from token_io_decoupling_tools.compliance_preflight import CompliancePreflightService
+from token_io_decoupling_tools.compliance.service import CompliancePreflightService
 from token_io_decoupling_tools.serena_memory import SerenaMemoryReadService
-from token_io_decoupling_tools.task_plan_core import TaskPlanService
+from token_io_decoupling_tools.task_plans.service import TaskPlanService
 from token_io_decoupling_transport.identity import binding_details
 
 

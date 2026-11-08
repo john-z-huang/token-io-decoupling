@@ -16,8 +16,7 @@ from token_io_decoupling_transport.codex_env import (
 from token_io_decoupling_transport.setup_codex import SetupError, setup_codex
 
 
-def dispatch_command(prog: str, argv: list[str]) -> int:
-    """仅派发安装管理命令；MCP 服务各有独立固定入口。"""
+def _command_parser(prog: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog=prog,
         description="配置本地 MCP 服务或管理包内 Skill。",
@@ -46,6 +45,30 @@ def dispatch_command(prog: str, argv: list[str]) -> int:
         command = actions.add_parser(action)
         command.add_argument("--name", default="token-io-decoupling-skill")
 
+    return parser
+
+
+def _dispatch_env_setup(prog: str, args: argparse.Namespace) -> int:
+    try:
+        names = tuple(args.env_var) if args.env_var else DEFAULT_ENV_VARS
+        changed = merge_env_vars(
+            config_path(args.config), tuple(args.server), names, dry_run=args.dry_run
+        )
+    except CodexEnvError as exc:
+        print(f"{prog}: {exc}", file=sys.stderr)
+        return 2
+    if args.dry_run:
+        print(f"Would merge env_vars {list(names)!r} into: {', '.join(args.server)}")
+    elif changed:
+        print("updated environment forwarding: " + ", ".join(changed))
+    else:
+        print("environment forwarding already configured: " + ", ".join(args.server))
+    return 0
+
+
+def dispatch_command(prog: str, argv: list[str]) -> int:
+    """仅派发安装管理命令；MCP 服务各有独立固定入口。"""
+    parser = _command_parser(prog)
     try:
         args = parser.parse_args(argv)
     except SystemExit as exc:
@@ -63,21 +86,7 @@ def dispatch_command(prog: str, argv: list[str]) -> int:
         return 0
 
     if args.target == "codex-env":
-        try:
-            names = tuple(args.env_var) if args.env_var else DEFAULT_ENV_VARS
-            changed = merge_env_vars(
-                config_path(args.config), tuple(args.server), names, dry_run=args.dry_run
-            )
-        except CodexEnvError as exc:
-            print(f"{prog}: {exc}", file=sys.stderr)
-            return 2
-        if args.dry_run:
-            print(f"Would merge env_vars {list(names)!r} into: {', '.join(args.server)}")
-        elif changed:
-            print("updated environment forwarding: " + ", ".join(changed))
-        else:
-            print("environment forwarding already configured: " + ", ".join(args.server))
-        return 0
+        return _dispatch_env_setup(prog, args)
 
     try:
         return setup_codex(dry_run=args.dry_run, server=args.server)

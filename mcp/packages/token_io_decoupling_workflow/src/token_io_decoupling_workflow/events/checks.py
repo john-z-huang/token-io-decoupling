@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 from typing import Literal
 
+from token_io_decoupling_workflow.compiled_rules.contracts import RuleLoadError
+from token_io_decoupling_workflow.compiled_rules.loader import RuleLoader
 from token_io_decoupling_workflow.events.advice import EventAdvisor
 from token_io_decoupling_workflow.events.contracts import CompiledEvent, EventInstructions
 from token_io_decoupling_workflow.events.models import (
@@ -14,7 +16,6 @@ from token_io_decoupling_workflow.events.models import (
     EventStructuralCheck,
     canonical_event_json,
 )
-from token_io_decoupling_workflow.rules import RuleLoader, RuleLoadError
 
 
 def load_event_instructions(rules: RuleLoader, request: EventCheckRequest) -> EventInstructions:
