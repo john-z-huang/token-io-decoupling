@@ -6,7 +6,7 @@ set -euo pipefail
 
 usage() {
   printf '%s\n' \
-    '用法：./install [选项]' \
+    '用法：./tid [选项]' \
     '' \
     '安装或更新本仓库的 Token I/O MCP 命令和 Skill，并配置 Codex。' \
     '' \
@@ -22,7 +22,7 @@ usage() {
 }
 
 fail() {
-  printf 'install: %s\n' "$1" >&2
+  printf 'tid: %s\n' "$1" >&2
 }
 
 resolve_repo_root() {
@@ -236,7 +236,7 @@ resolve_launcher() {
   for command_name in "${command_names[@]}"; do
     executable="$bin_dir/$command_name"
     if [[ ! -f "$executable" || ! -x "$executable" ]]; then
-      printf 'install: %s the installed command is missing or not executable at %q; no operation was run\n' \
+      printf 'tid: %s the installed command is missing or not executable at %q; no operation was run\n' \
         "$context" "$executable" >&2
       exit 1
     fi

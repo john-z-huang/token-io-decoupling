@@ -17,7 +17,7 @@
 
 ## 脚本参数
 
-安装与更新统一使用根目录下的可执行脚本 `./install`，无需 `bash` 前缀。从其它工作目录或符号链接调用时，仍定位到脚本所属 checkout。
+安装与更新统一使用根目录下的可执行脚本 `./tid`，无需 `bash` 前缀。从其它工作目录或符号链接调用时，仍定位到脚本所属 checkout。
 
 | 参数 | 行为 |
 | --- | --- |
@@ -29,15 +29,15 @@
 | `--python VERSION` | 指定 MCP 安装使用的 Python 版本，默认 `3.14`。 |
 | `--dry-run` | 仅打印所选操作的计划，不检查依赖、执行命令或读写配置。单独使用时预览 MCP 操作。 |
 
-`--mcp` 可与 `--skills install` 或 `--skills update` 组合，按 MCP、Skill 的顺序执行，任一步失败即停止。单独操作 Skill 不重装 MCP 或注册服务；尚未安装管理命令时先运行 `--mcp`。同时安装两者可运行 `./install --mcp --skills install`，同时更新可运行 `./install --mcp --skills update`。
+`--mcp` 可与 `--skills install` 或 `--skills update` 组合，按 MCP、Skill 的顺序执行，任一步失败即停止。单独操作 Skill 不重装 MCP 或注册服务；尚未安装管理命令时先运行 `--mcp`。同时安装两者可运行 `./tid --mcp --skills install`，同时更新可运行 `./tid --mcp --skills update`。
 
 ## 首次安装
 
 在 checkout 根目录运行：
 
 ```sh
-./install --mcp
-./install --skills install
+./tid --mcp
+./tid --skills install
 ```
 
 `--mcp` 核验资源新鲜度，通过 uv 构建并安装根包及四个本地 workspace 依赖，然后注册、检查 `token-io-decoupling-workflow` 和 `token-io-decoupling-tools`，不安装 Skill。第二条命令核对包内 Skill 与已安装 workflow 资源，并将受管快照发布到 `~/.agents/skills/token-io-decoupling-skill`。
@@ -49,8 +49,8 @@
 取得所需 checkout 版本后，在其根目录运行：
 
 ```sh
-./install --mcp
-./install --skills update
+./tid --mcp
+./tid --skills update
 ```
 
 `--mcp` 检查资源新鲜度后，重装工具及 workspace 依赖并更新两个 MCP 注册；`--skills update` 使用更新后的包替换受管快照。已安装 Skill 的用户需要同时更新包和 Skill；仅使用 MCP 的用户只运行第一条命令。成功更新会保留无关 Codex 配置及 setup 支持的现有目标设置，不删除其它注册；已有的 `enabled=false` 设置也会保持禁用。
@@ -149,8 +149,8 @@ Hook 选项错误、输入错误及运行故障均返回退出码 1；argparse �
 脚本预览示例：
 
 ```sh
-./install --mcp --dry-run
-./install --skills update --dry-run
+./tid --mcp --dry-run
+./tid --skills update --dry-run
 ```
 
 脚本预览仅打印计划。底层 `setup codex --dry-run` 会读取并预检配置，不写入或启动服务；底层 `skills install`、`skills update` 没有 `--dry-run` 选项。

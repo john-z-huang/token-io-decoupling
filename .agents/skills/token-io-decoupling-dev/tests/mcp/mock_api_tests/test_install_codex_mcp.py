@@ -11,7 +11,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[6]
 
-SCRIPT = REPO / "install"
+SCRIPT = REPO / "tid"
 
 BASH = "/bin/bash" if Path("/bin/bash").is_file() else shutil.which("bash")
 
@@ -272,7 +272,7 @@ def test_unusable_installed_command_stops_before_setup(harness, env_key, message
 def test_script_finds_repo_when_repo_and_cwd_paths_contain_spaces(harness, tmp_path):
     copied_repo = tmp_path / "repository with spaces"
     (copied_repo / "mcp").mkdir(parents=True)
-    script = copied_repo / "install"
+    script = copied_repo / "tid"
     shutil.copy2(SCRIPT, script)
     compiler_stub = copied_repo / "instruction-compiler/compile.py"
     compiler_stub.parent.mkdir()
@@ -285,7 +285,7 @@ def test_script_finds_repo_when_repo_and_cwd_paths_contain_spaces(harness, tmp_p
 def test_relative_script_invocation_with_spaces_from_unrelated_cwd(harness, tmp_path):
     copied_repo = tmp_path / "relative repository with spaces"
     (copied_repo / "mcp").mkdir(parents=True)
-    script = copied_repo / "install"
+    script = copied_repo / "tid"
     shutil.copy2(SCRIPT, script)
     compiler_stub = copied_repo / "instruction-compiler/compile.py"
     compiler_stub.parent.mkdir()
@@ -465,7 +465,7 @@ def test_no_arguments_print_help_without_side_effects(harness):
     env["PATH"] = "/nonexistent"
     result = _run(harness)
     assert result.returncode == 0, result.stderr
-    assert "用法：./install [选项]" in result.stdout
+    assert "用法：./tid [选项]" in result.stdout
     assert "--mcp" in result.stdout
     assert "--skills" in result.stdout
     assert result.stderr == ""
