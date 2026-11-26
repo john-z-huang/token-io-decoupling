@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: workflow-concept
+id: repair
+markdown_path: references/coding/layer-02-workflow-concepts/verification-and-repair/repair.md
+title: "修复检查点"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本检查点负责诊断失败证据、受影响路径和最小修复候选。发现候选超出已批准边界时，报告诊断结果；不授权或执行修复，也不定义验证 epoch。
+  - actions:
+      kind: section
+      title: "动作"
+      expose: true
+      blocks:
+        - actions-body:
+            kind: markdown
+            text: |-
+              1. 说明失败证据、受影响路径和能够解决问题的最小修复。
+              2. 识别可能解决失败的最小候选，不预设其已获授权。
+              3. 如果候选看起来会改变范围、架构、安全、兼容性或其他实质性决策，则报告该证据，并暂停依赖修复，等待所需决策。
+  - pass:
+      kind: section
+      title: "通过条件"
+      expose: true
+      blocks:
+        - pass-body:
+            kind: markdown
+            text: |-
+              失败证据、受影响路径和最小修复候选已经明确，或诊断结果已经指出缺少的决策或能力。
+  - boundary:
+      kind: section
+      title: "边界"
+      expose: true
+      blocks:
+        - boundary-body:
+            kind: markdown
+            text: |-
+              本检查点不授权或执行修复，不运行修复检查，不定义验证 epoch，也不授权大范围清理、文档、Git 影响或外部影响。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Execution Decision Gate](../../layer-01-fundamental-concepts/execution-planning/execution-decision-gate.yaml) — 定位实质性决策和放行条件归属。
+              - [Coding Execution Control](../../layer-01-fundamental-concepts/execution-control/execution-control.yaml) — 定位已批准 slice 和返回边界归属。
+              - [Coding Delegation State Record Worker Boundary](../../layer-01-fundamental-concepts/delegation/delegation-worker-boundary.yaml) — 定位命名路径的 Worker 访问边界。

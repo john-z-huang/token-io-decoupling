@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: session-runtime-readme
+markdown_path: references/coding/layer-01-fundamental-concepts/session-runtime/README.md
+title: "Session Runtime"
+blocks:
+  - scope-and-boundary:
+      kind: section
+      title: "范围与边界"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - scope-and-boundary-body:
+            kind: markdown
+            text: |-
+              运行时支持、Session 身份与职责、上下文隔离、审计可见性及结构化代码阅读工具。本分类止于 Session/运行时边界；委派生命周期和状态存储权威另设分类。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              先从运行时支持了解环境与模型约束，再按任务直接读取相关 Session 或工具所有者。
+  - owners:
+      kind: section
+      title: "所有者"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - owners-body:
+            kind: markdown
+            text: |-
+              - [语言服务器与代码结构查询](lsp-code-navigation.yaml)
+              - [项目 Memory](project-memory.yaml)
+              - [runtime-provider-support](runtime-provider-support.yaml)
+              - [session-model](session-model.yaml)
+              - [session-role-ownership](session-role-ownership.yaml)
+              - [session-context-firewall](session-context-firewall.yaml)
+              - [session-audit-visibility](session-audit-visibility.yaml)
+              - [reasoning-summary-visibility](reasoning-summary-visibility.yaml)

@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: repair-verification-handoff
+markdown_path: references/verification/repair-verification-handoff.md
+title: 修复后的验证交接
+blocks:
+  - handoff:
+      kind: section
+      title: 将修复结果交回验证
+      expose: true
+      blocks:
+        - handoff-body:
+            kind: markdown
+            text: |-
+              - 修复改变产物时，交接原失败的验收条件、实际修复范围与位置、修复后的产物状态、已收集的证据和未决影响。效果不明或识别当前状态所需的证据缺失时，说明缺口并暂停依赖该结果的工作。
+              - 用[证据时效规则](verification-epoch.yaml#invalidation)判断需要重验的范围。由获准执行者针对修复后的状态复核受影响项，沿用原有独立性要求。依赖复核结果的任务在取得所需证据后继续。

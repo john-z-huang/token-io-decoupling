@@ -1,0 +1,175 @@
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: documentation
+markdown_path: hooks/documentation.md
+activate_on: [documentation_impact]
+title: 文档、注释与可复用项目知识
+blocks:
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              - 进入 documentation（DOC00–DOC06）、发现文档影响，或已授权任务实际改变文档/注释/可复用项目 Memory。
+              - 用户请求项目知识持久化，或对应 owner 的知识/memo 触发条件成立；`write_content_memo: false` 不等于所有项目知识输出都不适用。
+              - 没有适用输出或批准输出确实无变化时，须有当前匹配指纹及原因才能记 N/A；缺授权、来源、路径、工具或检查不是 N/A。
+  - inputs:
+      kind: section
+      title: 输入与证据
+      blocks:
+        - inputs-body:
+            kind: markdown
+            text: |-
+              当前 Contract/范围、已释放模式、实际 Session/作者职责、准确 continuation/已完成效果、待记录状态的当前 implementation/content Verification、写前指纹。存在适用输出时另须批准路径/Memory名称、读者、目的、来源证据、作者与写入授权；适用时提供准确候选、可信基线及计划指针。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-01:
+            kind: section
+            title: 一、先核验当前状态与作者边界（DOC00–DOC01）
+            blocks:
+              - execution-01-body:
+                  kind: markdown
+                  text: |-
+                    1. 核验入口所需事实、当前 Verification 和准确范围；来源检查过期/缺失则回相应 Verification，效果歧义先读回，不边写边猜测。
+                    2. 按当前用户意图/Contract及owner触发条件逐项判断文档、注释、项目Memory是否适用；适用则取得准确路径、读者、目的、来源和作者授权，不能用缺少输入推成不适用。
+                    3. 普通非 Skill 文档/注释由 Root/parent 编写，即使伴随代码变更也不创建或消耗 Primary 名额。只有本 Skill 指令/参考文档，在所有 release gates 通过后才可分配 Primary Output；Root仍在Documentation与Acceptance亲自审阅。
+                    4. Documentation/Comments & Git Operations 职责只承接单独放行的非简单Git，不因名称含Documentation就获得普通文档或产品代码权限。
+                    5. 需要实质语义选择、行为/政策/Contract/范围/验收变化时回调用方Decision路径；不能以“润色/补文档”自行作出新决定。
+        - execution-02:
+            kind: section
+            title: 二、确认可选候选分支，再写批准输出（DOC02）
+            blocks:
+              - execution-02-body:
+                  kind: markdown
+                  text: |-
+                    1. 可选候选预检确实未选择或条件不存在时，附原因记N/A，在独立授权的直接文档路径继续。已选择分支则必须准备准确有界候选及当前可信基线，不得因缺它们反标N/A。
+                    2. 按当前项目的文档规范，对当前候选和基线运行选定结构检查。应用前解决失败、unknown、遗漏、截断及过期结果。不得以旧候选检查或普通写权限替代受保护路径守卫。
+                    3. 预检只给有限候选证据，不证明中文语义、真实写后状态或最终Verification；细节按 [候选与物化合同](materialization.yaml)。选定路径实际失败不得换入口绕过。
+                    4. 只根据当前已验证来源编辑已批准Markdown/注释路径，保留技术含义。检查用户可见说明、行为/配置/API、安装/使用步骤、限制、安全/权限承诺、故障处理、示例、链接、目录和注释的一致性。
+                    5. 本仓库维护唯一中文权威，不新增语言镜像。只执行当前项目适用检查；本任务明确不使用双语维护检查，不把它当作前置。
+                    6. 不以普通文件、capsule、任务计划或相邻路径替代缺失的权威文档/Memory输出；也不把权威README/规范迁入Memory作为替代品。常规文档操作使用真实获准的读取和编辑能力，不凭空要求物化专用适配器。
+                    7. 没有输出差异须以前后指纹匹配证明。保留实际已写部分；恢复不重放DOC02。
+        - execution-03:
+            kind: section
+            title: 三、独立处理可复用项目 Memory（DOC03）
+            blocks:
+              - execution-03-body:
+                  kind: markdown
+                  text: |-
+                    1. 用户请求可复用项目知识或owner条件触发时，遵循 [上下文合同](context.yaml) 和对应知识/memo生命周期；优先已提供的精确名称，只有需发现时才列相关topic，不先浏览全部Memory。
+                    2. 仅保存稳定、不显而易见、对后续任务有用且获准的项目知识/笔记，保留事实、范围、不确定性和准确权威指针；不复制来源全文、秘密、完整transcript、日志、私有推理或父级调度表。
+                    3. 核对实际 Memory 后端的项目绑定、维护说明、具名读写授权及操作参数。默认项目Memory与 `global/` 范围分开；跨项目写入须明确要求，计划专用共享scope另按计划合同，不据此扩展一般知识授权。
+                    4. 经真实Memory工具写入并确认操作成功，记录准确名称和结果。只有owner触发存储内容核验时才检查；有匹配核验凭据先用该凭据，否则作必要内容比较。普通成功write/edit不立即全文重读，不用理论上可能变化作为反复读回理由。
+                    5. 未请求且未触发时记有原因的N/A。必需工具、持久化或要求的内容核验失败/不可用/未知，保持该请求输出未完成并阻断依赖；不回退普通文件。
+                    6. `write_content_memo: false`只关闭该Worker memo，既不取消默认共享任务计划，也不能把用户请求的可复用项目知识改为N/A。
+        - execution-04:
+            kind: section
+            title: 四、在所有实际输出后分类影响（DOC04）
+            blocks:
+              - execution-04-body:
+                  kind: markdown
+                  text: |-
+                    1. 在文档和请求的Memory写入及必要核验后，对比写前/写后指纹，区分implementation/content、documentation和Git metadata维度。
+                    2. 实际文档/注释/项目Memory变化按适用owner推进documentation epoch；确无输出变化且指纹相同则不推进，附证据记N/A。父级实时控制记录不是项目知识输出。
+                    3. 可执行内容、Contract或Acceptance受影响时，也使implementation/content证据失效，回当前Verification；影响未知则阻断，不能为了保留通过状态强行标“纯文档”。
+                    4. 仅文档维度改变时，对未变维度给出当前指纹及证据复用理由；不重跑无关行为测试。epoch/effect字段是影响报告，不认证语义分类；无法从实际证据核实必需状态时报告缺口，不伪称自动识别。
+        - execution-05:
+            kind: section
+            title: 五、写后检查与返回（DOC05–DOC06）
+            blocks:
+              - execution-05-body:
+                  kind: markdown
+                  text: |-
+                    1. 在所有文档/Memory写入后运行实际适用的Markdown结构、链接/标题锚点、空白、命名/范围及项目专用检查，核对注释与实现、文案与真实行为一致。
+                    2. 检查通过须有当前实际结果；必需检查失败、未运行或不可用时保持未完成。无变化且指纹匹配才可对相应检查记N/A，不将工具成功或写前预检冒充写后检查。
+                    3. 返回实际路径/Memory名称、来源、documentation fingerprint/epoch、检查结果、前后影响分类、未变证据复用理由及Memory核验结果/N/A。
+                    4. 只有所有适用检查、必要持久化/存储核验及受影响内容Verification均解决，才能返回本模块complete；这不授权Git，也不等于整体验收。
+  - checkpoints:
+      kind: section
+      title: 有序模块清单
+      blocks:
+        - DOC00:
+            kind: checkpoint
+            title: 解析入口。
+            text: |-
+              核验已释放 Mode、Session 身份及权限、原挂起位置和已有效果。按入口合同核对 Contract/范围、当前内容验证、epoch 和写前指纹。适用输出还须核对批准路径、读者、目的、来源及作者授权。证据缺失返回 `needs_prerequisite`，范围冲突或效果未授权返回 `blocked`。
+
+              依据 [模块入口解析](../references/coding/layer-03-workflow-checkpoints/module-entry-resolution.yaml)。
+        - DOC01:
+            kind: checkpoint
+            title: 核验状态并判断适用输出。
+            text: |-
+              按 Contract 和 owner 触发条件判断文档、注释或项目 Memory 是否适用。适用时确认批准路径、读者、目的、来源和作者职责。普通文档由 parent 编写；只有通过全部 release gates 才可把 Skill 文档分配给 child，并由 parent 在 Documentation 和 Acceptance 审查。必需授权或证据缺失按阻断或补证处理，内容验证过期返回 Verification。
+
+              依据 [Documentation](../references/coding/layer-02-workflow-concepts/completion-and-effects/documentation.yaml)、[Session 职责归属](../references/coding/layer-01-fundamental-concepts/session-runtime/session-role-ownership.yaml)。
+        - DOC02:
+            kind: checkpoint
+            applicability: optional
+            title: 编写获准输出或记录有证据的无变化。
+            text: |-
+              对已授权文档候选，先确认可选候选预检分支确实已选择且适用。已选择时，先准备准确的有界候选并捕获当前可信基线，再对该候选/基线运行[候选合规预检](../references/coding/layer-01-fundamental-concepts/execution-planning/candidate-compliance.yaml)，然后才能应用候选。所选分支缺少候选、批准范围或可信基线，或已选预检失败、结果未知、遗漏、截断或过期时，返回 `needs_prerequisite`，注明待解决项并保留 DOC02 作为恢复位置。补齐前置或纠正问题后，从 DOC02 核对当前候选和基线，重新执行受影响的预检；所有适用预检通过后才可应用候选。不得将已选分支标为 `not_applicable`。仅在 Skill 维护时使用 Skill-maintenance 范围；其他情况使用 generic project 范围。只有分支确实未选择，或其触发条件不存在/不适用时，才记录有原因的 `not_applicable` 并在授权的直接文档路径下继续。预检通过只是有限候选证据，不能替代 DOC05 写后检查、中文语义审阅或当前 Verification。仅根据已验证来源编辑授权 Markdown/注释路径，维护唯一的中文权威正文。不得以文档名义引入行为、政策、Contract、验收、范围或 Git 变化。实质语义选择返回调用方 Contract/Decision 路径。无适用输出或获准输出实际无差异时，只有前后指纹匹配才可记录 `not_applicable`。保留已完成效果，恢复时不得重放。
+        - DOC03:
+            kind: checkpoint
+            applicability: optional
+            title: 仅持久化已授权项目 Memory。
+            text: |-
+              用户要求可复用 Agent 项目知识，或 owner 定义的触发条件适用时，按适用情况应用[项目 Memory](../references/coding/layer-01-fundamental-concepts/session-runtime/project-memory.yaml)、[Content Memo](../references/coding/layer-01-fundamental-concepts/context-exchange/content-memo.yaml)及[Content Memo Lifecycle](../references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle.yaml)：保留获准名称/路径，通过暴露的 Memory 能力写入并确认操作成功。仅当适用 owner 要求时核验存储内容；有匹配核验凭据时使用该凭据，否则进行必要的内容比较。普通成功写入不会触发立即全文读回。派发字段 `write_content_memo: false` 不代表项目 Memory 不适用。未请求且未触发项目 Memory 输出时记录带原因的 `not_applicable`。必需能力、写入或 owner 要求的核验不可用/失败时，保持请求输出未完成；不得以文件替代。
+        - DOC04:
+            kind: checkpoint
+            title: 分类写后影响。
+            text: |-
+              在任何请求的 Memory 写入和 owner 要求的内容核验之后，结合前后指纹应用[Documentation Impact](../references/coding/layer-03-workflow-checkpoints/documentation-impact.yaml)及[Verification Epoch](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml)。实际维护文档/注释/Memory 变化推进 documentation epoch。若无输出变化且指纹匹配，不推进 epoch，并以证据记录 `not_applicable`。仅推进受影响维度，保留未受影响证据理由。可执行内容、Contract 或验收变化还须分类为 implementation/content 影响，并返回当前 Verification。影响未知时阻塞。
+        - DOC05:
+            kind: checkpoint
+            title: 运行文档检查并评估证据复用。
+            text: |-
+              仅文档阶段的 documentation epoch 变化时，如内容与 Git metadata 证据仍当前且 Contract 无独立验证要求，在对话中引用当前实际成功的检查及结果，并说明检查覆盖及复用依据。后续有 Git 操作时，按精确 Git 目标核验当前检查、内容及文档指纹。
+
+              所有文档和 Memory 写入后，运行适用的 Markdown、链接、空白、多语言和范围检查。仅文档影响时，凭指纹理由保留未受影响的当前证据，并重跑变更的文档检查。没有变更输出时，以匹配指纹将检查标为 `not_applicable`。行为/Contract/验收影响返回 implementation/content Verification；必需重验未解决时不得完成。
+        - DOC06:
+            kind: checkpoint
+            title: 返回文档证据。
+            text: |-
+              返回变更路径、来源依据、当前 documentation fingerprint/epoch、检查及结果、前后维度分类、复用未变证据的理由，以及 Memory 结果或有原因的 `not_applicable`。所有适用检查通过或有依据地 `not_applicable`、Memory 持久化已确认且 owner 要求的存储内容核验通过或有依据地 `not_applicable`，并且内容影响重新验证均已解决后，才返回 `complete`。这不授权 Git 或整体验收。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              缺当前Verification/批准范围/作者/来源/Memory前置时交对应owner补证并保留暂停位置；范围冲突、作者越界、拒绝、影响未知或必需检查失败时阻断。部分写入、失败或未知效果先读回，不隐藏、不覆盖重放。对有依据的N/A给出触发条件不存在或指纹匹配证据。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              文档/知识内容、来源、作者、范围、授权、基线或当前epoch变化时只重核受影响条件。写后回验从DOC04影响分类继续，缺失检查在DOC05补齐，不重放DOC02或已确认的Memory写入。Acceptance必须使用最新适用维度证据。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              | 来源 | 本合同落点 |
+              | --- | --- |
+              | [Documentation](../references/coding/layer-02-workflow-concepts/completion-and-effects/documentation.yaml) | 文档输出、当前来源、职责与写后检查 |
+              | [Documentation Impact](../references/coding/layer-03-workflow-checkpoints/documentation-impact.yaml) | 写后分类、指纹和维度复用 |
+              | [Session职责归属](../references/coding/layer-01-fundamental-concepts/session-runtime/session-role-ownership.yaml) | Root、Primary与Git职责分界 |
+              | [项目 Memory](../references/coding/layer-01-fundamental-concepts/session-runtime/project-memory.yaml) | Memory命名、稳定知识、维护和按需核验 |
+              | [Content Memo](../references/coding/layer-01-fundamental-concepts/context-exchange/content-memo.yaml) | Worker内容及禁止材料 |
+              | [Memo生命周期](../references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle.yaml) | 开关、写入触发和登记 |
+              | [候选合规](../references/coding/layer-01-fundamental-concepts/execution-planning/candidate-compliance.yaml) | 可选/已选分支与预检限度 |
+              | [验证epoch](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml) | 写后证据失效与未变维度 |
+              | [计划生命周期](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml) | 计划与项目知识、授权及保全边界 |

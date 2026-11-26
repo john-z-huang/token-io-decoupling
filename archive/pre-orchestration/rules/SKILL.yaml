@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=reference.schema.json
+schema_version: 1
+id: skill-entry
+markdown_path: SKILL.md
+title: Token I/O Decoupling
+blocks:
+  - body:
+      kind: markdown
+      text: |-
+        当前仅维护 Coding 可执行工作流；Multimodal/Mixed 仅作参考。
+
+        ## 适用范围
+
+        适用于 Codex 和 Pi Coding Agent 的 Coding 任务。两种宿主共用路线、Hook 合同、授权和验收规则。
+
+        ## 从这里开始
+
+        先依据当前会话的宿主元数据选读 [Codex 适配](references/hosts/codex.yaml) 或 [Pi 适配](references/hosts/pi.yaml)。用选中的适配核对会话、委派与 Memory。宿主未确认时，可继续不依赖宿主差异的获准工作，并暂停需要宿主证据的步骤。旧工作流扩展已归档，仅供只读参考。
+
+        读取 [Coding selector](workflows/coding.yaml)，依次建立 Contract、Environment/能力清单、Mode 与 Route Entry，按其选择的单代理或多代理路线执行。沿用 [模式 owner](references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation.yaml) 的用户选择、四项菜单、默认 Multi/count=1 和会话锁定规则；按实际能力和用户授权使用子代理工具；不得免除必需门禁。
+
+        ## 始终有效
+
+        - Root 亲自确认指令、环境、相关代码事实、决策、授权与最终验收；工具、计划、Hash、结构检查和扩展状态均不证明语义正确或授予权限。
+        - 绝对禁止 Computer Use：不得用 GUI 控制、鼠标/键盘模拟、为操作控件的截图、辅助功能、窗口/远程桌面自动化，或将其包装为 API、CLI、MCP/子代理绕过。其他真实可用且已授权能力不因本黑名单被禁止。
+        - 每项 Coding 默认遵循[共享任务计划生命周期](references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml)：实施/派发前使用获准 Memory、核验 scope/仓库 key、维护累积内容与单写者协调、完成后保全归档；只有用户或更高优先级明确禁止持久化才有例外。能力缺失不是例外，不能回退普通文件。
+        - mode/count/allocation/当前 Slice 属于父级会话调度状态，不写入共享计划或其他 Memory。子任务只在真实委派能力支持的范围内运行，不假定持久 ID、消息或会话复用。
+        - 修改授权不自动包含提交、推送、合并、删除、历史重写、配置或 Memory 写入。只在验收逐项有当前证据时报告 `COMPLETE`，显式列明未执行/不可用检查、风险与未授权效果。
+
+        ## 宿主能力
+
+        直接读取当前路线、Hook 及必需的规则文档。按当前环境实际发现的能力、Schema 和授权选择工具。必需能力缺失只阻断依赖分支。
+
+        [Hooks 触发目录](hooks/README.yaml) · [运行时能力边界](references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.yaml)
+front_matter:
+  name: token-io-decoupling
+  description: >-
+    用于代码理解、实现、重构、调试、验证、文档和 Git 工作的 Coding 指令。按中文规则读取单代理或多代理路线及适用 Hook。

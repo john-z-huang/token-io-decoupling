@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: execution-stage-feedback
+markdown_path: references/coding/layer-01-fundamental-concepts/execution-control/execution-stage-feedback.md
+title: "Coding Execution Stage Feedback"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档定义有界阶段、Progress Signals 和阶段内使用 Decision Checkpoint 的方式。不定义 Decision Brief、方案选择、Contract 更新、Interaction Slice 字段、角色/Session 语义、上下文传输或委派生命周期。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "有界阶段"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    对于高不确定性工作，预先声明一组短小、能够产出证据的阶段。每个阶段以观察结果或决策边界结束，而不是命令列表。
+        - section-02:
+            kind: section
+            title: "Progress Signals 与阶段反馈"
+            expose: true
+            blocks:
+              - section-02-body:
+                  kind: markdown
+                  text: |-
+                    在声明的阶段边界，只返回下一步决策所需的压缩进度信号：实质状态、发现、变更范围、验证、问题和所需动作。有新证据或状态变化时才增量更新父级记录；不要重复汇报无变化进度或重写稳定状态。普通读取、局部编辑、formatter/lint 修复、直接测试修复和重复 compile/test 循环留在已批准阶段内。不要仅为了汇报低价值机械步骤增加 checkpoint 或执行 slice。应用[会话审计可见性](../session-runtime/session-audit-visibility.yaml)摘要频率，同时保留必需阶段反馈。
+
+                    如果阶段证据显示下一阶段依赖高价值判断，应将信号交给 Decision Gate。Decision Gate 负责方案选择和 Contract 更新；本文档不重复这些策略。
+        - section-03:
+            kind: section
+            title: "反馈使用的共享计划证据"
+            expose: true
+            blocks:
+              - section-03-body:
+                  kind: markdown
+                  text: |-
+                    反馈使用共享计划证据时，应用[任务计划 Memory 生命周期](../execution-planning/task-plan-memory-lifecycle.yaml)：在该 owner 规定的阶段、交接、暂停或完成边界，通过获准的当前记录者或已释放贡献路径记录实质进展和带来源事实。普通进度汇报及阶段内的检查或修复，不单独触发持久化或全文读回。影响授权、范围、验收、方向或依赖动作的事实，仍须在受影响动作前记录并分析。反馈携带准确计划身份、持久化确认及 owner 要求的核验证据，不重复全文或改变释放权。缺少必需访问、持久化失败或必需核验失败时，暂停受影响边界；仅已记录的持久化限制可使用该 owner 的例外。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              按所选宿主适配核对真实规划、委派与持久消息能力。按通用 Slice、阶段反馈及授权边界执行；使用当前实际可用的工具结果作为证据，不以 Hook 或宿主特性替代语义判断。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Execution Control](execution-control.yaml) — 定位 Interaction Slice 边界。
+              - [Coding Execution Planning](../execution-planning/execution-planning.yaml) — 定位有界计划和阶段提纲归属。
+              - [Coding Execution Decision Gate](../execution-planning/execution-decision-gate.yaml) — 定位高价值决策条件。
+              - [Coding Session 审计可见性](../session-runtime/session-audit-visibility.yaml) — 定位摘要频率。

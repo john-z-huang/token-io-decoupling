@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: execution-stage-feedback
+markdown_path: references/execution/execution-stage-feedback.md
+title: 执行阶段反馈
+blocks:
+  - stage:
+      kind: section
+      title: 确定反馈时机
+      expose: true
+      blocks:
+        - stage-body:
+            kind: markdown
+            text: |-
+              不确定性较高时，将工作划分为可产出证据的短阶段，以可观察结果、阻塞或需要决策的边界作为结束点。约定阶段结束、证据变化或出现阻塞时再更新相应记录。已获准的常规读写和检查在当前边界内完成。
+  - evidence:
+      kind: section
+      title: 汇报下一步所需证据
+      expose: true
+      blocks:
+        - evidence-body:
+            kind: markdown
+            text: |-
+              反馈说明当前任务与状态、实际发现或变更、可定位的验证证据、未决影响和需要决定的事项。区分观察、推断、未执行与未知效果。与上次反馈相同的事实可引用已有记录。
+
+              多代理路线中，执行者把反馈交回主代理。主代理按[执行边界](execution-control.yaml#disposition)处理下一步。单代理路线中，主代理直接用当前证据判断后续工作。

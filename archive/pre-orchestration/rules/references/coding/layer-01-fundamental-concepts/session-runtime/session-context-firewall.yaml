@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: session-context-firewall
+markdown_path: references/coding/layer-01-fundamental-concepts/session-runtime/session-context-firewall.md
+title: "Coding Session Context Firewall"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责 Context Firewall：原始状态进入限制、有界检查、事实返回边界和临时项目定位。不定义职责责任、Session 语义、Memory 上下文传输或工作流验收。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "原始状态进入"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    在多 Session Coding 中，输入侧 Session 按[职责归属](session-role-ownership.yaml)要求读取派发前确认所需的有界、只读环境与代码证据，不进行开放式项目扫描。Primary Output 仅在父级确认和放行的范围内读取更多源代码/配置状态；Change Verification 消费最终状态证据；Documentation/Comments & Git Operations 消费 Git 状态和获准文档范围。各自只返回下一步决策需要的事实与准确来源。
+
+                    原始状态摄入边界由潜在输出体积、状态敏感性和仓库影响决定，而不是命令名称。单 Session 没有跨 Session Firewall，但仍须渐进读取并压缩原始状态。
+        - section-02:
+            kind: section
+            title: "语义 ownership 和临时定位"
+            expose: true
+            blocks:
+              - section-02-body:
+                  kind: markdown
+                  text: |-
+                    Firewall 只限制原始状态进入，不转移语义责任；语义权威性遵循[职责归属](session-role-ownership.yaml)。临时项目定位事实不自动提升为长期 Contract 状态，也不应倾倒原始状态。经授权且可复用的上下文记录可按 [Coding Context Exchange](../context-exchange/context-exchange.yaml) 和 [Coding Context Exchange Workspace Boundary](../context-exchange/context-exchange-workspace-boundary.yaml) 使用具名项目 Memory 持久化；Memory 名称只表达逻辑归属，不提供技术隔离。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              子代理隔离取决于实际扩展，不能从一次独立任务或工作目录推断文件系统隔离。通过已获准的能力访问文件或网络，并只向父级返回当前判断所需的有界证据正文。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Session Model](session-model.yaml) — 定位 Session 语义和 Affinity。
+              - [Coding Session Role Ownership](session-role-ownership.yaml) — 定位职责责任归属。
+              - [Coding Context Exchange](../context-exchange/context-exchange.yaml) — 定位 Memory 上下文传输。
+              - [Coding Delegation State Record](../delegation/delegation-state-record.yaml) — 定位任务控制状态归属。
+              - [Coding Execution Control](../execution-control/execution-control.yaml) — 定位有界阶段和 slice 归属。

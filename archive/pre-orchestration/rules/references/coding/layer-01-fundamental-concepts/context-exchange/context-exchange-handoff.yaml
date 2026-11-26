@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: context-exchange-handoff
+markdown_path: references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange-handoff.md
+title: "Coding Context Exchange Handoff"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档定义以项目 Memory 持久化的 handoff 和 Worker context-index 记录的内容、更新与后继者暴露，不授权子 Agent 复用/替换，也不定义 capsule 新鲜度。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - index-and-handoff:
+            kind: section
+            title: "Context index 与 handoff 记录"
+            expose: true
+            blocks:
+              - index-and-handoff-body:
+                  kind: markdown
+                  text: |-
+                    使用 `context-exchange/INDEX` 作为父级路由索引，使用 `context-exchange/workers/<worker-context-id>/INDEX` 记录 Worker 的 task、scope、status、最近一次实质更新、记录名称及 blocker/handoff 目标。Handoff 记录保留已完成状态、带证据的失败方案、当前修改和验证、阻塞、下一步动作及准确权威来源指针。只在状态/证据/handoff 实质变化时更新，不要逐命令记录。
+
+                    原 handoff/import 名称在 `context-exchange/` 下沿用相同 basename 和子目录意图映射。后继者只读取其已放行任务明确暴露的 Memory 名称；除非明确授权，不得写入其他 Worker 的名称。名称只表示逻辑归属；其他 Session 的实际可见性取决于后端权限。不得重建完整 transcript。Memory 工具不可用时，报告并阻塞依赖工作；不得回退为文件。
+        - authorization:
+            kind: section
+            title: "授权边界"
+            expose: true
+            blocks:
+              - authorization-body:
+                  kind: markdown
+                  text: |-
+                    Context ID 或 Memory 名称本身不授权创建/替换 Agent，也不授权改变父级实时任务状态。mode/count/allocation/epoch 状态仍由其原 owner 管理。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              需要 Memory 时，按当前环境选择实际可用且获准的项目 Memory 能力，核对后端项目绑定、操作说明、参数、权限和结果。普通文档访问不得代替必需的 Memory 操作；能力缺失仅阻塞依赖项。不得绕过隐藏、拒绝或访问限制，也不得伪造旧身份上下文。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Context Exchange](context-exchange.yaml) — 定位 capsule 和新鲜度规则。
+              - [Coding Context Exchange Workspace Boundary](context-exchange-workspace-boundary.yaml) — 定位逻辑命名与授权。
+              - [Coding Session Context Firewall](../session-runtime/session-context-firewall.yaml) — 定位原始状态输入。
+              - [Coding Child Reuse and Replacement](../delegation/delegation-child-reuse-replacement.yaml) — 定位替换授权。

@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: project-memory
+markdown_path: references/coding/layer-01-fundamental-concepts/session-runtime/project-memory.md
+title: "项目 Memory"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        需要复用或保存 Agent 项目知识时，使用获准的项目 Memory 能力。权威仓库文档和父级实时 mode/count/allocation/epoch 状态各有存储边界。任务计划、Worker memo 与上下文交换记录各有生命周期规则。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - memory-operations:
+            kind: section
+            title: "读取和写入可复用项目 Memory"
+            expose: true
+            blocks:
+              - memory-operations-body:
+                  kind: markdown
+                  text: |-
+                    需要可复用的 Agent 项目知识时，优先使用已提供或当前上下文中已有的名称；仅在名称未知时列出相关主题。仅在需要相关内容且当前上下文没有有效副本时读取 Memory。所需信息缺失、过期或失效、已知发生外部更新、出现写者交接或并发变化迹象、需要解决冲突或结果不明，或有明确内容检查要求时，才刷新内容。遵循实际存储提供的有效维护指引。通过获准的 Memory 写入能力保存稳定且不显而易见、能帮助后续任务的项目知识，以及用户明确要求跨会话保留的笔记。Memory 应简洁、基于事实，并在适当时链接到权威来源路径。任务计划、Worker memo、capsule、index 和 handoff 遵守各自生命周期 owner。
+
+                    写入或编辑成功后，仅在用户明确要求、实际内容验收需要，或错误、结果不明、冲突、基线失效、疑似并发变化时检查存储内容；没有新触发条件时不重复同一检查。遵守存储的忽略、只读及其他访问规则；不得用普通文件访问绕过 Memory 可见性或授权。一般长期项目知识与任务计划、Worker memo、capsule、index、handoff 分别归类；没有 owner 定义的需要时，不要把同一发现复制到多份记录。
+
+                    项目 Memory 使用按斜杠分段的逻辑名称，例如 `architecture/services`。物理位置与扩展名遵循实际后端配置和既有映射。只有用户明确要求跨项目 Memory 时才使用 `global/` 名称前缀。若要保留现有 Skill 文档的名称和子目录意图，去掉文件名的 `.md` 后缀，并以斜杠表示逻辑层级。
+
+                    只有实际后端报告项目知识初始化尚未完成时，才考虑执行该初始化。先取得用户授权，再遵循后端返回的指引；未获授权时继续其他独立工作。写入初始化笔记前，读取后端指定的有效维护记录。只有用户明确要求时才写入跨项目 Memory，即使维护记录本身来自全局范围。只检查生成持久笔记所需的项目材料，并通过获准的 Memory 能力写入。
+
+                    Memory 保存可复用的 Agent 上下文，不能替代权威仓库文档。不得把 README、规范性规范或其他事实来源文档迁入 Memory 作为替代品。不得在 Memory 中保存秘密、完整 transcript、私有推理或父级实时 mode/count/allocation/epoch 状态。Worker execution memo、Context Exchange capsule/index/handoff 等 Agent-facing 记录按 [Worker Content Memo](../context-exchange/content-memo.yaml)、[Coding Context Exchange](../context-exchange/context-exchange.yaml)、[Coding Context Exchange Workspace Boundary](../context-exchange/context-exchange-workspace-boundary.yaml)、[Coding Context Exchange Handoff](../context-exchange/context-exchange-handoff.yaml) 及在授权持久化上下文记录时的 [Session Context Firewall](session-context-firewall.yaml) owner 规则持久化为项目 Memory。Memory 名称仅表达逻辑归属。Worker 级访问隔离、只读 ACL 和 OS/RW/RO/DENY 边界须有实际技术证据。源码和权威仓库文件仍遵守其单独批准的访问边界。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              按当前环境实际提供的能力选择 Memory 操作。使用前核对工具说明、参数、项目绑定、权限及存储后端。独立只读操作可批处理，逐项检查错误、状态和必要证据。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [运行时与能力边界](runtime-provider-support.yaml) — 核验当前宿主能力与授权。
+              - [Session Context Firewall](session-context-firewall.yaml) — 限定当前任务的上下文来源与访问范围。
+              - [任务计划 Memory 生命周期](../execution-planning/task-plan-memory-lifecycle.yaml) — 定位任务计划的命名、更新和归档规则。
+              - [Worker Content Memo](../context-exchange/content-memo.yaml) — 定位 Worker 执行状态的归属。
+              - [Coding Context Exchange](../context-exchange/context-exchange.yaml) — 定位 capsule 和权威来源规则。
+              - [Coding Context Exchange Workspace Boundary](../context-exchange/context-exchange-workspace-boundary.yaml) — 定位 Memory 逻辑命名与授权。

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=../../../reference.schema.json
+schema_version: 1
+document_type: workflow-checkpoint
+id: session-state-resolution
+markdown_path: references/coding/layer-03-workflow-checkpoints/session-state-resolution.md
+title: "Session 状态解决"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本检查点负责在应用审计偏好前，按路线核实当前 Session 事实及规范的父级控制工作流记录；不负责审计值或模式/数量策略。
+  - inputs:
+      kind: section
+      title: "触发与输入"
+      expose: true
+      blocks:
+        - inputs-body:
+            kind: markdown
+            text: |-
+              消费已释放的 Mode/count 及当前 Session 身份、角色和 Context Firewall 事实。应用[Session 模型](../layer-01-fundamental-concepts/session-runtime/session-model.yaml)、[Session 角色归属](../layer-01-fundamental-concepts/session-runtime/session-role-ownership.yaml)、[Session 上下文防火墙](../layer-01-fundamental-concepts/session-runtime/session-context-firewall.yaml)和[委派状态记录](../layer-01-fundamental-concepts/delegation/delegation-state-record.yaml)。
+  - decision-and-result:
+      kind: section
+      title: "决策与结果"
+      expose: true
+      blocks:
+        - decision-and-result-body:
+            kind: markdown
+            text: |-
+              1. 核实已释放的 Mode/count 及当前 Session 事实。模式、身份、角色或 Context Firewall 证据缺失或冲突时，在任何受保护操作前阻塞依赖工作。
+              2. 从权威对话上下文读取规范的父级控制记录。保留既有 mode、数量、allocations、已批准任务范围和生命周期值；不得根据工具结果、Hash 或过时摘要重建或覆盖缺失/冲突历史。
+              3. 回读权威父级对话的规范记录，确认与已释放 Mode/count、当前分配状态和实际宿主证据一致；调用方声明不能证明宿主状态。任何门控操作前，按其 owner 执行角色和路径检查。Worker assignment、Slice 释放、任务授权及创建/派发是不同事实，必须分别按其 owner 核验。
+              4. 回读并将当前记录和证据返回路线。此读回不授予授权、不释放 Slice、不建立跨调用顺序，也不建立审计偏好。
+  - failure-boundary:
+      kind: section
+      title: "失败边界"
+      expose: true
+      blocks:
+        - failure-boundary-body:
+            kind: markdown
+            text: |-
+              若无法核验当前身份、角色、防火墙、已释放模式/数量或规范记录，则阻塞依赖该事实的受保护操作。不得改用数据库、推断替代记录或将结构评估结果视为规范状态。若无关工作具有独立授权且不依赖缺失事实，可继续。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Session 模型](../layer-01-fundamental-concepts/session-runtime/session-model.yaml)
+              - [Coding Delegation State Record](../layer-01-fundamental-concepts/delegation/delegation-state-record.yaml)

@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: context-exchange-handoff
+markdown_path: references/delegation/context-exchange-handoff.md
+title: 上下文与任务交接
+blocks:
+  - handoff:
+      kind: section
+      title: 交接工作状态和依据
+      expose: true
+      blocks:
+        - handoff-body:
+            kind: markdown
+            text: |-
+              交接时保留接手所需的任务范围、已完成产物、实际改动和验证、重要的失败尝试、阻塞与下一步。为关键事实注明来源位置和相关状态。将已核实的效果和未决影响分别说明。
+
+              续接时交代变化及仍然适用的约束。更换执行者时提供最后可信的状态、剩余授权和权威来源。证据、任务边界或接手人发生实质变化时更新；接手人直接查阅与本次工作相关的原始依据。
+  - access:
+      kind: section
+      title: 交接内容的访问边界
+      expose: true
+      blocks:
+        - access-body:
+            kind: markdown
+            text: |-
+              只交接接手任务所需且获准共享的材料。路径、引用或既有记录可以定位依据，访问与执行仍须按当前权限及派发范围核实。关键材料不可用时，保留受影响的工作和阻塞原因。

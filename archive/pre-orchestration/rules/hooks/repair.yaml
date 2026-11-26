@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: repair
+markdown_path: hooks/repair.md
+activate_on: [repair_review, repair_required]
+title: Repair Hook
+blocks:
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              当前 Verification 有具体失败证据，或调用方确认需处理失败时适用。Repair 是对失败的诊断与受控恢复，不是一般性改进、语义变更或顺手清理。入口输入须包括当前 Contract/Decision、验收条件与批准范围，当前 Verification 指纹/epoch 和各项结果，失败证据、受影响路径及可核实的实际状态；已完成实施/子代理结果、Session authority、调用方 continuation 和已发生效果亦须明确。缺少事实时不猜测、不写入，说明所需证据并返回 `needs_prerequisite`；状态矛盾或效果不安全时 `blocked`。
+
+              Repair 按顺序区分四个 owner：诊断候选、范围兼容性/授权、执行窄修复、验证交接。修复意图不是授权，候选不是批准，聚焦检查不是最终 Verification。本 Hook 不赋予额外路径/权限，不授权文档、Git、外部影响、大范围清理或独立验证。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-01:
+            kind: section
+            title: 诊断与候选
+            blocks:
+              - execution-01-body:
+                  kind: markdown
+                  text: |-
+                    首先提供可追溯的具体失败证据，说明哪项验收条件失败、失败表现/检查结果、当前指纹或 epoch、受影响路径及其与失败的因果关系。给出能解决该失败的最小修复候选，描述预期效果及必要的聚焦检查；候选明确标记为未授权。若无具体失败，仅有意见、偏好或语义变更，Repair 为 `not_applicable`，并附证据理由；重大 Contract/Decision 变化应返回调用方重审、更新决策并重新调度，不得作为修复实施。
+
+                    诊断结论须能区分事实、推断与未知，记录缺失的能力/证据。不能因某处看似相关就扩大到全仓或无关路径；无法建立失败与路径/候选关系则暂停并补证。报告至少包括失败验收项、证据来源与结果、指纹/受影响 epoch、路径、最小候选、预期效果、残余风险、可能影响边界、缺少项和 continuation。
+        - execution-02:
+            kind: section
+            title: 范围门禁与授权
+            blocks:
+              - execution-02-body:
+                  kind: markdown
+                  text: |-
+                    在执行前，将候选逐项与当前已批准 Contract、Decision、范围及 execution control 对照。仅当候选在已批准范围内、授权明确且影响可控时才放行。凡改变范围、架构、安全、兼容性、验收条件、其他实质性决策，或需要新增能力/权限/资源的候选，暂停；向调用方返回具体证据和所需 Contract、Decision 或能力，待其完成相应决策检查点后再评估。不得以“修复失败所必需”、既有任务授权、先做再问或计划中的检查替代范围授权。
+
+                    范围门禁通过条件：候选明确处于已批准范围内且被明确授权执行，或未放行并清楚标明缺少的决策/能力。未决、模糊或互相冲突的授权一律不通过。范围门禁只审批候选边界，不诊断失败、不选择修复方案、不执行写入、不运行聚焦检查，也不创建验证 epoch。修复要触及未授权路径、文档、Git metadata、外部服务或扩大效果时，单独取得对应授权；本 Hook 不默认为其授权。
+        - execution-03:
+            kind: section
+            title: 窄范围执行
+            blocks:
+              - execution-03-body:
+                  kind: markdown
+                  text: |-
+                    仅在门禁放行后实施获准修复，只改明确释放的路径和内容；不得夹带重构、清理、格式化、文档、提交等无关效果。执行前核对目标仍是授权所针对的实际状态；若状态、失败依据、候选或决策已变化，停止并重新诊断/过门禁。保留实际修改路径、修改事实、工具结果及任何未改动/失败项。对修复本身运行直接相关的聚焦检查，并记录名称、执行状态、证据和结果；此检查仅供 Repair 执行判断，不能代替最终 Verification。
+
+                    执行通过条件是获准窄修复已完成，并有聚焦检查结果，或明确返回具体问题/阻塞。执行者不诊断新的独立失败、不批准范围变化、不创建最终 epoch、不宣布最终通过。修复中发现超范围需求、效果不安全、权限不足、状态冲突或候选不能解决问题时，立即停止受影响写入，保留已发生效果事实并返回调用方/对应 owner；不得以部分成功为由继续。
+        - execution-04:
+            kind: section
+            title: 修复交接
+            blocks:
+              - execution-04-body:
+                  kind: markdown
+                  text: |-
+                    任何改变状态的修复完成后，捕获新的实际最终指纹，并标明受影响的 epoch 维度；将新状态、变更路径、聚焦检查结果、残余失败/风险、指纹及证据缺口明确交给 Verification。`implementation/content`、`documentation`、`Git metadata` 分别按 Verification Hook 判定是否推进；不因改动小而跳过，也不把未变化维度一律作废。维护文档改动触发其适用检查；若改变可执行内容、Contract 或验收条件，同时推进内容维度。单纯 Git metadata 变化仅推进该维度，但 staged/committed 内容与最新验证指纹不一致时仍须回内容验证。
+
+                    交接通过条件：新状态有准确指纹/epoch、证据已明确交给 Verification，并排队等待当前重验；或者暂停并列明缺少的证据。若修复实际上没有改变状态，须有证据说明且仍将原失败交回处理，不能伪造新 epoch 或声称解决。交接 owner 不授权/执行修复，不选择检查、不分类最终结果、不产生 Git 影响。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              在对话中区分下列修复结果。窄修复完成后按 Verification 重新验证。
+              - `not_applicable`：没有具体失败，或该问题并非 Repair；列明直接证据依据，并路由决策变化至调用方。
+              - `needs_prerequisite`：失败诊断需要的状态/证据/能力、Contract/Decision 或授权待补；写明具体 owner、缺项与续行条件。
+              - `blocked`：范围冲突、未授权效果、状态不安全、证据不可恢复或执行边界无法确保；说明被阻断动作和不得继续的路径。
+              - `ready_for_verification`：窄范围修复在批准范围内完成，聚焦结果和新指纹/epoch 已交接；这不是 Verification 通过。
+
+              只有诊断事实、候选、范围放行、执行效果和交接证据均完整，才能返回 `ready_for_verification`。任何失败证据、范围授权、实际改动、受影响 epoch、新指纹或 handoff 缺失，都阻断依赖路线。必须在调用方恢复当前 Verification 后，才可依赖已改变状态继续。严重/实质决策变化返回调用方做 Contract/Decision 复审和路线重调度，不得伪装成 Repair 成功。
+
+              禁止复用过期通过证据；不得把失败仅在报告中改写为通过、将不可用检查当通过、以修复意图当范围批准、以聚焦检查代替最终检查，或让实施者声称自己完成了独立验证。若 Contract 要求独立 Change Verification Session，实施者及同一 Session 的逻辑检查不能满足；由验证独立性 owner 安排获授权验证者。Repair 本身不安排或授权该角色。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              把已变更状态回到 Verification Hook：重新捕获准确当前状态、映射验收标准和内容/文档/Git metadata epoch，按改变的维度运行适用整体与定向检查，更新独立性、检查分类、剩余风险、未解决项及阻塞影响。受影响维度的旧证据失效；未受影响且指纹匹配的证据可保留。修复之后又发生其他改动时，以实际最新状态为准，不可只验证修复补丁或沿用交接时已过期的指纹。
+
+              若最终 Verification 再次失败，提供新的具体失败证据并重新走诊断与范围门禁；不可无限重复旧候选或在原授权不覆盖新范围时继续写入。Contract、验收条件、状态、效果、授权或独立性发生变化时，只重验受影响事实，但其影响到的依赖动作必须暂停至证据恢复。验证完成后由调用方根据其自身验收/放行条件决定续行；修复完成不是整体验收。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              | 来源 | 本合同落点 |
+              | --- | --- |
+              | [repair.md](../references/coding/layer-02-workflow-concepts/verification-and-repair/repair.yaml) | 失败证据、受影响路径、最小候选、无授权/执行的诊断边界 |
+              | [repair-scope-gate.md](../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-scope-gate.yaml) | Contract/Decision 兼容性、实质变化暂停、先授权后执行 |
+              | [repair-execution.md](../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-execution.yaml) | 仅获准窄修复、聚焦检查及执行边界 |
+              | [repair-verification-handoff.md](../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-verification-handoff.yaml) | 新指纹/epoch、交回 Verification 与交接阻断 |
+              | [repair-disposition.md](../references/coding/layer-03-workflow-checkpoints/repair-disposition.yaml) | 路线级失败路由、无失败 N/A、重大决策回调用方及当前重验 |
+              | [verification-epoch.md](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml) | 三维状态变化、失效证据及按影响重新验证 |

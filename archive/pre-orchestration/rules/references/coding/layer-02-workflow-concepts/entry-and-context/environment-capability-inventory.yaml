@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: workflow-concept
+id: environment-capability-inventory
+markdown_path: references/coding/layer-02-workflow-concepts/entry-and-context/environment-capability-inventory.md
+title: "Coding 运行环境能力清单"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责当前运行环境的能力清单：暴露能力、未知能力处理和依赖路线阻断。运行时事实与设置边界由[运行时与能力边界](../../layer-01-fundamental-concepts/session-runtime/runtime-provider-support.yaml)负责。本文档不选择运行环境，不选择执行模式，不绑定角色，不授权委派，不授权实现，也不定义任务策略。
+  - section-01:
+      kind: section
+      title: "暴露能力清单"
+      expose: true
+      blocks:
+        - section-01-body:
+            kind: markdown
+            text: |-
+              记录当前环境已核实可用的能力，包括直接暴露和按需发现的能力。只核实任务所需的模型身份和参数控制、Session 拓扑、文件系统与沙箱访问、工具、连接器、认证和委派返回路径。选择工具时，核对其实际说明、参数、权限和能返回的证据。
+  - section-02:
+      kind: section
+      title: "未知能力和路线阻断"
+      expose: true
+      blocks:
+        - section-02-body:
+            kind: markdown
+            text: |-
+              未观察到的能力标记为未知。不得替换成其他运行环境、模型、参数、Session、工具、权限或推断出的能力。所需能力缺失或未知时，阻塞依赖该能力的切片。
+  - section-03:
+      kind: section
+      title: "受保护操作能力"
+      expose: true
+      blocks:
+        - section-03-body:
+            kind: markdown
+            text: |-
+              针对每项受保护操作，记录当前 Session 和角色事实，以及该操作实际要求的能力和权限检查，并附上证据与范围。应用请求范围或公共规则接口不能认证身份或证明授权。必需能力缺失时，只阻塞依赖工作。本清单不授权受保护调用。
+  - section-04:
+      kind: section
+      title: "路线消费"
+      expose: true
+      blocks:
+        - section-04-body:
+            kind: markdown
+            text: |-
+              路线消费这份能力清单和状态，只记录各自拓扑差异。按[运行时与能力边界](../../layer-01-fundamental-concepts/session-runtime/runtime-provider-support.yaml)核实当前实际可用的控制，不继承已取消的多产品模型绑定。
+
+              路线所需的 profile 是能力要求，不是对整个产品可用性的声明。只有任务明确要求特定模型或参数时，才记录其实际生效证据并据此消费该 profile；没有这类要求时，不增加模型检查门禁。如果必需的模型或参数未暴露或未知，必须将该要求记录到 `unavailable_capabilities`，并阻塞依赖的切片或路线。不得静默替换模型、reasoning effort、Session、工具、权限或 mode/count；选择其他路线必须重新进入其适用门禁并取得新的明确确认。这使 Core 规则与产品细节解耦，同时允许路线消费其所需的、特定于 surface 的 profile。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Session Model](../../layer-01-fundamental-concepts/session-runtime/session-model.yaml) — 定位 Session 拓扑归属。
+              - [Coding Session Role Ownership](../../layer-01-fundamental-concepts/session-runtime/session-role-ownership.yaml) — 定位职责责任归属。
+              - [Coding Context Exchange 工作区边界](../../layer-01-fundamental-concepts/context-exchange/context-exchange-workspace-boundary.yaml) — 定位文件系统和 worktree 能力归属。
+              - [Coding Delegation Mode Confirmation](../../layer-01-fundamental-concepts/delegation/delegation-mode-confirmation.yaml) — 定位模式门禁能力消费者。
+              - [Coding Delegation Count Gate](../../layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.yaml) — 定位数量门禁能力消费者。
+
+              - [工作流导航可用性](../../layer-01-fundamental-concepts/workflow-navigation/navigation-availability.yaml) — 定位可选导航失败处置。

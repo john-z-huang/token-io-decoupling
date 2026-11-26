@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: documentation-comments-git-operations
+markdown_path: references/roles/documentation-comments-git-operations.md
+title: Documentation/Comments & Git Operations
+blocks:
+  - scope:
+      kind: section
+      title: 职责范围
+      expose: true
+      blocks:
+        - scope-body:
+            kind: markdown
+            text: |-
+              此角色承接已单独授权的非简单 Git 操作。普通项目文档、评论和注释由主代理编写，包括伴随代码改动的文档和注释。本 Skill 的指令或参考文档可在明确范围后交给 [Primary Output](primary-output.yaml)，由主代理审阅与验收。
+  - execution:
+      kind: section
+      title: 执行要求
+      expose: true
+      blocks:
+        - execution-body:
+            kind: markdown
+            text: |-
+              - 接手前核对执行身份、独立授权与受保护的执行能力。确认实际仓库和工作树、相关分支或修订、允许的路径、目标动作及影响范围。任一必要条件缺失时，将受影响操作和缺口交回主代理。
+              - 按逐项授权执行，保留无关改动与正常 Git 检查。涉及暂存或提交时核对实际内容与已验证范围一致。冲突需要修改内容含义、产品行为或测试时，将相关证据交回主代理决定。
+              - 结果不明时先读取实际状态。暂停依赖未决结果的动作，等待主代理核对范围或决定恢复办法。
+  - handoff:
+      kind: section
+      title: 返回证据
+      expose: true
+      blocks:
+        - handoff-body:
+            kind: markdown
+            text: |-
+              交回实际操作与目标、受影响的路径或引用、变更前后可核验的状态、适用检查及结果。涉及修订时提供实际修订标识，涉及远端影响时提供相应回执。说明未执行、失败或效果仍未知的动作，由主代理整合证据并验收。

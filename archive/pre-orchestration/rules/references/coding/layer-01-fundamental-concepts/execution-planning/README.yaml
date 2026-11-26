@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: execution-planning-readme
+markdown_path: references/coding/layer-01-fundamental-concepts/execution-planning/README.md
+title: "Execution Planning"
+blocks:
+  - scope-and-boundary:
+      kind: section
+      title: "范围与边界"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - scope-and-boundary-body:
+            kind: markdown
+            text: |-
+              任务分配与输出路由、决策上下文/建议、决策门禁、工作流模块契约、规划和计划记忆生命周期。本分类管理规划与语义决策边界，不管理阶段控制或运行时专属绑定。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              方向未决时从决策门禁开始。调用有界可复用模块时应用工作流模块契约；其他情况按任务选择规划或执行主体分配 owner。
+  - owners:
+      kind: section
+      title: "所有者"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - owners-body:
+            kind: markdown
+            text: |-
+              - [candidate-compliance](candidate-compliance.yaml)
+              - [decision-context-generation](decision-context-generation.yaml)
+              - [decisions-advisory](decisions-advisory.yaml)
+              - [execution-decision-gate](execution-decision-gate.yaml)
+              - [execution-planning](execution-planning.yaml)
+              - [output-token-routing](output-token-routing.yaml)
+              - [output-materialization](output-materialization.yaml)
+              - [task-plan-memory-lifecycle](task-plan-memory-lifecycle.yaml)
+              - [task-assignment](task-assignment.yaml)
+              - [workflow-module-contract](workflow-module-contract.yaml)
+              - [workflow-routing-advice](workflow-routing-advice.yaml)

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Token I/O Decoupling"
+  short_description: "按场景解耦 Coding Flow 中的高价值决策、项目状态消费和输出物化"
+
+policy:
+  allow_implicit_invocation: true

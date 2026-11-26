@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "document_moves": [
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/LSP-MCP-Tools.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/session-runtime/LSP-MCP-Tools.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/child-role-selection.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/child-role-selection.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/content-memo-dispatch.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-dispatch.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/content-memo-lifecycle.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/content-memo.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/context-exchange/content-memo.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/context-exchange-handoff.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange-handoff.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/context-exchange-workspace-boundary.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange-workspace-boundary.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/context-exchange.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/decision-context-generation.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/decisions-advisory.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/execution-planning/decisions-advisory.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/delegation-child-creation.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-child-creation.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/delegation-child-dispatch.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-child-dispatch.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/delegation-child-lifecycle.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-child-lifecycle.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/delegation-child-message-visibility.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-child-message-visibility.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/delegation-child-reuse-replacement.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-child-reuse-replacement.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/delegation-child-role-allocation.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-child-role-allocation.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/delegation-mode-confirmation.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/delegation-mode-count-gate.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/delegation-mode-reentry.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-reentry.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/delegation-state-record.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/delegation-worker-boundary.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/delegation/delegation-worker-boundary.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/enhanced-host-binding.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-host-binding.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/enhanced-rule-context.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/workflow-navigation/rule-context.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/enhanced-schema-migrations.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-schema-migrations.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/enhanced-state-store.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/enhanced-state-store.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/enhanced-workflow-availability.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/workflow-navigation/navigation-availability.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/execution-control.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/execution-control/execution-control.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/execution-decision-gate.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/execution-planning/execution-decision-gate.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/execution-planning.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/execution-planning/execution-planning.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/execution-stage-feedback.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/execution-control/execution-stage-feedback.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/native-authority-transfer.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-authority-transfer.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/native-reconciliation.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/enhanced-native-state/native-reconciliation.md",
+      "status": "retired",
+      "reason": "Retired with the SQLite workflow-state architecture; no replacement owner is required."
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/output-token-routing.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/planning-intent-plan-memory-lifecycle.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/reasoning-summary-visibility.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/session-runtime/reasoning-summary-visibility.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/runtime-provider-support.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/session-audit-visibility.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/session-runtime/session-audit-visibility.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/session-context-firewall.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/session-runtime/session-context-firewall.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/session-model.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/session-runtime/session-model.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/session-role-ownership.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/session-runtime/session-role-ownership.md"
+    },
+    {
+      "from": "skill/references/coding/layer-01-fundamental-concepts/task-assignment.md",
+      "to": "skill/references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/acceptance.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/completion-and-effects/acceptance.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/context.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/entry-and-context/context.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/contract.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/entry-and-context/contract.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/control.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/decision-and-execution/control.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/decision.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/decision-and-execution/decision.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/documentation.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/completion-and-effects/documentation.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/environment-capability-inventory.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/entry-and-context/environment-capability-inventory.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/environment.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/entry-and-context/environment.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/git.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/completion-and-effects/git.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/implementation.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/decision-and-execution/implementation.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/mode.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/entry-and-context/mode.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/repair-execution.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/verification-and-repair/repair-execution.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/repair-scope-gate.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/verification-and-repair/repair-scope-gate.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/repair-verification-handoff.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/verification-and-repair/repair-verification-handoff.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/repair.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/verification-and-repair/repair.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/verification-epoch.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/verification-independence.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification-independence.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/verification-reporting.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification-reporting.md"
+    },
+    {
+      "from": "skill/references/coding/layer-02-workflow-concepts/verification.md",
+      "to": "skill/references/coding/layer-02-workflow-concepts/verification-and-repair/verification.md"
+    }
+  ]
+}

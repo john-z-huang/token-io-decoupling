@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: candidate-compliance
+markdown_path: references/coding/layer-01-fundamental-concepts/execution-planning/candidate-compliance.md
+title: "候选变更合规预检"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档定义对拟议仓库变更进行可选只读结构预检的规范。它不拥有写入授权、完整验证或最终验收。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "对照可信的当前状态检查候选内容"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    当已授权工作流需要提前获得结构反馈时，可将一组候选变更作为内存覆盖层，与可信检出内容一起检查。候选文件可相互满足直接的本地链接检查。基线记录观察到的文件状态；它不是锁、写入授权，也不保证状态保持不变。
+
+                    策略范围必须明确。维护本 Skill 时采用其文档规则，其他项目采用其自身规约。候选内容可做静态检查；依赖磁盘状态或基线但缺少可信证据的检查记为 unknown。可信根目录及策略须由实际任务范围核实。
+
+                    分别将结果解释为 pass、fail、unknown 或 not applicable。将 unknown、失败、因限制未返回的检查以及过期基线视为未解决。修正原因或补齐证据后，应针对当前候选内容重新运行。成功预检只覆盖该覆盖层与读取器观察实际返回的检查。
+
+                    预检不会扫描未变更文档中的反向入站链接、证明中文正文的语义正确性、执行仓库代码、运行所有项目检查、授权应用文件，也不替代当前状态 Verification 和 Acceptance。变更应用后仍须完成适用的权威检查。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              可按授权用现有只读检查能力核对候选内容、直接链接和可信基线。可选预检未选用时按已授权路径检查实际文档；选用后须处理失败或未知，再推进依赖该结果的动作。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Session Role Ownership](../session-runtime/session-role-ownership.yaml) — 拥有可信身份和逐次调用守卫。
+              - [Workflow Routing Advice](workflow-routing-advice.yaml) — 拥有可选阶段建议。
+              - [Output Materialization](output-materialization.yaml) — 拥有受控输出准备与应用。

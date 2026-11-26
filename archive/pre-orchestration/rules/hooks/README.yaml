@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-directory
+id: readme
+markdown_path: hooks/README.md
+title: Coding Hooks 触发目录
+blocks:
+  - intro:
+      kind: markdown
+      text: |-
+        这些文件是供 Agent 按路线与当前事实读取的执行合同，**不是仅因文件名叫 Hook 就自动执行的 Markdown**。每份按主题整合相关owner的前置条件、动作、条件分支、禁止项、证据、退出/阻断与重新核验，并逐篇列出“来源—本合同落点”；不是摘要或必须重新通读所有owner才能执行的目录。原owner仍保留权威，冲突/新规则需要定向核验，不能由省略推导豁免。
+
+        当前 Skill 通过 [Coding selector](../workflows/coding.yaml) 定向读取原 owner。归档扩展仅供查阅，实际宿主能力按当前会话核验。
+  - contracts:
+      kind: section
+      title: 合同与明确触发
+      blocks:
+        - contracts-body:
+            kind: markdown
+            text: |-
+              | Hook | 触发条件 | 执行内容 |
+              | --- | --- | --- |
+              | [foundation](foundation.yaml) | 每次 Coding 模型请求；所有模块及其他 Hook 共同适用 | 共享 Contract、真实来源、授权、禁止 Computer Use、数据与模型边界。 |
+              | [entry](entry.yaml) | entry；requirements_changed/capability_changed | 核验任务/约束/验收、实际环境与工具、已选模式及路线。 |
+              | [session](session.yaml) | session；能力变化 | 核验当前 Session/角色、模式/预算、实际扩展能力。 |
+              | [planning](planning.yaml) | definition 及实施/验证/文档/交付边界；决策/需求变化 | Context/Decision、Memory scope/repo key、默认共享计划、增量保全和单写者。 |
+              | [execution](execution.yaml) | execution；Slice/Control 边界 | 放行四字段、精确影响范围、阶段反馈、Continue/Amend/Stop。 |
+              | [delegation](delegation.yaml) | multi execution 确认由 Root 执行之前或已选子代理分支、`executor_changed`、VR02 需独立子代理 | 任务/输出资格、唯一职责/预算、一次性调用、结果正文、不重派。 |
+              | [context](context.yaml) | definition/documentation/multi execution；context_exchange | Capsule/memo/共享计划区分、获准具名访问、来源与 Handoff。 |
+              | [audit](audit.yaml) | session、multi execution、VR02 独立子代理验证、运行中或结果不明的 allocation | 安全摘要偏好、实际结果正文、不可伪造消息/日志。 |
+              | [verification](verification.yaml) | verification；文档/Git 回环 | 最终状态、当前 epoch 检查、独立性、类别/结果/缺口。 |
+              | [repair](repair.yaml) | VR05 或 `repair_required` | 修复范围门禁、Contract 改变回 Decision、修复后重验。 |
+              | [documentation](documentation.yaml) | documentation；documentation_impact | Root/Skill 输出边界、文档影响、检查及原位置恢复。 |
+              | [delivery](delivery.yaml) | delivery；git_changed | Git 独立授权、逐标准验收、计划保全/字节相同归档。 |
+              | [recovery](recovery.yaml) | paused/blocked/未知效果；生命周期中断或有待返回位置 | 准确 owner/位置、实际读回、撤销 Slice、不重放。 |
+              | [navigation](navigation.yaml) | entry；当前导航需求 | 可选导航的直接 owner 路径、不伪造未适配服务能力。 |
+              | [advisory](advisory.yaml) | advice_requested | 外部建议的最少事实、独立出站授权、API 配置/模型边界。 |
+              | [materialization](materialization.yaml) | materialization_requested | 候选预检与真实应用分离、可信身份/grant、守卫失败不绕过。 |
+
+              路线绑定各阶段的主 Hook，并负责跨阶段交接及返回位置；Hook 保留本阶段的检查点、证据与阻断规则。Agent 按当前动作读取，而不是执行流程图。归档扩展曾用 `activate_on` 匹配可观察状态，例如工具失败、未决效果或活动委派。语义变化由 Agent 在上下文判断后读取对应合同。Agent 根据证据判断任务变化、授权、验证充分性及适用性。
+  - host-events:
+      kind: section
+      title: 真正的宿主回调
+      blocks:
+        - host-events-body:
+            kind: markdown
+            text: |-
+              下表仅记录归档扩展的历史回调，不代表当前自动触发。
+
+              | Pi 事件 | 归档扩展曾执行的动作 |
+              | --- | --- |
+              | before_agent_start | 保留其他 system prompt sections，仅添加 Coding 简短引导；显式 CLI flag 可从真实用户 prompt 启动。 |
+              | context | 替换本扩展旧包，注入所选 YAML 路线、触发的合同和有限回执，保留其他扩展消息。 |
+              | tool_call | 约束内置写入路径/Slice、子代理入口和不透明调用包装；不凭 Shell 关键词或 readOnlyHint 证明安全。 |
+              | tool_execution_end | 绑定实际调用证据；已运行写入即使失败也保守失效 epoch；被阻断而未运行的不冒充实际效果。 |
+              | session_start | 核对 Session、目录及规则指纹，恢复本分支记录和会话内已占用的名额。 |
+              | session_tree | 读取活动分支的会话绑定，并保留整个会话的已占名额与未决调用。 |
+              | input / user_bash | 用户输入撤销旧 Slice，Agent 按当前指令重新核对范围。未决调用或用户 Shell 影响未知时读回实际效果。 |
+              | agent_settled | 结束时撤销 Slice。中止或仍有未决调用时暂停并要求读回。 |
+  - references:
+      kind: section
+      title: 来源整合与链接基准
+      blocks:
+        - references-body:
+            kind: markdown
+            text: |-
+              Coding 参考规则由 YAML DSL owner 定义，`references/coding` 提供阅读版。Hook 将规则逐篇映射到运行时动作与证据，执行引用单向指向 DSL owner。目录、索引和逐篇来源对照供导航。Hook 间协作依当前事件与调用边界触发，共用规则直接引用相应 owner。
+
+              - [逐篇来源整合对照](SOURCE_COVERAGE.yaml) 列出 Hook 消费的规则和导航。各合同末尾的“规则来源”表记录具体消费位置。
+              - DSL 源引用相对 `.yaml` 文件及块 ID，阅读版引用对应的 `.md` 和标题锚点。归档扩展注入时曾将可查询的规则链接转换为 `coding-rule:文档#片段`，通过 `coding_checkpoint action=rules` 定向读取。当时其余本地链接以包内资源为基准生成 `file:` URL。
+              - 旧运行时按需从 YAML 读取 Hook 正文，注入触发、输入、执行条款、退出及重核。完整合同及“规则来源”对照表在 Markdown 阅读版中查阅。
+              - 旧注入包提供 YAML 路线正文、实际触发的合同和最近回执。规则查询提供合同正文与可定位的细节。硬上限为 96,000 字符，超限阻断。
+              - 阶段合同中的编号检查点供 Agent 定位所需条件。Agent 在上下文中判断适用性，验证 Hook 继续按 ID 读取 Epoch 动作。
+              - Hook YAML 的执行要求可用 `rule_include` 块引用参考 DSL 片段，编译时转换为运行时引用。编译器校验目标参考规则与片段。DSL 正文中的链接供定位和按需阅读。
+  - maintenance:
+      kind: section
+      title: 维护与验收
+      blocks:
+        - maintenance-body:
+            kind: markdown
+            text: |-
+              - 合同和目录在 `rules/hooks/` 下维护，用编译器生成阅读版。来源表记录归属及落点，执行规则写入正文。
+              - 旧扩展曾建立路线和 Hook 索引，并根据合同来源表生成对照，校验链接、路径边界、模式、失败提示和暂停状态。旧扩展测试曾覆盖跨工作区注入链接、锚点、缺失引用、超限与正文完整性；这些归档工具和检查不在当前维护流程运行。
+              - 覆盖率和 Hash 只说明文本/归属/形状，不证明压缩合同逐条语义等价。详细 owner 保留权威；扩展不是新的授权来源、OS 沙箱或完整静态副作用分析器。
+              - 原生/其他扩展工具是否经过当前事件链必须实际核验；不可观测的外部操作通过真实读回与相关 Hook 处理，不伪造自动检测。
+              - 通过当前环境的实际能力和权限核实服务、可信身份与受保护物化；本地 Hooks 测试仅提供本地验证证据。

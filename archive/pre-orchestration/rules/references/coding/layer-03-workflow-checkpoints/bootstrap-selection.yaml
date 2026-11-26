@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=../../../reference.schema.json
+schema_version: 1
+document_type: workflow-checkpoint
+id: bootstrap-selection
+markdown_path: references/coding/layer-03-workflow-checkpoints/bootstrap-selection.md
+title: "Bootstrap 选择"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本检查点负责当前多代理任务是否消费 Bootstrap/Refresh。
+  - inputs:
+      kind: section
+      title: "触发与输入"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - inputs-body:
+            kind: markdown
+            text: |-
+              当前事实已建立且 Root 已授权当前任务范围后，判断该任务是否触发 Bootstrap/Refresh，并以此范围作为评估输入。若 Bootstrap/Refresh 提出具体辅助任务，Root 必须在执行者选择或角色预留前另行审查并授权该任务。读取[Child Role Allocation](../layer-01-fundamental-concepts/delegation/delegation-child-role-allocation.yaml)，了解其既有触发、阈值、跳过条件及角色/slot 授权。
+  - decision-and-result:
+      kind: section
+      title: "决策与结果"
+      expose: true
+      blocks:
+        - decision-and-result-body:
+            kind: markdown
+            text: |-
+              1. 列明 Root 已授权的当前任务范围、拟议角色、角色占用/slot 及相关 Memory 事实，并标注来源。
+              2. 逐项应用 Child Role Allocation 原有的触发条件、阈值和跳过条件；记录命中的条件，或明确缺失事实及 `Not applicable` 理由。
+              3. 若触发，向后续 Executor Selection 和 Role Reservation 返回拟议 Bootstrap/Refresh 任务及依据；否则返回 `Not applicable`。
+              4. 向调用方返回决策证据，供后续任务和职责决策使用。本步骤不预留角色/容量、不创建 child、不释放 Interaction Slice。
+  - failure-boundary:
+      kind: section
+      title: "失败边界"
+      expose: true
+      blocks:
+        - failure-boundary-body:
+            kind: markdown
+            text: |-
+              触发事实或授权不清时阻塞此分支。不得复制/重定义 owner 阈值、推断新角色、提前预留容量或绕过后续 Slice 与创建门禁。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [子代理职责分配](../layer-01-fundamental-concepts/delegation/delegation-child-role-allocation.yaml)

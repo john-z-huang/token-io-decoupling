@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: repair-scope-gate
+markdown_path: references/execution/repair-scope-gate.md
+title: 修复范围与授权
+blocks:
+  - repair-boundary:
+      kind: section
+      title: 核对候选修复
+      expose: true
+      blocks:
+        - repair-boundary-body:
+            kind: markdown
+            text: |-
+              判断修复前，确认当前失败证据、已发生的效果、修复目标和拟影响的资源。效果不明时先核实实际状态。依赖未知效果或可能覆盖未决改动的操作保持暂停。
+
+              候选修复与已确认的目标、范围、授权及决定相容时，可以由适当执行者在原边界内修复。涉及新的路径、外部影响、架构、安全、兼容性或验收变化时，先返回[决策和执行条件](../planning/execution-decision-gate.yaml)，核实变化及其所需授权，再执行。
+  - resume:
+      kind: section
+      title: 恢复后交回验证
+      expose: true
+      blocks:
+        - resume-body:
+            kind: markdown
+            text: |-
+              保留原失败证据、实际修复和最新受影响范围，按[修复与复验交接](../verification/repair-verification-handoff.yaml)复核。多代理路线按[主代理职责](../roles/main-agent.yaml#execution)处理实施或修复委派，以及主代理的命令边界。

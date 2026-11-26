@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: output-materialization
+markdown_path: references/coding/layer-01-fundamental-concepts/execution-planning/output-materialization.md
+title: "输出物化"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档定义通过单独授权的写入能力，对有界候选输出批次进行受控准备、检查和应用。它不拥有角色政策、授权签发、最终验证或通用文件写入。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "区分准备、审阅和应用"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    只有在当前调用中核实当前任务分配、操作专用授权、固定根目录、精确路径和必要安全能力后，才可准备输出。角色分配、工具发现、能力列表或普通写入权限均不能替代独立且匹配的授权。上下文或守卫缺失、过期、撤销或含糊时，应停止，不得猜测路径或能力。
+
+                    准备会在项目目录外创建有界候选产物，不得称为项目写入。保留其标识符和清单哈希。只检查有界内容，并在应用前审阅候选内容。仅当重新核实当前权限、产物完整性、基线以及针对固定项目的新鲜整批预检后，才可应用同一候选内容。应用期间不得重新生成内容，也不得将先前预检视为当前授权。
+
+                    仅使用有限的本地渲染模板和既定限制。任何可选语义服务只能在已提供的事实标识符中排序；本地代码保留原始事实并渲染输出。配置缺失、拒答、响应无效、上下文过期或超限时，准备应停止，不得替换成自由形式的输出。服务未报告用量时，不得推断用量为零。
+
+                    应用仅限精确授权的路径和操作。重新检查当前文件状态，保留外部变更，并在部分或不确定结果后检查收据和实际文件。同一候选内容的重放不得覆盖用户后续变更。协作锁无法防止无关写入者并发修改；多文件批次可能只应用一部分，也不保证全局回滚。状态不确定或权限已变化时，应依据当前证据先解决问题，再准备新候选内容。
+
+                    此能力是可选的。能力不可用时，可在自身授权路线允许的范围内继续 Native 输出工作。不得把不可用当作成功，也不得弱化相关角色、权限或验证 owner。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              使用独立物化能力前，须核实当前可信 Worker 绑定、匹配的任务分配与独立操作许可。尚未选用物化路径时，可按独立授权使用直接 edit/write；已选路径被拒绝时按实际结果处置。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Candidate Compliance Preflight](candidate-compliance.yaml) — 拥有只读候选检查。
+              - [Session Role Ownership](../session-runtime/session-role-ownership.yaml) — 负责角色责任；此服务仍需单独的可信绑定上下文和 grant。
+              - [Workflow Navigation Availability](../workflow-navigation/navigation-availability.yaml) — 负责可选导航不可用时直接读取 owner 的回退。
+              - [Coding Execution Control](../execution-control/execution-control.yaml) — 拥有释放和 Control 转换。
+              - [Task Assignment](task-assignment.yaml) — 拥有执行者和输出责任选择。

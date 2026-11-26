@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: rule-context
+markdown_path: references/coding/layer-01-fundamental-concepts/workflow-navigation/rule-context.md
+title: "工作流规则上下文"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责有界导航至当前工作流规则；不负责检查点结构评估、底层规则、调用方身份或工作授权。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "仅读取所需规则上下文"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    使用当前工作流 owner 作为权威来源，按适用标题阅读正文。逐项直接读取判断所需的链接 owner；相关条文缺失时，以当前文件补证。
+
+                    将导航范围限制在当前判断所需内容。不得扫描整个仓库，也不得将链接引用视为已递归加载。必需内容缺失或结果不完整时，调用方必须直接获取权威 owner；若无法获取，则仅阻塞依赖该内容的判断。导航不需要时，记录附有理由的 `Not applicable`。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              从当前检查点指向的 Markdown 文件或其 YAML 源读取适用规则与直接依赖。按标题或块 ID 定位所需段落，核对文件版本及适用性；必需内容缺失时暂停依赖判断。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [工作流导航可用性](navigation-availability.yaml) — 负责导航不可用分支。
+              - [检查点结构检查](checkpoint-structure-checks.yaml) — 负责评估调用方提供的检查点事实结构。
+              - [Workflow Routing Advice](../execution-planning/workflow-routing-advice.yaml) — 负责可选阶段建议。
+              - [Coding Execution Control](../execution-control/execution-control.yaml) — 负责 Slice 与 Control 决策。
+              - [Coding Delegation State Record](../delegation/delegation-state-record.yaml) — 负责规范的父级控制工作流记录。

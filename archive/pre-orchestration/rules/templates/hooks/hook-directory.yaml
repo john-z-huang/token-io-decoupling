@@ -1,0 +1,58 @@
+layout:
+  - intro:
+      kind: markdown
+  - contracts:
+      kind: section
+      title: 合同与明确触发
+  - host-events:
+      kind: section
+      title: 真正的宿主回调
+  - references:
+      kind: section
+      title: 来源整合与链接基准
+  - maintenance:
+      kind: section
+      title: 维护与验收
+document:
+  schema_version: 1
+  document_type: hook-directory
+  id: readme
+  markdown_path: hooks/README.md
+  title: Hooks 目录示例
+  blocks:
+    - intro:
+        kind: markdown
+        text: |-
+          说明宿主与执行合同的关系。
+    - contracts:
+        kind: section
+        title: 合同与明确触发
+        blocks:
+          - contracts-body:
+              kind: markdown
+              text: |-
+                列出各合同的入口和触发条件。
+    - host-events:
+        kind: section
+        title: 真正的宿主回调
+        blocks:
+          - host-events-body:
+              kind: markdown
+              text: |-
+                列出事件与实际宿主行为。
+    - references:
+        kind: section
+        title: 来源整合与链接基准
+        blocks:
+          - references-body:
+              kind: markdown
+              text: |-
+                说明规则归属和引用方式。
+    - maintenance:
+        kind: section
+        title: 维护与验收
+        blocks:
+          - maintenance-body:
+              kind: markdown
+              text: |-
+                列出结构、文档和宿主检查。

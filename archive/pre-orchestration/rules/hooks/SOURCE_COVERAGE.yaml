@@ -1,0 +1,384 @@
+# yaml-language-server: $schema=../hook-coverage.schema.json
+# 历史出处：曾由旧扩展配套的生成器根据 Hook 来源块生成；当前不运行旧生成器。
+schema_version: 1
+document_type: hook-coverage
+id: source-coverage
+markdown_path: hooks/SOURCE_COVERAGE.md
+title: Hook 来源整合对照
+rows:
+  - source: "../SKILL.yaml"
+    kind: rule
+    hooks: ["foundation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/README.yaml"
+    kind: navigation
+    hooks: ["navigation"]
+    explicit: false
+  - source: "../references/coding/layer-01-fundamental-concepts/context-exchange/README.yaml"
+    kind: navigation
+    hooks: ["context"]
+    explicit: false
+  - source: "../references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-dispatch.yaml"
+    kind: rule
+    hooks: ["context"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle.yaml"
+    kind: rule
+    hooks: ["context","documentation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/context-exchange/content-memo.yaml"
+    kind: rule
+    hooks: ["context","documentation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange-handoff.yaml"
+    kind: rule
+    hooks: ["context"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange-workspace-boundary.yaml"
+    kind: rule
+    hooks: ["context"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/context-exchange/context-exchange.yaml"
+    kind: rule
+    hooks: ["context"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/README.yaml"
+    kind: navigation
+    hooks: ["delegation","session"]
+    explicit: false
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/child-role-selection.yaml"
+    kind: rule
+    hooks: ["delegation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-creation.yaml"
+    kind: rule
+    hooks: ["delegation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-dispatch.yaml"
+    kind: rule
+    hooks: ["delegation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-lifecycle.yaml"
+    kind: rule
+    hooks: ["delegation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-message-visibility.yaml"
+    kind: rule
+    hooks: ["delegation","audit"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-reuse-replacement.yaml"
+    kind: rule
+    hooks: ["delegation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-role-allocation.yaml"
+    kind: rule
+    hooks: ["delegation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation.yaml"
+    kind: rule
+    hooks: ["session","delegation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.yaml"
+    kind: rule
+    hooks: ["session","delegation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-reentry.yaml"
+    kind: rule
+    hooks: ["session","delegation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record.yaml"
+    kind: rule
+    hooks: ["session","delegation","audit","recovery"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/delegation/delegation-worker-boundary.yaml"
+    kind: rule
+    hooks: ["delegation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-control/README.yaml"
+    kind: navigation
+    hooks: ["execution"]
+    explicit: false
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-control/execution-control.yaml"
+    kind: rule
+    hooks: ["execution","materialization"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-control/execution-stage-feedback.yaml"
+    kind: rule
+    hooks: ["execution"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/README.yaml"
+    kind: navigation
+    hooks: ["planning"]
+    explicit: false
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/candidate-compliance.yaml"
+    kind: rule
+    hooks: ["documentation","materialization"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/decision-context-generation.yaml"
+    kind: rule
+    hooks: ["planning","advisory"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/decisions-advisory.yaml"
+    kind: rule
+    hooks: ["advisory"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/execution-decision-gate.yaml"
+    kind: rule
+    hooks: ["planning"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/execution-planning.yaml"
+    kind: rule
+    hooks: ["planning"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/output-materialization.yaml"
+    kind: rule
+    hooks: ["materialization"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing.yaml"
+    kind: rule
+    hooks: ["planning","execution"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment.yaml"
+    kind: rule
+    hooks: ["planning","execution","context"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml"
+    kind: rule
+    hooks: ["planning","context","documentation","delivery","recovery"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/workflow-module-contract.yaml"
+    kind: rule
+    hooks: ["recovery"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/execution-planning/workflow-routing-advice.yaml"
+    kind: rule
+    hooks: ["navigation","advisory"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/session-runtime/lsp-code-navigation.yaml"
+    kind: rule
+    hooks: ["context","planning","execution","delegation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/session-runtime/project-memory.yaml"
+    kind: rule
+    hooks: ["context","planning","documentation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/session-runtime/README.yaml"
+    kind: navigation
+    hooks: ["session","audit"]
+    explicit: false
+  - source: "../references/coding/layer-01-fundamental-concepts/session-runtime/reasoning-summary-visibility.yaml"
+    kind: rule
+    hooks: ["audit"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.yaml"
+    kind: rule
+    hooks: ["foundation","entry","session","delegation","advisory"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/session-runtime/session-audit-visibility.yaml"
+    kind: rule
+    hooks: ["audit"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/session-runtime/session-context-firewall.yaml"
+    kind: rule
+    hooks: ["context"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/session-runtime/session-model.yaml"
+    kind: rule
+    hooks: ["session"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/session-runtime/session-role-ownership.yaml"
+    kind: rule
+    hooks: ["session","delegation","documentation","delivery","materialization"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/workflow-navigation/README.yaml"
+    kind: navigation
+    hooks: ["navigation"]
+    explicit: false
+  - source: "../references/coding/layer-01-fundamental-concepts/workflow-navigation/checkpoint-structure-checks.yaml"
+    kind: rule
+    hooks: ["navigation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/workflow-navigation/navigation-availability.yaml"
+    kind: rule
+    hooks: ["navigation"]
+    explicit: true
+  - source: "../references/coding/layer-01-fundamental-concepts/workflow-navigation/rule-context.yaml"
+    kind: rule
+    hooks: ["navigation","advisory"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/README.yaml"
+    kind: navigation
+    hooks: ["navigation"]
+    explicit: false
+  - source: "../references/coding/layer-02-workflow-concepts/completion-and-effects/README.yaml"
+    kind: navigation
+    hooks: ["documentation","delivery"]
+    explicit: false
+  - source: "../references/coding/layer-02-workflow-concepts/completion-and-effects/acceptance.yaml"
+    kind: rule
+    hooks: ["delivery"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/completion-and-effects/documentation.yaml"
+    kind: rule
+    hooks: ["documentation"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/completion-and-effects/git.yaml"
+    kind: rule
+    hooks: ["delivery"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/decision-and-execution/README.yaml"
+    kind: navigation
+    hooks: ["execution","planning"]
+    explicit: false
+  - source: "../references/coding/layer-02-workflow-concepts/decision-and-execution/control.yaml"
+    kind: rule
+    hooks: ["execution"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/decision-and-execution/decision.yaml"
+    kind: rule
+    hooks: ["planning","execution"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/decision-and-execution/implementation.yaml"
+    kind: rule
+    hooks: ["execution"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/entry-and-context/README.yaml"
+    kind: navigation
+    hooks: ["entry","planning"]
+    explicit: false
+  - source: "../references/coding/layer-02-workflow-concepts/entry-and-context/context.yaml"
+    kind: rule
+    hooks: ["planning","context"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/entry-and-context/contract.yaml"
+    kind: rule
+    hooks: ["entry"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/entry-and-context/environment-capability-inventory.yaml"
+    kind: rule
+    hooks: ["entry"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/entry-and-context/environment.yaml"
+    kind: rule
+    hooks: ["entry"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/entry-and-context/mode.yaml"
+    kind: rule
+    hooks: ["entry"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/verification-and-repair/README.yaml"
+    kind: navigation
+    hooks: ["verification","repair"]
+    explicit: false
+  - source: "../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-execution.yaml"
+    kind: rule
+    hooks: ["repair"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-scope-gate.yaml"
+    kind: rule
+    hooks: ["repair"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-verification-handoff.yaml"
+    kind: rule
+    hooks: ["repair"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/verification-and-repair/repair.yaml"
+    kind: rule
+    hooks: ["repair"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml"
+    kind: rule
+    hooks: ["verification","repair","documentation","delivery","recovery"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-independence.yaml"
+    kind: rule
+    hooks: ["verification"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-reporting.yaml"
+    kind: rule
+    hooks: ["verification"]
+    explicit: true
+  - source: "../references/coding/layer-02-workflow-concepts/verification-and-repair/verification.yaml"
+    kind: rule
+    hooks: ["verification"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/README.yaml"
+    kind: navigation
+    hooks: ["navigation","execution"]
+    explicit: false
+  - source: "../references/coding/layer-03-workflow-checkpoints/advisory-selection.yaml"
+    kind: rule
+    hooks: ["advisory"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/bootstrap-selection.yaml"
+    kind: rule
+    hooks: ["context"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/context-source-selection.yaml"
+    kind: rule
+    hooks: ["context"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/decision-context-selection.yaml"
+    kind: rule
+    hooks: ["planning","advisory"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/documentation-impact.yaml"
+    kind: rule
+    hooks: ["documentation"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/executor-selection.yaml"
+    kind: rule
+    hooks: ["execution","delegation"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/module-entry-resolution.yaml"
+    kind: rule
+    hooks: ["entry","recovery","navigation"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/output-route-selection.yaml"
+    kind: rule
+    hooks: ["execution","materialization"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/planning-output-selection.yaml"
+    kind: rule
+    hooks: ["planning"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/repair-disposition.yaml"
+    kind: rule
+    hooks: ["verification","repair"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/role-reservation.yaml"
+    kind: rule
+    hooks: ["execution","delegation"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/route-entry.yaml"
+    kind: rule
+    hooks: ["entry","navigation"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/session-audit-resolution.yaml"
+    kind: rule
+    hooks: ["context","audit"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/session-state-resolution.yaml"
+    kind: rule
+    hooks: ["session"]
+    explicit: true
+  - source: "../references/coding/layer-03-workflow-checkpoints/workflow-navigation-selection.yaml"
+    kind: rule
+    hooks: ["navigation"]
+    explicit: true
+  - source: "../references/multimodal/multimodal-flow.yaml"
+    kind: reference
+    hooks: ["foundation"]
+    explicit: true
+  - source: "../references/multimodal/multimodal-openai-profile.yaml"
+    kind: reference
+    hooks: ["foundation"]
+    explicit: true
+  - source: "../references/share/shared-protocols.yaml"
+    kind: rule
+    hooks: ["foundation"]
+    explicit: true
+  - source: "../workflows/coding.yaml"
+    kind: rule
+    hooks: ["entry"]
+    explicit: true

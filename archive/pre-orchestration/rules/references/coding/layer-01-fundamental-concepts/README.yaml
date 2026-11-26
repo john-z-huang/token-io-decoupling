@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: layer-01-readme
+markdown_path: references/coding/layer-01-fundamental-concepts/README.md
+title: "Layer 01: Fundamental Concepts"
+blocks:
+  - scope-and-boundary:
+      kind: section
+      title: "范围与边界"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - scope-and-boundary-body:
+            kind: markdown
+            text: |-
+              可复用基础概念的原子所有者。每个所有者仅对标题和范围所述概念负责；分类目录只做归类，不改变职责。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              按下方分类查找所有者，再只阅读当前所需的中文 owner。
+  - classification:
+      kind: section
+      title: "分类"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - classification-body:
+            kind: markdown
+            text: |-
+              - [session-runtime/](session-runtime/README.yaml)
+              - [delegation/](delegation/README.yaml)
+              - [context-exchange/](context-exchange/README.yaml)
+              - [execution-planning/](execution-planning/README.yaml)
+              - [execution-control/](execution-control/README.yaml)
+              - [workflow-navigation/](workflow-navigation/README.yaml)

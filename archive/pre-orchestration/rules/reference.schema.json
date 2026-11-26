@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Skill 参考规则与 Hook DSL",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "markdown_path", "title", "blocks"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "document_type": {
+      "enum": [
+        "directory-guide", "fundamental-concept", "workflow-concept",
+        "workflow-checkpoint", "workflow-route", "hook-contract", "hook-directory"
+      ]
+    },
+    "markdown_path": { "type": "string", "pattern": "^(?:SKILL|(?:references/(?:[A-Za-z0-9_-]+/)+|hooks/|workflows/)[A-Za-z0-9_-]+)\\.md$" },
+    "front_matter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$" },
+        "description": { "$ref": "#/$defs/title" }
+      }
+    },
+    "title": { "$ref": "#/$defs/title" },
+    "blank_lines_after_title": { "type": "integer", "minimum": 1 },
+    "activate_on": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z_]+$" }
+    },
+    "flowchart_references": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[A-Z][A-Z0-9_]*$": {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z0-9_-]+/|\\.\\./)*[A-Za-z0-9_-]+\\.yaml#[A-Za-z][A-Za-z0-9-]*$"
+        }
+      }
+    },
+    "blocks": { "$ref": "#/$defs/blocks" }
+  },
+  "if": { "properties": { "markdown_path": { "pattern": "^(?:references/coding|workflows)/", "not": { "const": "workflows/coding.md" } } } },
+  "then": { "required": ["document_type"] },
+  "allOf": [{
+    "if": { "properties": { "markdown_path": { "pattern": "^hooks/" } } },
+    "then": {
+      "required": ["document_type"],
+      "properties": { "document_type": { "enum": ["hook-contract", "hook-directory"] } },
+      "if": { "properties": { "document_type": { "const": "hook-contract" } } },
+      "then": { "required": ["activate_on"] }
+    },
+    "else": { "properties": { "document_type": { "not": { "enum": ["hook-contract", "hook-directory"] } } } }
+  }, {
+    "if": { "properties": { "markdown_path": { "const": "SKILL.md" } } },
+    "then": { "required": ["front_matter"] },
+    "else": { "not": { "required": ["front_matter"] } }
+  }, {
+    "properties": { "markdown_path": { "not": { "pattern": "^(?:references/.*/|workflows/)INDEX\\.md$" } } }
+  }],
+  "dependentSchemas": {
+    "activate_on": {
+      "required": ["document_type"],
+      "properties": { "document_type": { "const": "hook-contract" } }
+    },
+    "flowchart_references": {
+      "required": ["document_type"],
+      "properties": { "document_type": { "enum": ["workflow-route", "hook-contract"] } }
+    }
+  },
+  "$defs": {
+    "title": { "type": "string", "minLength": 1, "pattern": "^[^\\r\\n]+$" },
+    "text": { "type": "string", "minLength": 1 },
+    "blocks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "minProperties": 1,
+        "maxProperties": 1,
+        "additionalProperties": false,
+        "patternProperties": { "^[A-Za-z][A-Za-z0-9-]*$": { "$ref": "#/$defs/block" } }
+      }
+    },
+    "block": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "text"],
+          "properties": {
+            "kind": { "const": "markdown" },
+            "text": { "$ref": "#/$defs/text" },
+            "title": { "$ref": "#/$defs/title" },
+            "expose": { "type": "boolean" }
+          },
+          "if": { "required": ["expose"], "properties": { "expose": { "const": true } } },
+          "then": { "required": ["title"] }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "title", "blocks"],
+          "properties": {
+            "kind": { "const": "section" },
+            "title": { "$ref": "#/$defs/title" },
+            "expose": { "type": "boolean" },
+            "blank_lines_before": { "type": "integer", "minimum": 0 },
+            "blocks": { "$ref": "#/$defs/blocks" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "document", "fragment"],
+          "properties": {
+            "kind": { "const": "rule_include" },
+            "document": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "fragment": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9-]*$" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "title", "text"],
+          "properties": {
+            "kind": { "const": "checkpoint" },
+            "applicability": { "enum": ["optional", "sub_agent"] },
+            "title": { "$ref": "#/$defs/title" },
+            "text": { "$ref": "#/$defs/text" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "title", "phase", "hook", "text"],
+          "properties": {
+            "kind": { "const": "route_step" },
+            "title": { "$ref": "#/$defs/title" },
+            "phase": { "enum": ["entry", "session", "definition", "execution", "verification", "documentation", "delivery"] },
+            "hook": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "text": { "$ref": "#/$defs/text" }
+          }
+        }
+      ]
+    }
+  }
+}

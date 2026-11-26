@@ -1,0 +1,58 @@
+layouts:
+  - [scope-and-boundary, entry, classification]
+  - [scope-and-boundary, entry, owners]
+  - [overview, entry, owners]
+  - [overview, entry, routes, section-01]
+block_rules:
+  scope-and-boundary:
+    kind: section
+    expose: true
+  entry:
+    kind: section
+    expose: true
+  overview:
+    kind: markdown
+    expose: true
+  classification:
+    kind: section
+    expose: true
+  owners:
+    kind: section
+    expose: true
+  routes:
+    kind: section
+    expose: true
+  section-01:
+    kind: section
+    expose: true
+document:
+  schema_version: 1
+  document_type: directory-guide
+  id: example-directory-guide
+  markdown_path: references/coding/layer-01-fundamental-concepts/example/README.md
+  title: 目录说明示例
+  blocks:
+    - scope-and-boundary:
+        kind: section
+        title: 范围与边界
+        expose: true
+        blocks:
+          - scope-and-boundary-body:
+              kind: markdown
+              text: 说明目录负责的主题、适用条件与职责边界。
+    - entry:
+        kind: section
+        title: 入口
+        expose: true
+        blocks:
+          - entry-body:
+              kind: markdown
+              text: 按下方列表查找所需的规则所有者。
+    - owners:
+        kind: section
+        title: 所有者
+        expose: true
+        blocks:
+          - owners-body:
+              kind: markdown
+              text: '- [示例概念](example-fundamental-concept.yaml) — 说明何时读取该规则。'

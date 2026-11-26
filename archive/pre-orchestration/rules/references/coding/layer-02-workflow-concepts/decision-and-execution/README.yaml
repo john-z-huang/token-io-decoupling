@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: decision-and-execution-readme
+markdown_path: references/coding/layer-02-workflow-concepts/decision-and-execution/README.md
+title: "Decision And Execution"
+blocks:
+  - scope-and-boundary:
+      kind: section
+      title: "范围与边界"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - scope-and-boundary-body:
+            kind: markdown
+            text: |-
+              通用决策、实现和控制检查点。这些所有者定义已批准切片的证据与边界；语义决策政策和路线顺序仍由各自所有者负责。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              重大实现放行前使用决策检查点；切片放行后使用实现与控制检查点。
+  - owners:
+      kind: section
+      title: "所有者"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - owners-body:
+            kind: markdown
+            text: |-
+              - [decision](decision.yaml)
+              - [implementation](implementation.yaml)
+              - [control](control.yaml)

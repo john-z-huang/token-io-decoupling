@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: pi-host
+markdown_path: references/hosts/pi.md
+title: "Pi Coding Agent 宿主适配"
+blocks:
+  - session:
+      kind: markdown
+      title: "加载和会话"
+      expose: true
+      text: |-
+        从 Pi 专用安装或已审阅的共享 Skill 目录加载。更新后用 `/reload` 或新会话核实实际加载版本。Pi 的用户级 MCP 配置位于 `~/.pi/agent/mcp.json`，项目级配置受项目可信条件约束。仅核实现有配置与暴露能力。配置、工具注册或 Skill 更新均须另有授权。
+
+        依据 Pi 当前会话及宿主事件识别当前身份。树导航、同一会话恢复和 compact 延续已核实的父级记录；新根或真正 fork 重新应用模式和数量门禁。一次性扩展任务、工作目录与持久会话身份须分别核实。Pi 的 thinking 显示设置与安全审计摘要独立。
+  - delegation:
+      kind: markdown
+      title: "委派和模型"
+      expose: true
+      text: |-
+        Pi 的子代理能力由实际扩展提供。没有内置 Plan mode 时，在当前会话形成有界计划和 Decision Brief。不得从 Shell 启动另一个 Pi 代替委派或规划。只传扩展接受的字段。同步一次性调用可在同一调用创建、派发并返回；以真实调用绑定逻辑名额。只有确实获得可续接身份时，才使用持久身份路径。
+
+        创建前先核实当前 Pi provider、模型和端点路由。`PI_PROVIDER`、`PI_MODEL` 仅在仍反映当前有效值时作启动证据。Root 用 `openai-codex` 时沿用该 provider；用 `openai` API 时沿用同一个 API 路由。切模或恢复后重核，不从其他服务的 API 配置猜测。不支持必需的同端点路由时按共用门禁阻塞。设置 `model` 和 `thinking` 时以真实扩展契约和覆盖顺序为准，缺可选设置时按已核验的默认或继承行为处理。
+
+        模型卡供当前端点选型参考。按任务复杂度、风险和验证要求选择，不按角色固定模型或逐级升档。
+
+        | 模型 | 官方定位 | 任务与档位参考 |
+        | --- | --- | --- |
+        | [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol) | 接近Astra的复杂工作能力、较低成本；面向复杂编码及专业工作 | 跨模块实现、复杂修复/依赖推理、高风险或并发验证通常可考虑medium/high；明确且窄的实现也可low。不是所有Primary/Verifier固定Sol。 |
+        | [GPT-6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra) | 快速高效的视觉推理、精确computer use、清晰自然写作；例如图纸理解、文本起草修订 | 获准静态图片/图纸证据、文字/Skill文档可考虑low/medium；多约束视觉推理可high。模型卡的computer use能力不解除本Skill禁令，也不授权普通文档委派。 |
+        | [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna) | 面向聚焦、高吞吐任务的高效模型 | 有界事实提取、分类、重复性机械修改、规则明确的实现/检查可考虑low/medium；有证据表明足够时也可承担其他职责，不以便宜代替充分性。 |
+
+        这三张模型卡列出的输入为文本和图像，输出为文本。Sol、Terra 的工具调用使用 Responses API。Luna 使用 Chat Completions 且需函数调用时只支持 `none`，带推理的工具任务核对 Responses 接口。Sol 的档位为 `low/medium/high/xhigh/max`，Terra、Luna 另支持 `none`。Pi 用实际支持的 `thinking`，`off` 表示关闭推理意图，不传 API 的 `none` 或不支持的 `minimal`。采用模型卡之前核对当前宿主和端点是否支持。
+  - memory:
+      kind: markdown
+      title: "项目 Memory"
+      expose: true
+      text: |-
+        使用 Pi 已暴露且获准的项目 Memory 服务。直接声明或按需发现均可，先核对真实参数、服务启动或活动项目绑定、工作区范围和错误返回。按实际后端确认命名映射、覆盖配置和维护指引。计划所需的共享或项目范围、写入权限、内容保全、核验及归档均按共用合同执行。
+
+        只读入口只能提供其实际覆盖的证据。普通文件读取、Shell 和 Pi 会话历史不可代替受保护的 Memory 操作。未获授权时不激活会写入的项目初始化流程。

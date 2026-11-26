@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: delegation-state-record
+markdown_path: references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record.md
+title: "Coding 委派状态记录"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责 Coding 委派使用的任务控制记录，定义记录的规范位置、ownership、结构、字段约束和分阶段字段存在语义。不决定模式，不定义 Worker 读写边界，不创建子 Agent，不分配职责，也不定义生命周期转换。Session 审计配置由[会话审计可见性](../session-runtime/session-audit-visibility.yaml)负责。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - ownership:
+            kind: section
+            title: "Ownership"
+            expose: true
+            blocks:
+              - ownership-body:
+                  kind: markdown
+                  text: |-
+                    根父级负责一份完整宿主 Session 生命周期的模式/数量选择记录，并在同一记录中更新任务专属切片和生命周期。记录是任务状态，保存在父级规范对话上下文中；不存入数据库，也不通过编辑 policy 文件保存。每次路线放行前回读当前结构化记录；短暂子代理状态不是规范记录。保留字段归属，绝不能用过时摘要覆盖有效当前记录。
+        - record-shape:
+            kind: section
+            title: "记录结构"
+            expose: true
+            blocks:
+              - record-shape-body:
+                  kind: markdown
+                  text: |-
+                    下表定义语义字段和手动回退的记法。宿主采用不同的记录形状时，依据实际字段及可追溯证据核对相同条件。
+
+                    ```text
+                    owner: <根父级身份>
+                    run_id: unset | <本次 Multi-Agent 委派运行的稳定标识>
+                    gate_status: awaiting-mode | awaiting-count | released | blocked
+                    mode_source: unset | explicit | default | timeout-default（仅兼容旧记录）
+                    mode: unset | Single-Agent Coding | Multi-Agent Coding
+                    child_count: unset | 0 | <已锁定正整数>
+                    source: <当前模式/数量决策的 SemanticRef>
+                    semantic_references: [<保留的 SemanticRef，包括先前数量来源>]
+                    allocations: [{allocation_id: <稳定的子代理 allocation 标识>,
+                                   agent: unbound | <真实宿主身份或绑定真实调用证据的逻辑任务身份>, role: unassigned | <职责>,
+                                   slice_status: pending | released, interaction_slice, scope, mutations,
+                                   return_conditions, lifecycle, write_content_memo}]
+                    session_audit: {audit_mode, root_reasoning_cadence, worker_reasoning_cadence,
+                                    source: {audit_mode: explicit | default, root_reasoning_cadence: explicit | default,
+                                            worker_reasoning_cadence: explicit | default},
+                                    worker_log_visibility: available | unverified | unavailable | Not applicable,
+                                    worker_log_evidence}
+                    lifecycle: pending | running | completed | interrupted
+                    unavailable_capabilities: [<能力名称>]
+                    block_reason: <仅 blocked 时必需>
+                    ```
+
+                    所选工作流路线记录用户显式偏好或规定的缺省值；该记录继续保留模式/数量、allocations、任务范围和生命周期状态。
+
+                    | `gate_status` | 模式与数量 | Allocation 和 lifecycle | 其他要求 |
+                    | --- | --- | --- | --- |
+                    | `awaiting-mode` | 未设置 | `[]`；顶层 `pending` | 记录首次明确选择或默认值前先初始化。 |
+                    | `awaiting-count` | Multi-Agent；数量未设置 | `[]`；顶层 `pending` | 仅明确给出无效数量时进入；省略数量时默认 1。 |
+                    | `released` — Single-Agent | Single-Agent；数量 `0` | `[]`；顶层 lifecycle 必需 | 放行单代理路线，不授予独立 Session。`timeout-default` 仅作为旧记录来源接受并读回。 |
+                    | `released` — Multi-Agent | Multi-Agent；已锁定正整数 | 锁定 `child_count` 个名额；`run_id` 已设置；显式记录时，空名额为 `unbound / unassigned / pending`，已登记的 allocation 各有稳定标识 | 只放行路线与数量预算，**不**放行具体子代理或 Interaction Slice。 |
+                    | `blocked` | 保留已确认值 | 保留现有 allocation/lifecycle | `unavailable_capabilities` 与 `block_reason` 必需；不得进入依赖路线。 |
+
+                    初始数量只预留恰好对应数量的未分配名额；预留本身不选择职责。一个名额的预算不会自动分配 Primary Output。审阅任务上下文和 Decision 后，由职责选择 owner 提供职责建议，或由 Root 直接判断；然后将选定的唯一职责记录到一个未分配名额。具体 `slice_status: released` 必须具备已分配 `role`、`interaction_slice`、`scope`、`mutations`、`return_conditions` 和显式布尔 `write_content_memo`；pending Slice 可以暂不设置这些字段。序列化每个已放行 Worker bundle 前，必须显式写入 `write_content_memo: true` 或 `false`，Worker 不得推断默认值。Child Creation 只能在相应职责和 Slice 已放行后绑定 `agent` 与 lifecycle。仅在扩展支持稳定身份与续接时，后续 Slice 才可在**同一个**已创建子代理上准备；一次性返回不提供复用能力，不创建或回收名额。
+
+                    `mode_source` 和 `source` 记录当前模式/数量决策。本次会话中的模式保持固定。同会话唯一允许的数量变更，是按数量门禁获批增加一个名额：将 `mode_source` 设为 `explicit`，将 `source` 设为实际批准引用，并在 `semantic_references` 中保留先前来源。父级协调记录新旧数量及经 Root 审阅的批准引用，不冒充服务端事务回执。不得把建议推断成批准，也不得绕过用户批准修改数量。新会话不再写入 `timeout-default`；仅为读回按旧规则创建的会话而接受该来源。旧 `timeout-default` 记录必须保持 Single-Agent、`child_count: 0` 和 `allocations: []`；读回时不得重新解释或迁移。各 allocation 的 lifecycle 可不同于顶层任务的 lifecycle。阻塞保留已确认值；后续指令中，Fork 或其他重入遵循 Re-entry owner，唯一获批扩展遵循数量门禁。
+
+                    初始 `mode_source: default` 决定使用 Multi-Agent 和预算 1。此决定只锁定容量。收到明确的增容批准后更新来源及数量。记录的已占用名额不得超过已锁定预算。当前会话中的每项职责和已绑定子代理身份都唯一；即使子代理已完成、失败、中断、取消或不可用也一样，生命周期变化不会释放职责。Native 导入或恢复必须拒绝重复职责或子代理身份。Fork 只有在重新通过模式/数量门禁后才能创建新记录，不得把来源 Session 的子代理身份导入为当前 allocation。实际子代理创建仍受输出类型和 Slice 门禁约束。
+
+                    `session_audit` 遵循[会话审计可见性](../session-runtime/session-audit-visibility.yaml)定义的字段。仅根父级写入生效偏好及各字段来源。启动时只在已确认使用默认预设后为缺少的字段填入默认值。Worker 日志证据仅在首次需要或出现新的实际能力/访问证据或失败时更新，不逐消息更新。此状态不得改变 `mode`、`child_count`、授权、allocation 或 Slice 放行。不得将完整 Root 审计记录复制到策略文件或 Worker 可控状态中。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              从权威父级对话回读本页规范记录，核对模式、数量、allocation、Slice、审计及未决效果。身份、能力及实际结果须另用真实宿主元数据和调用证据核验，不把父级记录当作宿主证明。调度记录只用于父级协调；一次性任务的逻辑 allocation 通过真实调用定位，不证明持久身份。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Delegation State Record Worker Boundary](delegation-worker-boundary.yaml) — 定位 Worker 快照和记录访问边界。
+              - [Coding Delegation Mode Confirmation](delegation-mode-confirmation.yaml) — 定位根模式确认归属。
+              - [Coding Delegation Count Gate](delegation-mode-count-gate.yaml) — 定位子 Agent 数量门禁归属。
+              - [Coding Delegation Re-entry](delegation-mode-reentry.yaml) — 定位模式/数量重新进入归属。
+              - [Coding Child Role Selection](child-role-selection.yaml) — 定位预留前的职责选择边界。
+              - [Coding Execution Control](../execution-control/execution-control.yaml) — 定位 Interaction Slice 字段归属。
+              - [Coding Child Lifecycle](delegation-child-lifecycle.yaml) — 定位子 Agent 生命周期字段归属。
+              - [Coding Session 审计可见性](../session-runtime/session-audit-visibility.yaml) — 定位会话审计配置归属。

@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: task-assignment
+markdown_path: references/planning/task-assignment.md
+title: 任务执行主体分配
+blocks:
+  - executor-selection:
+      kind: section
+      title: 核对可承担任务的执行者
+      expose: true
+      blocks:
+        - executor-selection-body:
+            kind: markdown
+            text: |-
+              - 按用户明确的执行者要求核对当前路线、职责、实际能力和任务授权。要求与路线冲突，或执行者的身份、权限或必要能力无法核实时，交主代理复核受影响的分工。
+              - 单代理路线由主代理执行获准工作。多代理路线中，主代理负责判断、协调和最终验收，将具体工作交给[职责匹配的子代理](../delegation/delegation-policy.yaml#assignment)。主代理仅在审阅子代理交付物或分析返回消息时运行相关命令。找不到合格执行者时，标明缺口并继续独立工作。
+              - 选择执行者后，执行或派发前仍须核对动作边界和前置证据。需要独立验证时，为验证安排未参与对应实施的执行者，并核对其实际身份与工作记录。
+  - dependency-order:
+      kind: section
+      title: 按实际依赖拆分交接
+      expose: true
+      blocks:
+        - dependency-order-body:
+            kind: markdown
+            text: |-
+              - 逐项确认执行者所需的前置产物及其状态。下游依赖上游输出时，先核对该输出可用于交接，再派发下游任务。独立验证以当前待验证产物为输入。
+              - 准备并行的任务若会写入同一资源，或一项工作会使另一项所依赖的状态失效，先分离影响范围或按依赖串行。同一任务需要不同职责的交付时，按交接证据拆分并明确各自的通过条件。

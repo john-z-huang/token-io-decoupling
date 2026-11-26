@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: entry
+markdown_path: hooks/entry.md
+title: 入口 Hook
+activate_on: [entry, requirements_changed, capability_changed]
+blocks:
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              收到新任务、用户补充指令，或者影响任务分工的约束和能力发生变化时。
+  - inputs:
+      kind: section
+      title: 输入与证据
+      blocks:
+        - inputs-body:
+            kind: markdown
+            text: |-
+              真实用户指令、当前工作状态、明确的代理使用约束，以及当前宿主声明的相关能力。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-body:
+            kind: markdown
+            text: |-
+              1. 按[任务约定](../references/planning/contract.yaml)确认用户目标、交付物、验收条件和授权范围。保留用户指令之间仍然适用的要求。
+              2. 判断用户是否明确限制创建或使用子代理。此限制适用于本任务全部步骤。其余任务经路线选择器根据实际分工价值判断。
+              3. 区分已确认、未知和需要进一步检查的事实。受影响的范围或宿主能力待核实时，继续不依赖它的获准工作。
+  - outputs:
+      kind: section
+      title: 输出与落点
+      blocks:
+        - outputs-body:
+            kind: markdown
+            text: |-
+              供选路与规划的目标、任务边界、验收条件和补证事项。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              任务边界足以确定路线并开始计划时通过。关键约束冲突或授权不清时暂停依赖动作。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              用户改动任务、范围、验收条件或代理限制时，从受影响的事实重新判断。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              按[选路规则](../references/planning/task-planning.yaml#route-selection)判断用户要求。涉及委派时，核对[委派能力](../references/delegation/delegation-policy.yaml#capabilities)。

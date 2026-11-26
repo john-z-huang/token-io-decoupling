@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: workflow-concept
+id: control
+markdown_path: references/coding/layer-02-workflow-concepts/decision-and-execution/control.md
+title: "控制边界检查点"
+blocks:
+  - actions:
+      kind: section
+      title: "动作"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - actions-body:
+            kind: markdown
+            text: |-
+              1. 消费 Stage Feedback owner 的压缩 Progress Signal，补充当前 `Unreleased boundary`，不额外生成第二份进度报告。
+              2. 检查下一动作是否跨越接口、schema、兼容性、安全、风险、难以逆转修改、范围或外部影响边界。
+              3. 需要更多证据时发出 Evidence-on-Demand，并**暂停**放行；取得证据后返回本检查点。这是中间动作，不是第四种最终授权结果。
+              4. 最终只选择 `Continue`、`Amend` 或 `Stop`；只有明确的 `Continue` 才放行已批准范围内的下一 Slice，`Amend` 返回 Contract 与 Decision。单代理作为逻辑暂停；多代理由父级控制放行。
+                 - 任务记录、授权、范围、实施或相关证据发生实质变化时，任何依赖该事实的先前 Control 结果都会失效。释放或恢复 Slice 前，必须依据当前权威事实重新评估 Control。
+
+              5. 路线提供建议输出时，仅将其作为输入。核验当前 Root 状态和直接 Control owner，再通过可信转换作出并持久化显式结果；建议本身不产生效果。使用当前直接证据作出决定。建议政策遵循[Decisions 建议](../../layer-01-fundamental-concepts/execution-planning/decisions-advisory.yaml)。
+
+              应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml)，在依赖释放前确认当前计划证据和持久化，以及 owner 要求的任何核验。用户需求变化时，先记录指令，再分析并持久化影响/修订提议，之后才解决受影响 Contract/Decision 并授权改动。必需持久化或核验失败暂停受影响释放；计划文字本身绝不构成授权。
+  - pass:
+      kind: section
+      title: "通过条件"
+      expose: true
+      blocks:
+        - pass-body:
+            kind: markdown
+            text: |-
+              下一步要么已在当前范围内发布，要么已暂停并明确需要的修改、证据、能力或授权。
+  - boundary:
+      kind: section
+      title: "边界"
+      expose: true
+      blocks:
+        - boundary-body:
+            kind: markdown
+            text: |-
+              本检查点控制发布和权限，不静默批准范围扩大，不替代验证，也不授予 Git 或外部影响授权。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Execution Control](../../layer-01-fundamental-concepts/execution-control/execution-control.yaml) — 定位 Interaction Slice 和控制边界归属。
+              - [Coding Execution Decision Gate](../../layer-01-fundamental-concepts/execution-planning/execution-decision-gate.yaml) — 定位决策和放行条件归属。
+              - [Coding Delegation State Record Worker Boundary](../../layer-01-fundamental-concepts/delegation/delegation-worker-boundary.yaml) — 定位父级控制的 Worker 放行边界。

@@ -1,0 +1,108 @@
+layout:
+  - intro:
+      kind: markdown
+      optional: true
+  - trigger:
+      kind: section
+      title: 触发条件
+  - inputs:
+      kind: section
+      title: 输入与证据
+      optional: true
+  - execution:
+      kind: section
+      title: 执行要求
+  - flowchart:
+      kind: section
+      optional: true
+  - checkpoints:
+      kind: section
+      title: 有序模块清单
+      optional: true
+  - outputs:
+      kind: section
+      title: 输出与落点
+      optional: true
+  - exit:
+      kind: section
+      title: 退出与阻断
+  - recheck:
+      kind: section
+      title: 重新核验
+  - sources:
+      kind: section
+      title: 规则来源
+document:
+  schema_version: 1
+  document_type: hook-contract
+  id: example-hook
+  markdown_path: hooks/example-hook.md
+  activate_on: [capability_changed]
+  title: Hook 合同示例
+  blocks:
+    - intro:
+        kind: markdown
+        text: |-
+          说明本合同负责的范围。
+    - trigger:
+        kind: section
+        title: 触发条件
+        blocks:
+          - trigger-body:
+              kind: markdown
+              text: |-
+                说明适用事件、任务条件或阶段。
+    - inputs:
+        kind: section
+        title: 输入与证据
+        blocks:
+          - inputs-body:
+              kind: markdown
+              text: |-
+                列出必须读取的事实及各自来源。
+    - execution:
+        kind: section
+        title: 执行要求
+        blocks:
+          - execution-body:
+              kind: markdown
+              text: |-
+                按当前任务范围执行动作。需要读取规则片段时，使用结构化引用块。
+          - include-verification-epoch:
+              kind: rule_include
+              document: verification-epoch
+              fragment: actions
+    - outputs:
+        kind: section
+        title: 输出与落点
+        blocks:
+          - outputs-body:
+              kind: markdown
+              text: |-
+                说明产物、归属和返回位置。
+    - exit:
+        kind: section
+        title: 退出与阻断
+        blocks:
+          - exit-body:
+              kind: markdown
+              text: |-
+                写明通过条件与阻断后的返回路径。
+    - recheck:
+        kind: section
+        title: 重新核验
+        blocks:
+          - recheck-body:
+              kind: markdown
+              text: |-
+                写明使既有结论失效的变化。
+    - sources:
+        kind: section
+        title: 规则来源
+        blocks:
+          - sources-body:
+              kind: markdown
+              text: |-
+                | 来源 | 本合同落点 |
+                | --- | --- |
+                | [验证 Epoch](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml#actions) | 当前证据与重验条件。 |

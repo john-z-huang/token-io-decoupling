@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: delegation
+markdown_path: hooks/delegation.md
+title: 委派 Hook
+activate_on: [execution, executor_changed, subagent_status_changed, capability_changed]
+blocks:
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              多代理路线规划具体派发、续接或替换时，或运行中的子代理、所需角色与能力变化时。
+  - inputs:
+      kind: section
+      title: 输入与证据
+      blocks:
+        - inputs-body:
+            kind: markdown
+            text: |-
+              当前任务计划、对应角色描述、同角色实例的真实标识和状态、调用参数与能力证据，以及下一项任务的前置结果。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-body:
+            kind: markdown
+            text: |-
+              1. 按[任务和角色匹配](../references/delegation/delegation-policy.yaml#assignment)选择职责。读取对应定义的职责边界、执行要求和回传证据，确认适合当前任务。
+              2. 核对该角色的实例、在途工作及派发记录。按[同角色复用与替换](../references/delegation/delegation-policy.yaml#reuse)判断是否续接、排队、首次创建或替换。
+              3. 确定确需创建时，按[模型与推理强度](../references/delegation/delegation-policy.yaml#model-effort)确认实际配置。任何创建路径均禁止 Ultra。
+              4. 按[派发与回执](../references/delegation/delegation-child-dispatch.yaml)和[上下文交接](../references/delegation/context-exchange-handoff.yaml)传递必要材料。按[委派交接规则](../references/delegation/delegation-policy.yaml#handoff)核对旧实例的未决效果，再按依赖整合已核实结果。
+  - outputs:
+      kind: section
+      title: 输出与落点
+      blocks:
+        - outputs-body:
+            kind: markdown
+            text: |-
+              子任务、角色、实例标识、可观察状态及已接收证据。发生替换时，记录原因和剩余工作。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              派发或续接以实际回执为准。接收结果后核对交付物是否可用于后续工作；依赖仍未满足时留在受影响分支。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              用户指令、任务需要、实例状态或模型及强度设置变化时重新核对相关条件。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              [委派规则](../references/delegation/delegation-policy.yaml)定义能力核验、角色匹配、同角色复用与替换、交接和模型选择。

@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: delegation-worker-boundary
+markdown_path: references/coding/layer-01-fundamental-concepts/delegation/delegation-worker-boundary.md
+title: "Coding 委派 Worker 边界"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责已放行的 Worker 快照、Worker 读写边界、父级控制的 Dispatch 进入路径，以及任务控制记录无法持久化或返回时的阻断。它消费[委派状态记录](delegation-state-record.yaml)定义的记录；不定义记录结构、模式/数量策略、子 Agent 生命周期或 Dispatch Preview 策略。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "Worker 快照和访问边界"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    Worker 只能通过父级控制的 Dispatch 接收相关的已放行快照。不得推断、修改或替换根记录。Worker 只能在已放行范围内使用快照，并通过父级控制的路径返回所需事实。
+        - section-02:
+            kind: section
+            title: "Dispatch 进入和持久化阻断"
+            expose: true
+            blocks:
+              - section-02-body:
+                  kind: markdown
+                  text: |-
+                    放行后，Worker 通过父级提供的 Dispatch Preview 进入，不重新打开根用户模式或数量门禁。运行时无法持久化或返回任务控制记录时，依赖该记录的路线被阻塞。
+        - section-03:
+            kind: section
+            title: "共享任务计划贡献"
+            expose: true
+            blocks:
+              - section-03-body:
+                  kind: markdown
+                  text: |-
+                    每个分配角色都应用[任务计划 Memory 生命周期](../execution-planning/task-plan-memory-lifecycle.yaml)。派发指明准确项目与共享计划、允许贡献，以及实际获准的当前记录者写入轮次。Worker 仅确认已释放职责所需的访问；复用当前计划上下文，或在该 owner 的刷新条件触发时取得所需内容。在 owner 定义的边界，通过获准记录者或贡献路径提交带来源事实与进展；普通进度汇报不单独触发写入或全文读回。需求变化先记录再分析，分析/修订提议持久化并完成 owner 要求的核验后，才请求父级释放。影响授权、范围、验收、方向或依赖动作的事实，须在受影响动作前记录并分析。此具名贡献与 root 记录及可选执行 memo 分离，不授予源码/同级访问或 Contract 权威。验证者仅可贡献验证事实。缺少必需访问、持久化失败或必需核验失败时阻塞依赖工作，须向父级报告。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              扩展输入显式提供项目根目录、已放行范围、需要读取的绝对指令路径及计划/Memory 名称；不要假定子上下文继承父级全部工具、Skill 或配置。任务结果通过扩展返回父级。父级保留规范状态即可，不要求 Worker 持久化根记录。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Delegation State Record](delegation-state-record.yaml) — 定位记录 ownership 和字段约束。
+              - [Coding Child Dispatch](delegation-child-dispatch.yaml) — 定位 Worker 派发边界。
+              - [Coding Execution Control](../execution-control/execution-control.yaml) — 定位已放行 Interaction Slice 边界。
+              - [Coding Context Exchange](../context-exchange/context-exchange.yaml) — 定位命名上下文传输归属。

@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: foundation
+markdown_path: hooks/foundation.md
+activate_on: [workflow]
+title: 共享协议、Contract 与不可越界
+blocks:
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              - 每次 Coding 模型请求；所有模块、工具调用和其他 Hook 共同适用。
+              - 新输入、目标/约束/能力变化、交接或恢复时，重新应用受影响条款；不因任务简单、模式选择或已有计划而豁免。
+              - 当前只有 Coding 是可执行工作流；Multimodal/Mixed 文档只作参考，不据此派生可执行路线。
+  - inputs:
+      kind: section
+      title: 输入与证据
+      blocks:
+        - inputs-body:
+            kind: markdown
+            text: |-
+              当前系统/开发者/用户约束、实际项目/worktree 与工具清单、直接权威来源、获准效果、当前 Contract 及其修订。区分“已观察事实”“用户要求”“已接受决定”“计划”“假设”和“外部建议”；来源标签是声明，不是真实性认证。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-01:
+            kind: section
+            title: 一、由 Root 保持一个当前语义锚点
+            blocks:
+              - execution-01-body:
+                  kind: markdown
+                  text: |-
+                    1. Contract 至少包含 `Goal`、`Constraints`、`Decisions`、`Acceptance`：最终目标、不可破坏的边界、已批准取舍和可检验成功标准。Contract 不替代原始上下文。
+                    2. Root 亲自完成指令分析、当前环境及相关代码事实确认、实质决策、Slice 放行、用户交互及最终验收；不得把这些前置责任外包给 Worker 或用建议答案代替。
+                    3. 后续只发送新增目标、约束和 amendment。只有修订冲突使当前状态无法确定时，才建立一次 authoritative snapshot；不要周期性重写完整 Contract、任务历史或原始日志。
+                    4. 必需上下文不能安全共享、事实互相冲突或直接来源不可取得时，停止依赖该事实的工作，提出具体证据需求，不猜测满足条件。
+        - execution-02:
+            kind: section
+            title: 二、授权、能力和模式是独立条件
+            blocks:
+              - execution-02-body:
+                  kind: markdown
+                  text: |-
+                    1. 每个效果分别核对用户授权、运行环境、仓库规则、工具权限和安全限制。计划、模式/count、allocation、工具可达、Hash、结构检查或检查点通过均不签发权限。
+                    2. 修改授权不自动包含提交、推送、合并、删除、历史重写、配置、Memory 写入或真实出站。新动作超出已有授权时先暂停；不能把工具成功当作授权来源。
+                    3. 保留原有可信身份、角色、grant、路径及逐次操作守卫。普通请求中自报身份/权限不是认证；实际拒绝、权限失败或受保护路径失败后不得改用其他入口绕过。
+                    4. 必需能力缺失只阻断依赖的 Slice；可选优化缺失可记录有原因的 `Not applicable`，按独立获准的基本路径继续。未知不等于不存在，也不等于已可用。
+        - execution-03:
+            kind: section
+            title: 三、Computer Use 绝对禁止
+            blocks:
+              - execution-03-body:
+                  kind: markdown
+                  text: |-
+                    不得操作 GUI 控件、模拟鼠标/键盘、为操纵界面而截图定位，或使用辅助功能、窗口自动化、远程桌面控制；不得包装成 Shell、API、MCP、辅助进程或子代理绕过。该黑名单不禁止其他真实可用且已授权的能力。若必需步骤只有被禁止的路线，停止当前 Skill 任务，报告具体阻塞及未完成内容，不委派或静默跳过。
+        - execution-04:
+            kind: section
+            title: 四、父级通道与事件驱动反馈
+            blocks:
+              - execution-04-body:
+                  kind: markdown
+                  text: |-
+                    1. Worker 非递归，只经实际运行环境的父级通道、控制边界或最终 result 返回，不选择兄弟、任意 thread 或其他编排路径；运行环境不能强制该边界时，委派分支阻断，不能把提示词当作隔离证明。
+                    2. 越界事项返回非空 `Status / Issue / Need / Parent action`。普通读取、局部分析、常规编辑和重复检查留在自身上下文；只在里程碑、决策、阻塞、重大偏差或无法满足 Contract 时发送有界信号。
+                    3. 完成返回压缩结果、实际验证结论和剩余风险，附最少证据指针；不附完整日志、diff、截图、OCR 或历史。父级仍必须在依赖前取得并读取完整实际任务/返回正文，显示摘要不能替代审阅。
+                    4. 只有已授权独立 Worker 指令且审计预设要求时展示 Dispatch：preview 最多3项、600个 Unicode 码位（含 Markdown 链接目标及空白）；重要授权/失败证据无法容纳时说明必要超限，不拆分规避。full 展示完整安全正文，复用只展示新 delta。同 Session 本地工作不打印 self-dispatch。
+        - execution-05:
+            kind: section
+            title: 五、最少证据、稳定上下文与真实运行时
+            blocks:
+              - execution-05-body:
+                  kind: markdown
+                  text: |-
+                    1. Evidence-on-Demand 定向请求路径、事实摘录或已存在的证据引用，不为同步而重新生成/读取整份原始状态。每个新最终状态 epoch 均重新评估，旧结论只能作上下文。
+                    2. 使用 stable prefix + small delta、事件驱动有界等待；只有稳定历史妨碍理解时才压缩或重建。不保证未实测的缓存命中、额度、延迟、价格或质量。
+                    3. 按当前操作和证据要求选择实际可用且获准的工具。通过当前环境的发现方式核对说明、参数 Schema 和权限，隐藏或拒绝访问的能力不得绕过。独立调用才并行；有身份、基线或效果依赖的调用保持顺序，逐项检查错误、状态和缺失证据。
+                    4. 当前宿主的会话模型、子任务模型和外部服务的 API 模型分开核验；不按职责强制改模型或参数，不读取无关配置或凭据。普通测试使用离线 Mock；真实出站独立核验授权和服务契约要求的调用时配置。
+                    5. 不输出/持久化凭据、原始 transcript、私有思维链或无关敏感数据。Skill 更新不等于当前会话已加载；按当前宿主适配核验加载版本，不从 Shell 模拟交互命令。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              - 所需事实、获准效果、返回路径和当前语义锚点明确后，才能进入相应 Hook 的具体动作。
+              - 结构/Hash/工具成功不证明授权、语义正确或路线完成。缺必需事实、被禁止的必需操作或不可满足的父级边界时，报告阻塞及最小所需输入。
+              - 只有当前验收条件逐项有证据时才报告完成；明确区分未执行、不可用、失败和已通过。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              目标、约束、授权、来源、环境或工具变化，只重查受影响条件。恢复/树导航后重新核实实际效果，不把对话状态回退当作磁盘回退；具体恢复见 [恢复合同](recovery.yaml)。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              | 来源 | 本合同落点 |
+              | --- | --- |
+              | [Skill入口](../SKILL.yaml) | Coding范围、硬约束、完成和MCP边界 |
+              | [共享调度协议](../references/share/shared-protocols.yaml) | Contract、父级通道、Dispatch、反馈、按需证据与稳定性 |
+              | [运行时与能力](../references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.yaml) | 工具发现、三类模型、真实能力与加载更新 |
+              | [Multimodal参考](../references/multimodal/multimodal-flow.yaml) | 仅参考，不建立可执行路线 |
+              | [Multimodal API参考](../references/multimodal/multimodal-openai-profile.yaml) | 仅参考，不改变Coding/API授权 |

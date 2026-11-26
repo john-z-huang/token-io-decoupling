@@ -1,0 +1,135 @@
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: delivery
+markdown_path: hooks/delivery.md
+activate_on: [git_changed]
+title: 交付与 Acceptance Hook
+blocks:
+  - intro:
+      kind: markdown
+      text: |-
+        本合同覆盖 Git 交付效果（若明确请求且逐动作授权）及逐标准 Acceptance；不授予实现、文档、提交、推送或其他权限。输入为当前 Contract 全部标准、最新 implementation/content 与 documentation Verification、各自范围/指纹/epoch、Git 目标/效果意图、当前已完成效果和 continuation。未请求 Git 不影响 Acceptance，须记录有理由的 N/A。
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              当路线进入最终交付或 Acceptance，或用户明确请求 Git 动作时触发。先核验准确仓库/worktree、分支或 ref、remote（如适用）、操作种类、计划影响、当前 Git 状态/历史及已验证指纹。当前内容和文档 Verification 必须覆盖最新适用 epoch；缺失/过期时不执行 Git，返回对应 Verification owner。每一项 Contract criterion 必须明确可定位，缺少、歧义或冲突时向调用方澄清，不能自行补充标准。
+
+              Git 授权逐动作判断：commit、push、branch/ref、index、remote 配置及其他本地/远程效果各自检查用户对准确目标、操作和范围的明确授权；某个动作的授权不扩展到其他动作。既有授权仅在原范围内持续有效，不因换工具重复询问。目标不明、授权缺失、权限拒绝、前置条件失败或不安全冲突时停止受影响动作。无需 Git 的只读检查不需要伪造 Git 授权。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-01:
+            kind: section
+            title: 一、精确Git目标、已验证内容和实际效果
+            blocks:
+              - execution-01-body:
+                  kind: markdown
+                  text: |-
+                    Git 效果前由 Root 检查 status、相关历史和当前内容/文档验证证据。交付阶段、Slice 和 epoch 记录不代替实际证据或授权守卫。Root 须审查暂存/提交内容与最新验证指纹一致，并排除无关或未验证改动。任何差异都须在继续 Git 前返回受影响的 implementation/content 或 documentation Verification。准确记录实际目标、动作、结果和 Git metadata epoch。Commit/index/branch/history 的 metadata 变化本身不使内容/文档 epoch 失效；实际内容变化则必须重新分类和验证。Git 调用结果不明时不得盲目重放，先确认实际状态。
+        - execution-02:
+            kind: section
+            title: 二、区分直接能力和缺失的职责适配
+            blocks:
+              - execution-02-body:
+                  kind: markdown
+                  text: |-
+                    Git 能力按动作分类。简单且当前宿主实际可用、能精确满足已授权操作的 Git 工具可使用。非简单 Git 职责（例如复杂历史/冲突处理、需跨多步协调或工具无法可靠表达的影响）须由实际可用且获准的专用受保护能力承接；无该能力、可信身份或对应授权时阻断该动作并说明缺口，不能降级为普通文件、capsule、脚本或另一入口绕行，也不能声称已完成。工具可用不代表授权，授权不代表工具存在。
+        - execution-03:
+            kind: section
+            title: 三、逐项Acceptance，不把缺证据写成通过
+            blocks:
+              - execution-03-body:
+                  kind: markdown
+                  text: |-
+                    Git 未请求时记录 `not_applicable` 并跳过写动作，继续 Acceptance。随后逐项映射每个标准至其适用的最新 implementation/content、documentation、Git metadata epoch 证据；分别报告通过、失败、未运行、不可用、假设、授权项目及剩余风险。适用性有争议时不得假定通过。失败 criterion 阻断 `COMPLETE`；必需证据缺失、未运行、不可用或未知则返回对应 owner 获取证据，不得以假设补足。
+        - execution-04:
+            kind: section
+            title: 四、先保全计划全文，再无损归档
+            blocks:
+              - execution-04-body:
+                  kind: markdown
+                  text: |-
+                    所有标准通过后，按 [计划保全与归档合同](planning.yaml#plan-completion) 完成当前活动计划。先追加最终结果和验收证据并确认全文保全，再在同一已核验仓库 scope/key 内归档。核验归档存在、活动项消失、归档与最终活动基线字节相同。目标碰撞、存储映射变化或必需 Memory 能力、权限、核验缺失时暂停归档并回到对应 owner。仅在已记录且适用的持久化限制下，才可将无活动计划标为 N/A。
+  - checkpoints:
+      kind: section
+      title: 有序模块清单
+      blocks:
+        - DA00:
+            kind: checkpoint
+            title: 解析入口。
+            text: |-
+              核验已释放 Mode、Session 身份及权限、原挂起位置和已有效果。输入须覆盖当前 Contract/标准、内容及文档 Verification、范围/指纹/epoch 和准确交付目标。缺失项交 Contract、Verification 或 Git owner 补齐。冲突或已有效果无法安全恢复时阻断。
+
+              依据 [模块入口解析](../references/coding/layer-03-workflow-checkpoints/module-entry-resolution.yaml)。
+        - DA01:
+            kind: checkpoint
+            title: 交付前核验当前 Verification。
+            text: |-
+              把准确的 Contract 标准和验收范围映射到当前内容及文档 Verification。任何 Git 效果前，核验适用的最新 epoch 和实际指纹；缺失或过期时先返回对应 Verification。
+
+              依据 [Acceptance](../references/coding/layer-02-workflow-concepts/completion-and-effects/acceptance.yaml)、[Verification](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification.yaml)、[Verification Epoch](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml)、[Documentation](../references/coding/layer-02-workflow-concepts/completion-and-effects/documentation.yaml)。
+        - DA02:
+            kind: checkpoint
+            applicability: optional
+            title: 仅执行已请求并授权的 Git 交付。
+            text: |-
+              应用[Git](../references/coding/layer-02-workflow-concepts/completion-and-effects/git.yaml)。未请求 Git 效果时，将 Git 记录为有原因的 `not_applicable` 并进入 DA03。若请求了效果但缺少针对实际操作的授权，则返回 `blocked`。获授权后，确认准确的 repository/worktree/ref/remote/operation、目标范围、当前指纹及适用的最新内容/文档 epoch；检查 status/history 并排除无关改动。暂存或提交内容须匹配已验证指纹，且不得包含未验证内容。有任何差异时，进一步 Git 操作前返回对应 Verification 维度。恢复 continuation 时不得重复已完成的 commit/push/其他效果；记录其实际结果和当前 Git metadata epoch。仅 Git metadata 变化不会使内容/文档 epoch 过期。目标不明确、缺少权限或存在不安全冲突时阻塞。
+        - DA03:
+            kind: checkpoint
+            title: 将每项 Acceptance 标准映射到当前 epoch。
+            text: |-
+              逐项验收后在摘要中列明标准与实际证据的对应关系。
+
+              应用[Acceptance](../references/coding/layer-02-workflow-concepts/completion-and-effects/acceptance.yaml)和[Verification Epoch](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml)。对每一项 Contract 标准，引用适用最新 implementation/content、documentation 和 Git metadata epoch 的当前证据。分别报告这三个维度，并区分通过、失败、未运行、不可用、假设、用户授权、剩余风险及必需后续事项。相关变化后不得使用旧 epoch 证据。只有每项标准均已映射且每个适用的必需项都当前并通过时，才能进入 plan 匹配/归档。标准失败或与 Contract 冲突时阻塞；必需证据缺失、不可用、未运行、假设或仍未知时，返回受影响 owner 并返回 `needs_prerequisite`。不得为未完成的 Acceptance 归档 plan。判断 Acceptance 是否存在符合归档条件的匹配 active plan；无关或不匹配计划不适用。 应用[任务计划 Memory 生命周期](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml)识别匹配的已完成活动计划。仅有记录的持久化限制且无活动计划才允许归档例外。必需计划缺失或不可访问时，向该 owner 返回 `needs_prerequisite`，保留准确调用位置，仅在恢复当前计划证据后继续；无关或不匹配计划绝不符合归档条件。
+        - DA04:
+            kind: checkpoint
+            applicability: optional
+            title: 完成最终更新并仅归档匹配的已完成计划。
+            text: |-
+              归档已核验时在对话中引用实际 Memory 证据。补验收后返回此处时，已确认归档的计划仅需核对和引用现有证据。
+
+              仅在 DA03 确认所有适用标准通过，且该 active plan 属于已完成任务后，应用[任务计划 Memory 生命周期](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml)。要求该 owner 的计划全文基线、局部完成更新并追加最终结果/Acceptance 证据/限制，以及完整内容保留核验；遵循选定的计划 owner 核验路径，其已核验回执可满足比对。最终摘要不能替换累积记录。先重新核对活动计划与归档目标属于同一已验证仓库存储范围；身份或映射改变时停止并返回规划 owner，绝不选择其他仓库或其他本地副本。再确认匹配的归档目标不存在；碰撞时保留两个条目并阻塞归档。仅移动命名空间/名称，然后通过计划 owner 匹配的已核验回执或必需的实际检查/读回，确认归档存在、活动名称已不存在，且归档与已核验的最终活动基线完全相同。内容保留不一致、计划更新、必需核验或归档失败均阻塞 Acceptance；保留最后确认状态，不重放结果不明的效果，绝不编辑已有归档以修复不一致。若在已记录的限制例外下不存在匹配活动计划，则附证据记录 `not_applicable`；不得归档其他或未完成计划。
+        - DA05:
+            kind: checkpoint
+            title: 返回 Acceptance。
+            text: |-
+              返回按标准映射的证据、适用的当前 epoch、分别报告的内容/文档/Git 状态、准确的已授权效果及其结果、计划归档结果或有依据的 `not_applicable`、剩余风险和未解决项目。只有每项适用标准都有当前证据、无必需验证/能力/授权待解决，且所请求交付符合已验证指纹时，才返回 `complete`。模块完成不授予任何额外效果的权限。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              `COMPLETE` 仅在每项标准有最新且适用的通过证据、范围准确、所请求且授权的 Git 效果确认与验证指纹一致、无未解决必需能力/授权/证据问题后可返回。报告分别列出内容、文档、Git metadata 状态，Git 结果或未请求原因，逐 criterion 的证据映射，计划归档结果/适用 N/A、限制与风险。验收失败、冲突或不安全状态为 `blocked`；缺少当前 Verification、标准、授权、工具/适配器或必需计划证据为 `needs_prerequisite` 或 `blocked`，注明责任 owner 与准确恢复条件。不可用、失败、未运行不得改写为通过。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              Git 之后重新核验实际目标、状态、效果及暂存/提交指纹，再于 DA03 逐标准映射 Acceptance；不得重放 DA02 已完成动作。Git 只变 metadata 时保留仍新鲜的内容/文档 Verification，并以指纹说明；检测到内容差异则返回受影响 Verification 后再回 DA03。每项标准的相关内容、文档、Git 状态变化都使其适用证据重新核验；无关维度不重跑但记录复用依据。计划归档后若结果不明，先读取/核对实际状态及同 scope/key 内容，不重复移动；字节不一致、活动项仍在或目标异常均阻断，保留最后确认状态并交由另行授权恢复。变化只补核受影响条件，不重放已完成 Git/计划效果。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              | 来源 | 本合同落点 |
+              | --- | --- |
+              | [completion-and-effects/git](../references/coding/layer-02-workflow-concepts/completion-and-effects/git.yaml) | 准确目标、状态/历史、指纹、分离授权及 metadata epoch |
+              | [completion-and-effects/acceptance](../references/coding/layer-02-workflow-concepts/completion-and-effects/acceptance.yaml) | 逐标准证据映射、分维度报告与 COMPLETE 门槛 |
+              | [Session职责](../references/coding/layer-01-fundamental-concepts/session-runtime/session-role-ownership.yaml) | 非简单Git的单独职责与授权 |
+              | [Verification Epoch](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml) | Git metadata与内容/文档维度分离 |
+              | [execution-planning/task-plan-memory-lifecycle](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml) | 全文保留、scope/key、同内容归档与只读既有归档 |

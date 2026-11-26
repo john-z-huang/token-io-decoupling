@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: multimodal-openai-profile
+markdown_path: references/multimodal/multimodal-openai-profile.md
+title: "Multimodal OpenAI Deployment Profile"
+blank_lines_after_title: 1
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文件保留非Coding多模态部署的模型选择参考，不选择视觉工作流、不创建代理、不授予权限，不宣称本项目已有可执行多模态/持久代理适配器。
+  - section-01:
+      kind: section
+      title: "按任务选择，不再固定Luna"
+      expose: true
+      blocks:
+        - section-01-body:
+            kind: markdown
+            text: |-
+              - **Decision Agent**仍为当前父级，保留语义/创作决策和最终验收，不因子代理选择改变Root模型。
+              - **Primary Observation Agent**由Root在GPT-6.1 Sol、GPT-6.1 Terra、GPT-6 Luna中按输入/任务选型。参考：复杂静态视觉/技术图纸可考虑Terra medium/high，聚焦提取和大批量已定义筛选可考虑Luna low/medium，复杂专业推理可考虑Sol medium/high。
+              - **Optional Primary Output Agent**同样按任务选型：清晰文本起草/修订可考虑Terra low/medium，聚焦高体量结构化输出可考虑Luna low/medium，复杂专业内容可考虑Sol medium/high。
+              - 上述不是固定角色绑定、官方对比测试或质量保证。两个子角色仍是不同职责与Session Affinity，不能因同模型合并高体量上下文；模型不同也不证明独立性。
+  - section-02:
+      kind: section
+      title: "档位与能力边界"
+      expose: true
+      blocks:
+        - section-02-body:
+            kind: markdown
+            text: |-
+              [通用选型要求](../coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.yaml#subagent-models)适用于当前宿主。结合实际模型卡核对能力、支持档位及 provider/API 限制。一般多步工作medium、简单确定任务low、复杂/高风险任务可high；xhigh/max须具体必要性，Root可按当前任务调整而非强制阶梯。Sol支持low/medium/high/xhigh/max；Terra/Luna另有none；推理设置按所选宿主适配与实际工具契约核验，不静默钳制或换模型。
+
+              模型卡支持不等于宿主支持：三者为文本/图像输入、文本输出；不能由此推断原生视频/音频能力。视频帧必须由获准工具准备，图像输入、工具API、数据出站与格式都须核验。**本Skill禁止Computer Use**；卡片提到该能力不授权GUI截图定位、点击或Shell/MCP包装的同类操作。
+
+              Root在创建前核验真实可用模型、参数控制和授权，保留选择依据；不能用task文字假装已配置，不能要求Worker自报身份作证明。缺少任务必需能力/选型控制时停止受影响工作；可选优化缺失只记录限制。已创建身份不能为换模型而替换/重建；未知效果先读回不重放。
+
+              此策略不修改外部服务契约中的 API 模型设置，也不替代输入审核、Mock默认、真实出站授权及相应多模态合同。非Coding模块仍仅为参考，不能从Coding Extension加载成功推断实现完成。

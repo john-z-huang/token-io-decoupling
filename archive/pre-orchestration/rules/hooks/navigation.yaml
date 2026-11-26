@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: navigation
+markdown_path: hooks/navigation.md
+activate_on: [entry]
+title: 工作流导航 Hook 合同
+blocks:
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              在 Coding 工作流中需要确定当前权威规则、路线/模块入口、当前检查点上下文时触发；当导航、可选路由建议或检查点结构检查可能帮助定位/检查所供材料时，评估其是否适用。还包括路线事实变化、模块恢复、规则或工具能力不确定、导航结果不完整，以及检查点 owner 要求某项输入/检查结果的情形。先使用当前环境和能力清单，确认已完成的入口门禁及当前调用上下文；本 Hook 不代替 Contract、Environment、能力清单、Mode 或 Route Entry。
+
+              区分两类路径：**可选导航**是帮助发现有界规则上下文或检查所供事实的辅助；不可用/不适用时可直接读取 owner。**已选受保护路径**则是路线、模块或上游 owner 明确要求的能力/步骤，不能因失败、未知或不便而改走未经授权的路径。是否“已选”依当前 owner 和当前调用方证据判断，不由工具可见性或结构状态决定。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-01:
+            kind: section
+            title: 1. 找到权威上下文
+            blocks:
+              - execution-01-body:
+                  kind: markdown
+                  text: |-
+                    1. 先识别当前判断的语义 owner 和其直接前置 owner。以当前 Markdown owner 为策略、顺序、证据要求、分支和验收的权威。仅读当前判断所需范围，并逐项打开必要的引用。
+                    2. 若通过可选导航取得规则上下文，核对返回来源、范围、语言、状态及其对应当前规则；未覆盖的直接链接 owner、必要上下文或任务事实须单独读取/核验。不得从索引、摘录、过期快照或缺失段落推断策略。导航不需要时记录有理由的 `Not applicable`，并直接读必需 owner。
+                    3. 结构检查只评估调用方提交的事实/证据结构。将结果与实际输入和当前 owner 对照，独立解释证据含义。只有实际工具定义这些枚举时，才按其契约解释 `ready_for_agent_review`、`incomplete_for_agent_review` 和 `blocked_input`。任何状态都不认证事实或调用方，不证明来源/权限，不授予授权，不代表检查点通过、顺序成立或任务验收。
+                    4. 任何来源、片段、指纹或 Hash 都只是导航/变化检测证据。Shape hash 可提示规则/模块形状漂移，不能确定规则事实、取代读取、证明源权威性或权限；发生变化应回到 owner 重新核验，不变化也不能省略所需审阅。
+        - execution-02:
+            kind: section
+            title: 2. 能力确认与路线选择
+            blocks:
+              - execution-02-body:
+                  kind: markdown
+                  text: |-
+                    1. 按当前环境的发现方式核对可用的导航或检查能力，读取工具与服务说明，核对实际参数和权限，并检查返回的错误、状态和证据。隐藏或拒绝访问的能力不得绕过；工具名称或宿主能力不能证明某项服务可用。
+                    2. 直接读取必需的 YAML owner 或其当前阅读版，按适用合同和实际证据推进。受保护操作按自身可信绑定和授权要求核验。
+                    3. 已完成 Contract、Environment、能力清单、Mode 后才使用 Route Entry；它只返回 Mode 授权的唯一路线，前置缺失/矛盾时回对应 owner 并停止依赖路线工作，不重释 Mode、不选后备路线。Single-Agent 使用当前 Session 内七模块顺序：SM01 入口就绪 → SM02 Session 就绪 → SM03 工作定义 → SM04 Single-Agent 执行 → SM05 验证与修复 → SM06 文档 → SM07 交付与验收。Multi-Agent 使用锁定正数 child count 的七模块顺序：MM01 入口就绪 → MM02 Session 就绪 → MM03 工作定义 → MM04 委派执行 → MM05 验证与修复 → MM06 文档 → MM07 交付与验收。不得跨序、跳过、重启整条路线或凭数量创建/派发 Agent；只调用对应模块 owner。
+                    4. 每个模块的入口预检只解析其声明前置、证据、新鲜度、epoch、能力和暂停位置。`ready` 不是模块完成或路线完成；模块自身仍需返回其规定结果。已释放 Mode 是消费证据，不是再次提问或改路线的理由。保留原调用方模块/子步骤及已完成效果；前置缺失时返回语义 owner，完成后读回并重核相关证据/epoch/effect，再恢复原暂停位置，不重放效果。首次直接进入可以没有历史；但依赖历史的位置、效果不能确认时阻断。
+                    5. 路由建议仅在事实已审阅、路线已锁定且匹配模式/数量后，按当前路线映射阶段。建议不拥有阶段顺序，不改变路线/执行者/子代理数，不通过门禁、不授权、不创建/派发 Agent、不调用其他工具。缺事实、规则过期、冲突或能力不足时直接读路线 owner；不可选建议时记录结果。必需的已选路线能力缺失则在其 owner 定义边界停下，不能静默回退。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              完成当前判断所需的 owner 阅读、证据解释和路线/模块入口核验后，返回有界来源、选择及必要的结构结果；导航本身不更改状态、不释放 Slice/Control、不执行操作或验收。
+
+              可选导航/结构检查不可用、不完整或无用时：若当前获准能力可直接访问必需 owner，则直接读取并记录限制/有理由的 `Not applicable`，仅继续与缺失辅助能力无关的工作。若必需 owner、必需证据或已选路径能力不可获取，阻塞依赖它的工作；不得推断规则、跳过要求或假称通过。路线/模式冲突、owner/暂停位置/效果未知、恢复记录矛盾、必需能力来源失败，或无新证据/相关 epoch 进展而重复前置解析，均阻断依赖分支并保留当前状态；不重试、重放或推断后续操作安全。无关工作仅在其独立获准且不依赖阻塞项时继续。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              规则文本、来源/语言、模块形状、工具 Schema/暴露范围、能力清单、任务事实、路线、证据或相关 epoch 改变时，重新读取受影响的当前 owner，刷新导航/建议并重新检查事实、授权和 effect 状态。Hash 只检测漂移，不能作为事实权威；新旧 Hash 相同也不能代替内容审阅。producer 完成后必须读回其证据，核实来源、时效、epoch 与先前效果，再只返回记录的原暂停点。若无法确认变化或效果，先保留状态并阻塞依赖工作。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              | 来源 | 本合同落点 |
+              | --- | --- |
+              | [导航可用性](../references/coding/layer-01-fundamental-concepts/workflow-navigation/navigation-availability.yaml) | 可选缺失、owner直读及Pi适配边界 |
+              | [规则上下文](../references/coding/layer-01-fundamental-concepts/workflow-navigation/rule-context.yaml) | 有界读取、摘录限制、来源和Hash |
+              | [结构检查](../references/coding/layer-01-fundamental-concepts/workflow-navigation/checkpoint-structure-checks.yaml) | 三种状态与非认证/非授权 |
+              | [路由建议](../references/coding/layer-01-fundamental-concepts/execution-planning/workflow-routing-advice.yaml) | 路线权威、失效与受保护路径 |
+              | [导航选择](../references/coding/layer-03-workflow-checkpoints/workflow-navigation-selection.yaml) | 可选分支、失败与返回 |
+              | [模块入口解析](../references/coding/layer-03-workflow-checkpoints/module-entry-resolution.yaml) | 前置补证、恢复、不重放 |
+              | [路线入口](../references/coding/layer-03-workflow-checkpoints/route-entry.yaml) | 唯一已授权路线及缺前置 |

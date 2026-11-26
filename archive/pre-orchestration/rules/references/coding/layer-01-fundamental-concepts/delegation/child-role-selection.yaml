@@ -1,0 +1,129 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: child-role-selection
+markdown_path: references/coding/layer-01-fundamental-concepts/delegation/child-role-selection.md
+title: "Coding 子代理职责选择"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责为拟创建的子代理选择一个受维护的职责，以及职责选择 Decisions 政策。它消费[Session 职责归属](../session-runtime/session-role-ownership.yaml)中的职责、[Session 模型](../session-runtime/session-model.yaml)和[委派状态记录](delegation-state-record.yaml)中的当前身份与 allocation，以及[委派数量门禁](delegation-mode-count-gate.yaml)中的容量；不分配预算、不创建子代理，也不授权任何影响。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - role-request:
+            kind: section
+            title: "职责请求边界"
+            expose: true
+            blocks:
+              - role-request-body:
+                  kind: markdown
+                  text: |-
+                    只使用四种受维护职责：`Primary Output`、`Change Verification`、`Context Bootstrap/Refresh` 和 `Documentation/Comments & Git Operations`。根据已放行任务匹配职责。当前会话身份和 allocation 必须读取权威状态记录；当前会话中已预留或已创建的职责不能再分配给另一个子代理。职责分配 owner 要求职责唯一，且已创建职责即使子代理已完成、失败、中断、取消或不可用仍被占用。不要计入来自其他会话的继承代理。Fork 必须先通过新的模式/数量门禁，然后才能选择职责。
+
+                    在本文 owner 中，Root 已在 Context 和 Decision 之后授权并界定了拟派子代理任务的目标/范围，即视为该 proposed task 已放行。这不同于后续绑定和放行该子代理的 Interaction Slice。须在放行其 Interaction Slice 之前，为这个已授权任务选择并预留职责；不得等待子代理专属切片放行，因为该切片需要先有已分配职责。
+
+                    用户明确要求创建子代理时，跳过职责选择 Decisions。用户提供了明确职责时遵循该职责；用户明确要求创建但未指定职责时，只有在创建已经通过其他门禁确认且该职责仍可用时，才以 `Primary Output` 为缺省。此规则不绕过 Single-Agent 模式、当前会话职责门禁、已批准预算、用户权限、已放行切片或子代理创建能力。
+
+                    若没有适用的用户明确职责指令，先按[决策上下文生成](../execution-planning/decision-context-generation.yaml)流程，从带来源事实生成并审阅有界决策上下文。之后使用获准的职责建议能力，并传入已审阅上下文和当前状态事实。生成决策问题是可选步骤。职责选择只能使用经过核实的当前会话事实仍允许的选项。
+
+                    若上下文生成失败或返回证据不足，不得伪造描述或哈希，也不得用不可用的上下文继续调用下游职责建议请求。若已核实事实足够，Root 仍可根据本 Skill 直接作出职责判断；否则保持判断未决且不得创建子代理。上下文生成失败后不得自动调用下游建议操作。上下文生成失败本身不能证明应当继续创建。
+        - role-advice:
+            kind: section
+            title: "职责 Decisions 指令"
+            expose: true
+            blocks:
+              - role-advice-body:
+                  kind: markdown
+                  text: |-
+                    为拟创建的子代理选择一个已提供职责，或选择 `insufficient_evidence`。只使用已放行任务目标、交付内容、依赖、验证要求、已提供的当前会话状态和已加载职责 owner。职责必须匹配子代理实际要执行的工作。不得推断未提供的仓库事实、权限、预算能力或用户意图。事实冲突、任务横跨多个职责但没有已放行边界、所需 owner 政策不可用，或没有适合的职责时，选择 `insufficient_evidence`。该选择供 Root 审阅，不预留名额或创建子代理。
+        - role-options:
+            kind: section
+            title: "职责选项说明"
+            expose: true
+            blocks:
+              - primary-output:
+                  kind: section
+                  title: "Primary Output"
+                  expose: true
+                  blocks:
+                    - primary-output-body:
+                        kind: markdown
+                        text: |-
+                          用于主要的已授权代码/配置实现，或编写/编辑本 Skill 指令和参考文档。子代理仍必须遵守已放行切片边界。普通非 Skill 文档与评论仍由 Root 负责，即使任务同时包含代码变更。
+              - change-verification:
+                  kind: section
+                  title: "Change Verification"
+                  expose: true
+                  blocks:
+                    - change-verification-body:
+                        kind: markdown
+                        text: |-
+                          用于只读检查已放行改动是否符合其合同与证据。验证者必须具有真正独立的当前会话身份，且不得实现、修复、暂存或提交被审查的改动。若无合格独立验证者，报告这一限制；不得改名职责来冒充独立验证。
+              - context-bootstraprefresh:
+                  kind: section
+                  title: "Context Bootstrap/Refresh"
+                  expose: true
+                  blocks:
+                    - context-bootstraprefresh-body:
+                        kind: markdown
+                        text: |-
+                          用于有界检索或刷新 Root 后续判断或已放行切片所需的项目上下文。返回带引证的源路径或稳定引用，并区分观察事实和缺失上下文。不得授权实现或代替 Root 作语义判断。
+              - documentationcomments-git-operations:
+                  kind: section
+                  title: "Documentation/Comments & Git Operations"
+                  expose: true
+                  blocks:
+                    - documentationcomments-git-operations-body:
+                        kind: markdown
+                        text: |-
+                          仅用于明确放行、属于子代理职责且权限允许的非简单 Git 工作。普通文档和评论由 Root 负责；在完成必需放行门禁后，Primary Output 可以编写或编辑本 Skill 的指令和参考文档。该职责不授权 Git 影响，也不得扩大已批准路径或操作范围。
+              - insufficient-evidence:
+                  kind: section
+                  title: "insufficient_evidence"
+                  expose: true
+                  blocks:
+                    - insufficient-evidence-body:
+                        kind: markdown
+                        text: |-
+                          当提供事实不足以确定合规职责、职责与已放行切片冲突、当前会话职责状态不确定，或所需政策/能力不可用时选择。Root 可以依据维护的政策和当前证据复核；API 结果本身绝不授权创建。
+        - review-and-fallback:
+            kind: section
+            title: "审阅与兜底"
+            expose: true
+            blocks:
+              - review-and-fallback-body:
+                  kind: markdown
+                  text: |-
+                    预留职责前，Root 必须核实当前模式与 Session 身份、职责唯一性、可用批准预算、用户指令、已授权的拟派任务、权限和宿主能力。Interaction Slice 只能在预留了分配职责后才放行。上下文生成失败、Decisions 失败或证据不足不会自动选出职责，也不阻断 Root 独立审阅。若 Root 依据已核实事实独立确认应继续创建，只有拟派工作符合 `Primary Output` 职责且该职责尚未预留或创建时，才可将其用作缺省；其他门禁仍须通过。若四种受维护职责均已占用，Root 必须阻止再创建子代理，不得申请扩额：增加名额不能释放职责或允许重复职责。仅当至少还有一种不同职责未占用、但容量不足时，才能申请预算。不得再次选择相同职责、静默超出预算或替换已创建子代理。权威门禁与字段见[委派数量门禁](delegation-mode-count-gate.yaml)、[委派模式重入](delegation-mode-reentry.yaml)、[委派状态记录](delegation-state-record.yaml)和[子代理职责分配](delegation-child-role-allocation.yaml)。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              根据父级当前记录审阅可用职责。建议工具只有实际契约适用于当前会话时才调用；否则直接依据本 owner 判断。扩展的 agent 配置名称不是 Skill 职责或授权证明。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Session 职责归属](../session-runtime/session-role-ownership.yaml) — 负责受维护的职责说明。
+              - [Session 模型](../session-runtime/session-model.yaml) — 负责 Session 身份和 affinity。
+              - [委派数量门禁](delegation-mode-count-gate.yaml) — 负责锁定预算和获批扩展。
+              - [委派模式重入](delegation-mode-reentry.yaml) — 负责 Fork 的新门禁。
+              - [委派状态记录](delegation-state-record.yaml) — 负责当前会话 allocation 状态。
+              - [Coding 子代理职责分配](delegation-child-role-allocation.yaml) — 负责在已批准名额中预留已选职责。
+              - [Coding 子代理创建](delegation-child-creation.yaml) — 负责子代理创建能力及前置条件。
+              - [决策上下文生成](../execution-planning/decision-context-generation.yaml) — 负责有界决策上下文的生成与审阅。

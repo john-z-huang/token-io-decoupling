@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: planning
+markdown_path: hooks/planning.md
+title: 规划 Hook
+activate_on: [definition, requirements_changed, dependencies_changed, capability_changed]
+blocks:
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              选定路线后规划可执行工作，或任务边界、依赖、角色可用性及验收条件变化时。
+  - inputs:
+      kind: section
+      title: 输入与证据
+      blocks:
+        - inputs-body:
+            kind: markdown
+            text: |-
+              已确认的任务目标、约束与验收，当前状态，以及确定分工所需的角色描述和宿主能力。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-body:
+            kind: markdown
+            text: |-
+              1. 按[任务边界与依赖](../references/planning/task-planning.yaml#task-boundaries)拆解工作，明确前置输入、执行者、影响范围及返回证据。
+              2. 按[执行者与依赖规则](../references/planning/task-assignment.yaml)确定分工与交接。按[决策与执行条件](../references/planning/execution-decision-gate.yaml)核对拟执行工作是否就绪。
+              3. 按[计划调整规则](../references/planning/task-planning.yaml#plan-updates)根据新证据调整分工、顺序和验收，保留仍适用的结果和派发记录。目标、授权或验收变化时重查[任务约定](../references/planning/contract.yaml)。
+  - outputs:
+      kind: section
+      title: 输出与落点
+      blocks:
+        - outputs-body:
+            kind: markdown
+            text: |-
+              当前任务和依赖、主代理责任、候选委派、预计交付物与验收条件。计划可在主代理当前任务上下文中维护。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              已确定近期工作、职责和验收办法时继续。委派分支须在实际派发前核实角色、实例和宿主能力。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              工作依赖、资源范围、用户要求、可用角色或决定下一步的结果变化时，只调整受影响的工作。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              [任务规划](../references/planning/task-planning.yaml)定义分工与依赖，[角色匹配](../references/delegation/delegation-policy.yaml#assignment)定义派发前的实例核对。

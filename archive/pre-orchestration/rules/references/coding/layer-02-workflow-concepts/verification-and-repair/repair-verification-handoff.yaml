@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: workflow-concept
+id: repair-verification-handoff
+markdown_path: references/coding/layer-02-workflow-concepts/verification-and-repair/repair-verification-handoff.md
+title: "修复验证交接检查点"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本检查点负责将改变状态的修复以新的最终状态指纹或 epoch 交回验证。它不授权修复、不定义修复内容，也不定义验证检查或结果报告。
+  - actions:
+      kind: section
+      title: "动作"
+      expose: true
+      blocks:
+        - actions-body:
+            kind: markdown
+            text: |-
+              1. 对改变状态的修复，捕获产生的最终状态指纹或 epoch。
+              2. 在依赖工作继续前，将新状态交回验证检查点。
+  - pass:
+      kind: section
+      title: "通过条件"
+      expose: true
+      blocks:
+        - pass-body:
+            kind: markdown
+            text: |-
+              已改变状态拥有新的最终状态指纹或 epoch，并已明确排队等待验证；或者交接已暂停并明确缺少的证据。
+  - boundary:
+      kind: section
+      title: "边界"
+      expose: true
+      blocks:
+        - boundary-body:
+            kind: markdown
+            text: |-
+              本检查点不诊断失败，不授权或执行修复，不定义检查内容，不分类结果，不写文档，也不产生 Git 影响。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Execution Control](../../layer-01-fundamental-concepts/execution-control/execution-control.yaml) — 定位实质性边界和返回条件归属。
+              - [Coding Execution Decision Gate](../../layer-01-fundamental-concepts/execution-planning/execution-decision-gate.yaml) — 定位依赖路线放行归属。
+              - [Coding Delegation State Record Worker Boundary](../../layer-01-fundamental-concepts/delegation/delegation-worker-boundary.yaml) — 定位最终状态证据访问边界。
+              - [Coding Child Reuse and Replacement](../../layer-01-fundamental-concepts/delegation/delegation-child-reuse-replacement.yaml) — 定位修复 epoch 复用归属。
