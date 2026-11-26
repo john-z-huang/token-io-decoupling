@@ -1,17 +1,15 @@
-.serena
+.token-io-decoupling
+# .serena
 
-# MCP Tools temp files
-mcp/.venv/
-mcp/.cache/
-mcp/dist/
-mcp/.pytest_cache/
-mcp/.ruff_cache/
-mcp/.ty_cache/
+# VS Code IDE Config files
+.vscode
 
 # Python Project Cache files
 __pycache__
-
+# Ruff
 .ruff_cache
-.pytest_cache
+node_modules
 
-/skills/
+.DS_Store
+
+archive/pi-coding-workflow/extensions/coding-workflow/.serena

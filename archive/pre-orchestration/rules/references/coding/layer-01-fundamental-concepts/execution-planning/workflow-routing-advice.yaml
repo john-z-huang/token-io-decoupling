@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: workflow-routing-advice
+markdown_path: references/coding/layer-01-fundamental-concepts/execution-planning/workflow-routing-advice.md
+title: "工作流路由建议"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档定义在已获授权的 Coding 路线内定位当前检查点的可选任务级建议。它不拥有路线政策、就绪判断、模式选择、权限或执行权。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "建议与判断和授权分离"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    仅根据已审阅的任务事实和已锁定路线，建议当前阶段或模块。Coding 工作流和选定路线仍是阶段顺序、检查点动作、证据、分支及验收的权威来源。建议不会通过检查点、改变已锁定模式或子代理数量、授予权限、创建或派发 Agent，也不会调用其他工具。
+
+                    当当前路线和规则可用时，可在本地映射显式阶段。自动阶段选择是可选的；只有在必要来源事实、当前规则上下文、能力和出站数据授权均可用时，才可使用语义判断。若事实或规则缺失、过期、超出预算或相互矛盾，应回到当前路线 owner 直接判断。不得把缺失证据转成假定阶段。
+
+                    行动前应根据当前路线和任务状态复核建议阶段。哈希仅用于检测内容变化，不认证来源或证明权限。相关事实、路线或规则变化后，应刷新建议。可选建议能力不可用时，应记录该结果。仅当任务适用一条独立获授权的 Native/直接路径时才可继续；若选定路径所需能力缺失，应在其 owner 定义的边界停止，不得静默回退。
+        - section-02:
+            kind: section
+            title: "路线边界"
+            expose: true
+            blocks:
+              - section-02-body:
+                  kind: markdown
+                  text: |-
+                    阶段与模块的对应关系由当前 Single-Agent 或 Multi-Agent 路线拥有。只有模式和数量已锁定后，建议才可指出匹配模块。Multi-Agent 执行提醒不能替代角色、任务授权、memo、Slice 和子代理生命周期 owner。验证、修复、文档、Git 与验收仍由各自直接 owner 管理。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              按已锁定路线、当前 Hook 及实际宿主状态判断当前模块。外部建议仅在确有可用且适用的能力时采用，随后按当前规则复核。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Execution Decision Gate](execution-decision-gate.yaml) — 拥有执行决策前置条件。
+              - [Task Assignment](task-assignment.yaml) — 拥有执行者选择。
+              - [Workflow Rule Context](../workflow-navigation/rule-context.yaml) — 拥有有界规则读取和完整性。

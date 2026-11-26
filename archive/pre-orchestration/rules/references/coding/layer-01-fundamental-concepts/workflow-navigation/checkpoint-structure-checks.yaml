@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: checkpoint-structure-checks
+markdown_path: references/coding/layer-01-fundamental-concepts/workflow-navigation/checkpoint-structure-checks.md
+title: "检查点结构检查"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责对调用方提供的检查点事实和证据执行确定性结构评估。不负责认证输入、判定语义真实性、授权工作或验收任务。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "将评估视为可选的结构辅助"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    当结构检查有助于识别当前检查点判断中缺失或格式错误的所供事实时，可使用该检查。当前检查点 owner 仍是权威来源。应直接检查该 owner 并判断证据含义；结构完整的提交不证明事实真实，也不表示检查点已通过。
+
+                    调用方提供的输入、证据引用、修订、指纹和 Hash 始终是调用方提供的事实。检查器可以拒绝格式错误、不一致、过期或不受支持的输入，但不能认证调用方、证明权限或来源、授予授权、建立跨调用顺序或验收任务。结果不持久化状态，也不会记住先前调用。
+
+                    若实际使用的检查器定义 `ready_for_agent_review`，它仅表示所供输入满足该检查器的结构要求。`incomplete_for_agent_review` 报告缺失的必需事实或证据。`blocked_input` 报告无效、不一致、过期或不受支持的输入。无论何种状态，均须独立审阅当前 owner 和证据。
+
+                    对于 Control，结构结果不能取代当前 Control owner、当前状态验证或必需的用户/Agent 判断。若可选结构检查不可用，应直接使用权威 owner 和可用证据；仅当无法以其他方式确立判断所需输入时，才阻塞该判断。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              Agent 直接读取检查点的 owner 以确定规则，并核对相关工具的实际调用及结果以判断事实。候选文件检查的结论仅覆盖所检查的文件和规则。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [工作流规则上下文](rule-context.yaml) — 负责有界导航至当前工作流规则。
+              - [工作流导航可用性](navigation-availability.yaml) — 负责导航不可用和可选检查分支。
+              - [Coding Execution Control](../execution-control/execution-control.yaml) — 负责 Slice 与 Control 判断。
+              - [Decisions Advisory](../execution-planning/decisions-advisory.yaml) — 负责单独请求的可选语义建议。

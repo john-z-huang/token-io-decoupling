@@ -1,0 +1,55 @@
+layouts:
+  - [overview, rules, runtime-guidance, related]
+block_rules:
+  overview:
+    kind: markdown
+    expose: true
+  rules:
+    kind: section
+    expose: true
+  runtime-guidance:
+    kind: section
+    expose: true
+  related:
+    kind: section
+    expose: true
+document:
+  schema_version: 1
+  document_type: fundamental-concept
+  id: example-fundamental-concept
+  markdown_path: references/coding/layer-01-fundamental-concepts/example/example-fundamental-concept.md
+  title: 基础概念示例
+  blocks:
+    - overview:
+        kind: markdown
+        title: 概览
+        expose: true
+        text: 用一段话定义概念及适用范围。
+    - rules:
+        kind: section
+        title: 通用规范
+        expose: true
+        blocks:
+          - scope:
+              kind: section
+              title: 适用条件
+              blocks:
+                - scope-body:
+                    kind: markdown
+                    text: 说明何时启用规则、所需事实与不可跨越的边界。
+    - runtime-guidance:
+        kind: section
+        title: 运行时指引
+        expose: true
+        blocks:
+          - runtime-guidance-body:
+              kind: markdown
+              text: 说明 Pi 应如何使用或读取该规则。
+    - related:
+        kind: section
+        title: 相关概念
+        expose: true
+        blocks:
+          - related-body:
+              kind: markdown
+              text: '- 链接到相关规则所有者。'

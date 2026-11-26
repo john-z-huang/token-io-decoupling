@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: contract
+markdown_path: references/planning/contract.md
+title: 任务约定
+blocks:
+  - scope:
+      kind: section
+      title: 确认目标和授权范围
+      expose: true
+      blocks:
+        - scope-body:
+            kind: markdown
+            text: |-
+              - 由主代理依据当前用户指令和已核实的资料，说明用户要取得的结果、交付物与硬性限制。按任务需要明确目标项目、工作区、路径、允许的资源及可产生的外部影响。
+              - 逐项区分已观察事实、假设、已定决策与未决问题。将用户授权对应到具体动作和资源。方案建议、工具可用或子任务已分配均不能扩大授权。
+              - 用户目标、限制或实质决策变化时，修订受影响的任务约定，并核对在途动作、已有证据和待执行任务是否仍适用。
+  - acceptance:
+      kind: section
+      title: 约定可核验的验收条件
+      expose: true
+      blocks:
+        - acceptance-body:
+            kind: markdown
+            text: |-
+              - 为每项交付物明确预期状态与可用于核对的证据。需要独立验证时，说明验证对象和独立性要求。最终验收由主代理依据当前产物和证据完成。
+              - 必要目标、授权或证据缺失时，标明缺少的输入、受影响的任务及可推进的独立工作。实质问题在依赖该问题的实施前先行解决。

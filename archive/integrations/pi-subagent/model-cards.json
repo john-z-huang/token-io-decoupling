@@ -1,0 +1,37 @@
+{
+  "checkedAt": "2026-11-16T04:39:53Z",
+  "method": "官方模型页，Accept: text/markdown，HTTP 200；仅获取公共文档，未调用推理API",
+  "scope": "以下是当次卡片事实；任务到模型/档位的映射是本Skill启发式，不是官方基准。哈希仅供溯源，不能证明语义等价。",
+  "models": [
+    {
+      "id": "gpt-6.1-sol",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+      "sha256": "02dff9ef937bbc97fb24ba7c936269a549563cfb8a49b91a6ba1c1575d2b77c0",
+      "positioning": "Near-Astra performance for complex work at a lower cost. Complex coding and professional work.",
+      "reasoningEffort": ["low", "medium", "high", "xhigh", "max"],
+      "defaultEffort": "medium",
+      "toolCalling": "Responses API required",
+      "input": ["text", "image"], "output": ["text"]
+    },
+    {
+      "id": "gpt-6.1-terra",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6.1-terra",
+      "sha256": "6a73b3e2e941fbe3813636d5bd2d653ff190e49cc3692eaf8daa3bb125c877f8",
+      "positioning": "A fast, efficient model for visual reasoning, precise computer use, and clear, natural writing.",
+      "reasoningEffort": ["none", "low", "medium", "high", "xhigh", "max"],
+      "defaultEffort": "medium",
+      "toolCalling": "Responses API required; computer use remains prohibited by this Skill",
+      "input": ["text", "image"], "output": ["text"]
+    },
+    {
+      "id": "gpt-6-luna",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+      "sha256": "44dcc0a50961150ee700aa701df8d46c59488f003979f3c755c3230bd8a0dfb2",
+      "positioning": "Our most efficient model for focused, high-volume tasks.",
+      "reasoningEffort": ["none", "low", "medium", "high", "xhigh", "max"],
+      "defaultEffort": "medium",
+      "toolCalling": "Responses for built-in tools/function calling; Chat Completions function calling only at none",
+      "input": ["text", "image"], "output": ["text"]
+    }
+  ]
+}

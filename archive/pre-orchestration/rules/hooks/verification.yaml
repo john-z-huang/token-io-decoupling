@@ -1,0 +1,192 @@
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: verification
+markdown_path: hooks/verification.md
+activate_on: [repair_required, documentation_impact, git_changed]
+title: Verification Hook
+flowchart_references:
+  VR_SCOPE: ../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-scope-gate.yaml#section-01
+  VR_EXEC: ../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-execution.yaml#actions
+  VR_HANDOFF:
+    ../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-verification-handoff.yaml#actions
+blocks:
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              当需要判断当前交付状态是否满足 Contract、验收标准或依赖路线的放行条件时适用；包括实现完成后的最终验证、修复交接后的重验，以及文档或 Git 状态变化后的相应核验。入口不要求已有最终 Verification 结果。开始前确认当前任务范围、当前 Contract/验收条件、实际实施结果、Session 身份与 authority、调用方 continuation，以及已经发生的效果均可识别；不得把未知、部分或相互冲突的状态当作已解决。Single-Agent 或 Multi-Agent Mode 的适用释放证据须为当前有效。
+
+              本 Hook 汇总验证证据、独立性、报告和 epoch 规则；它不授予独立验证者权限，不授权修复，不代表整体验收，也不取代直接 owner 的决策。调用方未提供必需的 Contract、范围、实际状态访问、验收条件或来源/效果事实时，报告 `needs_prerequisite` 并明确缺项；状态不安全、冲突不可解或效果无法恢复时报告 `blocked`。不因本 Hook 入口重新要求已经有效且范围未变的授权。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-01:
+            kind: section
+            title: 捕获当前状态与覆盖维度
+            blocks:
+              - execution-01-body:
+                  kind: markdown
+                  text: |-
+                    Root 依据实际状态分别捕获内容、文档和 Git metadata 指纹，按实际影响核对各维度 epoch 及证据新鲜度。验证须有覆盖适用标准的当前实际检查及结果。Git 前对照准确目标和暂存/拟提交内容与最新验证状态；不一致先回验受影响维度。未变维度按 owner 复用，并说明当前指纹及结果为何仍适用。
+
+                    1. 以实际工作区/目标资源为准，先解决部分、冲突或不确定的应用状态，再捕获准确的最终状态指纹（fingerprint）和 epoch；预检、实施收据、候选文件、早期检查及代理声称均不是最终状态证据。若输出物料化流程提供收据，须按实际当前文件核验收据，不能以收据替代状态读取。
+                    2. 把每项验收标准映射到当前证据、检查及覆盖维度。每一维只复用指纹未变化且覆盖该标准的当前有效证据。对文档变更核对标题锚点及当前项目语言约定；本仓库使用中文单源。具体内容变化运行其适用产品检查。
+                    3. 使用 `verification-impact` 建议前核对适用性和授权。建议不可用、不符条件或与直接证据冲突时，记录有根据的 `not_applicable` 及原因。
+
+                    按[验证 Epoch 规则的动作章节](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml#actions)决定哪些证据失效及需要重验。
+              - include-verification-epoch-actions:
+                  kind: rule_include
+                  document: verification-epoch
+                  fragment: actions
+        - execution-02:
+            kind: section
+            title: 独立性
+            blocks:
+              - execution-02-body:
+                  kind: markdown
+                  text: |-
+                    依 Contract 判断是否要求独立 Change Verification Session。要求独立时，验证须由获授权且身份/职责得到确认的独立验证者完成；仅提供其获准的计划、来源范围、验收标准和验证所需证据；除明确点名的验证资产外，对产品代码/配置、文档和Git只读，不修复或编辑被验证实现。当前只读适配器不能表达的写验证资产能力不能冒充已支持。Multi-Agent Worker/子代理的实现结果、正文、完整可见记录或复用，不是独立验证。实施者不能为自己的实现自证“独立”：同一 Session 的检查只能标为逻辑验证，不得因换名称、拆步骤或读取代理结果变成独立 Session。若没有独立验证者或证据，报告 `needs_prerequisite`；不得宣称满足 Contract，依赖工作继续阻塞。Contract 不要求独立 Session 时可将同 Session 检查标为逻辑验证，并说明独立性 `not_applicable`，此处不等于验证本身通过。
+        - execution-03:
+            kind: section
+            title: 检查与报告
+            blocks:
+              - execution-03-body:
+                  kind: markdown
+                  text: |-
+                    针对准确的当前指纹，执行覆盖全部验收条件的适用最强整体检查及定向检查，并对变化维度执行所需检查。保留命令/检查名称、结果和证据出处；必需检查不可运行或访问不到时记为不可用及原因，不能记作通过。报告至少包括：当前指纹；三个维度各自的 epoch/变化/证据新鲜度；验收条件与检查映射；独立性要求、Session/职责证据及分类；每项检查名称、结果类别、证据；剩余风险；每个未解决项目、责任 owner、缺失证据/能力及阻塞影响；Repair 是否适用及依据；当前 continuation/下一步。
+
+                    逐项分类，不合并或遗漏以下类别：`通过`（证据当前且标准满足）、`失败`（具体反证或检查失败）、`不可用`（必需检查/资源无法取得并注明原因）、`假设`（未证实的前提及其影响）。不可用、假设或缺失的必需证据不是通过；“无失败”也不等于验收完成。报告应明确剩余风险、未解决项及其对依赖动作的阻断关系。检查收据只是证据，不是 Verification 结论。
+  - flowchart:
+      kind: section
+      title: 验证与重验导航
+      blocks:
+        - flowchart-body:
+            kind: markdown
+            text: |-
+              此图仅用于定位本合同内的检查点。是否可继续，以有序模块清单和退出条件为准。
+
+              ```mermaid
+              flowchart TD
+                  VR00["VR00 入口"]
+                  VR01["VR01 当前指纹与标准"]
+                  VR02["VR02 独立性"]
+                  VR03["VR03 当前检查"]
+                  VR04["VR04 证据分类"]
+                  D_RESULT{"当前验证结果？"}
+                  VR05["VR05 处置具体失败"]
+                  VR_SCOPE["核对修复范围"]
+                  VR_EXEC["实施窄范围修复"]
+                  VR_HANDOFF["交接新指纹与 epoch"]
+                  VR06["VR06 返回当前验证结果"]
+                  VR_NEEDS["needs_prerequisite"]
+                  VR_BLOCK["blocked"]
+                  VR00 -- 入口就绪 --> VR01
+                  VR00 -- 缺前置 --> VR_NEEDS
+                  VR01 -- 当前状态可核验 --> VR02
+                  VR01 -- 缺状态或标准证据 --> VR_NEEDS
+                  VR02 -- 不要求独立或要求已满足 --> VR03
+                  VR02 -- 缺必需独立性证据 --> VR_NEEDS
+                  VR03 --> VR04
+                  VR04 --> D_RESULT
+                  D_RESULT -- 必需项当前有效且通过 --> VR06
+                  D_RESULT -- 缺前置或必需证据 --> VR_NEEDS
+                  D_RESULT -- 冲突或不安全 --> VR_BLOCK
+                  D_RESULT -- 有具体失败 --> VR05
+                  VR05 -- 无具体失败且 Repair 不适用 --> VR01
+                  VR05 -- 诊断及候选已明确 --> VR_SCOPE
+                  VR05 -- Contract 或 Decision 实质变化；交回调用方 --> VR_NEEDS
+                  VR_SCOPE -- 窄范围修复已授权 --> VR_EXEC
+                  VR_SCOPE -- 范围或授权未解决 --> VR_BLOCK
+                  VR_EXEC -- 修复与证据已返回 --> VR_HANDOFF
+                  VR_HANDOFF -- 新指纹与 epoch 已确认 --> VR01
+                  VR_HANDOFF -- 交接证据缺失 --> VR_BLOCK
+              ```
+  - checkpoints:
+      kind: section
+      title: 有序模块清单
+      blocks:
+        - VR00:
+            kind: checkpoint
+            title: 解析入口。
+            text: |-
+              核验已释放 Mode、当前 Session 身份和权限、原挂起位置及准确效果状态。用当前 Contract/标准、实际实施或子代理结果、范围和来源进入验证。最终 Verification 从本阶段产生，独立验证须另有 owner 授权。缺少证据按入口合同返回；冲突或效果不明时暂停依赖工作。
+
+              依据 [模块入口解析](../references/coding/layer-03-workflow-checkpoints/module-entry-resolution.yaml)。
+        - VR01:
+            kind: checkpoint
+            title: 捕获实际当前最终状态。
+            text: |-
+              应用[Verification](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification.yaml)检查实际当前状态、捕获准确指纹/epoch，并将每项 Contract 验收条件映射到覆盖维度。若先前输出使用了[输出物料化](../references/coding/layer-01-fundamental-concepts/execution-planning/output-materialization.yaml)，捕获前须根据实际当前文件核对其收据。先根据当前证据解决任何部分、冲突或不确定的应用；应用收据、候选预检或初步检查均不能替代实际状态指纹或最终 Verification。代码/配置/测试变化影响 implementation/content 维度；维护文档/注释变化影响 documentation 维度；改变可执行内容、Contract 或验收条件的文档还影响 implementation/content 维度。应用[Verification Epoch](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml)，分别跟踪 implementation/content、documentation 和 Git metadata。只有指纹和 epoch 未变化的维度才能复用先前证据。当前状态或标准缺失/不确定时，返回 `needs_prerequisite` 或阻塞依赖验证。应用[任务计划 Memory 生命周期](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml)：确认准确共享计划与当前读取访问，或其已记录的限制例外。独立验证者仅接收获授权计划/来源范围，可更新具名验证贡献，不得编辑被审实现。
+        - VR02:
+            kind: checkpoint
+            title: 解析独立性要求。
+            text: |-
+              在对话中核对必需独立验证是否满足，并引用当前独立验证者的实际返回或用户提供的独立审阅证据。
+
+              应用[Verification Independence](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-independence.yaml)和[Session 职责归属](../references/coding/layer-01-fundamental-concepts/session-runtime/session-role-ownership.yaml)。Contract 要求独立 Change Verification Session 时，使用该职责并仅提供给定范围证据和验收条件；否则将同 Session 检查分类为逻辑验证。在 Multi-Agent 执行中，Worker/子代理实际正文或结果是实施证据，不是独立验证；复用或完整可见也不满足必需的独立验证。必需的独立性不可用时返回 `needs_prerequisite`；不得声称满足 Contract。
+        - VR03:
+            kind: checkpoint
+            title: 运行当前检查。
+            text: |-
+              通过时在对话中引用当前 epoch 的实际成功检查及结果。确认有需修复的实际失败时，读取修复合同并引用失败证据。
+
+              针对 VR01 捕获的准确实际状态指纹运行适用的最强整体和定向检查。涵盖所有必需标准及变化维度所需检查。候选预检、应用收据和实施阶段检查仍是初步证据，不能替代这些当前检查。不得对受影响维度复用较早 epoch 的证据。必需检查不可运行时，保留不可用原因及阻塞影响。
+        - VR04:
+            kind: checkpoint
+            title: 分类并报告证据。
+            text: |-
+              应用[Verification Reporting](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-reporting.yaml)和[Verification Epoch](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml)。报告通过、失败、不可用和假设的检查、剩余风险、未解决项目及阻塞影响。只有在启用、符合条件、相关、已授权且绑定到当前指纹/epoch 时，才可通过[建议选择](../references/coding/layer-03-workflow-checkpoints/advisory-selection.yaml)和[Decisions Advisory](../references/coding/layer-01-fundamental-concepts/execution-planning/decisions-advisory.yaml)评估可选的 verification-impact 建议。它只能建议维度，不能免除检查或宣告成功。否则记录带原因的建议 `not_applicable`，并使用直接证据。 按计划 owner 规定的边界记录新验证事实；影响依赖动作的变化须在该动作前记录。确认持久化操作成功，并在依赖动作前完成 owner 要求的内容核验；必需访问、持久化或核验失败时阻塞该边界。遵守已记录的限制例外并保留验证独立性。
+        - VR05:
+            kind: checkpoint
+            title: 路由失败或确立 Repair N/A。
+            text: |-
+              应用[Repair Disposition](../references/coding/layer-03-workflow-checkpoints/repair-disposition.yaml)。具体失败必须有诊断、受影响路径和最小候选；之后依次应用[Repair Scope Gate](../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-scope-gate.yaml)、[Repair Execution](../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-execution.yaml)及[Repair Verification Handoff](../references/coding/layer-02-workflow-concepts/verification-and-repair/repair-verification-handoff.yaml)。仅执行已授权的窄范围修复，保留实际变更路径/证据，并将新指纹/受影响 epoch 返回 VR01 进行当前重验。Contract 或 Decision 实质变化时，返回 `needs_prerequisite` 给调用方进行语义审查和调度；不得把它当作修复。无具体失败时，以证据依据记录 Repair `not_applicable` 并返回 VR01，确认当前 Verification 结果。诊断、授权、有界范围、修复证据或交接缺失时，阻塞依赖工作。
+        - VR06:
+            kind: checkpoint
+            title: 返回当前最终 Verification。
+            text: |-
+              返回当前指纹、每个适用 epoch 及状态、标准与证据的映射、独立性分类、检查/结果类别、剩余风险、未解决项目和阻塞影响。仅当所有必需的当前 Verification 项目通过、必需的独立验证已满足、且没有未解决的必需修复/证据时返回 `complete`。此结果本身不宣告整体验收。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              只有所有必需验收项对当前状态均有有效证据、必需检查通过、必需独立性已满足，且无未解决的必需失败/前置条件，才可返回验证 `complete`。这仅表示本次当前 Verification 完成，不单独宣布整体交付验收或授权后续效果。
+
+              具体失败时读取修复合同。须有失败证据、受影响路径和最小修复候选；在范围门禁通过前不得修改。没有具体失败的语义或范围变化不能伪装成 Repair，应回调用方重审 Contract/Decision。必需检查不可用、独立验证缺失、状态/指纹/标准证据缺少时返回 `needs_prerequisite`；冲突、不安全或授权边界不明时 `blocked`。任一必需失败、未批准范围变化或待修复状态均阻断依赖工作。不得以修复意图、成功的聚焦检查或旧通过结果解除阻断。
+
+              结果状态至少使用：`complete`（本次验证所有必需条件满足）、`needs_prerequisite`（列出可补足的前置条件、owner 和 continuation）、`blocked`（说明无法安全继续的冲突/边界及阻断范围）。在证据不全时不能用 `complete`。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              任何修复或其他状态变化后，按实际影响推进 epoch，捕获新最终指纹，并回到当前 Verification；修复 handoff 不能直接宣告通过。重跑变化维度及其所覆盖标准所需的整体/定向检查；未变且证据仍匹配的维度可保留，不作无关全量重跑。文档、内容和 Git metadata 的变化分别按上述维度处理；Git staged/committed 内容与最新验证状态不一致时，重验相应内容维度并确认 Git 检查。
+
+              资源、授权、Contract、验收条件、状态证据或独立性证据变化时，只重新核验受影响的条件；旧证据若指纹或覆盖标准已不匹配即失效。依赖动作前，必须已有当前可用的必需 Verification；若当前验证记录持久化或 owner 要求的回读/核验失败，阻断相关依赖边界并如实报告，不推测成功。调用方续行须接收当前结果、owner 与 continuation。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              | 来源 | 本合同落点 |
+              | --- | --- |
+              | [verification.md](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification.yaml) | 当前指纹、验收映射、整体/定向检查、必需证据与非整体验收边界 |
+              | [verification-epoch.md](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-epoch.yaml) | 内容、文档、Git metadata 三维 epoch、证据失效及重验 |
+              | [verification-independence.md](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-independence.yaml) | 独立 Session、逻辑验证、实施者不得自证独立及阻断 |
+              | [verification-reporting.md](../references/coding/layer-02-workflow-concepts/verification-and-repair/verification-reporting.yaml) | 通过/失败/不可用/假设、风险、未解决项与阻塞报告 |
+              | [repair-disposition.md](../references/coding/layer-03-workflow-checkpoints/repair-disposition.yaml) | 具体失败路由、无失败 Repair N/A、重大决策返回及变更 epoch 重验 |

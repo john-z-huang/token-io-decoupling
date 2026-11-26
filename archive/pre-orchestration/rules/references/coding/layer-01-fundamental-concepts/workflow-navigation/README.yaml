@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: workflow-navigation-readme
+markdown_path: references/coding/layer-01-fundamental-concepts/workflow-navigation/README.md
+title: "工作流导航"
+blocks:
+  - scope-and-boundary:
+      kind: section
+      title: "范围与边界"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - scope-and-boundary-body:
+            kind: markdown
+            text: |-
+              此类别汇总有界工作流导航及调用方提供的结构输入检查；不负责工作流策略、身份、权限或检查点结果。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              从下方所有者列表定位相关 owner。
+  - owners:
+      kind: section
+      title: "Owners"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - owners-body:
+            kind: markdown
+            text: |-
+              - [工作流导航可用性](navigation-availability.yaml)
+              - [检查点结构检查](checkpoint-structure-checks.yaml)
+              - [工作流规则上下文](rule-context.yaml)

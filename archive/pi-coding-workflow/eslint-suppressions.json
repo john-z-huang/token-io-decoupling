@@ -1,0 +1,7 @@
+{
+  "extensions/coding-workflow/workflow-tools.ts": {
+    "max-params": {
+      "count": 4
+    }
+  }
+}

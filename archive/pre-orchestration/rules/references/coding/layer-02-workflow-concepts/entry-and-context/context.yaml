@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: workflow-concept
+id: context
+markdown_path: references/coding/layer-02-workflow-concepts/entry-and-context/context.md
+title: "上下文检查点"
+blocks:
+  - actions:
+      kind: section
+      title: "动作"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - actions-body:
+            kind: markdown
+            text: |-
+              1. 明确下一切片必须回答的最小问题。
+              2. 只读取回答该问题所需的文件、元数据、历史或生成证据。
+              3. 复用缓存或文件上下文前，检查其范围、所有者、来源路径、新鲜度和最终状态 epoch。
+              4. 将过期、不完整或互相冲突的上下文视为不可用。只刷新受影响的上下文，并记录发生了什么变化。
+              5. 保持上下文以事实和路由信息为主；不能用它替代 Contract、源文档或验证。
+              6. 对依赖工作流规则的判断，应用[工作流规则上下文](../../layer-01-fundamental-concepts/workflow-navigation/rule-context.yaml)。按当前检查点核对规则来源，直接读取必需的 owner 正文及其适用引用，使上下文保持在当前问题所需范围。
+              7. 已放行 Worker 需要持久化 memo 或交换记录时，必须确认具名持久 Memory 能力可用；memo 与跨 Worker 交换仍是独立触发条件。逻辑归属遵循所链接的 Layer-01 owner。能力不可用时报告并阻塞依赖工作；不得回退为文件存储。
+              8. 已放行任务要求复用先前 Agent 项目知识时，使用[项目 Memory](../../layer-01-fundamental-concepts/session-runtime/project-memory.yaml)访问获准 Memory，并对照权威项目文件核验来源指针和新鲜度。能力不可用时报告限制并返回获准的权威项目文件；仅当必需事实无法从其他获准方式确认时才暂停。Memory 不能替代获准路径中的权威项目文件。
+
+              9. 应用[任务计划 Memory 生命周期](../../layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml)：计划内容在当前上下文中有效时直接复用；否则按需读取，并对照当前权威来源核验。在 owner 规定的边界记录更新；影响授权、范围、验收、方向或依赖动作的事实仍须在该动作前记录。必需访问、持久化或 owner 要求的核验失败时阻塞依赖工作；已记录的持久化限制按 owner 的例外处理。
+  - pass:
+      kind: section
+      title: "通过条件"
+      expose: true
+      blocks:
+        - pass-body:
+            kind: markdown
+            text: |-
+              下一切片拥有有界且当前有效的上下文，或已记录具体缺失的上下文并暂停该切片。
+  - boundary:
+      kind: section
+      title: "边界"
+      expose: true
+      blocks:
+        - boundary-body:
+            kind: markdown
+            text: |-
+              本检查点只收集和判断上下文，不作实质性决策，不授权实现，也不宣布验证完成。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Context Exchange](../../layer-01-fundamental-concepts/context-exchange/context-exchange.yaml) — 定位 Memory capsule 和新鲜度归属。
+              - [Coding Session Context Firewall](../../layer-01-fundamental-concepts/session-runtime/session-context-firewall.yaml) — 定位原始状态进入和事实返回归属。
+              - [语言服务器与代码结构查询](../../layer-01-fundamental-concepts/session-runtime/lsp-code-navigation.yaml) — 按需取得代码结构证据。
+              - [项目 Memory](../../layer-01-fundamental-concepts/session-runtime/project-memory.yaml) — 定位可复用项目知识的读取规则。

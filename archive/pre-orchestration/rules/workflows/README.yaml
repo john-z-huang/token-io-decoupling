@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: layer-04-readme
+markdown_path: workflows/README.md
+title: "完整 Coding 路线"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        Layer-04 维护 Single-Agent 和 Multi-Agent 两条路线。Agent 读取七个阶段的 Hook 绑定及顺序，按适用合同与实际证据推进。路线保留调用方位置和 epoch 变化后的回返约定，各阶段的执行合同、适用条件、检查点顺序和图由对应 Hook 维护。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              从下方路线列表选择获授权路线，在相应阶段按需读取绑定的 Hook。
+  - routes:
+      kind: section
+      title: "路线"
+      expose: true
+      blocks:
+        - routes-body:
+            kind: markdown
+            text: |-
+              - [单代理 Coding](coding-single-agent.yaml)
+              - [多代理 Coding](coding-multi-agent.yaml)
+  - section-01:
+      kind: section
+      title: "分阶段 Hooks"
+      expose: true
+      blocks:
+        - section-01-body:
+            kind: markdown
+            text: |-
+              路线按序绑定这些 Hook，并保留跨阶段顺序和 continuation。进入阶段前核验 Hook 的触发、输入和授权边界，按清单读取当前检查点。
+
+              - [入口就绪](../hooks/entry.yaml)
+              - [Session 就绪](../hooks/session.yaml)
+              - [工作定义](../hooks/planning.yaml)
+              - [Single-Agent 执行](../hooks/execution.yaml)
+              - [委派执行](../hooks/delegation.yaml)
+              - [验证与修复](../hooks/verification.yaml)
+              - [文档](../hooks/documentation.yaml)
+              - [交付与验收](../hooks/delivery.yaml)

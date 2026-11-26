@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: delegation-mode-count-gate
+markdown_path: references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.md
+title: "Coding 委派数量门禁"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责多代理子 Agent 数量的选择、锁定和数量预算边界。它消费已选择的模式和状态记录；不定义模式选择、重新进入、子 Agent 创建或生命周期。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "数量选择和锁定"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    选择 Multi-Agent Session 后，采用用户明确给出的正整数子代理数量；否则锁定 1 个子代理的预算。首次 Coding 指令默认选择 Multi-Agent 时也应用此默认值。需遵守宿主对数量表示的限制。用户选择了自定义数量选项、但遗漏或给出无效数量时，只提出一个聚焦的补充问题并保持 Mode gate 未放行；不得替换为 1。数量有效时不再提出额外数量问题。其他明确数量无效时，保持路线未放行，直到用户给出有效正整数；不得解释为同意其他数量。数量是完整宿主 Session 生命周期内的子代理总预算，而非每轮、每任务、每阶段或每职责的数量。
+
+                    路线放行前锁定数量。显式记录空名额时，使用 `agent: unbound`、`role: unassigned`、`slice_status: pending` 和 `lifecycle: pending`；预留名额不表示 Context、Decision 或具体 Slice 已经放行，也不会初始化子代理。预留本身不选择职责，也不因只预留一个名额就自动选择 Primary Output。当前任务上下文和 Decision 审阅完成后，由[子代理职责选择](child-role-selection.yaml)确定职责，再由分配 owner 将其记录到未分配名额中。创建须通过职责和本次 Slice 门禁。Primary Output 的任务限于代码/配置实现或本 Skill 指令/参考文档编辑。普通非 Skill 文档不会触发或消耗预留名额；由根父级编写，包括同时存在代码修改的任务。每项独立职责消耗一个预留名额；复用不增加名额。数量锁定固定的是总预算，不是尚未绑定子代理名额的具体内容。
+        - section-02:
+            kind: section
+            title: "用户明确批准增加一个名额"
+            expose: true
+            blocks:
+              - section-02-body:
+                  kind: markdown
+                  text: |-
+                    如果没有未分配名额，且当前事实表明需要为不同且未占用的职责增加一个子代理，Root 可以向用户请求将锁定数量恰好增加一。模型建议、推断意图、针对其他变更的历史批准或 API 结果都不是用户批准。Root 必须审阅实际用户指令，保留其准确来源引用和旧数量依据；仅在所请求数量等于当前数量加一、职责不同且未占用时，在父级规范对话记录中协调更新数量和预留职责。记录新旧值、批准和当前事实，不宣称存在服务端原子事务。事实缺失、批准不清或职责被占用时保留状态并停止，不强行转换请求。实际工具若另有更窄约束必须遵守，但不得把尚未适用的旧工具字段当作 Pi 已实现能力。
+
+                    增加名额不会仅凭预算选择职责、放行 Slice 或创建子代理。已有未分配名额时，应在现有数量和正常放行门禁内使用，无需预算批准。尚未创建子代理的 unbound 名额可由父级授权在当前数量内调整职责计划，但新职责必须未被占用。子代理一旦创建，其身份、名额和职责在本 Session 中永久绑定：不得回收或替换，包括通过 Fork 或 handoff successor。只有超过当前数量的额外子代理才需要上述确切的单名额用户批准，且必须为不同、未占用的职责，绝不允许借此替换已创建子代理。若所有受维护职责都已占用，批准不能授权重复职责。必需名额或能力不可用时阻塞依赖工作，不得默默更改数量。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              按锁定数量与已占用 allocation 数之差核验空闲容量。名额用尽且确需不同职责时，用户须明确批准仅增加一个名额并给出完整职责名。此批准只增加预算；Root 保留批准来源和旧值，派发前仍须核验职责与 Slice。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Delegation Mode Confirmation](delegation-mode-confirmation.yaml) — 定位根模式确认归属。
+              - [Coding Delegation Re-entry](delegation-mode-reentry.yaml) — 定位门禁重新进入归属。
+              - [Coding Delegation State Record](delegation-state-record.yaml) — 定位状态记录归属。
+              - [Coding Child Creation](delegation-child-creation.yaml) — 定位子 Agent 创建归属。
+              - [Coding Child Lifecycle](delegation-child-lifecycle.yaml) — 定位子 Agent 生命周期归属。
+              - [Coding Child Role Selection](child-role-selection.yaml) — 定位使用已批准容量的职责选择。

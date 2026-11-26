@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: entry-and-context-readme
+markdown_path: references/coding/layer-02-workflow-concepts/entry-and-context/README.md
+title: "Entry And Context"
+blocks:
+  - scope-and-boundary:
+      kind: section
+      title: "范围与边界"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - scope-and-boundary-body:
+            kind: markdown
+            text: |-
+              通用入口检查点：契约、运行环境/能力证据、模式和有界上下文。这些所有者定义操作及通过证据；路线排序和适用性判断归路线层。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              从契约开始，再查阅建立当前门禁证据所需的检查点。
+  - owners:
+      kind: section
+      title: "所有者"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - owners-body:
+            kind: markdown
+            text: |-
+              - [contract](contract.yaml)
+              - [environment](environment.yaml)
+              - [environment-capability-inventory](environment-capability-inventory.yaml)
+              - [mode](mode.yaml)
+              - [context](context.yaml)

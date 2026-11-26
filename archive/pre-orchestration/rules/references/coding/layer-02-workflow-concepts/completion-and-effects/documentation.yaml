@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: workflow-concept
+id: documentation-concept
+markdown_path: references/coding/layer-02-workflow-concepts/completion-and-effects/documentation.md
+title: "文档检查点"
+blocks:
+  - actions:
+      kind: section
+      title: "动作"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - actions-body:
+            kind: markdown
+            text: |-
+              1. 确认获批准的文档路径、读者、目的和来源证据。
+                 - 获授权路线选择写前候选反馈时，对准确候选和当前可信基线应用[候选合规预检](../../layer-01-fundamental-concepts/execution-planning/candidate-compliance.yaml)。应用候选前，解决每项已选检查返回的失败、未知、遗漏或过期结果。预检通过只表示有限候选证据，不能替代下文当前的写后检查。没有适用的预检分支时，记录有原因的 `Not applicable`。
+              2. 只修改获批准的 Markdown 或注释范围。仓库文档以中文为唯一权威正文，不再维护语言镜像。
+              3. 仓库文档、代码注释或项目 Memory 笔记发生变化时，推进 documentation epoch，并对该变更运行适用检查；其中包括在相关时运行 Markdown、链接、空白、多语言和范围检查。
+              4. 记录文档变更是否影响可执行内容、Contract 或验收条件。按当前 epoch 要求重新验证受影响维度；documentation epoch 变化本身不要求重跑无关的产品行为测试。
+              5. 不得以文档为名加入新行为、策略、范围或 Git 影响，并报告无法运行的检查。
+              6. 获批输出包含可复用 Agent 项目知识，或用户明确要求的跨会话笔记时，通过[项目 Memory](../../layer-01-fundamental-concepts/session-runtime/project-memory.yaml)写入，保留既有名称和子目录意图，并确认写入成功结果。仅当适用 Layer-01 owner 要求时核验存储内容；任何 owner 要求的核验均须通过后才能完成。未请求此类输出时，记录 `Not applicable` 及原因。能力不可用或写入/必需核验失败时，报告失败，并将该请求输出保持为未完成。权威仓库文档和代码注释仍写入获准的仓库文件路径，并遵循上文已有的中文正文、epoch、检查及返回规则。
+  - pass:
+      kind: section
+      title: "通过条件"
+      expose: true
+      blocks:
+        - pass-body:
+            kind: markdown
+            text: |-
+              获批文档准确描述适用的已验证状态，当前 documentation epoch 已明确，适用检查通过或已明确报告不可用，所有获批输出中包含的可复用 Agent 项目知识，以及用户明确请求的每条跨会话笔记，均已成功保存、确认写入结果并通过 owner 要求的内容核验；当前工作流路线已处置任何需要重新验证的内容影响。
+  - boundary:
+      kind: section
+      title: "边界"
+      expose: true
+      blocks:
+        - boundary-body:
+            kind: markdown
+            text: |-
+              本检查点不替代实现验证，不授权产品决策，也不授权 Git 影响。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Content Memo](../../layer-01-fundamental-concepts/context-exchange/content-memo.yaml) — 定位可复用 memo 内容契约归属。
+              - [Coding Content Memo Lifecycle](../../layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle.yaml) — 定位 memo 生命周期归属。
+              - [Coding Execution Control](../../layer-01-fundamental-concepts/execution-control/execution-control.yaml) — 定位获准文档范围归属。
+              - [候选合规预检](../../layer-01-fundamental-concepts/execution-planning/candidate-compliance.yaml) — 定位对拟议文档候选内容的可选只读检查。
+              - [项目 Memory](../../layer-01-fundamental-concepts/session-runtime/project-memory.yaml) — 定位可复用项目知识的读取和写入能力。

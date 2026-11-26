@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: runtime-provider-support
+markdown_path: references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.md
+title: "运行时与能力边界"
+blank_lines_after_title: 1
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责共用的运行时事实、工具可达性、会话和模型控制边界。按 Skill 入口选择当前宿主的适配说明。路线和会话规则负责模式、身份和操作放行。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "运行时证据"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    以当前会话明确的宿主元数据和真实暴露能力为准。工具名、模型名、工作目录、安装位置和 Shell 只能辅助核对。元数据缺失或互相冲突时，记录缺口并只暂停依赖该事实的操作。
+
+                    分开核验能力存在、操作授权和已释放模式。保留真实的身份、角色、路径、权限和操作守卫检查。
+        - section-02:
+            kind: section
+            title: "模型与 API 请求相互独立"
+            expose: true
+            blocks:
+              - section-02-body:
+                  kind: markdown
+                  text: |-
+                    沿用用户为当前宿主选择的会话模型和设置。只在任务需要时核实有关设置。当前会话模型、子代理模型及外部服务调用的 API 模型是三个独立边界，各自应用实际配置，不因本 Skill 修改全局设置或读取凭据。
+
+                    启用外部服务时按实际契约核对调用时配置、模型、出站授权、输入范围与失败边界。对于采用本项目 OpenAI API 配置约定的服务，真实请求须使用进程中非空的 `OPENAI_API_KEY` 和 `OPENAI_BASE_URL`，API 模型固定为 `gpt-6-luna`。不得输出凭据。
+        - subagent-endpoint:
+            kind: section
+            title: "子代理端点跟随 Root"
+            expose: true
+            blocks:
+              - subagent-endpoint-body:
+                  kind: markdown
+                  text: |-
+                    每次创建新子代理前，Root 确认当前生效的 provider、模型 ID、宿主可见的 API 类型或端点路由及其来源。使用实际宿主的当前证据，核实显式设置或继承行为和配置优先级，确保子代理沿用同一 provider 和端点。会话切换或恢复后复核当前值；不得凭模型名、角色默认值、认证配置存在或独立服务的 API 配置猜测。
+
+                    元数据缺失、冲突、所选模型不可用或工具不能保证同端点时暂停创建。端点跟随是创建必需条件。端点继承不要求模型 ID 或推理强度与 Root 相同。只在新建前核验，不要求 Worker 自报模型，也不因 Root 后续切模而重建或重放。
+        - subagent-models:
+            kind: section
+            title: "子代理模型与推理强度"
+            expose: true
+            blocks:
+              - subagent-models-body:
+                  kind: markdown
+                  text: |-
+                    从已核验的同端点模型中按任务目标、依赖、复杂度、风险、不确定性、输入、成本和验证要求选型。角色本身不固定模型。更高档位不能补足权限或证据；需要额外推理时给出具体依据。按选中的宿主适配和真实 Schema 核验所选值与实际覆盖顺序。缺少可选控制时用经核验的默认或继承行为并记录限制；明确必需的设置无法落实时暂停创建，不虚构参数。
+        - section-03:
+            kind: section
+            title: "不可用能力与禁止操作"
+            expose: true
+            blocks:
+              - section-03-body:
+                  kind: markdown
+                  text: |-
+                    必需能力缺失时报告证据并暂停依赖切片。可选优化缺失时记录 `Not applicable`，沿独立获准的基本路径继续。不得伪造参数、身份、工具结果或证据；实际拒绝或权限失败不得换入口绕过。
+
+                    禁止 Computer Use，包括 GUI 截图定位、点击、模拟鼠标或键盘、辅助功能、窗口和远程桌面自动化，以及经 Shell、MCP、辅助进程或子代理包装的同类操作。必需步骤只能走禁止路线时，停止当前 Skill 任务并报告阻塞和未完成工作。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              只加载当前动作需要的规则。按当前环境的发现方式核对工具说明、参数 Schema、项目范围和权限。隐藏或拒绝访问的工具不得换入口绕过。只并行独立调用；有身份、基线、结果或效果依赖时保持顺序。逐项检查错误、状态和缺失证据。
+
+              按所选宿主适配确认 Skill 版本已实际加载。新建子代理前核验该宿主提供的任务范围、工作目录、权限、结果和取消能力；仅对依赖复用的分支要求稳定身份与续接。核验任务所需的实际 Memory 操作及权限。不把一次调用、目录或普通文档访问当成会话隔离或持久化证据。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Session 模型](session-model.yaml) — 单代理与多代理的逻辑拓扑。
+              - [Session 角色归属](session-role-ownership.yaml) — 职责与操作权限边界。
+              - [模式确认](../delegation/delegation-mode-confirmation.yaml) — 模式选择与授权门禁。
+              - [子代理创建](../delegation/delegation-child-creation.yaml) — 创建前的通用条件。
+              - [子代理复用与替代](../delegation/delegation-child-reuse-replacement.yaml) — 核验复用能力与后继边界。
+              - [语言服务器与代码结构查询](lsp-code-navigation.yaml) — 语言服务绑定与代码结构证据。
+              - [项目 Memory](project-memory.yaml) — 存储绑定与知识操作。

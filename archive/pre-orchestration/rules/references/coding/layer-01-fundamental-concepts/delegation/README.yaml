@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: delegation-readme
+markdown_path: references/coding/layer-01-fundamental-concepts/delegation/README.md
+title: "Delegation"
+blocks:
+  - scope-and-boundary:
+      kind: section
+      title: "范围与边界"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - scope-and-boundary-body:
+            kind: markdown
+            text: |-
+              模式/数量门禁、职责分配、子代理创建/派发/生命周期、Worker 边界与消息可见性。本分类定义委派授权和生命周期；上下文交换内容及通用执行规划由其他分类负责。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              从模式确认和状态记录开始；仅在路线步骤适用时加载创建、派发和生命周期所有者。
+  - owners:
+      kind: section
+      title: "所有者"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - owners-body:
+            kind: markdown
+            text: |-
+              - [child-role-selection](child-role-selection.yaml)
+              - [delegation-child-creation](delegation-child-creation.yaml)
+              - [delegation-child-dispatch](delegation-child-dispatch.yaml)
+              - [delegation-child-lifecycle](delegation-child-lifecycle.yaml)
+              - [delegation-child-message-visibility](delegation-child-message-visibility.yaml)
+              - [delegation-child-reuse-replacement](delegation-child-reuse-replacement.yaml)
+              - [delegation-child-role-allocation](delegation-child-role-allocation.yaml)
+              - [delegation-mode-confirmation](delegation-mode-confirmation.yaml)
+              - [delegation-mode-count-gate](delegation-mode-count-gate.yaml)
+              - [delegation-mode-reentry](delegation-mode-reentry.yaml)
+              - [delegation-state-record](delegation-state-record.yaml)
+              - [delegation-worker-boundary](delegation-worker-boundary.yaml)

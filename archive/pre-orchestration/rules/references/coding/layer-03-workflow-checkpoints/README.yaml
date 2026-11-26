@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: layer-03-readme
+markdown_path: references/coding/layer-03-workflow-checkpoints/README.md
+title: "Layer-03 工作流检查点"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本目录负责 Layer-04 路线或有界模块调用所需的、针对当前任务的适用性和就绪决策；不重新定义 Layer-01 政策或 Layer-02 通过条件，也不调度 Layer-04 路线或模块。
+
+        Layer-03 owner 只描述语义前置条件、结果和失败边界，不依赖编号路线坐标。路线或模块调用方提供当前要求，并负责任何映射或调度决策。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              从下方所有者列表选择检查点。路线或模块调用方在适用的检查点或子步骤消费这些 owner，并记录返回证据。
+  - owners:
+      kind: section
+      title: "所有者"
+      expose: true
+      blocks:
+        - owners-body:
+            kind: markdown
+            text: |-
+              - [路线入口](route-entry.yaml)
+              - [工作流模块入口解析](module-entry-resolution.yaml)
+              - [工作流导航选择](workflow-navigation-selection.yaml)
+              - [Session 状态解决](session-state-resolution.yaml)
+              - [Session 审计解决](session-audit-resolution.yaml)
+              - [上下文来源选择](context-source-selection.yaml)
+              - [决策上下文选择](decision-context-selection.yaml)
+              - [规划输出选择](planning-output-selection.yaml)
+              - [Bootstrap 选择](bootstrap-selection.yaml)
+              - [执行者选择](executor-selection.yaml)
+              - [输出路线选择](output-route-selection.yaml)
+              - [角色预留](role-reservation.yaml)
+              - [建议选择](advisory-selection.yaml)
+              - [修复处置](repair-disposition.yaml)
+              - [文档影响](documentation-impact.yaml)

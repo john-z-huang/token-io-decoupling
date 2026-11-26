@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: delegation-policy
+markdown_path: references/delegation/delegation-policy.md
+title: 子代理派发、续接与替换
+blocks:
+  - capabilities:
+      kind: section
+      title: 委派能力
+      expose: true
+      blocks:
+        - capabilities-body:
+            kind: markdown
+            text: |-
+              - 按当前环境实际提供的创建、续接、状态查询、等待和停止能力安排任务。核对可用参数、允许共享的上下文及工具实际返回的状态。
+              - 调用前明确工具是一次性执行，还是支持以同一实例标识续接。容量紧张、续接能力缺失或状态未核实时，明确受影响的依赖和阻塞，继续推进独立工作。
+  - assignment:
+      kind: section
+      title: 任务和角色匹配
+      expose: true
+      blocks:
+        - assignment-body:
+            kind: markdown
+            text: |-
+              按子任务实际需要的结果，在以下职责中选择与证据最匹配的一项。
+
+              | 子代理职责 | 适用工作 |
+              | --- | --- |
+              | [Primary Output](../roles/primary-output.yaml) | 实施获准的代码、配置或本 Skill 的指令与参考文档。 |
+              | [Change Verification](../roles/change-verification.yaml) | 独立核对实质性变更的最终状态和验收证据。 |
+              | [Context Bootstrap/Refresh](../roles/context-bootstrap-refresh.yaml) | 为已界定的问题检索或刷新有来源、有时效的项目事实。 |
+              | [Documentation/Comments & Git Operations](../roles/documentation-comments-git-operations.yaml) | 执行单独授权并具备必要保护条件的非简单 Git 工作。 |
+
+              委派前依照[主代理职责](../roles/main-agent.yaml#scope)确认关键前提与决策归属。
+
+              查看所选职责的在途任务与实际派发记录后，再决定续接、排队或创建。找不到匹配职责或证据不足时，按[主代理职责](../roles/main-agent.yaml#execution)调整分工或报告受影响的依赖。现有角色或实例不会增加任务权限。
+
+              在当前任务上下文关联子任务、职责、实际回执、实例标识和可观察状态。重规划时沿用已有记录。一次性派发也按职责保留回执。核实实例标识和续接能力后才可用它继续派发。
+  - reuse:
+      kind: section
+      title: 同角色复用与替换
+      expose: true
+      blocks:
+        - reuse-body:
+            kind: markdown
+            text: |-
+              1. 同角色已有能可靠处理后续任务的实例时，向该实例续派。实例仍有在途工作时，按依赖排队或等待其回执。并行需求、换模型或提高推理强度不会放宽替换条件。
+              2. 该角色从未成功创建实例，也未执行过一次性委派，且没有待核对结果的创建调用时，按需首次创建。上次调用若已确认未创建实例且未执行任务，修复故障并核对授权后可重试。一次性派发正常返回后，若同一实例无法续接，按[主代理职责](../roles/main-agent.yaml#execution)调整剩余分工，必要时报告依赖缺口。
+              3. 仅在确有必要并核实以下任一情形时，创建同角色替代实例。
+                 - 原实例上下文过长，已有证据显示无法继续容纳处理该任务所需的内容。
+                 - 原实例的运行问题无法修复，已核实可用恢复手段或恢复结果。
+                 - 原实例的运行状态已确认异常，无法可靠续接。
+              4. 空闲、正常完成或取消、单次等待超时和状态未知本身均不足以证明异常。创建或派发结果不明时先核对回执与实际效果，避免重复创建或重复派发。
+  - handoff:
+      kind: section
+      title: 派发与结果交接
+      expose: true
+      blocks:
+        - handoff-body:
+            kind: markdown
+            text: |-
+              - 按[派发与回执](delegation-child-dispatch.yaml)核对授权和实际派发。按[上下文交接](context-exchange-handoff.yaml)提供首次派发或续接需要的事实、产物位置和适用条件。
+              - 替换前记录适用例外，核对原实例最后可信的状态、已发生的效果和未决工作。原实例可能继续影响同一资源时，在实际停止并核对效果，或确认可隔离执行之后，才移交涉及该资源的工作。替代实例接收已确认的结果、未决影响及剩余授权范围。
+              - 子代理返回实际交付物、相关操作和验证证据，并说明失败、未决效果与阻塞。主代理核对证据对应的任务与当前产物，把满足依赖的结果交给后续执行者。
+  - model-effort:
+      kind: section
+      title: 模型与推理强度
+      expose: true
+      blocks:
+        - model-effort-body:
+            kind: markdown
+            text: |-
+              - 每次首次创建或符合条件替换时，主代理依据任务复杂度、错误影响、输入类型、工具需求和验收要求，从环境实际支持的组合自动选择足以完成任务的模型及推理强度。角色描述只决定职责与交付，模型和档位随任务选择。
+              - 禁止用 Ultra 推理强度创建任何子代理，包括替代实例。创建前核实实际会采用的显式值、默认值或继承值，确认其为非 Ultra。记录有效配置及判断依据；无法确认时暂停该次创建，继续推进独立工作。

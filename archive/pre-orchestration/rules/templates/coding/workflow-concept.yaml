@@ -1,0 +1,75 @@
+layouts:
+  - [overview, actions, pass, boundary, related]
+  - [actions, pass, boundary, related]
+  - [overview, section-01, pass, boundary, related]
+  - [overview, section-01, section-02, section-03, section-04, related]
+block_rules:
+  overview:
+    kind: markdown
+  actions:
+    kind: section
+    expose: true
+  pass:
+    kind: section
+    expose: true
+  boundary:
+    kind: section
+    expose: true
+  related:
+    kind: section
+  section-01:
+    kind: section
+    expose: true
+  section-02:
+    kind: section
+    expose: true
+  section-03:
+    kind: section
+    expose: true
+  section-04:
+    kind: section
+    expose: true
+document:
+  schema_version: 1
+  document_type: workflow-concept
+  id: example-workflow-concept
+  markdown_path: references/coding/layer-02-workflow-concepts/example/example-workflow-concept.md
+  title: 工作流概念示例
+  blocks:
+    - overview:
+        kind: markdown
+        title: 概览
+        expose: true
+        text: 说明在什么工作流条件下使用此概念。
+    - actions:
+        kind: section
+        title: 动作
+        expose: true
+        blocks:
+          - actions-body:
+              kind: markdown
+              text: 列出需要执行的动作和前置证据。
+    - pass:
+        kind: section
+        title: 通过条件
+        expose: true
+        blocks:
+          - pass-body:
+              kind: markdown
+              text: 描述可核验的达成条件。
+    - boundary:
+        kind: section
+        title: 边界
+        expose: true
+        blocks:
+          - boundary-body:
+              kind: markdown
+              text: 描述证据缺失、条件冲突和需要重新核验时的处理。
+    - related:
+        kind: section
+        title: 相关概念
+        expose: true
+        blocks:
+          - related-body:
+              kind: markdown
+              text: '- 链接到相关规则所有者。'

@@ -1,0 +1,51 @@
+layouts:
+  - [overview, entry, routes, section-01]
+block_rules:
+  entry:
+    kind: section
+    expose: true
+  overview:
+    kind: markdown
+    expose: true
+  routes:
+    kind: section
+    expose: true
+  section-01:
+    kind: section
+    expose: true
+document:
+  schema_version: 1
+  document_type: directory-guide
+  id: example-directory-guide
+  markdown_path: workflows/README.md
+  title: 工作流目录示例
+  blocks:
+    - overview:
+        kind: markdown
+        title: 概览
+        expose: true
+        text: 说明路线覆盖的任务和适用条件。
+    - entry:
+        kind: section
+        title: 入口
+        expose: true
+        blocks:
+          - entry-body:
+              kind: markdown
+              text: 从[路线选择器](coding.yaml)开始。
+    - routes:
+        kind: section
+        title: 路线
+        expose: true
+        blocks:
+          - routes-body:
+              kind: markdown
+              text: 说明单代理和多代理路线分别适用于哪些任务。
+    - section-01:
+        kind: section
+        title: 阶段进入与退出
+        expose: true
+        blocks:
+          - section-01-body:
+              kind: markdown
+              text: 根据[Hook 目录](../hooks/README.yaml)说明阶段的进入、退出、跳转和恢复依据。

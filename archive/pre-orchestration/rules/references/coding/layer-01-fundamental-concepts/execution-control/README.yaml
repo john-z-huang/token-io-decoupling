@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: execution-control-readme
+markdown_path: references/coding/layer-01-fundamental-concepts/execution-control/README.md
+title: "Execution Control"
+blocks:
+  - scope-and-boundary:
+      kind: section
+      title: "范围与边界"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - scope-and-boundary-body:
+            kind: markdown
+            text: |-
+              交互切片、放行与进度控制、有限阶段反馈。本分类管理方向获批后的执行边界；规划决策归执行规划分类。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              从执行控制的切片/放行规则开始；报告进展或异常时查阅阶段反馈。
+  - owners:
+      kind: section
+      title: "所有者"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - owners-body:
+            kind: markdown
+            text: |-
+              - [execution-control](execution-control.yaml)
+              - [execution-stage-feedback](execution-stage-feedback.yaml)

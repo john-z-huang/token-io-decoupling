@@ -1,0 +1,175 @@
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: execution
+markdown_path: hooks/execution.md
+activate_on: [multi_execution, executor_changed]
+title: 执行 Hook：Slice、Control 与阶段反馈
+blocks:
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              当任务进入 coding execution、准备释放或恢复 Slice、执行者收到任务、到达返回条件/阶段边界、出现新事实或工具失败时适用。它是声明式动作合同，不是宿主回调、命令脚本或工具授权。Root 先读取当前 Contract、Decision、Context、模式/执行者、授权与效果状态；依据当前直接证据判断，不能把未知、未检查或调用成功等同于否。
+
+              每个准备执行的 Slice 必须可追溯到当前任务和明确授权。低决策密度且不越界的机械操作可在同一 Slice 连续完成；没有依赖、路径冲突及共享写入冲突的已释放工作方可并行。Slice 不是逐命令清单，亦不可借连续操作扩张授权。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-01:
+            kind: section
+            title: 1. 建立可执行 Slice 与准入门
+            blocks:
+              - execution-01-body:
+                  kind: markdown
+                  text: |-
+                    Slice 必须同时具有以下四字段，缺一不得释放：
+
+                    | 字段 | 合同要求 |
+                    | --- | --- |
+                    | Objective | 描述本切片要达到的具体目标，不以工具调用或模糊愿望代替。 |
+                    | Authorized scope / mutations | 明确允许的行为、精确路径/对象及可产生的变更；不得从目标推导额外文件、重构、外部影响或 Git 操作。 |
+                    | Return conditions | 指定何种里程碑、证据、检查结果或阻塞状态必须返回；到达条件即停，不继续顺手扩展。 |
+                    | Unreleased boundary | 明确仍未放行的子系统、路径、风险、语义选择、决策和后续效果；不得以“相关”推定已放行。 |
+
+                    准入前核实任务授权、模式、当前 Root/Worker 身份和权限、Context/Decision 新鲜度、Slice 与 Contract 一致、返回条件及依赖证据可取得。对 Worker 还要核实当前 Session allocation、角色、能力、可用性和父级已释放任务；不接受过期或不同 Session 的身份/授权。任何冲突、未知的必需事实、未授权效果或未解决的高影响决策均暂停并报告 owner/所需证据，不得猜测放行。实质事实变化使依赖它的旧 Control/路由/授权证据失效。
+        - execution-02:
+            kind: section
+            title: 2. 候选预检与真实验证不可混同
+            blocks:
+              - execution-02-body:
+                  kind: markdown
+                  text: |-
+                    候选（如拟写入的受控输出）准备及候选合规预检是应用前门禁，不是已发生效果，也不是最终 Verification。若选择这类路径，审阅准确、有界候选及 manifest/身份；在同一固定 root 和政策下，对完整批次进行新鲜预检。任一已选检查失败、未知、遗漏或过期，都先解决，不得当作通过。随后再核实授权、候选完整性及 baseline，才可应用准确候选。未选择可选候选路径时，记录有事实依据的 Not applicable，且仍须拥有独立授权的实施路径；不得静默回退。
+
+                    应用收据不证明真实文件/状态与预期相同。应用后读取实际状态并对照收据、路径和当前 baseline；部分完成、冲突、不确定或状态变化时，停止依赖操作，查明当前效果，禁止覆盖后重放。聚焦临时检查只能指导修复并作为初步证据；最终 Verification 属于后续工作流，不得声称候选预检、收据或初步检查已完成最终验收。
+        - execution-03:
+            kind: section
+            title: 3. 执行者路由、输出路线与角色各自独立
+            blocks:
+              - execution-03-body:
+                  kind: markdown
+                  text: |-
+                    先遵循用户明确指令，但仍须核验模式、身份、能力、权限、范围和可用性。Single-Agent 模式下 Root 执行；明确要求 sub-agent 与锁定模式冲突时阻断并交 Root 处理，不得自行改模式。Multi-Agent 下依据获授权任务判断 Root 能否胜任；确需 Worker 才从已核实的当前 Session 候选中筛选。Fork 后新 Session 必须重新进入模式/数量门，不能把继承子代理当新候选。候选仅一位时选之；多位时先考虑合格空闲者，仍多位则依任务相关证据比较，不用 transcript 体量或虚构阈值。派发前立即复核身份、权限、角色、能力、范围与最新可用性。无合格候选可报告 new-executor-needed（不是创建授权）；候选忙碌不等于可用。
+
+                    对每项 Root 直接输出，独立评估输出路由：仅基于请求形式、预期输出量、明确指令、锁定模式及当前证据；不用无关 transcript 体量或任意阈值。结果 `yes`/`no`/`insufficient_evidence`/`failed` 附证据和当前输入、上下文、政策 Hash。过期或 Hash 不匹配是未决，不是 no。`yes` 表示避免 Root 直接物化大型输出；Single-Agent 拓扑下挂起，Multi-Agent 下须有合适空闲 Worker 或等待。它不选择执行者、不授权创建。`no` 仅允许在其余门禁通过时 Root 继续。明确指令只跳过对应建议，其余门禁仍有效。
+
+                    仅当执行者选择确定需要新 Worker 且输出路线已独立处置，才做角色预留：按获授权任务匹配维护的角色，核查当前 Session 全部已预留/创建角色和容量；只在锁定容量内预留未占用角色。容量不足须 Count Gate 明确批准恰好 +1；不得自动扩额。四种角色全占用、适配/状态未决或无批准则阻断。建议、输出 yes、预留均不创建/派发、不释放 Slice；这些是后续独立门禁。Root 或现有 Worker 执行时，角色步骤可按证据记 Not applicable，不得伪装为预留失败。
+        - execution-04:
+            kind: section
+            title: 4. 实施、效果确认与阶段反馈
+            blocks:
+              - execution-04-body:
+                  kind: markdown
+                  text: |-
+                    实施者只检查本 Slice 必需文件，按批准方向作最小改动；不带入无关清理、重构、生成物或外部影响。Worker 仅执行已释放任务并按返回条件报告；Root 持有语义决策和最终验收责任。执行者不得接管未解决架构决策。缺少代码结构证据时可使用定向文本搜索/小范围读取，但不得称为 LSP 证据；结构关系仍未知且属必需条件时阻断。
+
+                    所有工具调用按实际效果分类，记录输入、目标、授权、输出、实际错误及返回状态、部分效果和可读回证据。`effect=read/check` 是 Agent 对真实行为的声明，不证明命令无副作用，也不授予授权；不能按命令名推断。读操作须检查真实返回；写入、提交或其他副作用要核对目标和范围，完成后尽可能读回实际状态并与调用收据/基线比较。路径应遵守本地精确目标和仓库边界；路径限定不构成 OS 沙箱。失败、超时或工具不可用须如实报告，不得换工具规避授权或门禁。效果未知时先调查真实状态，明确禁止盲目重放。
+
+                    到达实质阶段边界时提供有界 Progress Signal：进展/当前状态、实际变更范围、偏差与新证据、初步验证/失败、阻塞/需求、未释放边界及下一待决定事项。只提交当前事实，不另造重复进度报告。无触发时记 Not applicable 和原因。单代理的 Control 是内部暂停，不模拟给自己发消息；多代理由 Root 作为父级控制者消费 Worker 反馈并决定是否释放后续工作。Worker 不能自行越过 Slice、扩大范围或释放后续 Slice。
+        - execution-05:
+            kind: section
+            title: 5. Control 与回环
+            blocks:
+              - execution-05-body:
+                  kind: markdown
+                  text: |-
+                    到达 Slice 返回条件、实质边界、工具失败或新事实后，Root 结合 Progress Signal 和当前 Unreleased boundary 评估下一动作是否跨接口、schema、兼容性、安全、风险、难以逆转改动、范围或外部影响。需要证据时发出 Evidence-on-Demand 并暂停，取得证据后回到同一 Control；这是中间暂停，不是第四种授权结果。最终只作 `Continue`、`Amend`、`Stop`：
+
+                    - **Continue**：只有明确且仍新鲜的 Continue 才释放其覆盖的下一个有界 Slice，不授予范围扩张或 Git/外部影响。新 Slice 仍需当前 Context/Decision、四字段及准入核验。任务、授权、边界、相关 epoch 或证据变化若使其不再覆盖，回到 Control 重评；只重核受影响的路线/执行者/角色条件，不重放已完成效果。
+                    - **Amend**：暂停实施，返回 Contract/Decision owner 修订；必要时更新 Context。变化持久化并重新核验后回到同一 Control，取得新的明确 Continue 才可继续。旧 Continue 不释放新范围。
+                    - **Stop**：停止所有依赖动作，保留实际状态与原因，交 Root/用户处理。不得以默认值、建议结果或沉默代替。
+
+                    路线建议仅作输入。核对当前 Root 状态、直接 owner、适用性、输入/上下文/政策 Hash 和证据时效；建议失败、过期或不可信且直接证据不足时保持未决，绝不默认 Root、no 或 Continue。单代理内部暂停；多代理不得让 Worker 自我批准后续工作。
+  - checkpoints:
+      kind: section
+      title: 有序模块清单
+      blocks:
+        - SE00:
+            kind: checkpoint
+            title: 解析入口。
+            text: |-
+              用当前授权、路线及模式、Session/审计读回、Context/Decision 和已有效果核对入口。按入口合同返回缺失证据的 owner 和原暂停位置；冲突或已有效果无法安全恢复时阻断。
+
+              依据 [模块入口解析](../references/coding/layer-03-workflow-checkpoints/module-entry-resolution.yaml)。
+        - SE01:
+            kind: checkpoint
+            title: 分别解析执行者和输出。
+            text: |-
+              应用[任务分配](../references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment.yaml)和[执行者选择](../references/coding/layer-03-workflow-checkpoints/executor-selection.yaml)，再应用[输出 Token 路由](../references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing.yaml)及[输出路由选择](../references/coding/layer-03-workflow-checkpoints/output-route-selection.yaml)。在已释放 Single-Agent 模式下，明确的 `sub_agent` 结果与锁定 Mode 冲突，返回 `blocked`。Root 直接输出为 `yes` 时，报告锁定的拓扑边界并阻塞 Slice 释放；不得暗示本 Session 可以更改 Mode。必需的执行者/输出证据未知时返回 `needs_prerequisite`。仅当 Root 执行已确认且输出已处置时继续。
+        - SE02:
+            kind: checkpoint
+            title: 应用当前 Control 门禁并释放 Slice。
+            text: |-
+              以当前 Context 和 Decision 放行有界 Slice，记录目标、授权路径和影响、返回条件、未放行边界，并读回父级控制记录。先确认计划持久化及适用核验，或记录获准例外。Control 因实质变化失效时先回 SE05；`Stop` 或必需计划证据失败时阻断。
+
+              依据 [执行控制](../references/coding/layer-01-fundamental-concepts/execution-control/execution-control.yaml)、[执行规划](../references/coding/layer-01-fundamental-concepts/execution-planning/execution-planning.yaml)、[委派状态记录](../references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record.yaml)、[任务计划 Memory 生命周期](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml)。
+        - SE03:
+            kind: checkpoint
+            title: 实施并返回初步检查。
+            text: |-
+              应用[实施](../references/coding/layer-02-workflow-concepts/decision-and-execution/implementation.yaml)。仅检查必要来源并作最小授权改动。只有当前执行者、输出 class、capability、单独授权、固定 root、准确路径和 baseline 都符合[输出物料化](../references/coding/layer-01-fundamental-concepts/execution-planning/output-materialization.yaml)时，才应用该 owner。准备并检查有界候选，保留其 manifest 身份/hash。应用前，按[候选合规预检](../references/coding/layer-01-fundamental-concepts/execution-planning/candidate-compliance.yaml)在同一固定 root 和政策下进行新鲜 whole-batch 预检；然后重新核验授权、artifact 完整性和 baseline，再应用准确候选。审阅收据和实际当前文件；准备、预检和收据不是最终 Verification。未选择可选路径时，记录有原因的 `not_applicable`，且仅在独立授权的直接路径下继续。已选路径缺少必需能力/守卫/预检，或返回失败、未知、遗漏、过期、不确定时，在依赖操作前返回 `needs_prerequisite` 或 `blocked`；不得静默回退。部分、冲突或不确定的应用须先根据实际当前状态解决；不得覆盖已改变内容进行重放。仅在需要代码结构证据且能力可用时才使用[语言服务器与代码结构查询](../references/coding/layer-01-fundamental-concepts/session-runtime/lsp-code-navigation.yaml)。所需 LSP 语义不可用时，说明限制并回退到定向文本搜索和路径范围较小的读取；不得将这些发现称为 LSP 证据。只有不需要代码结构证据时才能记录 `not_applicable`。必需关系仍未知时阻塞。运行聚焦的初步检查，返回变更路径、效果、当前指纹、检查输出、适用时的收据/当前状态证据和未解决问题。这不是最终验证。
+        - SE04:
+            kind: checkpoint
+            applicability: optional
+            title: 提供阶段反馈。
+            text: |-
+              触发时应用[执行阶段反馈](../references/coding/layer-01-fundamental-concepts/execution-control/execution-stage-feedback.yaml)，在实质阶段边界返回有界 Progress Signal。无触发条件时，记录带观察原因的 `not_applicable`。两条路径都进入 SE05；不得跳过 Control。
+        - SE05:
+            kind: checkpoint
+            title: 解决当前 Control。
+            text: |-
+              应用[Control](../references/coding/layer-02-workflow-concepts/decision-and-execution/control.yaml)、[执行控制](../references/coding/layer-01-fundamental-concepts/execution-control/execution-control.yaml)、[建议选择](../references/coding/layer-03-workflow-checkpoints/advisory-selection.yaml)及[Decisions Advisory](../references/coding/layer-01-fundamental-concepts/execution-planning/decisions-advisory.yaml)。消费当前 Progress Signal 的 status、findings、change scope、verification、issue、need 和当前未释放边界证据。仅在建议当前可信、符合条件、已启用且已授权时消费；否则记录带原因的建议 `not_applicable`，并根据当前直接证据决策。为各结果保留当前 continuation：
+              - post-floor `Continue` 缺失/过期时，进入或恢复同一 Control 检查。新的 recovery `Continue` 返回 SE02 处理下一/恢复 Slice。
+              - `Evidence-on-Demand` 暂停释放并返回 `needs_prerequisite`；保留同一 Control continuation，证据到达后回到此处。
+              - `Amend` 返回 `needs_prerequisite`；按 owners 更新 Contract 和 Decision，并在需要时更新 Context。随后恢复同一 Control 检查，并取得新的明确 `Continue` 后才返回 SE02；先前结果不释放工作。
+              - `Stop` 返回 `blocked`。
+              - 普通 `Continue` 后若有下一 Slice，则返回 `needs_prerequisite`，先为该 Slice 解析当前 Context/Decision，并核验此 `Continue` 仍覆盖新的有界 Slice 且状态/epoch 当前。若范围、Contract、授权、未释放边界或相关 epoch 使其失效，则恢复此 Control 检查并取得新的明确 `Continue`；否则仅在 SE01 重核已变化的执行者/输出证据，然后进入 SE02，不重放已完成效果。若没有下一 Slice 且没有待处理恢复结果，只有当前 post-implementation 证据确认任务已完成后才进入 SE06。
+        - SE06:
+            kind: checkpoint
+            title: 返回实施状态。
+            text: |-
+              返回实际实施结果、路径与效果、当前指纹、初步检查、Control 处置、continuation 及限制。待恢复或下一 Slice 尚未处理时保留原返回位置。最终验证和验收由后续阶段完成。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              结束时返回实际完成/未完成状态、精确路径和效果、读回/收据与初步检查证据、失败/部分效果、未决项及仍未释放的边界。仅在本 Slice 返回条件满足、无待处理恢复/效果不明且当前 Control 处置明确时返回；否则返回 needs-prerequisite 或 blocked 并说明缺项。未授权路径或效果、Slice 四字段缺失、冲突/过期证据、必需验证未知、候选守卫未通过、真实效果不明、越界风险或 Stop 均阻断依赖动作。不得把局部实施标为最终完成/验收。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              每次恢复前按变化范围重核事实：Contract/授权/用户指令变化重核受影响 Decision 与 Control；Context、路径内容、文档、Git 或依赖变化使相应证据/epoch 失效；Worker 身份/权限/可用性变化重核执行者；输出输入/政策 Hash 变化重核输出路线；候选、baseline 或应用后状态变化重核候选门禁/效果。只重新核验受影响条件，不重跑完整流程；旧收据、Continue、预检或 Verification 不可越过相关变化沿用。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              | 来源 | 本合同落点 |
+              | --- | --- |
+              | [语言服务器与代码结构查询](../references/coding/layer-01-fundamental-concepts/session-runtime/lsp-code-navigation.yaml) | 按需查询结构关系及文本取证边界 |
+              | [execution-control](../references/coding/layer-01-fundamental-concepts/execution-control/execution-control.yaml) | Slice、授权/边界、Control、放行与暂停的基础 owner。 |
+              | [execution-stage-feedback](../references/coding/layer-01-fundamental-concepts/execution-control/execution-stage-feedback.yaml) | 阶段触发、Progress Signal 与反馈回环。 |
+              | [task-assignment](../references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment.yaml) | Root/Worker 分配及现有候选选择政策。 |
+              | [output-token-routing](../references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing.yaml) | 每项 Root 直接输出的独立路线判断与结果语义。 |
+              | [implementation](../references/coding/layer-02-workflow-concepts/decision-and-execution/implementation.yaml) | 最小实施、临时检查与返回证据边界。 |
+              | [control](../references/coding/layer-02-workflow-concepts/decision-and-execution/control.yaml) | Continue/Amend/Stop、Evidence-on-Demand 与发布控制。 |
+              | [decision](../references/coding/layer-02-workflow-concepts/decision-and-execution/decision.yaml) | 决策事实、获批方向及单一具体 Development Slice。 |
+              | [executor-selection](../references/coding/layer-03-workflow-checkpoints/executor-selection.yaml) | 身份、模式、候选预检、忙碌和未决处置。 |
+              | [output-route-selection](../references/coding/layer-03-workflow-checkpoints/output-route-selection.yaml) | 输出路由输入、Hash、结果与拓扑边界。 |
+              | [role-reservation](../references/coding/layer-03-workflow-checkpoints/role-reservation.yaml) | 仅新执行者的角色、allocation、容量及阻断条件。 |

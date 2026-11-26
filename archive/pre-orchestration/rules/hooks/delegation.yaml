@@ -1,0 +1,197 @@
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: delegation
+markdown_path: hooks/delegation.md
+activate_on: [executor_changed, independent_verification]
+title: 有界委派与一次性任务
+blocks:
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              本合同在 Coding 任务拟采用 Multi-Agent、评估/预留新执行者、准备创建或派发子代理，或工作流要求独立验证时适用；具体路线包括委派模块 DE00–DE09、实际创建/派发前置检查及 VR02 的独立验证需求。它是对委派参考 owner 的本地执行适配，不是宿主回调、MCP 工具或代理调度器。
+
+              仅选择 Multi-Agent、锁定预算、显示模式菜单、完成 Bootstrap，均不代表创建授权。Single-Agent 下不得创建子代理；即使用户要求子代理，也须先解决模式冲突。只有实际获授权任务确需新执行者且所有前置门禁满足时才进入创建。独立验证要求若无真正独立且合格的当前 Session 身份，必须报告不可用，不能以改名或同一上下文自称独立。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-01:
+            kind: section
+            title: 1. Root 前置、模式与预算
+            blocks:
+              - execution-01-body:
+                  kind: markdown
+                  text: |-
+                    Root 履行共享合同的前置职责，确认拟派任务已获授权，并在指令中提供精确范围、当前 Context/Decision 和事实来源。Worker 不改变目标、约束、架构或验收标准。
+
+                    分派前按 [Session 合同](session.yaml) 回读规范父级记录，核对锁定模式、总预算、allocation、职责、Slice、生命周期和阻断原因。只消费当前 Session 已释放的选择。
+
+                    容量不足时按数量门禁核验不同且未占用的职责及用户本次明确批准的 +1，记录新旧值和批准来源。其他数量或拓扑变化须在新 Session 重新选择。Fork 不继承原 Session 的代理身份、预算或选择。
+        - execution-02:
+            kind: section
+            title: 2. 执行者、职责与准入次序
+            blocks:
+              - execution-02-body:
+                  kind: markdown
+                  text: |-
+                    先根据授权任务、当前身份、能力、权限、可用性和锁定模式选择 Root 或合格的当前 Session 子代理。Single-Agent 明确由 Root 执行；Multi-Agent 也不预设必须委派。若没有合格候选且事实确实要求新执行者，可得出 new-executor-needed；该结论本身不预留、不授权创建。Output Route 必须独立处置 Root 直接输出后，才能进入新角色预留。
+
+                    四种受维护职责为 Primary Output、Change Verification、Context Bootstrap/Refresh、Documentation/Comments & Git Operations。将实际拟派任务匹配唯一职责，完整审阅当前 Session 台账；其他 Session 的继承代理不计入。用户明确职责可跳过建议，但 Root 仍须核验。建议/上下文生成失败不能自动默认某职责；有充分核实事实时 Root 可独立判断，否则阻断。用户明确要求创建但未指定职责，仅在其他创建门禁已确认且 Primary 未占用时，Primary 才可作有条件回退。
+
+                    Primary 只做已放行的代码/配置实现或本 Skill 指令/参考文档编辑；普通非 Skill 文档和评论由 Root，即使伴随代码修改。Change Verification必须由未参与实现的独立身份承担，除明确点名的验证资产可按授权修改外，对产品代码/配置、文档和Git只读；不修复、不暂存或提交。Context Bootstrap/Refresh 只返回中性事实、准确来源及缺失上下文，不定义任务、不实现/验证、不递归委派；仅当复用收益合理时分配（例如多个下游 Worker、广泛侦察或大来源集合），小任务不强求。Documentation/Comments & Git Operations 仅承担明确放行且权限允许的非简单 Git slice；普通文档仍由 Root，该职责不自带 Git 授权。
+
+                    已占用职责不得重复。若角色不同且未占用但容量不足，才可请求明确 +1；全部职责占用则阻断且不申请扩额。只有尚未创建的 unbound allocation 可由父级授权在当前预算内调整计划；已创建身份、名额、职责永久绑定，不因成功、失败、中断、取消或不可用回收。职责预留必须先于 Slice 放行；Slice 必须明确目标、范围/修改、返回条件及必要证据，授权后一次派发一个，除非已明确放行独立且不冲突的并行任务。
+
+                    派发 bundle 必须携带启动时确认的审计三字段和每字段 `explicit/default` 来源。它们仅控制安全消息/摘要策略，不证明完整 Worker 日志可访问，不允许私有思维链披露，不改变授权、职责预算或独立验证。
+        - execution-03:
+            kind: section
+            title: 3. 创建、派发与能力适配
+            blocks:
+              - execution-03-body:
+                  kind: markdown
+                  text: |-
+                    在当前上下文记录由 Root 执行还是委派，并保留决定依据。执行者或派发前提变化时，按本合同重核影响，保留已占名额和已发生的效果。实际派发时核对工具 Schema、职责、预算、当前 Slice 及写入范围。
+
+                    按入口选中的宿主适配，先核验真实委派工具 Schema、可用能力和允许字段，只传真实接受的字段；未知接口或额外必需字段在预留前拒绝。扩展配置名称不是职责或权限证明。不存在兼容能力时只阻断依赖委派的分支；不得假设隐藏工具、持久 Session、稳定 ID、消息、等待、续接、取消或异步句柄，也不得模拟 Session 或将 Root 改名为子代理。没有可选模型/effort 控制时沿用扩展默认值并记录限制；明确必需设置无法满足才阻断。调度与推理设置仅使用实际支持的能力，不伪造回执。
+
+                    创建前再次核实 Multi-Agent 已释放、正数预算、唯一未绑定 allocation 与职责、合格输出类型、已释放 Slice、权限、上下文、来源/路径及返回条件。Worker bundle 必须清晰限定单一职责，禁止递归创建/派发、fork、自行选择handoff目标、peer协调或联系其他Session；按父级具名授权编写handoff记录不等于自行管理会话；禁止未授权网络、Git、Memory 或扩容。按实际需要提供任务计划/Memory 的准确名称和最小访问方式；Root 协调唯一计划写者，贡献不授权修改源码或扩大 Contract。按 memo owner 在实际派发中明确 `write_content_memo: true|false`。按实际 Schema 传递该值；没有对应字段时，在获准的任务正文中写明，并核验其实际传给 Worker。只有 true 且 Memory 能力、目标及授权均已核实时才处理 memo。共享计划的要求继续适用。
+
+                    DE05 核验真实能力及创建前置。同步一次性分支在 DE06 通过同一次实际工具调用创建、派发、执行并返回；父级用该调用证据将 allocation 绑定到逻辑身份和任务证据，不伪造持久 Session ID。只有宿主明确支持取得稳定身份及续接时，持久身份分支才按实际 Schema 绑定已有或已创建的身份，并在 DE06 向该身份派发。两种分支均在 DE07 审阅完整实际结果后才接续。仅在实际有专用受保护 Git 能力及授权时办理非简单 Git；仅在实际宿主能证明稳定身份及续接能力时复用；否则阻断相应分支。受保护操作的可信绑定和子代理模型选型分别按实际能力核验。合同不是隔离沙箱，不能保证外部进程或其他扩展行为受 Hooks 覆盖；若隔离为必要条件而实际能力缺失，阻断。
+
+                    只在已分别放行、互不冲突的任务间并行；Chain 中每一步仍须各自满足授权、职责和范围，不能作为同一 Session 复用证据。已创建代理不能因不满意而替换；对获准修复优先复用同一稳定身份，仅当真实扩展支持续接才可 follow-up。一次性返回后身份不可继续派发。无法安全续接时报告阻塞并由 Root 判断合法路线，不静默创建同职责 successor；增加名额也不允许替换或重复职责。
+        - execution-04:
+            kind: section
+            title: 4. Root选择模型与推理强度
+            blocks:
+              - execution-04-body:
+                  kind: markdown
+                  text: |-
+                    创建前先执行[子代理端点跟随 Root](../references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.yaml#subagent-endpoint)：Root 亲自确认当前有效 provider、模型 ID、可见 API/端点路由及来源。按当前宿主适配确认父子使用同一 provider 与端点。先锁定同端点，再按任务选择该端点实际可用的模型/档位，核验真实 Schema 和配置覆盖优先级。启动环境元数据仅在仍反映当前值时有效，不以模型名、角色配置或外部服务的 API 配置猜端点；不读取凭据。元数据缺失/冲突、模型不可用或工具不能保证同端点时阻断创建，禁止静默跨 provider/端点回退；可选设置缺失的默认值规则不能豁免本条件。已创建身份不因此重建/重放，不要求 Worker 自报模型。
+
+                    由 Root 依据任务目标、输入、复杂度、依赖、风险、验证要求和资源约束选择已核验的模型与推理强度，并记录依据。按所选宿主适配与实际 Schema 核验模型、档位和配置覆盖顺序。缺少可选设置时使用已核验的默认或继承行为；明确必需设置不可用时阻断。不要改父级模型、全局默认或外部服务模型来代替子任务设置。创建前核验即可。按[共用模型选型规则](../references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.yaml#subagent-models)核对限制。
+        - execution-05:
+            kind: section
+            title: 5. 结果、生命周期与未知效果
+            blocks:
+              - execution-05-body:
+                  kind: markdown
+                  text: |-
+                    派发后取得真实返回内容。工具状态、调用卡片、送达回执、摘要、Hash 或“完成”字样不替代正文。依赖结果前完整读取所有实际结果；过长则逐页/分段读取至末尾，不以摘要验收。确认并审阅完整结果中的改动路径、执行/检查证据、失败、遗漏、未决项及与授权范围的偏差；对实际仓库状态做必要核对。结果与已确认前提冲突、超出范围或不完整时停止依赖工作，返回 Root 重决策，不自行扩大授权。子代理结果不是应用改动或继续操作的授权。最终验证仍属后续独立工作流，不把初步检查冒充验证。
+
+                    父级记录真实调用、身份/逻辑 allocation、状态、完整结果证据及阻塞原因。实际调用终态须以宿主结果核实；Root 在依赖结果前仍须完整审阅正文及其证据。失败/中断保留原身份与状态，终态绝不释放已绑定预算或职责，也不得仅为清理关闭/删除代理。同步一次性调用直接审阅真实返回；等待、续接或取消仅使用实际支持且获准的宿主能力。结果不明时先读回。对调用错误、超时、断连等无法确认是否执行的情况，视为效果未知：先读取可用的真实结果/当前状态证据，保留 allocation 并报告；无从核验则阻断，绝不重发以免重复副作用。只有宿主明确证明执行未发生且 allocation 仍未绑定时，才可依据 owner 撤销预留；不能从错误文本推断“未创建”。
+  - checkpoints:
+      kind: section
+      title: 有序模块清单
+      blocks:
+        - DE00:
+            kind: checkpoint
+            title: 解析入口。
+            text: |-
+              按入口合同核验当前授权、已释放路线/mode/count、Session/审计、Context/Decision、allocation 与恢复证据。恢复已释放 Worker bundle 时提供记录的显式 memo 值，新 bundle 在 DE04 确定。补证返回缺失 owner 和原位置。冲突或已有效果无法恢复时阻断。
+
+              依据 [模块入口解析](../references/coding/layer-03-workflow-checkpoints/module-entry-resolution.yaml)。
+        - DE01:
+            kind: checkpoint
+            title: 评估 Bootstrap 并授权实际任务。
+            text: |-
+              根据当前任务、角色、名额和 Memory 事实应用[Bootstrap 选择](../references/coding/layer-03-workflow-checkpoints/bootstrap-selection.yaml)。建议不预留角色，也不释放 Slice。Root 重核当前 Context 和 Decision，然后明确授权实际任务：适用时采用有界 Bootstrap/Refresh 任务，否则采用原任务。独立辅助 Bootstrap 任务需要 Root 另行授权，并将原任务保留为 continuation；辅助任务完成后返回 DE01，单独授权并评估原任务，不得依据辅助结果将原任务标为完成。实际任务缺少授权时阻塞。
+        - DE02:
+            kind: checkpoint
+            title: 分别解析执行者和输出。
+            text: |-
+              应用[任务分配](../references/coding/layer-01-fundamental-concepts/execution-planning/task-assignment.yaml)和[执行者选择](../references/coding/layer-03-workflow-checkpoints/executor-selection.yaml)，再应用[输出 Token 路由](../references/coding/layer-01-fundamental-concepts/execution-planning/output-token-routing.yaml)及[输出路由选择](../references/coding/layer-03-workflow-checkpoints/output-route-selection.yaml)。仅当执行者结果为 `new-executor-needed` 且 Root 输出已处置时进入 DE03。已确认 Root 执行者或已确认的现有执行者/子代理，必须先确认输出已处置，再根据该证据将角色预留记录为 `not_applicable` 并继续至 DE04。必需结果未知或未解决时返回 `needs_prerequisite`；冲突则阻塞。不得把未解决视为 `not_applicable`。
+        - DE03:
+            kind: checkpoint
+            applicability: sub_agent
+            title: 仅为新执行者预留角色。
+            text: |-
+              仅在 DE02 已处置输出且需要新执行者时，核对锁定容量与 allocation，取得唯一且有效的当前角色预留。证据缺失返回 `needs_prerequisite`，不一致或未授权时阻断。Root 和现有执行者沿既有路径。
+
+              依据 [角色预留](../references/coding/layer-03-workflow-checkpoints/role-reservation.yaml)、[子代理角色选择](../references/coding/layer-01-fundamental-concepts/delegation/child-role-selection.yaml)、[子代理职责分配](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-role-allocation.yaml)、[委派数量门禁](../references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.yaml)、[委派状态记录](../references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record.yaml)。
+        - DE04:
+            kind: checkpoint
+            title: 应用共用 Control 门禁并释放当前 Slice。
+            text: |-
+              所有实际执行者分支都经过此检查点。应用[执行控制](../references/coding/layer-01-fundamental-concepts/execution-control/execution-control.yaml)、[执行规划](../references/coding/layer-01-fundamental-concepts/execution-planning/execution-planning.yaml)和[委派状态记录](../references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record.yaml)。实质变化会使依赖它的 Control 证据失效；释放/恢复前返回 DE08 并重新评估当前事实。`Stop` 会阻塞。子代理执行时核验当前容量/allocation；Root 执行时记录附有理由的子代理容量 `not_applicable`。仅当 Context 和 Decision 当前有效，并明确目标、已授权执行者/角色、范围/修改、返回条件、未释放边界及新 Worker bundle 的显式 memo 值时，才释放具体 Slice。恢复既有 bundle 时保留并核验记录值。子代理行动前按 owner 更新并回读规范 parent-context 记录。若无实质 Control 变化，记录附有理由的 `not_applicable`。释放前应用[任务计划 Memory 生命周期](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml)；必需证据、持久化或核验失败时阻塞依赖工作。
+        - DE05:
+            kind: checkpoint
+            applicability: sub_agent
+            title: 创建新合格子代理并绑定身份。
+            text: |-
+              仅对新子代理应用[子代理创建](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-creation.yaml)和[运行环境与模型厂商支持](../references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.yaml)。确认符合条件的已释放任务/Slice、唯一角色预留、当前容量、能力、权限、上下文、返回条件及必需运行环境/effort 证据；只创建已授权子代理。独立创建型扩展按实际 Schema 和 owner 核验真实身份，并在派发前绑定 allocation；同步一次性分支在 DE05 只核验创建前置并标记已批准、尚未调用的 allocation，不提前创建或绑定身份。后者在 DE06 以同一次工具调用创建、派发、执行并返回，再将真实调用/结果证据绑定该 allocation。两种路径均在依赖前更新并回读父级记录，不能重复调用来补造身份。复用现有子代理时，根据复用证据将创建和新 model-binding 检查记录为 `not_applicable`；保留相同身份，不重查模型选择，也绝不替换。已确认 Root 执行时，将子代理创建/身份记录为有原因的 `not_applicable`。所有分支进入 DE07；子代理分支先经过 DE06。已由当前证据确认 Root 执行时，可共用一次执行者选择记录，说明职责预留、创建、派发三个检查点不适用。仍须通过 DE04 放行和 DE07 结果审阅。
+        - DE06:
+            kind: checkpoint
+            applicability: sub_agent
+            title: 仅在子代理分支派发。
+            text: |-
+              应用[子代理派发](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-dispatch.yaml)、[Worker 边界](../references/coding/layer-01-fundamental-concepts/delegation/delegation-worker-boundary.yaml)、[子代理生命周期](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-lifecycle.yaml)、[子代理复用与替代](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-reuse-replacement.yaml)、[子代理消息可见性](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-message-visibility.yaml)、[Content Memo Dispatch](../references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-dispatch.yaml)及[Content Memo Lifecycle](../references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle.yaml)。实际已释放 bundle 必须包含完整任务与范围、来源指针、返回条件、适用时准确的授权 Memory 名称，以及显式 `write_content_memo: true` 或 `false`；不得推断默认值。已有稳定身份时只向已绑定的子代理派发已释放 Slice；同步一次性扩展只为 DE05 已批准的未绑定 allocation 发起一次任务调用，并按创建 owner 绑定其真实调用证据。为 true 时遵循 memo owner 生命周期并核验 memo 证据；为 false 时不得派发或写入该 memo。每次 follow-up 均保留实际派发正文证据和当前授权范围。派发或真实任务证据缺失/不完整时阻塞。异步扩展确认派发及显式 memo 值后立即进入 DE07，不提前等待结果；同步一次性调用返回后直接在 DE07 审阅已产生的结果，不模拟异步等待或再次派发。Root 执行时，将子代理派发/memo 记录为有原因的 `not_applicable` 并进入 DE07。派发同时按[任务计划 Memory 生命周期](../references/coding/layer-01-fundamental-concepts/execution-planning/task-plan-memory-lifecycle.yaml)携带准确共享任务计划项目/名称及允许贡献。判断子级需要当前计划读取、直接写入授权，还是仅需有界贡献返回通道；仅提供该角色实际需要的访问。父级协调唯一当前计划写者，并可合并明确授权且有来源的贡献。不得要求每个子级都具备 Memory 写入权限。新事实/进度在 owner 规定的边界纳入；影响授权、范围、验收、方向或依赖动作的变化仍须在该动作前记录。`write_content_memo: false` 不豁免共享计划生命周期。
+        - DE07:
+            kind: checkpoint
+            title: 执行实际任务并返回结果。
+            text: |-
+              应用[实施](../references/coding/layer-02-workflow-concepts/decision-and-execution/implementation.yaml)。Root 执行时，作最小授权改动。子代理只实施已释放任务。异步执行确认派发后立即进入 DE07；同步一次性调用则在返回后进入本步收集和审阅实际结果，不重放任务；保留其实际正文/结果证据，结果待处理时不得声称完成，也不得依赖不完整消息。实际执行期间，仅当当前执行者、Slice、输出 class、capability、独立授权、固定 root、准确路径/操作和 baseline 符合[输出物料化](../references/coding/layer-01-fundamental-concepts/execution-planning/output-materialization.yaml)时，才按该 owner 处理候选输出。准备有界候选，保留其 manifest 身份/hash，并检查/审阅同一候选。应用前按[候选合规预检](../references/coding/layer-01-fundamental-concepts/execution-planning/candidate-compliance.yaml)在同一固定 root 和政策下进行新鲜 whole-batch 预检；然后重新核验授权、候选 artifact 完整性和 baseline，再应用准确候选。应用完成后，保留已准备候选 ID/hash、准确应用收据和实际当前状态证据。子代理结果待处理时，返回 `needs_prerequisite`，等待实际结果并从 DE07 的结果收集/审阅子步骤恢复，恢复时携带已保留的当前状态证据、适用的候选身份/hash 和应用收据；若未选择可选候选路径，则一并带入已记录的 `not_applicable` 处置及其理由。收集结果期间不得重启或重复准备、预检或应用。收到结果后，Root 将完整的子代理实际正文/结果与保留证据和当前文件一起审阅。子代理结果本身不授权应用。未选择可选路径时，记录有原因的 `not_applicable`，且仅在独立授权的直接路径下继续。已选路径缺少必需能力/守卫/预检，或返回失败、未知、遗漏、过期、不确定时，在依赖操作前返回 `needs_prerequisite` 或 `blocked`；不得静默回退。部分、冲突或不确定的应用必须先根据实际当前状态解决；不得覆盖已改变的内容进行重放。结果/状态冲突或不安全时阻塞。仅在需要代码结构证据且能力可用时应用[语言服务器与代码结构查询](../references/coding/layer-01-fundamental-concepts/session-runtime/lsp-code-navigation.yaml)。所需 LSP 语义不可用时，说明限制并回退到定向文本搜索和路径范围较小的读取；不得将这些发现称为 LSP 证据。只有不需要代码结构证据时才能记录 `not_applicable`。必需关系仍未知时阻塞。触发时应用[执行阶段反馈](../references/coding/layer-01-fundamental-concepts/execution-control/execution-stage-feedback.yaml)；否则记录有原因的 `not_applicable`。实际结果和当前状态当前有效并已审阅后，运行聚焦的初步检查并返回路径、效果、实际正文/结果证据、适用时的收据/当前状态证据、检查输出和未解决问题。预检、应用收据和初步检查都不是最终 Verification。Root、复用子代理及新建子代理路径都必须经过此步。
+        - DE08:
+            kind: checkpoint
+            title: 对所有执行者解决当前 Control。
+            text: |-
+              应用[Control](../references/coding/layer-02-workflow-concepts/decision-and-execution/control.yaml)、[执行控制](../references/coding/layer-01-fundamental-concepts/execution-control/execution-control.yaml)、[建议选择](../references/coding/layer-03-workflow-checkpoints/advisory-selection.yaml)和[Decisions Advisory](../references/coding/layer-01-fundamental-concepts/execution-planning/decisions-advisory.yaml)。消费当前 Progress Signal 的 status、findings、change scope、verification、issue、need 和当前未释放边界证据。只消费当前可信、符合条件、已启用且已授权的建议；否则记录建议 `not_applicable` 和原因，并基于直接证据决策。保留各 continuation：
+              - post-floor `Continue` 缺失/过期时，进入或恢复此 Control 检查。recovery `Continue` 返回 DE04；不得为复用的子代理重新选择或创建替代者。
+              - `Evidence-on-Demand` 暂停释放并返回 `needs_prerequisite`；保留同一 Control continuation，证据到达后在此恢复。
+              - `Amend` 返回 `needs_prerequisite`；按 owners 更新 Contract 和 Decision，并在需要时更新 Context，然后恢复同一 Control 检查并取得新的明确 `Continue`，再返回 DE04。先前结果不释放工作。
+              - `Stop` 返回 `blocked`。
+              - 普通 `Continue` 后若有下一 Slice，则返回 `needs_prerequisite`，解析当前 Context/Decision，并确认先前 `Continue` 仍覆盖新的有界 Slice 且状态/epoch 当前。若范围、Contract、授权、未释放边界或相关 epoch 变化使其失效，则恢复此 Control 检查并取得新的明确 `Continue`。若实际任务或授权变化，在 DE01 仅重核受影响决策；若执行者/输出证据变化，在 DE02 重核这些决策，且仅当仍需要新执行者时才在 DE03重核角色预留；若仅新执行者的角色证据变化，则在 DE03 重核。检查完成后从 DE04 恢复，不重放已完成效果。否则在 Context/Decision 当前后直接从 DE04 恢复，适用时复用现有子代理。若没有下一 Slice 且没有待处理恢复结果，只有当前 post-implementation/result 证据确认任务已完成后才进入 DE09。
+        - DE09:
+            kind: checkpoint
+            title: 返回实施/结果状态。
+            text: |-
+              Root、现有子代理和新建子代理的路径都须经过 DE04、DE07 和 DE08。待恢复或下一 Slice 尚未处理时保留原返回位置。返回实际任务授权、执行者/输出/角色处置、已释放 Slice 与指纹、Root 实施或子代理派发及结果、memo 字段与证据或有依据的 `not_applicable`、初步检查、Control 处置和限制。最终验证由后续阶段完成。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              仅在前置授权、当前 Session 状态、职责唯一性、预算、能力、权限和 Slice 全部成立后才调用工具；仅在实际结果完整读完、与授权相符且当前状态可审阅后，接受为实施结果。失败、证据不足、角色/模式冲突、身份不明、无兼容工具、未授权效果、结果未知或隔离能力缺失均阻断受影响的依赖工作。阻断时保留事实与状态并向 Root/用户报告具体缺口，不换工具绕过、不伪造成功、不静默缩小/扩大任务。无需委派的 Root 路线正常继续，不因缺少代理能力而无条件阻断。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              任务目标/授权、模式或批准数量、allocation/职责、Session 身份、工具 Schema/能力、cwd/路径、权限、并行冲突、Slice、返回证据或效果状态发生变化时，仅重核受影响门禁；派发前立即复核身份、职责、权限、能力、范围和当前可用性。依赖任何 Worker 结果前确保全文读取；发生未知效果时先核验而非重派。父级持续维护唯一规范记录和批准来源，过时摘要不得覆盖当前事实。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              | 来源 | 本合同落点 |
+              | --- | --- |
+              | [语言服务器与代码结构查询](../references/coding/layer-01-fundamental-concepts/session-runtime/lsp-code-navigation.yaml) | 按需查询结构关系及文本取证边界 |
+              | [delegation-child-reuse-replacement.md](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-reuse-replacement.yaml) | 已创建代理复用、替换禁止、一次性身份限制 |
+              | [delegation-state-record.md](../references/coding/layer-01-fundamental-concepts/delegation/delegation-state-record.yaml) | 父级记录、预算/allocation、职责与 Slice 状态、来源及生命周期 |
+              | [child-role-selection.md](../references/coding/layer-01-fundamental-concepts/delegation/child-role-selection.yaml) | 职责选择、证据不足、Primary 条件回退 |
+              | [delegation-mode-reentry.md](../references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-reentry.yaml) | Session 固定门禁、Fork 重新进入与阻断 |
+              | [delegation-child-message-visibility.md](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-message-visibility.yaml) | 完整正文可见、依赖前读完实际结果 |
+              | [delegation-child-role-allocation.md](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-role-allocation.yaml) | 名额预留、职责唯一和辅助角色分配条件 |
+              | [delegation-mode-count-gate.md](../references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-count-gate.yaml) | 数量缺省/无效分支、+1 实际用户批准 |
+              | [delegation-child-lifecycle.md](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-lifecycle.yaml) | 生命周期证据、错误中断及终态不回收 |
+              | [delegation-child-dispatch.md](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-dispatch.yaml) | Slice、Dispatch Preview/Worker 边界和单一父级返回 |
+              | [delegation-mode-confirmation.md](../references/coding/layer-01-fundamental-concepts/delegation/delegation-mode-confirmation.yaml) | 初始模式菜单、默认值及 Single-Agent 限制 |
+              | [delegation-child-creation.md](../references/coding/layer-01-fundamental-concepts/delegation/delegation-child-creation.yaml) | 委派能力核对、创建前置和一次性调用 |
+              | [delegation-worker-boundary.md](../references/coding/layer-01-fundamental-concepts/delegation/delegation-worker-boundary.yaml) | Worker 读取、贡献、边界及 Root 记录权威 |
+              | [runtime-provider-support.md](../references/coding/layer-01-fundamental-concepts/session-runtime/runtime-provider-support.yaml) | Root按模型卡自主选择三模型/推理档位、真实参数能力与API边界 |
+              | [session-role-ownership.md](../references/coding/layer-01-fundamental-concepts/session-runtime/session-role-ownership.yaml) | Root 前置职责、四类角色与职责界限 |
+              | [executor-selection.md](../references/coding/layer-03-workflow-checkpoints/executor-selection.yaml) | 先选 Root/当前执行者，再判断是否需要新执行者 |
+              | [role-reservation.md](../references/coding/layer-03-workflow-checkpoints/role-reservation.yaml) | new-executor-needed 后预留角色；不在本步创建/放行 Slice |

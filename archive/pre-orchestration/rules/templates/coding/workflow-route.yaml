@@ -1,0 +1,142 @@
+layouts:
+  - [overview, flowchart, checkpoints, returns, mode-boundary, related]
+block_rules:
+  overview:
+    kind: markdown
+  flowchart:
+    kind: section
+    child_kinds:
+      - markdown
+  checkpoints:
+    kind: section
+    child_kinds:
+      - markdown
+      - route_step
+  returns:
+    kind: section
+    expose: true
+  mode-boundary:
+    kind: section
+    expose: true
+  related:
+    kind: section
+phase_order: [entry, session, definition, execution, verification, documentation, delivery]
+document:
+  schema_version: 1
+  document_type: workflow-route
+  id: example-workflow-route
+  markdown_path: workflows/example-workflow-route.md
+  title: 工作流路线示例
+  blocks:
+    - overview:
+        kind: markdown
+        text: |-
+          说明适用 Mode、主阶段与按条件应用 Hook 的方式。
+    - flowchart:
+        kind: section
+        title: 工作流路线图
+        blocks:
+          - flowchart-body:
+              kind: markdown
+              text: |-
+                ```mermaid
+                flowchart TD
+                    EX01[入口就绪]
+                    EX02[Session 就绪]
+                    EX03[工作定义]
+                    EX04[执行]
+                    EX05[验证]
+                    EX06[文档]
+                    EX07[交付与验收]
+                    DONE[complete]
+                    EX01 --> EX02
+                    EX02 --> EX03
+                    EX03 --> EX04
+                    EX04 --> EX05
+                    EX05 --> EX06
+                    EX06 --> EX07
+                    EX07 --> DONE
+                ```
+    - checkpoints:
+        kind: section
+        title: 路线顺序检查清单
+        blocks:
+          - preconditions:
+              kind: markdown
+              text: |-
+                说明所需前置证据和调用位置。
+          - EX01:
+              kind: route_step
+              title: 入口就绪
+              phase: entry
+              hook: entry
+              text: |-
+                调用[阶段 Hook](../hooks/entry.yaml)。
+          - EX02:
+              kind: route_step
+              title: Session 就绪
+              phase: session
+              hook: session
+              text: |-
+                调用[阶段 Hook](../hooks/session.yaml)。
+          - EX03:
+              kind: route_step
+              title: 工作定义
+              phase: definition
+              hook: planning
+              text: |-
+                调用[阶段 Hook](../hooks/planning.yaml)。
+          - EX04:
+              kind: route_step
+              title: 执行
+              phase: execution
+              hook: execution
+              text: |-
+                调用[阶段 Hook](../hooks/execution.yaml)。
+          - EX05:
+              kind: route_step
+              title: 验证与修复
+              phase: verification
+              hook: verification
+              text: |-
+                调用[阶段 Hook](../hooks/verification.yaml)。
+          - EX06:
+              kind: route_step
+              title: 文档
+              phase: documentation
+              hook: documentation
+              text: |-
+                调用[阶段 Hook](../hooks/documentation.yaml)。
+          - EX07:
+              kind: route_step
+              title: 交付与验收
+              phase: delivery
+              hook: delivery
+              text: |-
+                调用[阶段 Hook](../hooks/delivery.yaml)。
+    - returns:
+        kind: section
+        title: 前置补证与恢复
+        expose: true
+        blocks:
+          - returns-body:
+              kind: markdown
+              text: |-
+                遇到前置缺失、中断或未知效果时，按[恢复 Hook](../hooks/recovery.yaml)处理，在核验通过后回到原调用位置。
+    - mode-boundary:
+        kind: section
+        title: Mode 边界
+        expose: true
+        blocks:
+          - mode-boundary-body:
+              kind: markdown
+              text: |-
+                说明本路线读取的 Mode 证据及其允许效果。
+    - related:
+        kind: section
+        title: 按条件触发的 Hooks
+        blocks:
+          - related-body:
+              kind: markdown
+              text: |-
+                从 [Hook 触发目录](../hooks/README.yaml)定位适用合同。

@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: execution-decision-gate
+markdown_path: references/planning/execution-decision-gate.md
+title: 执行决策与就绪判断
+blocks:
+  - decision-brief:
+      kind: section
+      title: 保留实质决策依据
+      expose: true
+      blocks:
+        - decision-brief-body:
+            kind: markdown
+            text: |-
+              架构或公共接口存在竞争方案、相关兼容或安全边界变化、故障定位出现实质分叉，或工作需要扩大授权范围时，主代理先记录决定所需的事实、假设、取舍和风险，确定可接受的实施范围及验收条件。简单、局部且易于核对的工作可直接记录执行边界及验收办法。
+  - readiness:
+      kind: section
+      title: 确认工作可以执行
+      expose: true
+      blocks:
+        - readiness-body:
+            kind: markdown
+            text: |-
+              - 主代理依据当前证据核对已定方向、具体工作范围、有效授权、前置产物、执行者和验收条件。条件满足后推进对应项。
+              - 实施方向未定或必需事实不足时，在授权范围内先安排有明确返回条件的取证，再核对假设并确定方向。多代理路线按角色安排具体取证、实施和验证，由主代理作实质决策。能力缺口只阻断依赖该能力的工作。
+  - feedback:
+      kind: section
+      title: 根据实际反馈决定下一步
+      expose: true
+      blocks:
+        - feedback-body:
+            kind: markdown
+            text: |-
+              - 收到阶段结果时，核对实际产物、影响范围、检查及未决事项。结果满足当前验收条件时，向下一项工作提供已核实的证据。
+              - 新证据改变目标、授权、方案或验收时，暂停受影响的方向，更新任务约定并重新判断就绪。操作失败且影响不明时先核对真实状态，再决定恢复或重新分配。其余已就绪工作可以继续。

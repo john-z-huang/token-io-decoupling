@@ -1,9 +1,0 @@
-theme: jekyll-theme-minimal
-
-title: Token I/O Decoupling
-description: 以中文事件契约和独立工具支持 Agent 自主执行的开发工作流。
-lang: zh-CN
-url: https://john-z-huang.github.io
-baseurl: /token-io-decoupling
-logo: /assets/favicon.svg
-show_downloads: false

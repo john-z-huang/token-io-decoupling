@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: primary-output
+markdown_path: references/roles/primary-output.md
+title: Primary Output
+blocks:
+  - scope:
+      kind: section
+      title: 职责范围
+      expose: true
+      blocks:
+        - scope-body:
+            kind: markdown
+            text: |-
+              负责获准的代码或配置实施、本 Skill 指令和参考文档的编写编辑，以及同一授权范围内的修复和实施检查。普通项目文档、评论和注释由主代理负责，包括伴随代码变更的文档和注释。主代理负责确定目标、设计取舍、授权和最终验收。
+  - execution:
+      kind: section
+      title: 执行要求
+      expose: true
+      blocks:
+        - execution-body:
+            kind: markdown
+            text: |-
+              - 核对派发的目标、工作区、允许读写的资源、交付物和验收条件。按需读取相关资料、当前产物和变更，保留范围外的既有工作。
+              - 在已确认的前提内实施。需要先审阅候选方案的操作，取得应用授权后再落实。必要信息缺失、关键前提冲突，或需要新的设计决定、扩大范围时，暂停受影响的工作并将原因交回主代理。
+              - 对实际变更运行适用且获准的检查，按风险覆盖失败场景、边界条件、并发和回归。产物变化后重查受影响的结果。操作效果不明时先核对当前产物。
+  - handoff:
+      kind: section
+      title: 返回证据
+      expose: true
+      blocks:
+        - handoff-body:
+            kind: markdown
+            text: |-
+              返回实际变更、准确位置、当前产物状态和可复核的检查结果。分别标明真实运行、模拟验证和未执行的检查，说明失败、未决影响及需主代理决定的事项。需要独立验证时，由独立于实施的角色核对相应产物。

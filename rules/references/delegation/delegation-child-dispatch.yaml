@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: delegation-child-dispatch
+markdown_path: references/delegation/delegation-child-dispatch.md
+title: 子代理派发与回执
+blocks:
+  - dispatch:
+      kind: section
+      title: 核对派发条件
+      expose: true
+      blocks:
+        - dispatch-body:
+            kind: markdown
+            text: |-
+              主代理在派发前核实本项任务的授权、前置证据、合适职责和可用能力。根据[执行边界](../execution/execution-control.yaml#work-boundary)说明目标、可以读写的资源、预期产物、验收与回传条件，并标明仍需主代理决定的事项。
+
+              首次派发提供必要来源和工作区。续接前核对实际实例标识及受支持的续接操作。每项并行工作分别核对权限、依赖和写入边界。
+  - receipt:
+      kind: section
+      title: 核对回执与执行边界
+      expose: true
+      blocks:
+        - receipt-body:
+            kind: markdown
+            text: |-
+              根据实际回执判断派发是否完成，区分请求已接受、开始执行、返回交付以及效果未知。只把实际可核实的标识、状态和结果写入当前记录。任务结果缺失时，保留这一证据缺口并暂停依赖项。
+
+              子代理把成果、证据、冲突及所需决策交回主代理。涉及新授权、其他角色或扩大工作范围时，由主代理评估和派发。后续上游证据的传递按[上下文交接](context-exchange-handoff.yaml)处理。

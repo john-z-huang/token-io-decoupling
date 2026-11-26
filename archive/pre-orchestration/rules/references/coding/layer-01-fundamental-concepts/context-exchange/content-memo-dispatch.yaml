@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: content-memo-dispatch
+markdown_path: references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-dispatch.md
+title: "Worker Content Memo Dispatch"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档定义由父 Agent 控制的 Worker memo 写入开关 `write_content_memo`，不定义 memo 内容或生命周期。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "Dispatch 开关"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    每个已放行 bundle 都必须显式包含 `write_content_memo: true` 或 `false`；Worker 不得自行推断默认值。`true` 启用对 `context-exchange/workers/<worker-context-id>/content-memo` 的写入；`false` 只关闭该 memo。已放行 bundle 中须包含准确 Memory 名称。父级控制开关和名称。Worker 级访问隔离或只读 ACL 须有实际技术证据。
+
+                    Memory 工具未暴露或未获授权时，报告限制并阻塞依赖 memo 的切片；不得把 memo 物化为文件。其他独立工作可以继续。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              需要 Memory 时，按当前环境选择实际可用且获准的项目 Memory 能力，核对后端项目绑定、操作说明、参数、权限和结果。普通文档访问不得代替必需的 Memory 操作；能力缺失仅阻塞依赖项。不得绕过隐藏、拒绝或访问限制，也不得伪造旧身份上下文。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Worker Content Memo](content-memo.yaml) — 定位 memo 内容契约。
+              - [Worker Content Memo Lifecycle](content-memo-lifecycle.yaml) — 定位更新规则。
+              - [Coding Context Exchange Workspace Boundary](context-exchange-workspace-boundary.yaml) — 定位 Memory 逻辑归属规则。

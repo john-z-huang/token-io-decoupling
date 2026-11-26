@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+id: coding-selector
+markdown_path: workflows/coding.md
+title: Coding 路线选择
+blocks:
+  - body:
+      kind: markdown
+      text: |-
+        先通过[入口 Hook](../hooks/entry.yaml)确认用户目标、限制、交付物和验收条件。按[选路规则](../references/planning/task-planning.yaml#route-selection)在[单代理路线](coding-single-agent.yaml)和[多代理路线](coding-multi-agent.yaml)之间选择。
+
+        多代理路线依据[规划 Hook](../hooks/planning.yaml)与[委派 Hook](../hooks/delegation.yaml)安排角色和派发时间。必要能力缺失或新约束影响在途委派时，按[恢复 Hook](../hooks/recovery.yaml)处理。用户指令、任务依赖或可用能力变化时，按[计划调整规则](../references/planning/task-planning.yaml#plan-updates)重查受影响的判断。
+
+        [完整路线目录](README.yaml) · [Hook 触发目录](../hooks/README.yaml)

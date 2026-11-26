@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: layer-02-readme
+markdown_path: references/coding/layer-02-workflow-concepts/README.md
+title: "Layer 02: Workflow Checkpoints"
+blocks:
+  - scope-and-boundary:
+      kind: section
+      title: "范围与边界"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - scope-and-boundary-body:
+            kind: markdown
+            text: |-
+              与提供方无关的检查点所有者定义通用操作、证据、通过条件和边界。Layer-03 负责当前任务适用性判断；Layer-04 将这些判断排序组合为完整路线。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              按下方分类查找检查点，再阅读其同语言所有者。
+  - classification:
+      kind: section
+      title: "分类"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - classification-body:
+            kind: markdown
+            text: |-
+              - [entry-and-context/](entry-and-context/README.yaml)
+              - [decision-and-execution/](decision-and-execution/README.yaml)
+              - [verification-and-repair/](verification-and-repair/README.yaml)
+              - [completion-and-effects/](completion-and-effects/README.yaml)

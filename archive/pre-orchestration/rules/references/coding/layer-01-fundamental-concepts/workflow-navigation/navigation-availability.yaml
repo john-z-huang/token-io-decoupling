@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: navigation-availability
+markdown_path: references/coding/layer-01-fundamental-concepts/workflow-navigation/navigation-availability.md
+title: "工作流导航可用性"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责可选工作流导航或结构检查不可用时的处置；不负责策略、调用方身份、权限或检查点结果。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - rules-body:
+            kind: markdown
+            text: |-
+              工作流当前 owner 文档具权威性。可按标题或块 ID 定位所需规则；外部辅助结果只作为定位证据，权限和工作流状态依据实际来源核验。
+
+              若导航不可用或不完整，且当前 Session 的授权能力可以访问相关权威 owner，则直接阅读该 owner。阅读范围限制在当前判断所需内容。若无法获取必需 owner，则仅阻塞依赖它的工作；不得推断其策略或跳过要求。可选导航不需要时，记录附有理由的 `Not applicable`。
+
+              无状态结构检查不能取代直接审阅 owner、解释证据、授权、Slice 释放、Control、验证或验收。它们不保留规范工作流状态，不建立跨调用顺序，也不能将调用方提供的 Hash 变为证明。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              直接读取当前路线、Hook 和适用规则文档。选用辅助导航或结构检查时，通过当前环境的发现方式核对能力、说明、参数和授权。只有缺少必需证据才暂停依赖工作。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [工作流规则上下文](rule-context.yaml) — 负责有界规则导航。
+              - [检查点结构检查](checkpoint-structure-checks.yaml) — 负责对所供事实执行可选结构检查。
+              - [Coding Execution Control](../execution-control/execution-control.yaml) — 负责 Slice 与 Control 的授权边界。

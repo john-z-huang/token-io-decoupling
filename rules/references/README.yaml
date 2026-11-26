@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+id: coding-references
+markdown_path: references/README.md
+title: 开发任务编排参考
+blocks:
+  - essentials:
+      kind: section
+      title: 角色与通用规则
+      expose: true
+      blocks:
+        - essentials-body:
+            kind: markdown
+            text: |-
+              [主代理职责](roles/main-agent.yaml)确定决策、执行和验收归属。[任务规划与选路](planning/task-planning.yaml)负责路线与依赖。[子代理职责与委派策略](delegation/delegation-policy.yaml)负责角色匹配、复用、替换和模型选择。
+  - topics:
+      kind: section
+      title: 按阶段查阅
+      expose: true
+      blocks:
+        - topics-body:
+            kind: markdown
+            text: |-
+              | 主题 | 参考规则 |
+              | --- | --- |
+              | 规划 | [任务约定](planning/contract.yaml)、[执行者与依赖](planning/task-assignment.yaml)、[决策与执行条件](planning/execution-decision-gate.yaml) |
+              | 委派 | [派发与回执](delegation/delegation-child-dispatch.yaml)、[上下文交接](delegation/context-exchange-handoff.yaml) |
+              | 执行与恢复 | [执行边界](execution/execution-control.yaml)、[阶段反馈](execution/execution-stage-feedback.yaml)、[修复范围](execution/repair-scope-gate.yaml) |
+              | 验证与交付 | [验证独立性](verification/verification-independence.yaml)、[证据时效](verification/verification-epoch.yaml)、[修复后的复验](verification/repair-verification-handoff.yaml)、[结果报告](verification/verification-reporting.yaml) |

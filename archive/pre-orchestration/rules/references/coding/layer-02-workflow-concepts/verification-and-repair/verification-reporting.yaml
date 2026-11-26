@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: workflow-concept
+id: verification-reporting
+markdown_path: references/coding/layer-02-workflow-concepts/verification-and-repair/verification-reporting.md
+title: "验证报告检查点"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本检查点负责验证结果分类、未解决项目报告和阻塞影响报告。不定义独立 Session、检查内容、证据捕获、epoch 失效或修复。
+  - actions:
+      kind: section
+      title: "动作"
+      expose: true
+      blocks:
+        - actions-body:
+            kind: markdown
+            text: |-
+              1. 记录通过、失败、不可用和假设的检查，以及剩余风险。
+              2. 明确报告每个未解决的验证项目及其阻塞影响。
+  - pass:
+      kind: section
+      title: "通过条件"
+      expose: true
+      blocks:
+        - pass-body:
+            kind: markdown
+            text: |-
+              必需的结果分类、剩余风险、未解决项目和阻塞影响都已明确。
+  - boundary:
+      kind: section
+      title: "边界"
+      expose: true
+      blocks:
+        - boundary-body:
+            kind: markdown
+            text: |-
+              本检查点不选择检查，不捕获最终状态指纹，不定义独立验证，不使 epoch 失效，不修复失败，不写文档，也不产生 Git 影响。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Execution Decision Gate](../../layer-01-fundamental-concepts/execution-planning/execution-decision-gate.yaml) — 定位验收条件归属。
+              - [Coding Execution Control](../../layer-01-fundamental-concepts/execution-control/execution-control.yaml) — 定位报告范围和返回边界归属。
+              - [Coding Session 职责归属](../../layer-01-fundamental-concepts/session-runtime/session-role-ownership.yaml) — 定位 Change Verification 职责。
+              - [Coding Delegation State Record Worker Boundary](../../layer-01-fundamental-concepts/delegation/delegation-worker-boundary.yaml) — 定位证据访问边界。

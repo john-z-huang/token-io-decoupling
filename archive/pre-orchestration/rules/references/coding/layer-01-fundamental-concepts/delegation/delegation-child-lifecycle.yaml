@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: delegation-child-lifecycle
+markdown_path: references/coding/layer-01-fundamental-concepts/delegation/delegation-child-lifecycle.md
+title: "Coding 子 Agent 生命周期"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责已创建多代理子 Agent 的持久性和生命周期状态。它消费已由各自 owner 概念处理创建、分配和派发的子 Agent；不定义创建、职责分配、Dispatch Preview、Worker 边界、复用/替换或上下文传输。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "生命周期状态"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    在父级记录中持久保存每个已创建子 Agent 的身份和生命周期。不得仅为清理而关闭、shutdown、归档、删除或移除子 Agent。运行时状态信息是短暂的情形下，即使状态不再可用，仍须在父级记录保留真实身份或任务调用证据和状态。pending 或 running 时，在可用情况下采用有界的事件驱动等待；只有状态变化时才更新记录，避免无变化时重复轮询或重写状态。只有返回最终结果和证据后才能进入 completed。应用配置的摘要频率，必需的里程碑反馈仍须输出。
+        - section-02:
+            kind: section
+            title: "错误与中断"
+            expose: true
+            blocks:
+              - section-02-body:
+                  kind: markdown
+                  text: |-
+                    发生错误或中断时，保留原子代理的身份、明确的生命周期状态与现有证据；未经授权不得以清理为由关闭它。同一子代理是否能够进行获准 follow-up，以及无法继续时如何处理，均由复用/替换 owner 决定；生命周期 owner 只记录结果状态和阻塞原因。不得从生命周期变化推断创建 successor 或回收 allocation 名额的权限。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              父级保留实际任务调用、返回状态与证据。同步返回的任务可直接由 running 进入 completed/failed；只有工具明确提供异步句柄与状态接口时才查询或等待。工具未暴露取消、消息或恢复能力时不得模拟。终态不释放已绑定名额或职责。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Child Creation](delegation-child-creation.yaml) — 定位子 Agent 创建能力。
+              - [Coding Child Role Allocation](delegation-child-role-allocation.yaml) — 定位名额和职责分配。
+              - [Coding Child Dispatch](delegation-child-dispatch.yaml) — 定位 Dispatch Preview 和 Worker 边界。
+              - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.yaml) — 定位获准修复和替换关系。
+              - [Coding Context Exchange](../context-exchange/context-exchange.yaml) — 定位上下文传输归属。
+              - [Coding Session 审计可见性](../session-runtime/session-audit-visibility.yaml) — 定位审计和摘要配置。

@@ -1,0 +1,157 @@
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: workflow-route
+id: coding-multi-agent
+markdown_path: workflows/coding-multi-agent.md
+title: 多代理 Coding
+flowchart_references:
+  DELEGATION: ../hooks/delegation.yaml#trigger
+  EXECUTION: ../hooks/execution.yaml#trigger
+  RECOVERY: ../hooks/recovery.yaml#trigger
+blocks:
+  - overview:
+      kind: markdown
+      text: |-
+        用户明确要求委派或任务存在适合独立委派的分工时，由主代理保留整体计划、决策、协调和最终验收，按各项工作的实际需求动态派给现有角色。
+  - flowchart:
+      kind: section
+      title: 工作流路线图
+      blocks:
+        - flowchart-body:
+            kind: markdown
+            text: |-
+              从「开始」按当前事件进入相应分支。实线表示默认推进或收束，虚线表示条件分支。「结束」汇集本次流程的完成、受阻和转交结果。每个 Hook 的细则见同页子流程图。按[流程控制](coding-multi-agent.yaml#returns)判断受影响工作的落点。
+
+              ```mermaid
+              flowchart TD
+                  START(["开始"])
+                  MM01["MM01 需求确认 · 入口 Hook"]
+                  MM02["MM02 任务规划 · 规划 Hook"]
+                  MM03["MM03 任务执行 · 按就绪工作与责任选执行者"]
+                  MM04["MM04 结果验证 · 验证 Hook"]
+                  MM05["MM05 交付 · 交付 Hook"]
+                  DONE["完成"]
+                  EXECUTION["主代理执行 Hook · 推进主代理承担的工作"]
+                  DELEGATION["委派 Hook · 派发、续接、替换和回收证据"]
+                  INTERRUPTION["任意阶段中断、调用失败、实例异常或效果不明"]
+                  RECOVERY["恢复 Hook · 核实效果、处理在途任务和未决事项"]
+                  RESUME["按进入条件重返 MM01 至 MM05 中已就绪的落点"]
+                  SINGLE["处理受影响的在途工作后进入单代理路线"]
+                  BLOCKED["报告阻断和恢复条件"]
+                  END(["结束"])
+                  START -->|正常进入路线| MM01
+                  START -. 遇到中途事件 .-> INTERRUPTION
+                  MM01 -->|边界明确且沿用多代理路线| MM02
+                  MM02 -->|工作和分工就绪| MM03
+                  MM03 -->|主代理核实所需产物和证据| MM04
+                  MM04 -->|必要验收通过| MM05
+                  MM05 -->|实际交付物通过适用验收| DONE
+                  MM01 -. 新约束影响在途委派 .-> RECOVERY
+                  MM01 -. 新路线为单代理且受影响在途工作已处理 .-> SINGLE
+                  MM02 -. 无需实施或已有有效产物与证据 .-> MM04
+                  MM02 -. 目标、授权或验收有变 .-> MM01
+                  MM03 -. 有获准派发或续接的任务 .-> DELEGATION
+                  MM03 -. 分配给主代理的工作 .-> EXECUTION
+                  EXECUTION -. 本项产物和操作证据可验证 .-> MM04
+                  DELEGATION -. 本项产物和证据交由主代理验收 .-> MM04
+                  MM03 -. 前置、分工或能力变化 .-> MM02
+                  MM03 -. 用户约束变化 .-> MM01
+                  MM04 -. 需要且允许委派独立验证 .-> DELEGATION
+                  MM04 -. 原范围内修复后复验 .-> MM03
+                  MM04 -. 修复需重新规划 .-> MM02
+                  MM04 -. 验收或授权变化 .-> MM01
+                  MM04 -. 必要证据或独立验证无法补齐 .-> MM05
+                  MM05 -. 产物或验证状态变化 .-> MM04
+                  MM05 -. 目标、授权或验收变化 .-> MM01
+                  DELEGATION -. 回执或效果不明 .-> RECOVERY
+                  INTERRUPTION -. 暂停受影响工作并回读实际状态 .-> RECOVERY
+                  RECOVERY -. 证据和授权支持续接 .-> RESUME
+                  RECOVERY -. 仍需处理新授权或改变路线 .-> MM01
+                  RECOVERY -. 无法恢复且其余工作已处理 .-> MM05
+                  MM05 -. 必要验收受阻 .-> BLOCKED
+                  DONE --> END
+                  BLOCKED --> END
+                  SINGLE --> END
+                  RESUME --> END
+              ```
+        - hook-details:
+            kind: rule_include
+            document: coding-workflow-directory
+            fragment: hook-flowcharts
+  - checkpoints:
+      kind: section
+      title: 阶段与适用 Hook
+      blocks:
+        - preconditions:
+            kind: markdown
+            text: |-
+              从路线选择器进入。主代理已识别满足用户要求或带来协调收益的分工，派发前核实各自的依赖、角色和宿主能力。
+        - MM01:
+            kind: route_step
+            title: 需求确认
+            phase: entry
+            hook: entry
+            text: |-
+              按[入口 Hook](../hooks/entry.yaml)确认目标、用户约束、交付物和验收条件。任务边界足以选路和规划时退出。
+        - MM02:
+            kind: route_step
+            title: 任务规划
+            phase: definition
+            hook: planning
+            text: |-
+              基于已确认的任务边界进入[规划 Hook](../hooks/planning.yaml)。逐项核对同页 Hook 子流程，明确适用条件、证据与回退位置，再确定近期工作、依赖、分工和验收办法。按工作项核对委派、主代理执行及独立验证的触发和证据，主代理负责跨任务决策与集成。
+        - MM03:
+            kind: route_step
+            title: 任务执行
+            phase: execution
+            hook: delegation
+            text: |-
+              按[委派 Hook](../hooks/delegation.yaml)核实依赖、角色、现有实例和宿主能力后派发或续接。按实际回执核对产物和未决影响，可用于下游时由主代理集成。主代理承担的工作按[主代理执行 Hook](../hooks/execution.yaml)核对进入与退出。
+        - MM04:
+            kind: route_step
+            title: 结果验证
+            phase: verification
+            hook: verification
+            text: |-
+              按[验证 Hook](../hooks/verification.yaml)用当前产物和实际检查核对验收条件。必要验收均有当前证据时通过，失败或缺证据的项目进入流程控制。
+        - MM05:
+            kind: route_step
+            title: 交付
+            phase: delivery
+            hook: delivery
+            text: |-
+              准备交付或报告阻断时进入[交付 Hook](../hooks/delivery.yaml)，核对实际产物和验证状态。通过适用验收后结束为完成，受阻时说明缺项。
+  - returns:
+      kind: section
+      title: 变更与流程控制
+      expose: true
+      blocks:
+        - returns-body:
+            kind: markdown
+            text: |-
+              先按[阶段进入与退出](README.yaml#section-01)核对证据，再依据变化选择落点。
+
+              | 变化或当前状态 | Hook 与落点 |
+              | --- | --- |
+              | 目标、范围、授权、验收或代理约束改变 | 回到 MM01，按[入口 Hook](../hooks/entry.yaml)重查变化。分工约束或可用能力影响路线时，按[路线选择](coding.yaml)重新判断。涉及在途委派时，先按[恢复 Hook](../hooks/recovery.yaml)处理受影响的旧任务。沿用本路线时，回到 MM02 更新受影响的计划。切换后进入选定路线中满足条件的阶段。 |
+              | 任务依赖、分工或能力变化 | 回到 MM02，按[规划 Hook](../hooks/planning.yaml)更新受影响计划。现有分工仍可行且仅实例状态变化时，按[委派 Hook](../hooks/delegation.yaml)在相关阶段判断续接、等待或替换。派发前核对所需前置结果和相关旧实例的未决效果。 |
+              | 已有产物满足当前执行要求，或该项只需复核 | 当前产物、计划和适用的委派交付证据满足进入条件时，可从 MM02 直接进入 MM04。需要独立验证时，按[验证 Hook](../hooks/verification.yaml)核实独立性，涉及派发时同时应用[委派 Hook](../hooks/delegation.yaml)。 |
+              | 验证发现缺陷或交付物发生变化 | MM04 按[验证 Hook](../hooks/verification.yaml)核对修复范围。原范围内的修复回到 MM03，由职责匹配的执行者处理。涉及范围或计划变更时回到 MM01 或 MM02。修复后回到 MM04，沿用原有独立性要求复核受影响项。交付期间证据过期也回到 MM04，必要验收通过后再回 MM05。 |
+              | 中断、调用失败、子代理失联或结果不明 | 先按[恢复 Hook](../hooks/recovery.yaml)核对回执、在途操作和实际效果。新约束使在途工作失效时，按宿主能力暂停或取消，并保留无法核实的未决效果。条件恢复后回到原阶段或修订后计划的就绪阶段。续接子任务时按[委派 Hook](../hooks/delegation.yaml)优先复用同角色实例。需要调整分工时回到 MM02，无法恢复时在 MM05 报告具体阻断。 |
+  - mode-boundary:
+      kind: section
+      title: 模式边界
+      expose: true
+      blocks:
+        - mode-boundary-body:
+            kind: markdown
+            text: |-
+              任务数量、角色、开始时机、模型和推理强度随计划演进。后续工作优先派给同角色已有实例。替换仅按[委派合同](../hooks/delegation.yaml)核实的例外办理。主代理按[自身职责](../references/roles/main-agent.yaml#execution)推进工作，汇总实际证据并验收。
+  - related:
+      kind: section
+      title: 按条件触发的 Hooks
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              按当前动作查阅[Hook 触发目录](../hooks/README.yaml)，遇到中断或未知效果时读取[恢复 Hook](../hooks/recovery.yaml)。

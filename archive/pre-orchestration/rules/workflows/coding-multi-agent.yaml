@@ -1,0 +1,130 @@
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: workflow-route
+id: coding-multi-agent
+markdown_path: workflows/coding-multi-agent.md
+title: Coding 工作流 — Multi-Agent 模式
+blocks:
+  - overview:
+      kind: markdown
+      text: |-
+        本路线只绑定七个主阶段的 Hook。Agent 根据当前任务、真实工具结果和已核实的证据，在相关动作发生时应用 [Hook 合同](../hooks/README.yaml)。阶段之间传递当前证据，附加 Hook 随条件触发。
+  - flowchart:
+      kind: section
+      title: 工作流路线图
+      blocks:
+        - flowchart-body:
+            kind: markdown
+            text: |-
+              ```mermaid
+              flowchart TD
+                  MM01["MM01 入口就绪"]
+                  MM02["MM02 Session 就绪"]
+                  MM03["MM03 工作定义"]
+                  MM04["MM04 Multi-Agent 执行"]
+                  MM05["MM05 验证"]
+                  MM06["MM06 文档"]
+                  MM07["MM07 交付与验收"]
+                  DONE["complete"]
+                  MM01 -- 适用条件已满足 --> MM02
+                  MM02 -- 适用条件已满足 --> MM03
+                  MM03 -- 适用条件已满足 --> MM04
+                  MM04 -- 适用条件已满足 --> MM05
+                  MM05 -- 适用条件已满足 --> MM06
+                  MM06 -- 适用条件已满足 --> MM07
+                  MM07 -- 验收通过 --> DONE
+              ```
+  - checkpoints:
+      kind: section
+      title: 路线顺序检查清单
+      blocks:
+        - preconditions:
+            kind: markdown
+            text: |-
+              使用已确认的模式进入路线，沿用[共享协议 Hook](../hooks/foundation.yaml)中的授权与证据边界。进入各阶段时核对对应合同，按实际适用性处理合同中的事项。
+        - MM01:
+            kind: route_step
+            title: 入口就绪。
+            phase: entry
+            hook: entry
+            text: |-
+              按[入口就绪 Hook](../hooks/entry.yaml)核验。核对当前任务、环境、能力及已确认的路线。
+        - MM02:
+            kind: route_step
+            title: Session 就绪。
+            phase: session
+            hook: session
+            text: |-
+              按[Session 就绪 Hook](../hooks/session.yaml)核验。读回当前会话与已确认的启动状态。
+        - MM03:
+            kind: route_step
+            title: 工作定义。
+            phase: definition
+            hook: planning
+            text: |-
+              按[工作定义 Hook](../hooks/planning.yaml)核验。明确当前工作、验收条件和允许的影响范围。
+        - MM04:
+            kind: route_step
+            title: Multi-Agent 执行。
+            phase: execution
+            hook: delegation
+            text: |-
+              按[Multi-Agent 执行 Hook](../hooks/delegation.yaml)选择适用分支。Root 直接实施时，由 Root 完成已获授权的工作；确需委派时，在实际任务授权和 Hook 门禁满足后，才由已确认的子代理实施。锁定的预算不等于必须委派，也不授予派发权限。
+
+              两条分支都由 Root 审阅实际实施结果。仅当执行阶段可以返回且没有待处理的必要恢复或结果时，才向 MM05 交接实际改动路径、已发生的效果、初步检查及结果、未决项及其影响。结果待返回或必需证据不足时，保留 MM04 的暂停位置；不要以派发回执或摘要代替实际结果。
+        - MM05:
+            kind: route_step
+            title: 验证。
+            phase: verification
+            hook: verification
+            text: |-
+              接收 MM04 的实施交接，按[验证 Hook](../hooks/verification.yaml)核对当前实际状态，验证适用的验收条件。初步检查是实施证据，不能替代最终验证；必需验证证据不足时，不进入 MM06。
+        - MM06:
+            kind: route_step
+            title: 文档。
+            phase: documentation
+            hook: documentation
+            text: |-
+              按[文档 Hook](../hooks/documentation.yaml)核验。判断本次改动的文档影响并处理适用项。
+        - MM07:
+            kind: route_step
+            title: 交付与验收。
+            phase: delivery
+            hook: delivery
+            text: |-
+              按[交付与验收 Hook](../hooks/delivery.yaml)核验。核对当前证据及已获授权的交付事项。
+  - returns:
+      kind: section
+      title: 前置补证与恢复
+      expose: true
+      blocks:
+        - returns-body:
+            kind: markdown
+            text: |-
+              前置缺失或过期、任务中断或效果未知时，按[恢复 Hook](../hooks/recovery.yaml)保留原挂起模块和子步骤，读回实际效果并按对应合同补证。满足恢复条件后回到原位置，只继续仍获授权且尚未完成的事项。无法安全恢复时，暂停受影响工作并说明所缺证据或能力。
+
+              跨阶段只返回受影响的位置，不重新跑整条路线：
+
+              | 触发 | 返回位置 |
+              | --- | --- |
+              | 需求、能力或路线资格变化 | 回 MM01，按[入口 Hook](../hooks/entry.yaml)补核受影响条件；会话状态或身份变化再回 MM02 核对。 |
+              | 实施或验证发现 Contract、Decision 需要实质重审 | 交回调用方；Contract 在 MM01 核对，决策及受影响的计划在 MM03 按[工作定义 Hook](../hooks/planning.yaml)更新。所需证据及授权有效后再恢复原位置。 |
+              | MM05 发现具体失败 | 按[修复 Hook](../hooks/repair.yaml)处理；修复交接后仍在 MM05 用新指纹重验，不因修复成功直接进入文档或交付。 |
+              | MM06 的文档影响触及内容、Contract 或验收，或 MM07 缺少当前有效的必需验证证据（即使未发现指纹差异）或交付内容指纹与已验证状态不符（含拟交付内容） | 回 MM05，按[验证 Hook](../hooks/verification.yaml)重验受影响维度。证据当前有效后返回原阶段及暂停位置，不重放已完成的写入或 Git 效果。 |
+  - mode-boundary:
+      kind: section
+      title: Mode 边界
+      expose: true
+      blocks:
+        - mode-boundary-body:
+            kind: markdown
+            text: |-
+              使用当前 Session 已确认的 Multi-Agent 模式和锁定的正数 child count。实际委派前按[委派 Hook](../hooks/delegation.yaml)核对独立授权、职责、剩余名额及实际子代理能力，派发后审阅完整结果。
+  - related:
+      kind: section
+      title: 按条件触发的 Hooks
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              遇到上下文交接、审计、外部建议或受控物化等事项时，从 [Hook 触发目录](../hooks/README.yaml)读取对应合同。

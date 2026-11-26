@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: workflow-concept
+id: contract
+markdown_path: references/coding/layer-02-workflow-concepts/entry-and-context/contract.md
+title: "Contract 检查点"
+blocks:
+  - actions:
+      kind: section
+      title: "动作"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - actions-body:
+            kind: markdown
+            text: |-
+              1. 用一句话说明用户要求的结果。
+              2. 记录硬性限制：用户禁止事项、允许的运行环境、仓库和 worktree 范围、允许使用的工具和路径、安全限制，以及明确授权的外部影响。
+              3. 记录已经确定的实质性决策、未解决问题和验收条件。
+              4. 区分已观察到的事实与假设。未解决的实质性问题不得进入实现发布。
+
+              5. 从直接权威来源确定任务意图和符合条件的输出分类。任何建议输出都与 Contract 分开；它不能授权范围。建议政策遵循[Decisions 建议](../../layer-01-fundamental-concepts/execution-planning/decisions-advisory.yaml)。
+  - pass:
+      kind: section
+      title: "通过条件"
+      expose: true
+      blocks:
+        - pass-body:
+            kind: markdown
+            text: |-
+              目标、约束、决策和验收条件都已明确。如果缺少必要信息，停止依赖该信息的切片，并询问或报告具体缺少的输入。
+  - boundary:
+      kind: section
+      title: "边界"
+      expose: true
+      blocks:
+        - boundary-body:
+            kind: markdown
+            text: |-
+              本检查点不选择执行模式，不检查整个仓库，不实现修改，不验证结果，不写文档，也不执行 Git 操作。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Execution Decision Gate](../../layer-01-fundamental-concepts/execution-planning/execution-decision-gate.yaml) — 定位 Decision Brief 和放行条件归属。
+              - [Coding Execution Planning](../../layer-01-fundamental-concepts/execution-planning/execution-planning.yaml) — 定位有界规划归属。

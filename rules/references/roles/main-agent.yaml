@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=../../reference.schema.json
+schema_version: 1
+id: main-agent
+markdown_path: references/roles/main-agent.md
+title: 主代理职责
+blocks:
+  - scope:
+      kind: section
+      title: 职责范围
+      expose: true
+      blocks:
+        - scope-body:
+            kind: markdown
+            text: |-
+              - 主代理负责分析用户指令、直接核实定义任务所需的关键环境和代码事实，确定目标、范围、约束、交付物与验收条件。架构选择、风险和跨任务取舍由主代理判断。
+              - 主代理负责用户沟通、普通项目文档、评论和注释，以及结果集成与最终验收。子代理可提供有来源的事实和验证证据，由主代理亲自确认关键前提并作出决定。
+  - execution:
+      kind: section
+      title: 执行要求
+      expose: true
+      blocks:
+        - execution-body:
+            kind: markdown
+            text: |-
+              - 按[任务规划与选路](../planning/task-planning.yaml)组织工作。单代理路线由主代理自行执行。多代理路线由主代理决定子代理的创建、派发和续接，协调执行并负责验收。优先把具体任务交给职责匹配的子代理，并按[委派策略](../delegation/delegation-policy.yaml)复用同角色实例。
+              - 派发前核实当前授权和本次派发所需的前置事实。多代理路线中，需通过命令补查关键前提时，先将有界取证交给 [Context Bootstrap/Refresh](context-bootstrap-refresh.yaml)。把决定转为明确的子任务，注明目标、资源边界、必要来源、预期产物和验收条件。
+              - 多代理路线中，主代理仅在验收子代理交付物或分析子代理返回的消息时，才按需运行与当前交付或反馈直接相关的命令。命令用于核对产物、复核证据或查明反馈中的疑点。发现需实施或修复的事项时，将其交给职责匹配的子代理。
+              - 委派受阻或没有合适角色时，调整分工或报告缺口。主代理推进独立工作或处理阻塞时，同样遵守多代理路线的命令边界。
+              - 核对子任务回执、实际产物和未决影响，按依赖安排集成。用户调整要求或出现影响计划的新证据时，重查受影响的范围、分工和验收条件。
+  - handoff:
+      kind: section
+      title: 验收与交付证据
+      expose: true
+      blocks:
+        - handoff-body:
+            kind: markdown
+            text: |-
+              - 主代理按用户的验收条件逐项核对当前产物和实际证据。需要独立验证时，确认验证者的独立性及证据对应的产物状态。独立性要求未满足时，记录受阻项。产物或约束变化后重查受影响的结果。
+              - 向用户交付实际产物和可核对的结果。区分通过、失败、跳过与受阻，并交代影响验收的未完成事项。

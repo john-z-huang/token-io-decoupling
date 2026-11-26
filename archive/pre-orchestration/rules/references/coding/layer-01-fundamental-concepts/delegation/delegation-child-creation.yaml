@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: delegation-child-creation
+markdown_path: references/coding/layer-01-fundamental-concepts/delegation/delegation-child-creation.md
+title: "Coding 子 Agent 创建"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档负责 Multi-Agent 子代理创建的唯一能力入口。它消费已放行的模式/数量门禁、已预留且分配职责的名额、符合条件的输出类型，以及已放行的具体 Interaction Slice；不重新确认 mode/count，不分配职责，不决定 replacement 或生命周期政策。创建成功后只回写实际 Agent 身份和初始 lifecycle，且不得新增名额。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - section-01:
+            kind: section
+            title: "创建能力"
+            expose: true
+            blocks:
+              - section-01-body:
+                  kind: markdown
+                  text: |-
+                    每次创建前，Root 先按[子代理端点跟随 Root](../session-runtime/runtime-provider-support.yaml#subagent-endpoint)确认自身当前 provider、模型及可见 API/端点路由元数据与来源，再核验子代理参数或继承路径使用同一端点；按任务选择模型/推理强度不得跨端点。元数据不明、冲突、同端点模型不可用或工具无法保证该路由时阻断创建，不沿用未经核验的默认值，不静默回退其他 provider。此项是必需条件，与可选推理设置分别核验。
+
+                    创建前按[运行时与能力边界](../session-runtime/runtime-provider-support.yaml)核对当前任务目标、职责、范围、依赖、风险、不确定性、验证要求和失败证据。由 Root 按选中的宿主适配和实际可用模型选型，创建前简述任务依据。只有委派工具实际支持且任务需要时才指定推理控制；没有可选设置控制时沿用默认值并记录限制，明确必需的设置无法落实时才阻塞。创建前立即复核当前 Slice 与实际返回的 Hash/fingerprint，不强求工具未返回的字段，不要求子代理自查模型设置。
+
+                    仅在已核验所选宿主的委派能力、参数和权限后调用。按实际支持范围执行一次性、并行或串行任务；不得假定存在持久 ID、消息、等待或续接能力。创建前须有已放行的 Multi-Agent 门禁、锁定正整数数量、已分配职责且未绑定的预留名额，以及 `slice_status: released` 的 Interaction Slice（目标、范围/修改、返回条件和 memo 开关）。只对实际需要跨 Slice 复用的分支要求持久能力；其缺失不阻塞一次性切片。一次性执行以真实任务调用证据和父级逻辑 allocation 定位；不伪造宿主 ID，允许正常创建、执行、返回，但结果不得再冒用该执行身份。只有宿主确实支持时才复用。输出限获准代码/配置或 Skill 指令/参考文档；普通文档由根父级编写。不得仅因 Multi-Agent 选择而创建。创建及返回遵守只读验证安全边界、数量及角色唯一性。状态由父级依据当前真实记录和用户批准在对话中维护，不写 Memory；调度身份与受保护回执须有实际证据。模型和推理设置按委派能力实际支持的控制处理。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              按所选宿主适配核对实际委派工具 Schema，再提交已放行的目标、目录、范围、来源和返回条件；仅传工具真实接受的字段。同步一次性调用可以同时完成创建、派发和返回，不要求存在独立创建命令。将逻辑 allocation 与实际工具调用/任务结果证据绑定；若返回宿主身份则记录原值，否则不虚构持久 Session ID。可选推理控制缺失时使用已核实的默认值并记录 `Not applicable`，不能伪造参数。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Child Lifecycle](delegation-child-lifecycle.yaml) — 定位子 Agent 状态归属。
+              - [Coding Child Role Allocation](delegation-child-role-allocation.yaml) — 定位名额和职责分配。
+              - [Coding Child Dispatch](delegation-child-dispatch.yaml) — 定位实际派发边界。
+              - [Coding Child Reuse and Replacement](delegation-child-reuse-replacement.yaml) — 定位获准的复用和替换。
+              - [Coding Session Model](../session-runtime/session-model.yaml) — 定位 role 和 Session 归属。
+              - [Coding Context Exchange](../context-exchange/context-exchange.yaml) — 定位必要的上下文传输归属。
+              - [Coding Session 审计可见性](../session-runtime/session-audit-visibility.yaml) — 定位会话审计配置。

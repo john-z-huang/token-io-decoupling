@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../../../reference.schema.json
+schema_version: 1
+document_type: workflow-checkpoint
+id: route-entry
+markdown_path: references/coding/layer-03-workflow-checkpoints/route-entry.md
+title: "Coding 路线入口"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本检查点负责路线前验证组合及唯一获授权路线选择结果。
+  - inputs:
+      kind: section
+      title: "触发与输入"
+      expose: true
+      blocks:
+        - inputs-body:
+            kind: markdown
+            text: |-
+              Coding 入口在[Contract 检查点](../layer-02-workflow-concepts/entry-and-context/contract.yaml)、[Environment 检查点](../layer-02-workflow-concepts/entry-and-context/environment.yaml)、[能力清单](../layer-02-workflow-concepts/entry-and-context/environment-capability-inventory.yaml)和[Mode 检查点](../layer-02-workflow-concepts/entry-and-context/mode.yaml)通过后调用本检查点。输入为各项当前结果，包括已释放的 mode/count 及未解决的失败。
+  - decision-and-result:
+      kind: section
+      title: "决策与结果"
+      expose: true
+      blocks:
+        - decision-and-result-body:
+            kind: markdown
+            text: |-
+              确认所有必需门禁均已完成，只选择 Mode 授权的路线，并向调用方返回所选路线标识和门禁证据，由调用方加载并核验。
+  - failure-boundary:
+      kind: section
+      title: "失败边界"
+      expose: true
+      blocks:
+        - failure-boundary-body:
+            kind: markdown
+            text: |-
+              若前置项缺失、矛盾或尚未释放，返回对应入口检查点并停止依赖该结果的路线工作。不得重新解释 Mode、选择后备路线或在此初始化路线专用状态。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Mode](../layer-02-workflow-concepts/entry-and-context/mode.yaml)

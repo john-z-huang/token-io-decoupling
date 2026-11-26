@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../../reference.schema.json
+schema_version: 1
+document_type: workflow-checkpoint
+id: context-source-selection
+markdown_path: references/coding/layer-03-workflow-checkpoints/context-source-selection.md
+title: "上下文来源选择"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本检查点负责路线级 active plan、有界规则查询、可复用项目记忆和持久交换上下文的选择与核验流程。
+  - inputs:
+      kind: section
+      title: "触发与输入"
+      expose: true
+      blocks:
+        - inputs-body:
+            kind: markdown
+            text: |-
+              Session 已解决后，根据已验证事实和任务范围执行上下文来源选择。应用[Context](../layer-02-workflow-concepts/entry-and-context/context.yaml)、[Session Context Firewall](../layer-01-fundamental-concepts/session-runtime/session-context-firewall.yaml)和[工作流规则上下文](../layer-01-fundamental-concepts/workflow-navigation/rule-context.yaml)。需要代码结构证据时，应用[语言服务器与代码结构查询](../layer-01-fundamental-concepts/session-runtime/lsp-code-navigation.yaml)。在各自触发条件成立时应用 context-exchange owners。
+  - decision-and-result:
+      kind: section
+      title: "决策与结果"
+      expose: true
+      blocks:
+        - decision-and-result-body:
+            kind: markdown
+            text: |-
+              1. 定义当前最小 Context 问题、任务范围及可回答它的来源类别。应用 Context owner；不读取无关项目状态。
+              2. 始终列出 `plans/` 中本任务的活动计划 Memory，并读取每个匹配项。依据当前指令、任务匹配、来源指针和新鲜度核对每项；当前指令优先，计划不授予授权。无匹配活动计划时记录 `Not applicable` 和原因。若无法列出或读取相关活动计划，阻塞依赖工作；不得用文件替代该计划。
+              3. 若问题需要此前工作的可复用项目知识，按[项目 Memory](../layer-01-fundamental-concepts/session-runtime/project-memory.yaml)读取获准的相关项，仅在名称未知时列出相关主题。对照权威项目文件核验来源指针和新鲜度。无相关项或无需跨会话知识时，记录 `Not applicable` 和原因。Memory 不可用时返回已批准的权威项目文件；仅当必需事实无法另行确认时阻塞。此回退适用于普通可复用项目知识，不适用于第 2 步必需的活动计划查询/读取。
+              4. 若当前问题依赖工作流规则，按检查点的引用直接读取权威 owner，核对来源和版本，逐项读取判断所需的直接依赖。必需权威内容无法核实时，阻塞依赖工作。
+              5. 应用 Session Context Firewall 限制来源范围和入口。需要 Worker memo 或 memo 派发时，应用[内容 Memo 派发](../layer-01-fundamental-concepts/context-exchange/content-memo-dispatch.yaml)及其[内容 Memo 生命周期](../layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle.yaml)，核验必需的 Memory 能力与证据，作为之后获授权 Worker memo 派发的证据；未触发时记录 `Not applicable` 及原因。Worker 需要跨 Worker 交换/bootstrap 时，应用[工作流 Context Exchange](../layer-01-fundamental-concepts/context-exchange/context-exchange.yaml)及[工作区边界](../layer-01-fundamental-concepts/context-exchange/context-exchange-workspace-boundary.yaml)。仅在具体交接或恢复时应用[Context Exchange Handoff](../layer-01-fundamental-concepts/context-exchange/context-exchange-handoff.yaml)。按各自 owner 分别判断独立触发条件，并核验必需的持久 Memory 能力和证据。不得仅因收集 Context 而创建交换记录。必需的交换能力不可用时，阻塞依赖工作；owner 要求的持久记录不得回退为文件。
+              6. 返回带来源指针、来源溯源、新鲜度/epoch 及限制说明的最小当前事实。关键上下文过期、不完整或冲突时阻塞依赖决策。memo 适用性、同意和持久化仍由各自 owner 负责。
+  - failure-boundary:
+      kind: section
+      title: "失败边界"
+      expose: true
+      blocks:
+        - failure-boundary-body:
+            kind: markdown
+            text: |-
+              关键上下文过期、不可访问或冲突时，阻塞依赖它的决策。不得扩大来源范围、从记忆推断授权或绕过必需 Memory 能力。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Context](../layer-02-workflow-concepts/entry-and-context/context.yaml)

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: workflow-concept
+id: verification
+markdown_path: references/coding/layer-02-workflow-concepts/verification-and-repair/verification.md
+title: "验证检查点"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本检查点负责捕获当前最终状态证据、绑定验收条件、执行适用的整体和定向检查，并判断必需证据是否完整。不定义独立 Session、结果分类或后续 epoch 的失效规则。
+  - actions:
+      kind: section
+      title: "动作"
+      expose: true
+      blocks:
+        - actions-body:
+            kind: markdown
+            text: |-
+              1. 记录当前最终状态的指纹或 epoch，以及验收条件。
+              2. 针对这个准确状态运行适用的最强整体检查和定向检查。
+  - pass:
+      kind: section
+      title: "通过条件"
+      expose: true
+      blocks:
+        - pass-body:
+            kind: markdown
+            text: |-
+              每个必需验证项目都有当前证据，或证据缺口已明确并阻止完成。
+  - boundary:
+      kind: section
+      title: "边界"
+      expose: true
+      blocks:
+        - boundary-body:
+            kind: markdown
+            text: |-
+              本检查点不定义独立验证 Session，不分类或报告结果，不使后续 epoch 失效，不修复失败，不写文档，不产生 Git 影响，也不能单独宣布整体验收完成。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Coding Execution Decision Gate](../../layer-01-fundamental-concepts/execution-planning/execution-decision-gate.yaml) — 定位验收条件和放行决策归属。
+              - [Coding Execution Control](../../layer-01-fundamental-concepts/execution-control/execution-control.yaml) — 定位已放行范围和返回边界归属。
+              - [Coding Session 职责归属](../../layer-01-fundamental-concepts/session-runtime/session-role-ownership.yaml) — 定位 Change Verification 职责归属。
+              - [Coding Delegation State Record Worker Boundary](../../layer-01-fundamental-concepts/delegation/delegation-worker-boundary.yaml) — 定位最终状态证据访问边界。

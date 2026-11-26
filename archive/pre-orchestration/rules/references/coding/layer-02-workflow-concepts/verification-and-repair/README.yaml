@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: verification-and-repair-readme
+markdown_path: references/coding/layer-02-workflow-concepts/verification-and-repair/README.md
+title: "Verification And Repair"
+blocks:
+  - scope-and-boundary:
+      kind: section
+      title: "范围与边界"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - scope-and-boundary-body:
+            kind: markdown
+            text: |-
+              通用验证证据及修复范围、执行、交接和 epoch 检查点。本分类定义检查点操作/通过条件；验证独立性与修复授权仍归其概念所有者。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              从验证开始；仅在路线的修复触发条件成立时选择修复相关所有者。
+  - owners:
+      kind: section
+      title: "所有者"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - owners-body:
+            kind: markdown
+            text: |-
+              - [verification](verification.yaml)
+              - [verification-epoch](verification-epoch.yaml)
+              - [verification-independence](verification-independence.yaml)
+              - [verification-reporting](verification-reporting.yaml)
+              - [repair](repair.yaml)
+              - [repair-execution](repair-execution.yaml)
+              - [repair-scope-gate](repair-scope-gate.yaml)
+              - [repair-verification-handoff](repair-verification-handoff.yaml)

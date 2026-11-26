@@ -1,0 +1,115 @@
+# yaml-language-server: $schema=../reference.schema.json
+# yaml-language-server: $schema=../reference.schema.json
+schema_version: 1
+document_type: hook-contract
+id: materialization
+markdown_path: hooks/materialization.md
+activate_on: [materialization_requested]
+title: 候选预检与受控输出物化
+blocks:
+  - trigger:
+      kind: section
+      title: 触发条件
+      blocks:
+        - trigger-body:
+            kind: markdown
+            text: |-
+              - Agent 上报 `materialization_requested`，拟对一批候选仓库输出作结构预检，或准备/审阅/应用受保护候选产物。
+              - 既有候选、基线、授权或文件状态变化后拟继续应用/重放。
+              - 候选预检和物化都是可选能力；普通文件编辑或写入不能提供受保护物化所需的守卫，工具发现不证明当前身份/权限已适配。
+  - inputs:
+      kind: section
+      title: 输入与证据
+      blocks:
+        - inputs-body:
+            kind: markdown
+            text: |-
+              当前Contract、实际任务分配及职责、精确Slice、固定可信根、操作专用授权/grant、当前Session与身份守卫、候选内容/产物ID/清单Hash、基线、可信读取器/策略范围、已有收据与真实效果。只消费真实工具接受的字段，不伪造租约、回执或服务端事务。
+  - execution:
+      kind: section
+      title: 执行要求
+      blocks:
+        - execution-01:
+            kind: section
+            title: 一、物化路径先检查角色、能力与独立授权
+            blocks:
+              - execution-01-body:
+                  kind: markdown
+                  text: |-
+                    1. 只有当前调用已核实任务分配、操作专用授权、固定根、精确路径及必要安全能力后，才可准备输出。角色分配、一般写权限、能力列表都不能替代匹配的独立授权。
+                    2. 核对当前调用方真实身份、角色、有效绑定和逐操作守卫；普通参数不能认证身份。契约缺失、过期、撤销、含糊或被拒绝时停止，不猜路径或权限。
+                    3. 选用独立物化能力时，须核实该能力提供逐次可信 Worker 绑定、任务分配和独立操作许可。普通 stdio 工具注册及产物目录配置不能提供这些条件。尚未选用物化时，可按 owner 选择独立获授权的直接写入。
+                    4. “未选用可选物化路径”与“已选受保护路径实际失败”不同；后者不得通过文件写入、其他接口、命令执行或子代理绕过拒绝。
+        - execution-02:
+            kind: section
+            title: 二、只读候选合规预检
+            blocks:
+              - execution-02-body:
+                  kind: markdown
+                  text: |-
+                    1. 在内存构造有界候选变更覆盖层，并与可信检出状态一起检查；同批候选可满足相互直接本地链接。候选不能自行选择可信根或政策来源。
+                    2. 明确策略范围。维护本 Skill 时采用其文档规则，其他项目采用其自身规约。
+                    3. 基线只记录对可信检出的观察。以只读方式核对候选路径和基线，依赖磁盘状态但缺少可信证据的检查记为 `unknown`。
+                    4. 分别记录pass、fail、unknown、not applicable；失败、未知、因限制未返回的检查及过期基线均未解决。补证或修正后针对当前候选重新检查，不能沿用旧候选通过。
+                    5. 预检不扫描所有未变更文档的反向入站链接、不证明中文语义正确、不执行代码/全部项目检查，也不授权写入。仅对实际返回的覆盖层/观察范围负责；应用后仍需真实Verification与Acceptance。
+        - execution-03:
+            kind: section
+            title: 三、prepare、review、apply保持分离
+            blocks:
+              - execution-03-body:
+                  kind: markdown
+                  text: |-
+                    1. prepare在项目目录外创建有界候选产物，不称作项目已写入；保存真实产物ID和清单Hash。
+                    2. 仅用有限本地渲染模板和既定限制。可选语义服务只在已有事实标识符中排序，本地保留原始事实并渲染；不让服务自由重写事实。
+                    3. 配置缺失、拒答、响应无效、上下文过期或超限时停止准备，不替换为自由形式输出。服务未报告usage时不能推断为零；真实网络遵循 [建议合同](advisory.yaml) 的独立出站/配置边界。
+                    4. apply前由负责者审阅同一有界候选正文，对照ID/清单Hash核实完整性，重新核实当前授权、固定项目、精确路径、当前基线及新鲜整批预检。
+                    5. 应用时只能使用已审阅的同一候选，不重新生成、不夹带新内容、不把先前预检当当前授权。授权路径和操作之外一律不写。
+        - execution-04:
+            kind: section
+            title: 四、保护并发变更并读回实际效果
+            blocks:
+              - execution-04-body:
+                  kind: markdown
+                  text: |-
+                    1. 应用前再次检查当前文件；基线变化先解决，不覆盖用户/外部写者新变更。协作锁不能防无关写者，多文件批次可部分应用且无全局回滚保证。
+                    2. 成功回执只证明其实际声明，不替代内容读回/最终验证。失败、超时、部分或未知结果先核实收据与真实文件，区分已写、未写及未知；不能重放整批来确认状态。
+                    3. 同一候选的重放不得覆盖用户后续修改。状态不确定或权限变化时，先依据当前证据解决，再按新授权/基线准备新候选。
+                    4. 将实际内容/文档/Git 影响和证据交回 Root（当前负责该动作的调用方），按实际影响使相应 epoch 的旧证据失效，按验证/修复流程核验。结构预检、产物Hash、应用成功均不能替代语义Acceptance。
+  - outputs:
+      kind: section
+      title: 输出与落点
+      blocks:
+        - outputs-body:
+            kind: markdown
+            text: |-
+              分别返回预检检查项与范围/基线，或候选ID/清单Hash/审阅结论，以及逐路径实际应用状态/收据和剩余未知。明确“仅准备”“已审阅”“部分应用”“已应用但未验证”，不混写为任务完成。
+  - exit:
+      kind: section
+      title: 退出与阻断
+      blocks:
+        - exit-body:
+            kind: markdown
+            text: |-
+              只有当前授权、完整性、基线、整批预检与实际文件结果均满足对应步骤条件才退出该步骤。必需条件缺失、守卫拒绝或未知效果未解决时暂停依赖动作；可选路径不可用不等于成功，也不放松角色/权限/验证要求。
+  - recheck:
+      kind: section
+      title: 重新核验
+      blocks:
+        - recheck-body:
+            kind: markdown
+            text: |-
+              候选内容、事实ID、模板、策略、读取器、固定根、路径、基线、权限/grant、Session/角色或外部文件发生变化时，重核受影响检查；旧Hash不是锁，旧回执不是新的应用许可。
+  - sources:
+      kind: section
+      title: 规则来源
+      blocks:
+        - sources-body:
+            kind: markdown
+            text: |-
+              | 来源 | 本合同落点 |
+              | --- | --- |
+              | [候选变更合规预检](../references/coding/layer-01-fundamental-concepts/execution-planning/candidate-compliance.yaml) | 覆盖层、策略范围、unknown及预检限度 |
+              | [输出物化](../references/coding/layer-01-fundamental-concepts/execution-planning/output-materialization.yaml) | 独立授权、prepare/review/apply、完整性与部分应用 |
+              | [Session角色归属](../references/coding/layer-01-fundamental-concepts/session-runtime/session-role-ownership.yaml) | 真实身份、角色与逐操作守卫 |
+              | [执行控制](../references/coding/layer-01-fundamental-concepts/execution-control/execution-control.yaml) | 先放行Slice、不越界产生效果 |
+              | [输出路线选择](../references/coding/layer-03-workflow-checkpoints/output-route-selection.yaml) | 输出路由不等于执行者或创建授权 |

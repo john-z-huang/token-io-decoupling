@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: content-memo-lifecycle
+markdown_path: references/coding/layer-01-fundamental-concepts/context-exchange/content-memo-lifecycle.md
+title: "Worker Content Memo Lifecycle"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        本文档定义项目 Memory 中 Worker memo 的创建、更新、清理和可发现性，不定义 memo 内容、dispatch、handoff 授权或验收。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - lifecycle:
+            kind: section
+            title: "创建、更新与发现"
+            expose: true
+            blocks:
+              - lifecycle-body:
+                  kind: markdown
+                  text: |-
+                    `write_content_memo` 为 true 时，通过已核实的 Memory 查询能力检查具名条目，并在首次出现可复用状态以及实质里程碑、阻塞、handoff、replacement 或正常退出时，通过获准的 Memory 写入能力创建或更新 `context-exchange/workers/<worker-context-id>/content-memo`。只在状态/证据实质变化时更新，不要逐命令记录。父级或后继者只有在已放行指令具名或授权该记录时才能读取。后端是否技术性强制该规则须单独核实。这些记录不另建本地文件索引；名称可通过实际 Memory 发现能力查询。
+
+                    Memory 能力失败时必须报告，并阻塞依赖该记录的工作；不得回退为文件写入。遵守 memo 内容契约，不得写成命令日志。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              需要 Memory 时，按当前环境选择实际可用且获准的项目 Memory 能力，核对后端项目绑定、操作说明、参数、权限和结果。普通文档访问不得代替必需的 Memory 操作；能力缺失仅阻塞依赖项。不得绕过隐藏、拒绝或访问限制，也不得伪造旧身份上下文。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [Worker Content Memo](content-memo.yaml) — 定位 memo 内容契约。
+              - [Worker Content Memo Dispatch](content-memo-dispatch.yaml) — 定位 memo 开关。

@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: fundamental-concept
+id: lsp-code-navigation
+markdown_path: references/coding/layer-01-fundamental-concepts/session-runtime/lsp-code-navigation.md
+title: "语言服务器与代码结构查询"
+blocks:
+  - overview:
+      kind: markdown
+      title: "概览"
+      expose: true
+      text: |-
+        需要符号、声明、引用、实现或调用关系等代码结构证据时，使用当前环境实际可用且获准的语言服务。
+  - rules:
+      kind: section
+      title: "通用规范"
+      expose: true
+      blocks:
+        - code-navigation:
+            kind: section
+            title: "激活项目并结构化浏览代码"
+            expose: true
+            blocks:
+              - code-navigation-body:
+                  kind: markdown
+                  text: |-
+                    查询代码前，确认所选语言服务已绑定准确的项目根目录，且目标语言的后端可用。必要时按工具契约初始化该项目。Worktree 或 monorepo 子项目可能需要单独绑定各自的根目录。
+
+                    首次浏览不熟悉的代码文件时，先获取符号概览。随后按需选择范围最小的查询。
+
+                    - 定位类、函数、方法或其他代码实体。需要理解实现时才读取符号正文。
+                    - 已知调用位置时，查询该位置对应的声明。
+                    - 从符号出发查询调用者或其他引用。
+                    - 从接口或抽象符号出发查询实现。
+
+                    尽可能把每次查询限制在已知文件或目录，限制结果大小和匹配数量，并保留准确路径与符号名作为来源指针。文本搜索可定位候选文件或匹配位置；将候选符号或代码关系作为语言服务证据前，先用语言服务核实。
+
+                    所需语义查询不可用时，说明缺口，在获准的项目与任务范围内定向搜索和读取文件。按实际来源报告文本证据；必需关系仍无法核实时，暂停依赖该关系的工作。
+  - runtime-guidance:
+      kind: section
+      title: "运行时指引"
+      expose: true
+      blocks:
+        - runtime-guidance-body:
+            kind: markdown
+            text: |-
+              按当前环境实际提供的能力选择代码结构查询。使用前核对工具说明、参数、项目绑定、权限及目标语言后端。独立只读查询可批处理，逐项检查错误、状态和必要证据。
+  - related:
+      kind: section
+      title: "相关概念"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - related-body:
+            kind: markdown
+            text: |-
+              - [运行时与能力边界](runtime-provider-support.yaml) — 核验当前宿主能力与授权。
+              - [Session Context Firewall](session-context-firewall.yaml) — 限定当前任务的上下文来源与访问范围。

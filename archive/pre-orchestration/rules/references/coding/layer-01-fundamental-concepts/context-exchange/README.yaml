@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=../../../../reference.schema.json
+schema_version: 1
+document_type: directory-guide
+id: context-exchange-readme
+markdown_path: references/coding/layer-01-fundamental-concepts/context-exchange/README.md
+title: "Context Exchange"
+blocks:
+  - scope-and-boundary:
+      kind: section
+      title: "范围与边界"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - scope-and-boundary-body:
+            kind: markdown
+            text: |-
+              上下文胶囊、交接记录、工作区边界及 Worker 备忘录内容/生命周期/派发。本分类管理信息传递，不定义谁可创建或管理 Worker。
+  - entry:
+      kind: section
+      title: "入口"
+      expose: true
+      blocks:
+        - entry-body:
+            kind: markdown
+            text: |-
+              从上下文交换通用规则开始，再选择交接、工作区或备忘录所有者。
+  - owners:
+      kind: section
+      title: "所有者"
+      expose: true
+      blank_lines_before: 2
+      blocks:
+        - owners-body:
+            kind: markdown
+            text: |-
+              - [content-memo](content-memo.yaml)
+              - [content-memo-dispatch](content-memo-dispatch.yaml)
+              - [content-memo-lifecycle](content-memo-lifecycle.yaml)
+              - [context-exchange](context-exchange.yaml)
+              - [context-exchange-handoff](context-exchange-handoff.yaml)
+              - [context-exchange-workspace-boundary](context-exchange-workspace-boundary.yaml)
