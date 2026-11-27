@@ -13,5 +13,6 @@ description: "根据用户指令自动拆解 Coding 任务、选择单代理或�
 
 - 用户明确要求不创建或不使用子代理时，走[单代理路线](workflows/coding-single-agent.md)。其余情况按[选路规则](references/planning/task-planning.md#根据用户要求选路)处理明确的委派要求和实际分工收益。
 - [多代理路线](workflows/coding-multi-agent.md)按任务动态选择角色、模型和推理强度，优先复用同角色实例。任何新建或替换的子代理均禁止使用 Ultra 推理强度。
+- 主会话以 Ultra 启动时，包括此前使用其他档位、随后以 Ultra 开启新对话，采用多代理路线的开发任务必须按[MM02 任务规划](workflows/coding-multi-agent.md#阶段与适用-hook)和其中引用的角色职责安排分工。是否委派仍按现有选路规则判断。
 
 按[Hook 目录](hooks/README.md)读取当前动作的合同，从[编排参考目录](references/README.md)按需查阅阶段规则。各角色和任务沿用用户授权与当前权限。涉及委派时，按[委派能力](references/delegation/delegation-policy.md#委派能力)核对实际可用的操作。

@@ -81,6 +81,7 @@ blocks:
   - checkpoints:
       kind: section
       title: 阶段与适用 Hook
+      expose: true
       blocks:
         - preconditions:
             kind: markdown
@@ -100,6 +101,8 @@ blocks:
             hook: planning
             text: |-
               基于已确认的任务边界进入[规划 Hook](../hooks/planning.yaml)。逐项核对同页 Hook 子流程，明确适用条件、证据与回退位置，再确定近期工作、依赖、分工和验收办法。按工作项核对委派、主代理执行及独立验证的触发和证据，主代理负责跨任务决策与集成。
+
+              主会话以 Ultra 启动时，包括此前使用其他档位、随后以 Ultra 开启新对话，进入本路线后必须按当前[主代理职责](../references/roles/main-agent.yaml)和[子代理角色定义](../references/delegation/delegation-policy.yaml#assignment)制定计划。派发前逐项确定执行者、前置依赖、预期产物和验收条件。主代理负责关键决策、协调、集成和最终验收，按角色职责分配事实取证、实施、独立验证及另获授权的 Git 操作。优先复用同角色实例，新建或替换子代理前按[模型与推理强度规则](../references/delegation/delegation-policy.yaml#model-effort)确认实际采用的推理强度为非 Ultra。
         - MM03:
             kind: route_step
             title: 任务执行
